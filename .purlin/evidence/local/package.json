@@ -2,29 +2,30 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-1": {
-            "after": "        shutil.rmtree(self.parent, ignore_errors=True)",
+            "after": "        _git(self.project_root, 'worktree', 'prune')",
             "aim": "plain",
             "before": "        _git(self.project_root, 'worktree', 'remove', '--force', self.root)\n        shutil.rmtree(self.parent, ignore_errors=True)\n        _git(self.project_root, 'worktree', 'prune')",
-            "bug_key": "fa5dfdf2e86342fd6db5ff818c70aebfa876bf3537557f055b15c9c23abf3dc0",
-            "case": "first sign-off of 2.1.0 in a project whose two rules pass; the proof says `git worktree list` shows one worktree; the changed code leaves the package checkout registered, so it shows two",
+            "bug_key": "fd188cd94e8d6360dc9a40856b4428fef28375302422dd71a752585ef39f488e",
+            "case": "the first sign-off of `2.1.0` in a project whose two rules pass; the proof says `git worktree list` shows one worktree; the changed code leaves the build's checkout in place, so it shows two",
             "file": "scripts/export/package.py",
-            "line": 250,
+            "line": 252,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-1: the test signs the project and checks the sign-off's exit code is 0, which is the proof's \"answered yes\".",
-          "PROOF-1: the test checks that the package path is among the files changed in the head commit, so a package written elsewhere or left uncommitted fails it.",
-          "PROOF-1: the test counts the lines of `git worktree list` and expects exactly one, so a checkout left registered fails it.",
-          "PROOF-1: the version `2.1.0` and the package path come from the fixture and the `PACKAGE` constant, which are not shown, so the reading takes them as the proof's values.",
-          "PROOF-1: no spot test fired, and the test compares each of the three results the proof names, so the planted bug is the plain one."
+          "PROOF-1: the test signs the project and checks the exit code is 0, which stands for the sign-off being answered yes.",
+          "PROOF-1: the test checks that `PACKAGE` is among the paths the head commit changed, so a package written elsewhere or left uncommitted fails it, provided `PACKAGE` is the literal `.purlin/evidence/package/2.1.0.json`; that constant is defined outside the lines shown.",
+          "PROOF-1: the test counts the lines of `git worktree list` and expects exactly 1, so a checkout left registered after the build fails it.",
+          "PROOF-1: the `VERSION` of `2.1.0` and the two passing rules come from the `project` fixture, which is not shown, so the starting situation the proof names is taken on trust from the fixture.",
+          "PROOF-1: the test does not look at the temporary folder on disk, only at what git lists, which is what the proof names.",
+          "The spot tests found nothing, and the test's three assertions are all able to fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -35,16 +36,16 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-25": {
             "after": "                    'machine': section.get('runner'),",
             "aim": "plain",
             "before": "                    'machine': section.get('machine'),",
-            "bug_key": "e73d8d0c3946af4e658cc0f9e7fc1012dea7152ed62f9f463532fa9fdbb325d2",
-            "case": "a result under the source `ci` written on the machine `build-7` by `runner@example.com`; the proof says RULE-2's result reads the machine `build-7`; the changed code gives the machine `runner`",
+            "bug_key": "8d62429db96d31088cb56aec8c9dda8a96c335dec4e9cdd543bdb4017cf741f4",
+            "case": "a result under source ci written on machine build-7 by runner@example.com; the proof says RULE-2's result reads the machine build-7; the changed code gives the machine as runner",
             "file": "scripts/export/package.py",
-            "line": 556,
+            "line": 599,
             "result": "caught",
             "why": ""
           },
@@ -52,23 +53,23 @@
             "after": "    by_hand = not proofs",
             "aim": "plain",
             "before": "    by_hand = bool(proofs) and all(proof.get('manual') for proof in proofs)",
-            "bug_key": "6699b2853928f82104bca5baa14455962bd38e56c2686165b092af2c3d0ee24c",
-            "case": "`login RULE-2` with its one proof `@manual` and a committed section reading `RULE-2` `passed`; the proof says each result of RULE-2 reads `checked at sign-off`; the changed code gives `passed`",
+            "bug_key": "473a1980ebc96266a784f768a1dd4001fb2a21b537254f12e5df379f0f169c70",
+            "case": "login RULE-2 with its one proof @manual and a committed section reading RULE-2 passed; the proof says each result reads checked at sign-off; the changed code gives passed",
             "file": "scripts/export/package.py",
-            "line": 544,
+            "line": 587,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-25: the test signs a project whose result sits under `ci` from the machine `build-7` and compares RULE-2's one result on all eight values the proof names (source, result, runner, time, current, operating system, machine and the full commit sha), so a wrong value in any of them fails it.",
-          "PROOF-25: the expected commit is read from the project's head before the results are written and the expected operating system from the host, neither from the package, so the expected values do not come from the code under test.",
-          "PROOF-83: the test first reads the committed section and confirms it holds `RULE-2` `passed`, then compares the whole list of RULE-2's results in the package with one `checked at sign-off`, so a result that reads `passed` fails it.",
-          "PROOF-83: the test also compares RULE-1's results with `passed`, which the proof does not name, and the project holds one section, so \"each result\" is seen over a single result.",
-          "The spot tests found nothing, and both tests compare literal values the proofs name, which is consistent with that."
+          "PROOF-25: the test signs a project whose results sit under ci from build-7 and compares RULE-2's one result with source, result, runner, time, current, operating system, machine and the full commit sha in one tuple, so every value the proof names is checked.",
+          "PROOF-25: the expected commit is read from the project's head before the results are written and the expected operating system from the host, neither from the package, so the package code cannot influence them.",
+          "PROOF-83: the test reads the committed section and checks it holds RULE-2 as passed, then checks the package's results for RULE-2 are exactly one reading checked at sign-off, which is the case and the value the proof names.",
+          "PROOF-83: the test also checks RULE-1 still reads passed, so a change that turned every rule to checked at sign-off would fail too.",
+          "The spot tests found nothing, and both tests compare literal expected values against the built package, so no finding is missed on these two tests."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -79,28 +80,27 @@
         "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-26": {
-            "after": "            'at': summary.get('commit'),",
+            "after": "            'model': summary.get('verdict'),",
             "aim": "plain",
-            "before": "            'at': summary.get('at'),",
-            "bug_key": "dfe46e49f1c41afbbf98827d14853ec58249c78b581ec2aa705515bc8341d0fb",
-            "case": "RULE-2's audit in a signed project's package; the proof says the time reads 2026-09-13T12:05:00Z; the changed code gives the audit's commit in its place",
+            "before": "            'model': summary.get('model'),",
+            "bug_key": "9021f10987664f984b533c251f64821c3c160d1c7125c560e29e1cd94f47fd6b",
+            "case": "RULE-2's audit in a signed project's package; the proof says the model reads claude-opus-5-20260901; the changed code gives strong as the model",
             "file": "scripts/export/package.py",
-            "line": 593,
+            "line": 629,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-26: the test reads RULE-2's audit from the signed package and compares its verdict, findings, model, criteria and time in one equality against `strong`, an empty list, MODEL, CRITERIA and `2026-09-13T12:05:00Z`, so every value the proof names is checked.",
-          "PROOF-26: the model and the fingerprint are compared against the constants MODEL and CRITERIA, whose definitions are not in the test shown, so whether they hold `claude-opus-5-20260901` and the fingerprint the evidence records cannot be read from here.",
-          "PROOF-26: the proof names the fingerprint as \"as the evidence records it\" and gives no literal for it, so the test's expected value for it rests on what CRITERIA holds.",
-          "The spot tests found nothing, and the test shown holds a failable assertion on the proof's literal values `strong` and `2026-09-13T12:05:00Z`."
+          "PROOF-26: the test reads RULE-2's audit from the signed package and compares the verdict, the findings, the model, the fingerprint of the instructions and the time in one equality, so a wrong value in any of the five fails it.",
+          "PROOF-26: the verdict `strong`, the empty findings and the time `2026-09-13T12:05:00Z` are literals in the test, while the model and the fingerprint come from the constants MODEL and CRITERIA, whose definitions are not in the source shown.",
+          "PROOF-26: the spot tests found nothing, and the test asserts on the proof's own case and its results, so there is no way past it and the planted bug is the plain one."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -111,39 +111,40 @@
         "verdict": "strong"
       },
       "RULE-14": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-20": {
             "after": "CELLS = ('passed',)",
             "aim": "plain",
             "before": "CELLS = ('passed', 'strong')",
-            "bug_key": "5c2bce709975e8b2c0e930419ed95b5f3a8c9ca98495605b40fb293147c19b34",
-            "case": "both rules passing and audited strong, the project signed; the proof says RULE-1's statuses holds exactly passed and strong, reading passed and strong; the changed code gives statuses holding only passed",
+            "bug_key": "7645482e0c2300f35fc6cbeb3d9cb891a923ffabb5df949b8741ef7ab5b62dad",
+            "case": "both rules passing and audited strong, project signed; the proof says RULE-1's statuses holds exactly passed and strong, reading passed and strong; the changed code gives statuses holding only passed",
             "file": "scripts/export/package.py",
-            "line": 88,
+            "line": 90,
             "result": "caught",
             "why": ""
           },
           "PROOF-29": {
-            "after": "    return {'word': name,",
+            "after": "    return {'word': 'strong' if name == 'strong' else cell.get('word'),",
             "aim": "plain",
             "before": "    return {'word': cell.get('word'),",
-            "bug_key": "511b222f8b06a5d6fd39c0bff9e68ab7104fa30c9128aef6881ff2e87e08dd4c",
-            "case": "two passing rules no audit has read, the project signed; the proof says RULE-2's statuses read passed and not audited; the changed code gives passed and strong",
+            "bug_key": "04ffa04715085e27ece32290a1ced93e75e6afdcbf066c5f1e3f90e76ab09a5d",
+            "case": "two rules pass and no audit has read them, project signed; the proof says RULE-2's statuses reads passed and not audited; the changed code gives passed and strong",
             "file": "scripts/export/package.py",
-            "line": 636,
+            "line": 674,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-20: the test reads RULE-1's statuses from the signed package and compares the whole map of status names to words with `passed` and `strong`, so a missing, extra or differently worded status fails it.",
-          "PROOF-29: the test signs a project made with no rule audited and compares the whole map of RULE-2's status names to words with `passed` and `not audited`, so a missing, extra or differently worded status fails it.",
-          "Neither test reads a status's `reasons`, which neither proof names.",
-          "The spot tests found nothing, and each test holds an equality check against literal values that the proof names."
+          "PROOF-20: the test reads RULE-1's statuses from the signed package and compares every status name and its word with exactly passed: passed and strong: strong, so a missing, extra or misworded status fails it.",
+          "PROOF-20: the test relies on the `signed` fixture for both rules passing and being audited strong, so that arrangement is not visible in the test's own lines.",
+          "PROOF-29: the test builds a project with no rule audited, signs it, and compares every status name and its word for RULE-2 with exactly passed: passed and strong: not audited, which is the case and the result the proof names.",
+          "Both tests compare only each status's word, so a status's reasons are not observed; neither proof names them.",
+          "The spot tests found nothing, and both tests hold a failable equality against literal values the proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -154,74 +155,78 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-02T10:57:45Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-15": {
-            "after": "                    'at': (section.get('at') or '').replace('Z', '+00:00') or None,",
-            "aim": "plain",
-            "before": "                    'at': section.get('at'),",
-            "bug_key": "20a432fe163882010824e654d683a8e19667b8bf02859a494e48945da1b76b02",
-            "case": "a signed project's package, each result's time under `at`; the proof says each reads like `2026-09-13T12:00:00Z`, ending in `Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00`",
+            "after": "        out.append(dict({key: newest.get(key) or None\n                         for key in _CARRIED_KEYS}, proof=proof_id,\n                        at=str(newest.get('at') or '').replace('Z', '+00:00') or None))",
+            "aim": "past the test",
+            "before": "        out.append(dict({key: newest.get(key) or None\n                         for key in _CARRIED_KEYS}, proof=proof_id))",
+            "bug_key": "0f1f591d3c09940e3db3baac2a8771128f0dd248ec0ca99686d5482746206f68",
+            "case": "a signed project's package holding a result carried forward from an earlier run; the proof says every non-null `at` reads like `2026-09-13T12:00:00Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00` under that result's `carried[].at`",
             "file": "scripts/export/package.py",
-            "line": 553,
-            "result": "caught",
+            "line": 551,
+            "result": "survived",
+            "test_key": "aac05e0b038e8aa2f191ef81a9f2906f2393457ccd3f14096be9c1fbbbc949bc",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-15: the test walks the whole signed package, collects every value under `at` that is not null, requires at least four and requires each to match the `UTC` pattern in full, which is the proof's case and its result.",
-          "PROOF-15: the `UTC` pattern is defined outside the test source shown, so whether it refuses an offset and a fraction of a second cannot be read from here.",
-          "PROOF-15: the spot tests found nothing, and the test's assertions can fail on the count and on any `at` value the pattern does not match."
+          "PROOF-15: the test walks the whole signed package, collects every non-null value stored under `at`, requires at least `4` of them and requires each to match the `UTC` pattern in full, which is what the proof names.",
+          "PROOF-15: the `UTC` pattern is defined outside the test's own lines, so whether it refuses an offset or a fraction of a second cannot be read from the test shown.",
+          "PROOF-15: the test sees only the times its signed fixture produces, so an `at` the fixture never fills, such as that of a result carried forward from an earlier run, could take a wrong form and the test would still pass.",
+          "PROOF-15: the spot tests found nothing, and the test does hold assertions that can fail, with the count `4` and a full match rather than a check against the code's own output."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-15: the test still passes when scripts/export/package.py:551 reads \"for key in _CARRIED_KEYS}, proof=proof_id,\"",
+          "PROOF-15: the AI says this breaks: a signed project's package holding a result carried forward from an earlier run; the proof says every non-null `at` reads like `2026-09-13T12:00:00Z` with no offset; the changed code gives `2026-09-13T12:00:00+00:00` under that result's `carried[].at`"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-15 names only the times stored under `at`, while the rule speaks of every time in the package, so a time stored under another key is not covered by it."
-        ],
         "proof_hash": "b0c06b21d84a0e5c9df0240972728758b10358c8116c65997bef1e6c15ba1ddf",
         "rule_hash": "5c754e2c67636fe74ade190d62194ef1beb62623671b504f5c1541f6d0b9d4da",
         "test_hash": "7e371ce9e3bfbbd8116aedb3c31bb1ca87f708f2170ace4c6988362245edbeaf",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-2": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-2": {
-            "after": "        'version': project_version(project_root) or version,",
-            "aim": "plain",
-            "before": "        'version': version,",
-            "bug_key": "d5c49018419f32c6df0ea7e68315c79c2b2b2c10b18e24582700f1ff1d1a2156",
-            "case": "`purlin:sign --version beta` in a project whose `VERSION` reads `2.1.0`; the proof says beta.json reads `version` `beta`; the changed code gives `version` `2.1.0`",
+            "after": "    with open(full, 'wb') as handle:\n        handle.write(canonical_bytes(package))\n    stated = project_version(project_root)\n    if stated:\n        with open(os.path.join(os.path.dirname(full), '%s.json' % stated),\n                  'wb') as handle:\n            handle.write(canonical_bytes(package))\n    return rel",
+            "aim": "past the test",
+            "before": "    with open(full, 'wb') as handle:\n        handle.write(canonical_bytes(package))\n    return rel",
+            "bug_key": "3d761a2ab3b2cc760548d4c13a2c4238765bfd0b8fba6a6feaf4acbd52c2b911",
+            "case": "VERSION reads 2.1.0 and purlin:sign --version beta is answered yes; the proof says no .purlin/evidence/package/2.1.0.json is written; the changed code also writes .purlin/evidence/package/2.1.0.json beside beta.json",
             "file": "scripts/export/package.py",
-            "line": 379,
+            "line": 1023,
             "result": "caught",
             "why": ""
           },
           "PROOF-22": {
-            "after": "    return 'signed-%s' % version",
+            "after": "    return 'signed/v%s' % version",
             "aim": "plain",
             "before": "    return 'signed/%s' % version",
-            "bug_key": "06b4da2037e9d9279e98603de4ea10c8272f104e82177001b268c6778dd2b2b0",
-            "case": "`purlin:sign --version beta` in a project stating no version; the proof says beta.json reads `tag` `signed/beta`; the changed code gives `tag` `signed-beta`",
+            "bug_key": "0d54b075d3fc066a6da8325df041b7ff7dbe1d46d55dd8fa41b7536299df91f8",
+            "case": "no VERSION file and purlin:sign --version beta is answered yes; the proof says beta.json reads tag signed/beta; the changed code gives tag signed/vbeta",
             "file": "scripts/export/package.py",
-            "line": 333,
+            "line": 335,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-2: the test signs with the version `beta`, looks for `.purlin/evidence/package/beta.json` among the files the head commit changed, compares the package's `version` and `tag` with `beta` and `signed/beta`, and checks that a file named by `PACKAGE` is absent, so each result the proof names is observed.",
-          "PROOF-2: the starting `VERSION` of `2.1.0` and the path behind `PACKAGE` come from a fixture and a constant outside the test shown, so whether the absent file is `2.1.0.json` rests on those.",
-          "PROOF-22: the test makes a project with `version=None`, signs with `beta`, looks for `beta.json` among the files the head commit changed and compares `version` and `tag` with `beta` and `signed/beta`, which is the proof's case and its results.",
-          "PROOF-22: that the project states no version at all rests on the `made_project` helper, which is not shown.",
-          "Findings: the spot tests found nothing, and both tests hold assertions on literal values the proofs name."
+          "PROOF-2: the test signs with the name beta, looks for `.purlin/evidence/package/beta.json` among the files the head commit changed, and compares the package's `version` and `tag` with `beta` and `signed/beta`, which are the values the proof names.",
+          "PROOF-2: the check that no `2.1.0.json` is written looks for a path built from the constant `PACKAGE`, and the test never writes `2.1.0` itself, so it holds only if that constant and the fixture's `VERSION` file both name 2.1.0; neither is shown in the test.",
+          "PROOF-2: the absence check reads the working folder and not the signed commit, so it would see a stray file left on disk but says nothing about what the commit carries.",
+          "PROOF-22: the test makes a project with `version=None`, signs with the name beta, and compares the committed file's path, `version` and `tag` with the proof's three values, so a wrong value in any of them fails it.",
+          "PROOF-22: whether `made_project(version=None)` also leaves out a `package.json`, `pyproject.toml` or `.csproj` version, as the proof's \"nothing else stating a version\" requires, rests on a helper not shown.",
+          "Both tests read the `tag` field inside the package and neither looks at the git tag itself, which matches what the proofs name.",
+          "Findings: none, and the spot tests have nothing to flag here, since both tests assert literal values taken from their proofs."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -232,27 +237,27 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-45": {
             "after": "        return 'the file is not JSON'",
             "aim": "plain",
             "before": "        return 'the file is not UTF-8 JSON'",
-            "bug_key": "b0544e10a201bc7fc75b7e958bcbb2c285e1908408da6620291a559f8e166276",
-            "case": "a file whose bytes are not UTF-8, and a file of UTF-8 text that is not JSON, each checked with purlin:sign --check; the proof says the reason reads `the file is not UTF-8 JSON`; the changed code gives `the file is not JSON`",
+            "bug_key": "b774a131c3019218739bc8d63abf4bba7ff3285cab678ac923322c3dfa563df3",
+            "case": "a file whose bytes are not UTF-8, and a file of UTF-8 text that is not JSON, are checked; the proof says each prints `the file is not UTF-8 JSON.`; the changed code prints `the file is not JSON.`",
             "file": "scripts/export/package.py",
-            "line": 894,
+            "line": 981,
             "result": "caught",
             "why": ""
           },
           "PROOF-46": {
-            "after": "        return 'the file does not carry schema %s' % SCHEMA",
+            "after": "    if not isinstance(package, dict) or not str(package.get('schema')).startswith('purlin-package/'):",
             "aim": "plain",
-            "before": "        return 'the file does not carry the schema %s' % SCHEMA",
-            "bug_key": "3d5250dea255ecd715a2be1fd3d21b6bfc742fc1bc91fed64adfe764c69673aa",
-            "case": "a signed package with its schema changed to purlin-package/3 is checked; the proof says the reason reads `the file does not carry the schema purlin-package/4`; the changed code gives `the file does not carry schema purlin-package/4`",
+            "before": "    if not isinstance(package, dict) or package.get('schema') != SCHEMA:",
+            "bug_key": "2a95c0386c4944ea87d3ff3827c18ed48b7ef301ad4affc155c623bb7374c216",
+            "case": "a signed package with `schema` changed to `purlin-package/3` is checked; the proof says the reason is `the file does not carry the schema purlin-package/4`; the changed code accepts the schema and reports a fingerprint that does not match the content",
             "file": "scripts/export/package.py",
-            "line": 896,
+            "line": 982,
             "result": "caught",
             "why": ""
           },
@@ -260,28 +265,29 @@
             "after": "    if canonical != data.replace(b'\\r\\n', b'\\n'):",
             "aim": "plain",
             "before": "    if canonical != data:",
-            "bug_key": "42598a77092c63bdb3db6c997c8f40231e00ca6a279814aa919c1315185a563c",
-            "case": "a signed package rewritten with every \\n as \\r\\n is checked; the proof says exit 1 and the line about bytes not in the canonical form; the changed code finds no mismatch, so the check passes and that line is not printed",
+            "bug_key": "4832e28f0b144b092accab6421f88fa0bd7720b6e32d93ddd895cb9cc6a738e9",
+            "case": "a signed package rewritten with every `\\n` as `\\r\\n` is checked; the proof says exit 1 with the reason that the bytes are not in the canonical form; the changed code finds the package matching, so no such line is printed",
             "file": "scripts/export/package.py",
-            "line": 909,
+            "line": 996,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-45: the test writes one file of non-UTF-8 bytes and one of plain text, and compares each run's exit code and whole list of printed lines with 1 and the exact sentence the proof names, so a wrong reason, a wrong exit code or an extra line fails it.",
-          "PROOF-46: the test rewrites the signed package with the schema `purlin-package/3` and compares the exit code and the whole printed output with 1 and the proof's sentence; the sentence's opening comes from a constant in the test file, not shown here, and the reason is a literal.",
-          "PROOF-80: the test first asserts the signed package holds no `\\r`, rewrites every `\\n` as `\\r\\n`, and compares the exit code and the whole printed output with 1 and the canonical-form reason, so a check that accepts the rewritten bytes or words the reason differently fails it.",
-          "Findings: the spot tests found nothing, and each test does compare the exit code and the full output its proof names, so no way past any of the three tests was found and each bug is the plain one."
+          "PROOF-45: the test writes a file with a byte that is not UTF-8 and a file of plain text, checks each, and compares the exit code 1 and the full list of printed lines with the literal sentence the proof names.",
+          "PROOF-46: the test rewrites the signed package with the schema `purlin-package/3` and compares the exit code 1 and the printed lines with the reason the proof names, the sentence's opening coming from a constant, `CHECK_FAILED`, that is defined outside the test shown.",
+          "PROOF-80: the test first asserts the signed file holds no `\\r`, rewrites it with `\\r\\n` line ends, and compares the exit code 1 and the printed lines with the canonical-form reason, again through `CHECK_FAILED`.",
+          "All three tests read the result through a helper, `check`, whose source is not shown, so whether it returns every printed line, as \"prints only\" needs, cannot be read here.",
+          "The spot tests found nothing, and each test compares the exit code and the message its proof names, so nothing in the tests shown contradicts that."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-45 holds two cases, a file that is not UTF-8 and a file of UTF-8 text that is not JSON."
+          "PROOF-45 holds two cases, a file whose bytes are not UTF-8 and a file of UTF-8 text that is not JSON."
         ],
         "proof_hash": "90b0713e90dcfcec91c18b137bf11cde13b99ed26a66042615e4445df2c635f3",
         "rule_hash": "5a503995c9f446c7d20d23a08d528cdf8c7e0b104c51c70cd3dc8d7307607900",
@@ -289,61 +295,62 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-02T10:57:45Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-52": {
-            "after": "    folder = os.path.dirname(full)\n    if os.path.isfile(folder):\n        os.remove(folder)\n    os.makedirs(folder, exist_ok=True)",
+            "after": "    try:\n        os.makedirs(os.path.dirname(full), exist_ok=True)\n    except OSError:\n        raise OSError('the package folder could not be made')",
             "aim": "plain",
             "before": "    os.makedirs(os.path.dirname(full), exist_ok=True)",
-            "bug_key": "5b3aa2e838c85f78662902c94120aab1b9d6f832d1c5095fc5fd59f05fabe177",
-            "case": "`.purlin/evidence/package` is a file and the walk is answered yes; the proof says exit 1, one line carrying the operating system's message, no commit and no tag; the changed code removes the file, writes the package and goes on to sign",
+            "bug_key": "6bd515f66bd9c3832fc0ac3fd86d84556722d414c3839f572c9ce4fc6b3b5ca0",
+            "case": "`.purlin/evidence/package` is a file and the walk is answered yes; the proof says the one line carries the operating system's own message; the changed code gives `The evidence package was not written: the package folder could not be made. Nothing was signed; run purlin:sign again.`",
             "file": "scripts/export/package.py",
-            "line": 933,
+            "line": 1020,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "b284a2d266fc3221fc78cc1d2e6bea69308540c6",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-52: the test makes `.purlin/evidence/package` a file, answers the walk and compares the exit code with 1, as the proof names.",
-          "PROOF-52: the test takes the operating system's message from its own failed attempt to make the folder, not from the code under test, and requires exactly one printed line to carry it, with the full sentence compared word for word.",
-          "PROOF-52: the test also requires that line to be the last one printed after an empty line, and nothing to reach standard output or standard error beside the walk's lines.",
-          "PROOF-52: the test compares the head commit before and after and requires the tag list to be empty, so a commit or a tag added would fail it.",
-          "PROOF-52: the spot tests found nothing, and the test compares every result the proof names, so no change that breaks the proof's case is likely to get past it."
+          "PROOF-52: the test makes `.purlin/evidence/package` a file, answers the walk yes and reads the exit code `1`, as the proof names.",
+          "PROOF-52: the test takes the operating system's message from its own attempt to make the folder, not from the code under test, and requires the full sentence the proof names to be the only line holding that message.",
+          "PROOF-52: the test requires that line to be the last one, after the empty line that closes what the walk showed, and requires nothing on standard output or standard error, which covers \"exactly one line\" and \"after what the walk showed\".",
+          "PROOF-52: the test compares the head commit before and after and reads an empty tag list, which covers \"no commit and no tag\"; the tag assertion is written twice and the second adds nothing.",
+          "PROOF-52: the spot tests found nothing, and the test compares every result the proof names, so the planted change is the plainest one that replaces the operating system's message."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "8ab4264466d7a05c442b0f71da39dd2f9e3256d56670128a2f5648b32e51383b",
+        "proof_hash": "2ff245f8a1fd202c70e072e24cecb09c6178c1de2d5a5776bd3aad7fe5378fea",
         "rule_hash": "7bac124b243ffdd97a01177444c049102ddab0585f5445fcf26c05ed0e4013cd",
-        "test_hash": "c080412b2ebe4c8eb5dd1cb45b80b328fa9c3562c4653beee42f0ea2049cb983",
+        "test_hash": "e28924d35d89f8ef858fa15bfc3f7672879f37c7f9abf53ff500f987dab692a4",
         "verdict": "strong"
       },
       "RULE-25": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-55": {
-            "after": "TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',\n             'project', 'version', 'tag', 'commit', 'runs',",
+            "after": "             'project', 'version', 'tag', 'commit', 'runs',",
             "aim": "past the test",
-            "before": "TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',\n             'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',",
-            "bug_key": "9e28b73a0ee30a853cf1edd545856b1b0c93b5a10dae7a3d4c53086755a6549d",
-            "case": "both rules passing, first sign-off's package; the proof says exactly the top-level keys the format lists; the changed code gives a package with no `purlin_version` key, 15 keys instead of 16",
+            "before": "             'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',",
+            "bug_key": "ce191ff01f7325aa1e15c09da8e37682ef4f9ba8bbe2d0e0cfc2fe2586201290",
+            "case": "both rules passing, the package the first sign-off commits; the proof says it holds exactly the top-level keys the format lists; the changed code gives a package with no `purlin_version` key",
             "file": "scripts/export/package.py",
-            "line": 85,
+            "line": 87,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-55: the test compares the signed package's keys with `TOP_LEVEL`, whose source is not shown; if that name is taken from the package module and not written out from the format, a key dropped from the code's list is dropped from the expected list too and the test still passes.",
-          "PROOF-55: the test checks that `met` is exactly `True`, so a `met` that is false or merely truthy fails it.",
-          "PROOF-55: the test checks that a helper finds no word naming compliance in the signed package, and then checks that helper against a literal sample with one such key and one such value, so the helper is shown to find both.",
-          "PROOF-55: the spot tests found nothing, which fits a test that asserts on every result the proof names; they do not read where `TOP_LEVEL` comes from, which is what the planted bug tries."
+          "PROOF-55: the test compares the signed package's top-level keys, in order, with a `TOP_LEVEL` list whose origin is not shown, so if that list is taken from the code a key dropped from the code's own list still passes.",
+          "PROOF-55: the test reads `met` with `is True`, so a `met` that is false or merely truthy fails it.",
+          "PROOF-55: the test asks a helper for every word naming compliance in the signed package and expects none, then shows on a made-up package that the helper finds such a word in a nested value and in a key, so the empty result is not from a helper that finds nothing.",
+          "PROOF-55: the proof says \"the top-level keys the format lists\" without naming them, so the keys expected are whatever the test's list holds.",
+          "The spot tests found nothing: every assertion compares a result of the package with a literal or a named list, and none is true whatever the code does."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -354,40 +361,40 @@
         "verdict": "strong"
       },
       "RULE-26": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-56": {
             "after": "            'spec': name,",
             "aim": "plain",
             "before": "            'spec': spec,",
-            "bug_key": "3c90b3d09dd26f0193d4deeddb355613ff751875705009dc7e778cafccc50857",
+            "bug_key": "b3f85304546c5ab32590fe711b965bee0302c007532e10c4af74655276371f1c",
             "case": "the `login` entry of a signed project's package; the proof says `spec` reads `specs/auth/login.md`; the changed code gives `login`",
             "file": "scripts/export/package.py",
-            "line": 436,
+            "line": 441,
             "result": "caught",
             "why": ""
           },
           "PROOF-57": {
-            "after": "            'anchor': False,",
+            "after": "        anchor = False",
             "aim": "plain",
-            "before": "            'anchor': anchor,",
-            "bug_key": "0aa2e4b77b2318aadb68d16efc34ed04591b30d88233e69072de919af3173e17",
-            "case": "the anchor `secure` with `> Scope: src/login.py` signed beside `login`; the proof says `anchor` reads `true` and `scope` `[]`; the changed code gives `anchor` `false`",
+            "before": "        anchor = bool(feature.get('is_anchor'))",
+            "bug_key": "a04d3206036dfdf0332eba8e1114846f39c4c710566aea54ebb49bb659c55461",
+            "case": "the anchor `secure` with `> Scope: src/login.py`, signed beside `login`; the proof says `anchor` reads `true` and `scope` `[]`; the changed code gives `anchor` `false`",
             "file": "scripts/export/package.py",
-            "line": 438,
+            "line": 437,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-56: the test takes the `login` entry of the signed package, compares its sorted keys with the five field names and compares `name`, `spec`, `scope` and `anchor` with the four literals the proof names, so both the exact field set and each named value are observed.",
-          "PROOF-56: the content of `rules` is not compared, and the proof names no value for it, so nothing the proof names is left unobserved.",
-          "PROOF-57: the test writes the anchor `secure` with `> Scope: src/login.py`, commits and signs it, and compares the entry's `anchor` and `scope` with the literals `True` and `[]`, which is the proof's case and result.",
-          "PROOF-57: the test does not check the anchor entry's field set, which the proof does not name either.",
-          "The spot tests found nothing, and that fits: both tests assert on literals written in the test and neither mocks the code that builds the package."
+          "PROOF-56: the test takes the `login` entry from the signed package, compares its sorted keys with the five field names, and compares `name`, `spec`, `scope` and `anchor` with `login`, `specs/auth/login.md`, `[\"src/login.py\"]` and `False`, so each value the proof names is checked.",
+          "PROOF-56: the proof names no value for `rules`, and the test checks only that the key is present, so the content of `rules` is not observed here.",
+          "PROOF-57: the test writes the anchor `secure` with `> Scope: src/login.py`, signs the project, and compares the entry's `anchor` and `scope` with `True` and `[]`, which is what the proof names.",
+          "PROOF-57: the test does not compare the anchor entry's set of fields, so the \"exactly five fields\" half of the rule is observed only on the `login` entry.",
+          "Findings: the spot tests found nothing, and both tests hold failable comparisons against literals that the proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -398,27 +405,27 @@
         "verdict": "strong"
       },
       "RULE-29": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-61": {
             "after": "                counts[_AUDIT_KEYS[word]] += 2",
             "aim": "plain",
             "before": "                counts[_AUDIT_KEYS[word]] += 1",
-            "bug_key": "74501210dfcc8e2f607bf808dbbe26d289fb76e1e8ebee99b6b42c72f68cf792",
-            "case": "RULE-1 audited strong and RULE-2 weak, both passing, project signed; the proof says audit reads strong 1, weak 1 and the rest 0; the changed code gives strong 2, weak 2",
+            "bug_key": "2f8b61c43e629772867b6b8a252c30e34fa25c3db3304258445168a0ccbb86dd",
+            "case": "RULE-1 audited strong and RULE-2 weak, both passing, project signed; the proof says {\"strong\": 1, \"weak\": 1, \"spot_checked\": 0, \"out_of_date\": 0, \"not_audited\": 0}; the changed code gives strong 2 and weak 2",
             "file": "scripts/export/package.py",
-            "line": 617,
+            "line": 655,
             "result": "caught",
             "why": ""
           },
           "PROOF-62": {
-            "after": "CHECKED = 'at the sign-offs'",
+            "after": "CHECKED = 'at sign-off'",
             "aim": "plain",
             "before": "CHECKED = 'in the sign-offs'",
-            "bug_key": "bfc31e1569ac8b9ca7fe01316e9971bb33e66e2de92e364feb5e5f7bf235e3a2",
-            "case": "PROOF-2 marked @manual and the project signed; the proof says the hand check's checked reads \"in the sign-offs\"; the changed code gives \"at the sign-offs\"",
+            "bug_key": "0fa98256bf8b507d2a876b0a8ef13b9c838f6bcf7fe114ca00ec9c806fead62e",
+            "case": "PROOF-2 marked @manual and the project signed; the proof says hand_checks holds an entry with \"checked\": \"in the sign-offs\"; the changed code gives \"checked\": \"at sign-off\"",
             "file": "scripts/export/package.py",
-            "line": 92,
+            "line": 94,
             "result": "caught",
             "why": ""
           },
@@ -426,23 +433,23 @@
             "after": "            if word in _AUDIT_KEYS and _AUDIT_KEYS[word] != 'not_audited':",
             "aim": "plain",
             "before": "            if word in _AUDIT_KEYS:",
-            "bug_key": "4a40fc693ec0907e03bbcf020d58cd260e5824ef833fa4fdc078f7e3ff471dec",
-            "case": "3 rules pass, 2 audited strong and 1 never read, a fourth rule by hand; the proof says not_audited reads 1; the changed code gives not_audited 0",
+            "bug_key": "d87d5cd318dd9321cdc4199a065cd64d58d97e92ff7433e584be5caddb6399a6",
+            "case": "3 rules pass, 2 found strong and 1 never read, a fourth rule's proof is @manual; the proof says not_audited is 1; the changed code gives {\"strong\": 2, \"weak\": 0, \"spot_checked\": 0, \"out_of_date\": 0, \"not_audited\": 0}",
             "file": "scripts/export/package.py",
-            "line": 616,
+            "line": 654,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-61: the test signs a project with RULE-1 strong and RULE-2 weak and compares the package's whole `audit` object with the five counts the proof names, so any wrong count fails it.",
-          "PROOF-62: the test signs a project whose PROOF-2 is `@manual` and compares the whole `hand_checks` list with the single entry the proof names, so a wrong feature, rule, proof list or `checked` word, or an extra entry, fails it.",
-          "PROOF-82: the test builds four rules, audits two, leaves one unread and one by hand, and compares the whole `audit` object with the proof's counts, so counting the hand-checked rule or dropping the unread one fails it.",
-          "PROOF-82: the test rests on the helper's audit of RULE-1 and RULE-2 writing `strong`, which the test's own text does not show, and the third rule's test is a placeholder that only supplies a passing result.",
-          "The spot tests found nothing, and that holds: each test asserts a literal expected value that the proof names, with no mock of the package builder and no swallowed error."
+          "PROOF-61: the test builds a project with RULE-1 strong and RULE-2 weak, signs it and compares the package's whole `audit` object with the five counts the proof names, so any wrong count fails it.",
+          "PROOF-62: the test signs a project whose PROOF-2 is `@manual` and compares the whole `hand_checks` list with the one entry the proof names, so a missing, extra or altered entry fails it.",
+          "PROOF-82: the test records four passing rules, audits RULE-1 and RULE-2, leaves RULE-3 unread and RULE-4 by hand, then compares the whole `audit` object with the proof's counts and checks the package holds 4 rules.",
+          "PROOF-82: the `assert True` inside the test is text written into the made project's own test file as a fixture, not a check of the package, and the test's own assertions are literal comparisons.",
+          "The spot tests found nothing, and each test takes its expected value from a literal the proof names rather than from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -453,40 +460,40 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-3": {
             "after": "             'features', 'warnings', 'hand_checks', 'fingerprint')",
             "aim": "past the test",
             "before": "             'features', 'hand_checks', 'warnings', 'fingerprint')",
-            "bug_key": "6a42f039c86c5f31606ba2846ab65e8eedb6f8c6bb92852cf95111378b2dc9d4",
-            "case": "a project whose two rules pass is signed for 2.1.0; the proof says the sixteen top-level keys come in the rule's order, with `hand_checks` before `warnings`; the changed code writes `warnings` before `hand_checks`",
+            "bug_key": "ec8087b2c5662b3d19bdbd5c62aab4c346f031cbd8b9574158e5c87ad2011b62",
+            "case": "a project whose two rules pass is signed for 2.1.0; the proof says the sixteen keys come in the rule's order, with `hand_checks` before `warnings`; the changed code writes `warnings` before `hand_checks`",
             "file": "scripts/export/package.py",
-            "line": 86,
+            "line": 88,
             "result": "caught",
             "why": ""
           },
           "PROOF-30": {
-            "after": "        return sha",
+            "after": "            return sha\n        return sha",
             "aim": "plain",
-            "before": "        sha = parent",
-            "bug_key": "cdad74030c656c24af8c93f8b4997c405978511653c5542d38d5710347e538fe",
-            "case": "2.1.0 signed in commit <s> over the code at <c>, then 2.2.0 signed with nothing else changed; the proof says `commit` reads the full sha of <c>; the changed code gives the sha of <s>",
+            "before": "            return sha\n        sha = parent",
+            "bug_key": "4141bdc6cdc66317a9d318a272f354a4e67a2a0cb8a0a6d92df9554aff976741",
+            "case": "2.1.0 signed in commit <s> over the code at <c>, then 2.2.0 signed with nothing else changed; the proof says `commit` reads the sha of <c>; the changed code gives the sha of <s>",
             "file": "scripts/export/package.py",
-            "line": 157,
+            "line": 159,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-3: the test compares the package's keys with `TOP_LEVEL`, a name it does not define in the source shown, so if that is the code's own tuple a reordering there passes and the sixteen names the rule lists are never written out in the test.",
-          "PROOF-3: the test compares `schema` with the literal `purlin-package/4` and `commit` with the head taken before signing and with `HEAD~1` after, so a wrong schema or a wrong commit fails it.",
-          "PROOF-3: the test compares `purlin_version` with `PURLIN_VERSION`, which, if it is imported from the code, checks the field against the constant it was written from.",
-          "PROOF-30: the test takes the head before the first sign-off, confirms the sign-off moved the head, signs `2.2.0` and compares `commit` with the earlier head, which is the proof's case and its result.",
-          "The spot tests found nothing, and they do not look at where an expected value such as `TOP_LEVEL` is imported from."
+          "PROOF-3: the test compares the package's key order with a constant named `TOP_LEVEL`, not with the sixteen names written out, so if that constant is the code's own, a reordering of it in the code still passes.",
+          "PROOF-3: the test compares `schema` with the literal `purlin-package/4` and `commit` with `HEAD` as read before the sign-off and with `HEAD~1` after it, both of which the code cannot influence.",
+          "PROOF-3: the test compares `purlin_version` with the constant `PURLIN_VERSION`, which matches the proof's \"installed Purlin's version\" only so far as that constant is the installed version.",
+          "PROOF-30: the test reads `HEAD` before the first sign-off, asserts the sign-off succeeded and moved `HEAD`, then compares the 2.2.0 package's `commit` with the sha read first, which is the proof's case and its result.",
+          "The spot tests found nothing; what they cannot see is where an expected value such as `TOP_LEVEL` comes from when it is a constant defined outside the test's own lines."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -497,16 +504,16 @@
         "verdict": "strong"
       },
       "RULE-32": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-65": {
-            "after": "                    'commit': group['commit'], 'rules': len(group['rules']) + 1})",
+            "after": "                    'commit': group['commit'], 'rules': len(group['rules']) + 1,",
             "aim": "plain",
-            "before": "                    'commit': group['commit'], 'rules': len(group['rules'])})",
-            "bug_key": "f58b8bd6c8b203ab44ec47ce039afc8fea18216b336237a71ebfa22568abac18",
-            "case": "Dana's one local run on dana-laptop holding results for two rules; the proof says `rules` `2`; the changed code gives `rules` 3",
+            "before": "                    'commit': group['commit'], 'rules': len(group['rules']),",
+            "bug_key": "9f892b960c0e9e11116acfbf6d84e9854b4628a758e3616bf1eae7c68b03739d",
+            "case": "Dana's one local run on dana-laptop covering two rules; the proof says `rules` `2`; the changed code gives `rules` 3",
             "file": "scripts/export/package.py",
-            "line": 674,
+            "line": 714,
             "result": "caught",
             "why": ""
           },
@@ -514,54 +521,66 @@
             "after": "            -evidence_module.SOURCES.index(key[0])",
             "aim": "plain",
             "before": "            evidence_module.SOURCES.index(key[0])",
-            "bug_key": "014de59e437b7fe913978c1ad573b362b425d28beecefd1614d9adf32cd484e4",
-            "case": "Dana's local run beside a ci run of PROOF-3 on build-7; the proof says two entries with the local one first; the changed code puts the ci entry first and the local one second",
+            "bug_key": "6c6115cae2b095b2280a9a3795e6092af14e35537d5d7fffd6ae80887a7b88ad",
+            "case": "Dana's local run beside a ci run on build-7 as runner@example.com; the proof says the local entry is first and the ci one second; the changed code puts the ci entry first and the local one second",
             "file": "scripts/export/package.py",
-            "line": 667,
+            "line": 707,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-85": {
+            "after": "                'commit': (section or {}).get('commit'), 'carried': True}",
+            "aim": "plain",
+            "before": "                'commit': newest.get('commit') or None, 'carried': True}",
+            "bug_key": "9856cbda6c895cd615e2ee7706c9afcf1c74f92888c8a2504d3ec10d118d3e92",
+            "case": "feat RULE-2's result taken by Pat on pat-laptop at commit <c> and carried forward in Dana's run; the proof says the carried entry's `commit` is <c>; the changed code gives the commit of Dana's run",
+            "file": "scripts/export/package.py",
+            "line": 572,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-65: the test builds the signed package and compares the whole `runs` list with one literal entry holding `by`, `machine`, `os`, `source`, `at`, `commit` and `rules` `2`, so every value the proof names is compared and so is the absence of a second entry.",
-          "PROOF-66: the test checks that `runs` holds two entries, that the first reads `by` Dana and `source` `local`, and that the second reads `runner@example.com`, `build-7`, `ci`, `windows` and `1`, which is each value the proof names.",
-          "PROOF-66: the test reads neither entry's `at` or `commit`, nor the local entry's `machine`, `os` or `rules`; the proof names none of these for this case, so a wrong value there under two runs would pass this test.",
-          "The rule's ordering \"then by system\" among runs of the same source is observed by neither test, since PROOF-66 holds one local and one ci run and the order there is settled by source alone.",
-          "Findings: none were reported, and the tests as written hold assertions on literal values not taken from the code, apart from the commit that PROOF-65 reads from git."
+          "PROOF-65: the test builds the signed package and compares the whole `runs` list with one literal entry holding every field the proof names, with the commit read from git and not from the package, so a wrong value in any field fails it.",
+          "PROOF-66: the test records a local section and a `ci` section on `build-7`, then checks the count of `2`, the first entry's `by` and `source`, and the second entry's `by`, `machine`, `source`, `os` and `rules` against the proof's literals, which is every value the proof names.",
+          "PROOF-66: the test reads neither entry's `at`, `commit` or `carried`, nor the local entry's `machine`, `os` or `rules`; the proof names none of them, so a wrong value there passes this test and is left to PROOF-65 for the local case only.",
+          "PROOF-85: the test compares `by`, `machine`, `commit`, `at`, `rules` and `carried` of both entries, in order, with expected values from its fixture and literals, which covers every value the proof names.",
+          "PROOF-85: the case holds one carried result, so the rule's \"newest run they were taken in\" is not shown choosing between several runs by this proof or any other.",
+          "Findings: the spot tests found nothing, and each test holds failable assertions on the values its proof marks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "743150792d6c137a86b2d16de950b93b74cb3ab62a1ae3e15ade15cc58575db1",
-        "rule_hash": "80370dc3622a18fa723751a9e50a4aafc640422887b2d968736220fbc760c5c5",
-        "test_hash": "b6e3408e4dd9a741dbed590b9fcb991b68366c1d50d9d7a27894683eaf5bc434",
+        "proof_hash": "7914f0e49bd759a4f231e369123eec4b2030b9652ba5012a6d2999f6d1244435",
+        "rule_hash": "08916b4d32815f3c322263f1561c24454b91d0b1d6297e366c68c011b2b2897c",
+        "test_hash": "886b338e30bf467e759275b470ba85df2c40306867a97b0e91c0da454da58268",
         "verdict": "strong"
       },
       "RULE-33": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-67": {
-            "after": "    if not all(path.startswith(PACKAGE_DIR + '/') for path in paths):",
+            "after": "RECORDS_DIR = '.purlin/evidence/package/'",
             "aim": "plain",
-            "before": "    if not all(path.startswith(RECORDS_DIR) for path in paths):",
-            "bug_key": "1af57c28253a0d560a4267c07200b797c56538a668472498862f7d0533e968f2",
-            "case": "tests committed at `<c>`, then a commit changing only `.purlin/evidence/ci/login.json`; the proof says every result reads `same_code` `true`; the changed code gives `same_code` false for results taken before that commit",
+            "before": "RECORDS_DIR = '.purlin/'",
+            "bug_key": "8e4747566c999ae3e69d0791cc2f242a333994ccfcdce6db954379fa354c6610",
+            "case": "tests committed at <c>, then a commit changing only .purlin/evidence/ci/login.json; the proof says every result reads same_code true; the changed code gives same_code false",
             "file": "scripts/export/package.py",
-            "line": 196,
+            "line": 80,
             "result": "caught",
             "why": ""
           },
           "PROOF-68": {
-            "after": "    paths = {line.strip() for line in listed.stdout.splitlines()\n             if line.strip().startswith(RECORDS_DIR)}",
+            "after": "    if not paths:\n        return False",
             "aim": "plain",
-            "before": "    paths = {line.strip() for line in listed.stdout.splitlines()\n             if line.strip()}",
-            "bug_key": "2872d489bfb3e96f4d7dfd78037b1ef7409bded5987dc9c5ec044065425d5438",
-            "case": "tests committed at `<c>`, then a commit changing `README.md`; the proof says `purlin:sign` prints only the `No sign-off: these results were not taken on this version of the code` line; the changed code reads the results as `same_code` true and prints no such refusal",
+            "before": "    if not all(path.startswith(RECORDS_DIR) for path in paths):\n        return False",
+            "bug_key": "72c227dfc97f6a7cc479a35e471a708aabe25bf4b6671ba46a2e46b47d45aec7",
+            "case": "tests committed at <c>, then a commit changing README.md; the proof says purlin:sign prints only the No sign-off line naming login on Linux/Unix; the changed code reads the results as same code and prints no such refusal",
             "file": "scripts/export/package.py",
-            "line": 195,
+            "line": 198,
             "result": "caught",
             "why": ""
           },
@@ -569,80 +588,76 @@
             "after": "    return settings.get('test') if isinstance(settings, dict) else None",
             "aim": "plain",
             "before": "    return settings.get('tests') if isinstance(settings, dict) else None",
-            "bug_key": "574013aab4be6ea2aa2f943818f5b24c990a8932aabcbf31f68d90a03ab0e5dd",
-            "case": "tests committed at `<c>`, then a commit changing the `run` command of the `tests` setting; the proof says one line beginning `No sign-off: these results were not taken on this version of the code` and exit 1; the changed code reads the setting as unchanged and prints no such refusal",
+            "bug_key": "1a31423d20ce71796f095d2cef26a1e6b271466237090dad94e6b8a82d46025c",
+            "case": "tests committed at <c>, then a commit changing the run command of the tests setting; the proof says purlin:sign prints one No sign-off line and exits 1; the changed code reads the setting as unchanged and does not refuse",
             "file": "scripts/export/package.py",
-            "line": 174,
+            "line": 176,
             "result": "caught",
             "why": ""
           },
           "PROOF-78": {
-            "after": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode > 1:",
+            "after": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode not in (0, 1):\n        return False",
             "aim": "plain",
-            "before": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode != 0:",
-            "bug_key": "b76fc71060a99f1f70388f8f59afa666cf0fa34615b2fa4cd521f62d2c6de569",
-            "case": "`login`'s results name a commit on another branch that `HEAD` does not descend from, with the same files; the proof says one line beginning `No sign-off: these results were not taken on this version of the code` and exit 1; the changed code reads the results as `same_code` true and prints no such re",
+            "before": "    if _git(project_root, 'merge-base', '--is-ancestor', older,\n            newer).returncode != 0:\n        return False",
+            "bug_key": "55f422614d5ab9b2c1fb6700f59d4f8696d721b01ad7e33f30becd0f11952f65",
+            "case": "login's results name a commit on another branch HEAD does not descend from, same files; the proof says purlin:sign prints one No sign-off line and exits 1; the changed code reads the results as same code and does not refuse",
             "file": "scripts/export/package.py",
-            "line": 188,
+            "line": 190,
             "result": "caught",
             "why": ""
           },
           "PROOF-79": {
-            "after": "                    'same_code': bool(same.get(section.get('commit') or '')),",
+            "after": "                    'same_code': (bool(same.get(section.get('commit') or ''))\n                                  and not _carried(section, ids)),",
             "aim": "plain",
-            "before": "                    'same_code': (bool(same.get(section.get('commit') or ''))\n                                  and not _kept(section, ids)),",
-            "bug_key": "ad74138d6a02d1348861f97f8531ab874b7943446c8cf24c92d9f66f0117aa2a",
-            "case": "`feat`'s section lists slow `PROOF-2` as `pass` with `kept` naming `<c>`, every other result taken at `HEAD`; the proof says `purlin:sign --show` prints only the `No sign-off` line naming feat on Linux/Unix and exits 1; the changed code reads the kept result as `same_code` true and prints no such re",
+            "before": "                    'same_code': bool(same.get(section.get('commit') or '')),",
+            "bug_key": "129c4c325e59fb6e468c849dcb8beba24ab98aa978821958e89309bc596b2788",
+            "case": "feat's section on HEAD's code lists PROOF-2 as pass with carried naming <c>; the proof says purlin:sign --show exits 0 with no No sign-off line; the changed code gives same_code false for that result and a No sign-off line",
             "file": "scripts/export/package.py",
-            "line": 559,
+            "line": 602,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-67: the test commits a ci section for `login`, asserts the head commit changed only `.purlin/evidence/ci/login.json`, signs, and asserts the package holds three results that all read `same_code` true, which is what the proof names.",
-          "PROOF-68: the test commits `README.md`, runs sign, and compares the exit code and the whole output with the proof's one line, including the short sha and `login on Linux/Unix`, so a different line or an extra line fails it.",
-          "PROOF-77: the test changes the `run` command of the `tests` setting, asserts the commit touched only `.purlin/config.json`, and asserts one output line with the proof's opening words and exit 1; the rest of that line is not compared, as the proof names only its beginning.",
-          "PROOF-78: the test builds a commit on another branch, asserts the trees hold the same files and that `HEAD` does not descend from it, records results at that commit, and asserts one line with the proof's opening words and exit 1.",
-          "PROOF-79: the test writes a `feat` section whose `PROOF-2` carries `kept` at an earlier commit, asserts both rules read `passed`, and compares the exit code and the whole output of `--show` with the proof's line.",
-          "Findings: the spot tests found nothing, and each test here compares the result its proof names, so each bug above is the plainest change that breaks its case."
+          "PROOF-67: the test confirms the last commit changed only `.purlin/evidence/ci/login.json`, signs, and reads `same_code` on every result of the package, requiring three results that are all true, which is what the proof names.",
+          "PROOF-68: the test commits `README.md`, runs the sign-off and compares the exit code and the whole output with the one line the proof names, with the short sha taken from git, and checks that no commit was added.",
+          "PROOF-77: the test changes the `run` command of the `tests` setting, confirms only `.purlin/config.json` changed, and reads one line with the proof's opening words and exit code 1; the rest of the line is not compared, as the proof names only its beginning.",
+          "PROOF-78: the test confirms with git that the other commit holds the same files and is not an ancestor of `HEAD`, records the results at it, and reads one line with the proof's opening words and exit code 1.",
+          "PROOF-79: the test reads exit code 0 and no line beginning `No sign-off` from `purlin:sign --show`, as the proof names; it never reads `same_code` on the carried result itself, so the rule's \"reads true\" is observed only through the absence of a refusal."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-68 states that the tests ran and were committed at `<c>`, and the test shown relies on its fixture for that, so the starting situation is not visible in the test body."
-        ],
-        "proof_hash": "a2659f8154f20c1047baa7d66ed7010ac36bf76942b3ee9b7967a7f5816262e7",
-        "rule_hash": "9aa5f4c10aec6179f0a0babcf799822e2113c458a94210eeded7b76bacaba3b8",
-        "test_hash": "6c1f10c6028baaef0ee939bfbd23c6b914ff101ca06852b86b3071a7566a0098",
+        "proof_hash": "a29c57af98f8195e4887823f304a60fc9ef809d11aac3a924119d453e66d7c37",
+        "rule_hash": "220577c1625852165a05534d000fc8d6013ead0f47171f4cd94341f06d574f6c",
+        "test_hash": "f03dba6b272e3db8e55ff5aab4b4cae6abfcacc5cebe042cb7bb47a872ffb229",
         "verdict": "strong"
       },
       "RULE-34": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-69": {
             "after": "        project = os.path.basename(tree)",
             "aim": "plain",
             "before": "        project = project_module.project_name(tree)",
-            "bug_key": "8e14f2b917c38206558e65b4c5d79abbd88346f10de3d676f104d96e59f85c82",
-            "case": "a project in a folder named `work` whose pyproject.toml reads name = \"labconnect\" under [project] is signed; the proof says project labconnect; the changed code gives work",
+            "bug_key": "860f049e81a20af4b3af5011e608da1bb583a9d6a6b303fa66b764840c1631eb",
+            "case": "a project in a folder named work whose pyproject.toml reads name = \"labconnect\" under [project] is signed; the proof says project labconnect; the changed code gives work",
             "file": "scripts/export/package.py",
-            "line": 358,
+            "line": 360,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-69: the test copies a project into a folder named `work`, writes a `pyproject.toml` with `name = \"labconnect\"` under `[project]`, signs it and compares the signed package's `project` with the literal `labconnect`, which is the case and the value the proof names.",
-          "PROOF-69: the folder name `work` differs from the expected name, so a package that took its name from the folder instead of the project's own files would fail the comparison.",
-          "PROOF-69: the spot tests found nothing, and the test leaves no value of the proof unchecked, so the planted bug is the plainest change, naming the project from its folder."
+          "PROOF-69: the test copies a project into a folder named work, writes a pyproject.toml with name = \"labconnect\" under [project], commits, signs, and compares the signed package's project with the literal labconnect, which is the case and the value the proof names.",
+          "PROOF-69: the folder name work differs from the expected name, so a package that takes its name from the folder instead of the project's own files fails the comparison.",
+          "PROOF-69: the spot tests found nothing, and the test's one assertion can fail and takes its expected value from a literal, not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -653,16 +668,16 @@
         "verdict": "strong"
       },
       "RULE-35": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-70": {
             "after": "    for reader in (_package_json, _version_file, _pyproject, _csproj):",
             "aim": "plain",
             "before": "    for reader in (_version_file, _package_json, _pyproject, _csproj):",
-            "bug_key": "68f0ae24a960793311edb6ff83c238c97df2e5f673645938a09c8c39a9d8541e",
-            "case": "VERSION reads 2.1.0 and package.json reads 9.9.9; the proof says the sign-off writes 2.1.0.json reading version 2.1.0; the changed code reads package.json first and gives 9.9.9.json reading version 9.9.9",
+            "bug_key": "7f2c6019b61e753e4e5ccbdf5833d343088c9ab5e6ad1844b6eb509d0c10646b",
+            "case": "VERSION reads 2.1.0 and package.json reads 9.9.9; the proof says the sign-off writes .purlin/evidence/package/2.1.0.json with version 2.1.0; the changed code reads package.json first and gives 9.9.9.json with version 9.9.9",
             "file": "scripts/export/package.py",
-            "line": 262,
+            "line": 264,
             "result": "caught",
             "why": ""
           },
@@ -670,23 +685,23 @@
             "after": "_PYPROJECT_TABLES = ('tool.poetry',)",
             "aim": "plain",
             "before": "_PYPROJECT_TABLES = ('project', 'tool.poetry')",
-            "bug_key": "39fdedc795db273dcbb5648d5049e8f5049ab6b32b04573977b493b5117e053a",
-            "case": "no VERSION file and no package.json, pyproject.toml reads version = \"3.0.0\" under [project]; the proof says the sign-off writes 3.0.0.json reading version 3.0.0; the changed code reads no version under [project] and gives no version, so no 3.0.0.json",
+            "bug_key": "c372d968d5ab997ac72f330b0f6721a719c4613946c60ac68edd8f140a40118c",
+            "case": "no VERSION file and no package.json, pyproject.toml reads version = \"3.0.0\" under [project]; the proof says the sign-off writes .purlin/evidence/package/3.0.0.json with version 3.0.0; the changed code no longer reads the [project] table, so no version 3.0.0 is found and no 3.0.0.json is written",
             "file": "scripts/export/package.py",
-            "line": 271,
+            "line": 273,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-70: the test writes a `VERSION` file reading `2.1.0` beside a `package.json` reading `9.9.9`, signs, and checks that the sign-off exits 0, that the package file at the path `PACKAGE` names exists, and that the committed package's `version` is `2.1.0`, so it observes both results the proof names.",
-          "PROOF-70: the path the test checks comes from the constant `PACKAGE`, defined outside the test shown, so the test observes `.purlin/evidence/package/2.1.0.json` only if that constant names it.",
-          "PROOF-71: the test writes only a `pyproject.toml` with `version = \"3.0.0\"` under `[project]`, signs, and checks that the sign-off exits 0, that `.purlin/evidence/package/3.0.0.json` exists, and that its `version` is `3.0.0`, so it observes both results the proof names.",
-          "No spot test fired, and that holds: both tests assert literal values from their proofs and neither mocks, swallows an error or takes its expected value from the code.",
-          "The rule names four sources in order, and the two proofs cover `VERSION` before `package.json` and `pyproject.toml` when neither is present; no proof reads `package.json` alone, `package.json` before `pyproject.toml`, or the `*.csproj` file."
+          "PROOF-70: the test writes a VERSION file of 2.1.0 beside a package.json of 9.9.9, signs, and checks that the sign-off exits 0, that a package file exists at the path the test file's PACKAGE constant names, and that the committed package's version reads 2.1.0, so a version taken from package.json fails it.",
+          "PROOF-70: the path checked is a constant defined outside the test shown, so whether it names 2.1.0.json cannot be read from the test's own lines; the version comparison is against the literal 2.1.0.",
+          "PROOF-71: the test writes only a pyproject.toml with version 3.0.0 under [project], signs, and checks that the sign-off exits 0, that .purlin/evidence/package/3.0.0.json exists and that its version reads 3.0.0, which is the case and the result the proof names.",
+          "The spot tests found nothing, and both tests compare literal values taken from the proofs, not from the code.",
+          "No proof of the rule covers package.json coming before pyproject.toml, or the first *.csproj being read last, so those parts of the order have no test here."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -697,28 +712,28 @@
         "verdict": "strong"
       },
       "RULE-36": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-72": {
             "after": "                        'reason': str(entries[0].get('result') or '')})",
             "aim": "plain",
             "before": "                        'reason': str(entries[0].get('reason') or '')})",
-            "bug_key": "0d11de5662714e6d0b20f687abc50ea2d96a66fab3fa0424e8af3670db7fa164",
-            "case": "anchor `screens` PROOF-3, whose one test skipped with `nothing to check: this project has no screens`; the proof says `nothing_to_check` reads `[{\"proof\": \"PROOF-3\", \"reason\": \"this project has no screens\"}]`; the changed code gives `[{\"proof\": \"PROOF-3\", \"reason\": \"nothing to check\"}]`",
+            "bug_key": "4578a8e25b4c24d1bea0b29e8bcfe6d46f919b59fc28a1fce78b70fcdbf412a1",
+            "case": "anchor `screens` PROOF-3, whose one test skips with `nothing to check: this project has no screens`; the proof says `nothing_to_check` reads `[{\"proof\": \"PROOF-3\", \"reason\": \"this project has no screens\"}]`; the changed code gives the reason `nothing to check`",
             "file": "scripts/export/package.py",
-            "line": 524,
+            "line": 529,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-72: the test writes the `screens` anchor, records a Linux section whose PROOF-3 entry reads `nothing to check` with the reason `this project has no screens`, and compares the signed package's one result for `os`, `result` and the whole `nothing_to_check` list against `linux`, `passed` and the proof's exact entry, so a wrong proof id, a wrong reason or a missing entry fails it.",
-          "PROOF-72: the tied test in the fixture is `assert True` and the skip is never run; the section is written by a helper with the reason already stripped of its `nothing to check:` prefix, so the test observes how the package carries a recorded entry and not how a skip reason becomes that entry.",
-          "PROOF-72: the spot tests found nothing, which holds: the test asserts on values the proof names (`passed`, `PROOF-3`, `this project has no screens`), takes its expected values from literals, and mocks nothing it checks.",
-          "PROOF-72: the test compares the result exactly for the proof's one case, so the bug is the plainest change, the reason taken from the entry's result word."
+          "PROOF-72: the test builds the signed package and compares the one result's operating system, result word and `nothing_to_check` list with `linux`, `passed` and the exact proof and reason the proof names, so a wrong proof id, a wrong reason or a missing entry fails it.",
+          "PROOF-72: the evidence section is written by a helper with the proof's result already `nothing to check` and the rule's word already `passed`, and the marked test in the project is `assert True` and skips nothing, so the test observes how the package carries a recorded skip and not how a skip with that reason comes to be recorded.",
+          "PROOF-72: the word `passed` is supplied by the section the test writes, so the test does not show that the package itself reads a rule as `passed` when its only proof found nothing to check.",
+          "The spot tests found nothing, and that holds: the test asserts on literals taken from the proof, mocks nothing it checks and swallows no error."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -729,16 +744,16 @@
         "verdict": "strong"
       },
       "RULE-37": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-74": {
             "after": "        written = history[0] if history else None",
             "aim": "plain",
             "before": "        written = history[-1] if history else None",
-            "bug_key": "229ac8bf2e405783adb46540d2f563eb8e790f9a67009d88b6e9adce16345a33",
-            "case": "Quinn commits PROOF-1 of login, then Pat rewords it; the proof says written_by is Quinn's address with Quinn's commit; the changed code gives written_by Pat's address with Pat's commit",
+            "bug_key": "6d8be1ca962e9d2752cea8bd84d3e5c9db0611da1c0b1caa06ad1c7b8d63c428",
+            "case": "Quinn commits PROOF-1 of login and Pat rewords it; the proof says written_by is Quinn's address with Quinn's commit; the changed code gives written_by Pat's address with Pat's commit",
             "file": "scripts/export/package.py",
-            "line": 806,
+            "line": 890,
             "result": "caught",
             "why": ""
           },
@@ -746,34 +761,34 @@
             "after": "                'changed_commit': found[0][:7] if found else None}",
             "aim": "plain",
             "before": "                'changed_commit': found[0] if found else None}",
-            "bug_key": "9305412e90d5ccf3b07d63a5c9b0535397493d6eaa0ec01b02f22dff6ada71bb",
-            "case": "Dana last changed test_valid_credentials_return_200 in tests/test_login.py; the proof says changed_by Dana with the full sha of Dana's commit; the changed code gives the first 7 characters of that sha",
+            "bug_key": "a18aa72098419eb488fa2e760e79d3f25d779196f246f6701881ae5f208ab362",
+            "case": "Dana last changed test_valid_credentials_return_200 in tests/test_login.py; the proof says changed_commit is the full sha of Dana's commit; the changed code gives the first 7 characters of that sha",
             "file": "scripts/export/package.py",
-            "line": 822,
+            "line": 909,
             "result": "caught",
             "why": ""
           },
           "PROOF-76": {
-            "after": "                'commit': found[0][:7] if found else None}",
+            "after": "        return {'written_by': found[1] if found else None,\n                'commit': found[0][:7] if found else None}",
             "aim": "plain",
-            "before": "                'commit': found[0] if found else None}",
-            "bug_key": "c43072358a74273dc638b4514a9d9ca92be31029d10ef91f3c658007fd6adcb5",
-            "case": "Pat commits RULE-4 of login, then Dana's commit renumbers it to RULE-6; the proof says authors.rule reads written_by Pat and the full sha of Pat's commit; the changed code gives the first 7 characters of that sha",
+            "before": "        return {'written_by': found[1] if found else None,\n                'commit': found[0] if found else None}",
+            "bug_key": "5b94a5413b079a88362e993b696cf1d1e424e02fa5ee3376b702310e16c07bda",
+            "case": "Pat commits RULE-4 of login and Dana's commit renumbers it to RULE-6; the proof says authors.rule reads Pat's address and the full sha of Pat's commit; the changed code gives Pat's address and the first 7 characters of that sha",
             "file": "scripts/export/package.py",
-            "line": 790,
+            "line": 880,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-74: the test has Quinn commit the proof and Pat reword it, then compares the proof's id, `written_by`, `written_commit`, `changed_by` and `changed_commit` in the signed package with both addresses and both commit shas, so every value the proof names is checked.",
-          "PROOF-75: the test compares the name, file, `changed_by` and `changed_commit` of the rule's whole list of tests with Dana's address and the head sha, so every value the proof names is checked.",
-          "PROOF-75: Dana's authorship is set by amending the commit that holds the test, so the test may have only one commit in its history, and code that named the first author instead of the last could then still pass.",
-          "PROOF-76: the test has Pat commit the rule as `RULE-4` and Dana renumber it to `RULE-6`, then compares the whole `authors.rule` object of `RULE-6` with Pat's address and Pat's commit sha, so a result naming Dana or a short sha fails.",
-          "The spot tests found nothing, and each test does hold an assertion on the values its proof names in backticks; the `assert True` in the PROOF-76 test is text written into the fixture project's test file, not a check of the test itself."
+          "PROOF-74: the test has Quinn commit PROOF-1 and Pat reword it, then compares the signed package's one proof entry for RULE-1 against the id, Quinn's address and commit, and Pat's address and commit, which are the values the proof names.",
+          "PROOF-75: the test amends the commit that changes the test as Dana, then compares the whole list of test entries for RULE-1 against the name, the file, Dana's address and that commit's sha, which is what the proof names.",
+          "PROOF-76: the test commits RULE-4 as Pat, renumbers it to RULE-6 in a commit by Dana, and compares RULE-6's `authors.rule` as a whole against Pat's address and Pat's commit, so a wrong author or a shortened sha would fail it.",
+          "PROOF-76: the renumbering commit leaves the rule's words in place, so the history search lists only Pat's commit and the test cannot tell the first listed commit from the last.",
+          "The spot tests found nothing, and each test compares the values its proof names against addresses and shas taken from the commits the test itself made."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -783,28 +798,61 @@
         "test_hash": "9d2e3f9c0adec3204e7d8a074549ca02bd971522a4e19aa5e3fbad64ca2eb2d9",
         "verdict": "strong"
       },
+      "RULE-38": {
+        "at": "2026-10-05T14:32:26Z",
+        "bugs": {
+          "PROOF-84": {
+            "after": "_CARRIED_KEYS = ('commit', 'at', 'machine')",
+            "aim": "plain",
+            "before": "_CARRIED_KEYS = ('commit', 'at', 'machine', 'email')",
+            "bug_key": "be760e98f9b47365c5de9cc580c5addb0ef905882ebf43ff154ac3b81b427c84",
+            "case": "feat's section lists PROOF-2 as carried from commit <c>, taken at 2026-09-13T11:00:00Z on pat-laptop by pat.product@labconnect.example; the proof says RULE-2's result reads carried as that one entry naming the commit, at, machine and email; the changed code gives an entry with no email",
+            "file": "scripts/export/package.py",
+            "line": 534,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-84: the test builds the signed package and compares `RULE-2`'s one result's `carried` with the whole expected list, so a missing, extra or altered entry or key fails it.",
+          "PROOF-84: the test checks that the result's `commit` differs from the run's commit and that `same_code` is `True`, as the proof names.",
+          "PROOF-84: the test compares `RULE-1`'s one result's `carried` with `[]`, so the empty case the proof names is checked as well.",
+          "PROOF-84: the expected time and machine are literals; the expected commit comes from the test's setup helper and the email from the constant `PAT`, neither of which is shown, so whether they hold the proof's values cannot be read here.",
+          "PROOF-84: the spot tests found nothing, and the test's comparisons are failable and name the proof's values, so nothing in the shown test contradicts that."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "46d643197cfb4bbb8869c526b47fd4a035d82d3936ca261c8ee7723b95f86e3b",
+        "rule_hash": "2ba81f58520cfb1af70490c2d7b4e1c6ef5610bdfdb01e58b682ea9ea9c45e1f",
+        "test_hash": "48495f3079f1f1876f341e2c7891a890f2cbde3aac934d4766299af262eaa947",
+        "verdict": "strong"
+      },
       "RULE-4": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-5": {
             "after": "        'left': rule.get('left') if proofs else None,",
             "aim": "plain",
             "before": "        'left': rule.get('left'),",
-            "bug_key": "de3b358cd0c19e491442023bd8bddd01eedb98a37a729d46a79a57535a69bb34",
-            "case": "a signed project whose third rule has no proof and one passing test marked with the rule's own id; the proof says the rule's `left` reads `no_proof`; the changed code gives no `left` (null) for that rule",
+            "bug_key": "ea59189d9f91b56c09b8107fde2f44173e5fcdac4af01c3d39a25b93b3e03d7b",
+            "case": "a signed project whose third rule has no proof and one passing test marked with the rule's own id; the proof says that rule's `left` reads `no_proof`; the changed code gives a null `left` for that rule",
             "file": "scripts/export/package.py",
-            "line": 452,
+            "line": 457,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-5: the test signs a project whose third rule has no proof and one passing test marked with the rule's own id, then compares the rule's words with `A locked account returns 423 (URS-042)`, its proofs with an empty list, its results with exactly one `passed`, its `left` with `no_proof`, and the package's first line left with kind `no_proof`, count 1, `1 rule to write a proof for` and `purlin:spec`, so every value the proof names is observed.",
-          "PROOF-5: the spot tests found nothing, which holds: the test asserts five literal values from the proof, none taken from the code under test, and the `assert True` it holds belongs to the made project's own test file, not to this test's checks.",
-          "PROOF-5: the test leaves no way past it for the proof's case, so the planted change is the plain one, on the rule's `left`, which the test compares directly."
+          "PROOF-5: the test builds and signs a project with a third rule that has no proof and one passing test marked with the rule's own id, then compares the rule's words with the literal `A locked account returns 423 (URS-042)`, its proofs with an empty list, its results with exactly one `passed`, and its `left` with `no_proof`.",
+          "PROOF-5: the test compares the package's first `left` line with one built from the literals `no_proof`, 1, `1 rule to write a proof for` and `purlin:spec`, so every value the proof names is checked against a value the package code cannot influence.",
+          "PROOF-5: the spot tests found nothing, and the test leaves no named value of the proof's case unchecked, so the planted change is the plainest one that breaks the case."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -815,42 +863,40 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-63": {
             "after": "        'met': not left,",
             "aim": "plain",
             "before": "        'met': not any(item.get('kind') in summary_module.BLOCKING\n                       for item in left),",
-            "bug_key": "a0d9baec82d919914e503c613b1a69d12e29d5c7cd89c102cfc356a9d2c983ea",
-            "case": "both rules pass and RULE-2 is audited weak with one finding; the proof says `met` reads `true` with `left` exactly `1 rule to strengthen`; the changed code gives `met` false",
+            "bug_key": "9702c046b284f3df3c49cec1ef5b7da452bdaad68b78f97ee94b578f5f4f9c16",
+            "case": "both rules pass and RULE-2 is audited weak, so `left` holds only `1 rule to strengthen`; the proof says `met` `true`; the changed code gives `met` `false`",
             "file": "scripts/export/package.py",
-            "line": 371,
+            "line": 373,
             "result": "caught",
             "why": ""
           },
           "PROOF-8": {
-            "after": "        'steps': {'passed': steps.get('pass') or 0},",
+            "after": "        'steps': {'passed': steps.get('failed') or 0},",
             "aim": "plain",
             "before": "        'steps': {'passed': steps.get('passed') or 0},",
-            "bug_key": "55aaa7a8ea020848fde2fba1aceb4edd5c362e0953d162b73cc2fdb3b3f16adb",
-            "case": "a project whose two rules pass is signed; the proof says `steps` reads `{\"passed\": 2}`; the changed code gives `{\"passed\": 0}`",
+            "bug_key": "04decbfc10531dc8396e6d0e333a8ecd9e14ed47bba05fc2489516de64ab2df1",
+            "case": "a signed project whose two rules pass; the proof says `steps` `{\"passed\": 2}`; the changed code gives `{\"passed\": 0}`",
             "file": "scripts/export/package.py",
-            "line": 374,
+            "line": 376,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-8: the test compares `met`, `rules`, `steps` and `left` of the signed package with `True`, `2`, `{'passed': 2}` and `[]`, which are the four values the proof names, so a change to any of them fails it.",
-          "PROOF-8: the package comes from a `signed` fixture defined outside the test shown, so that the project holds two rules that pass is taken from the fixture and not seen here.",
-          "PROOF-63: the test makes a project with `RULE-1` strong and `RULE-2` weak, signs it, and compares `met` with `True` and `left` with a single line of kind `to_strengthen`, count 1, `1 rule to strengthen` and `purlin:build`, which is what the proof names.",
-          "PROOF-63: the expected line is built by a `line` helper defined outside the test shown, so the shape of the line is that helper's and the words and command are literals in the test.",
-          "PROOF-63: the proof says the weak rule has one finding and that the package is the one the sign-off commits; the test leaves both to `made_project` and `signed_package`, which are not shown.",
-          "Neither proof names a case where a line of `left` stops the tests being met, so the rule is shown here only in the direction where `met` reads true.",
-          "Findings: the spot tests found nothing, and both tests hold assertions on literal values that can fail."
+          "PROOF-8: the test reads `met`, `rules`, `steps` and `left` from the signed package and compares all four with the literals `True`, `2`, `{'passed': 2}` and `[]`, which are the values the proof names.",
+          "PROOF-8: the package comes from the `signed` fixture, which is not shown, so whether it holds a project whose two rules pass cannot be read from the test itself.",
+          "PROOF-63: the test makes a project with `RULE-1` strong and `RULE-2` weak, then compares `met` with `True` and `left` with a one-line list holding `1 rule to strengthen` and `purlin:build`, so it checks both results the proof names.",
+          "PROOF-63: the expected line is built by the helper `line` with the kind `to_strengthen`, and the helpers `made_project` and `signed_package` are not shown, so the single finding and the committed package the proof names rest on those helpers.",
+          "Findings: the spot tests found nothing, and both tests hold a failable comparison against literals the proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -861,85 +907,89 @@
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-18": {
-            "after": "            + [{'proof': None, 'file': test.get('file'),",
-            "aim": "plain",
-            "before": "            + [{'proof': rule_id, 'file': test.get('file'),",
-            "bug_key": "8cc8efc463b8a022431e7eedffd1ee7d821a1c11078c797a25966cc9c13b11d8",
-            "case": "RULE-3 with no proof and one passing test marked with its own id; the proof says the test is listed under RULE-3; the changed code lists it under null",
+            "after": "    return ([{'proof': proof.get('id'), 'file': test.get('file'),\n              'name': test.get('file')}",
+            "aim": "past the test",
+            "before": "    return ([{'proof': proof.get('id'), 'file': test.get('file'),\n              'name': test.get('name')}",
+            "bug_key": "78ccef8c9b41fff541e60505a02027e248191b4294d328be5869bc39f00d2a0b",
+            "case": "a signed project where RULE-3 has no proof and RULE-2 has one; the proof says RULE-2 lists its test, test_a_bad_password_is_denied, under PROOF-2; the changed code lists under PROOF-2 a test named tests/test_login.py",
             "file": "scripts/export/package.py",
-            "line": 473,
-            "result": "caught",
+            "line": 475,
+            "result": "survived",
+            "test_key": "3c75afa0e6d63e133bfc103e874171734bddac5d5c56dca8951fa99f8f02b6a7",
             "why": ""
           },
           "PROOF-9": {
-            "after": "        'left': rule.get('left') or '',",
+            "after": "        'text': (rule.get('text') or '').lower(),",
             "aim": "plain",
-            "before": "        'left': rule.get('left'),",
-            "bug_key": "1e239e0d0dff1656d785b42f6a75e030548c5c90f6e3fa808266922e6b76ed8b",
-            "case": "RULE-2 in a signed project's package, with no work left; the proof says `left` is null; the changed code gives an empty string",
+            "before": "        'text': rule.get('text') or '',",
+            "bug_key": "e618a3bd85b17720c6252eac4fdc13802614e55d424f61c2195f038dc7df2ec8",
+            "case": "RULE-2 in a signed project's package; the proof says its words read `Invalid credentials return 401 and the body \"denied\"`; the changed code gives `invalid credentials return 401 and the body \"denied\"`",
             "file": "scripts/export/package.py",
-            "line": 452,
+            "line": 456,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-9: the test reads RULE-2 from a signed package and compares its words, `left`, its whole proof list and its whole test list with literals, so every value the proof names is checked.",
-          "PROOF-9: the proof's \"its words as the spec has them\" is compared with a literal sentence written in the test, not with text read back from the code.",
-          "PROOF-18: the test builds a project with a third rule that has no proof, signs it, and compares RULE-3's empty proof list, its one test entry under `RULE-3`, its one result `passed` and RULE-2's test under `PROOF-2` with literals.",
-          "PROOF-18: the `assert True` in the test is the body of the sample project's own test, written as text into that project, and is not a check of the test under review.",
-          "Findings: none were reported, and each test compares the proof's case and its results exactly, so both planted changes are the plain kind."
+          "PROOF-9: the test compares RULE-2's words, its `left`, its whole proof list and its whole test list with literals, so every value the proof names is checked.",
+          "PROOF-18: the test compares RULE-3's empty proofs, its one test's proof, file and name, and its one result `passed` with literals, so the case of a rule with no proof is checked in full.",
+          "PROOF-18: for RULE-2 the test reads only the proof id of each test, so a wrong file or name on the test listed under PROOF-2 still passes.",
+          "PROOF-18: the `assert True` in the test is the body of a fixture test written into the made project, not a check of the package, and the spot tests found nothing."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-18: the test still passes when scripts/export/package.py:475 reads \"'name': test.get('file')}\"",
+          "PROOF-18: the AI says this breaks: a signed project where RULE-3 has no proof and RULE-2 has one; the proof says RULE-2 lists its test, test_a_bad_password_is_denied, under PROOF-2; the changed code lists under PROOF-2 a test named tests/test_login.py"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "c4cf99930284aab2b923e2c961dae6b46b212a97f8531eadf9b797fa028a5c90",
         "rule_hash": "106366b77466ac75882be1f7fcdef44e3a91fad9949d6022f49a2f4282ba8227",
         "test_hash": "598ce103001bee134d02decab49c45ee225c1c981bd622680744fb3d809baa58",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-8": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-13": {
             "after": "    return text.encode('utf-8')",
             "aim": "plain",
             "before": "    return (text + '\\n').encode('utf-8')",
-            "bug_key": "dab88cf9dd64794069beddf3497a81544ca1fab46754d3cc5e2386ac15914b23",
-            "case": "two clones at one commit each sign 2.1.0; the proof says each committed package ends in `}` and a newline; the changed code writes packages that end in `}` with no newline",
+            "bug_key": "d9bdac4f7ea3d1a7c7df0799f437f84ae0463b00066cd12ec39c2d5c1985aef5",
+            "case": "two clones at one commit each sign 2.1.0; the proof says each committed package ends in `}` and a newline; the changed code gives packages that end in `}` with no newline",
             "file": "scripts/export/package.py",
-            "line": 879,
+            "line": 966,
             "result": "caught",
             "why": ""
           },
           "PROOF-81": {
-            "after": "        payload = payload_module.build_payload(tree, generated_by='sign',\n                                               tag_warnings=True)",
+            "after": "                                               tag_warnings=True)",
             "aim": "plain",
-            "before": "        payload = payload_module.build_payload(tree, generated_by='sign',\n                                               tag_warnings=False)",
-            "bug_key": "b53effcce55684e0241e9f85dd4d56f9d32a0d7c3b7f037005825e1fb270ea6b",
-            "case": "two clones at one commit each sign 2.1.0, the second also holding the hand-written tag signed/9.9.9; the proof says the packages are the same bytes and neither's warnings names signed/9.9.9; the changed code lets the second clone's package carry a tag warning, so the bytes differ and its warnings na",
+            "before": "                                               tag_warnings=False)",
+            "bug_key": "a583e4493a67999e9ce2acb5b72cae2e4c54e163b44b28fc1b77f3e5b934086c",
+            "case": "two clones at one commit each sign 2.1.0, the second holding the hand-made tag signed/9.9.9; the proof says the packages are the same bytes and no warning names signed/9.9.9; the changed code gives a warning naming the tag in the second package, so the bytes differ",
             "file": "scripts/export/package.py",
-            "line": 354,
+            "line": 356,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-13: the test signs in both clones, reads each committed package from git as bytes and compares the two for equality, then checks the first ends in `}` and a newline and holds no carriage return; the equality makes those two checks hold for the second as well.",
-          "PROOF-13: the test never names `2.1.0` or the two signers itself, so whether each clone signs that version by its own signer rests on the helpers `two_clones` and `sign`, which are not shown.",
-          "PROOF-39: the test sets up the clones with autocrlf on, compares the two committed packages for equality and checks the first for a carriage return, which is what the proof names; it runs only on Windows and no bug was asked for it.",
-          "PROOF-81: the test writes the tag `signed/9.9.9` in the second clone with `git tag`, signs in both, compares the committed bytes for equality and looks for `signed/9.9.9` in the `warnings` of each package, so it observes both results the proof names.",
-          "PROOF-81: the warnings check passes on an empty `warnings` list as well, so it shows the tag is absent and not that any other warning is kept.",
-          "The spot tests found nothing, and each test holds failable comparisons on the bytes the proofs name."
+          "PROOF-13: the test signs in both clones, reads each committed package from `HEAD` as bytes, and compares the two for equality, so any difference between the clones fails it.",
+          "PROOF-13: the ending `}` and newline and the missing carriage return are checked on the first package only, which covers the second because the two are already asserted equal.",
+          "PROOF-13: the test never checks that the version signed is `2.1.0` or that each clone has its own signer; both depend on the `two_clones` and `sign` helpers, whose source is not shown.",
+          "PROOF-39: the test sets up the clones with `autocrlf=True`, compares the two committed packages byte for byte, and checks the first for a carriage return, which matches what the proof names.",
+          "PROOF-39: nothing in the test body shown restricts it to Windows, so whether it runs only there depends on a marker or fixture outside these lines.",
+          "PROOF-81: the test writes the tag `signed/9.9.9` in the second clone with `git tag`, checks that the command succeeded, compares the two committed packages byte for byte, and checks that no line of either package's `warnings` holds `signed/9.9.9`, which matches what the proof names.",
+          "The spot tests found nothing, and each test holds assertions that can fail on the values its proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -952,40 +1002,40 @@
         "verdict": "strong"
       },
       "RULE-9": {
-        "at": "2026-10-02T09:39:20Z",
+        "at": "2026-10-05T14:32:26Z",
         "bugs": {
           "PROOF-17": {
-            "after": "                'gives %s' % (computed, stored))",
+            "after": "    if stored is None:",
             "aim": "plain",
-            "before": "                'gives %s' % (stored, computed))",
-            "bug_key": "8d013db2411f6281110662ddfff42e56f30c174acb4ba5ce800720875977ebc2",
-            "case": "a signed package with the first \"passed\" changed to \"failed\", checked with purlin:sign --check; the proof says the first line records the fingerprint as written and then the sha256 of the edited bytes; the changed code prints the two values in the opposite order",
+            "before": "    if stored != computed:",
+            "bug_key": "d870d755eb8e5cc3f60eedcc1a13c8aba3080f89f8ac121c6d190ecb173eded1",
+            "case": "a signed package whose first \"passed\" is changed to \"failed\", checked with purlin:sign --check; the proof says exit 1 and a first line naming the two differing fingerprints; the changed code reports no mismatch, so the check does not exit 1 or print that line",
             "file": "scripts/export/package.py",
-            "line": 908,
+            "line": 993,
             "result": "caught",
             "why": ""
           },
           "PROOF-32": {
-            "after": "    return hashlib.sha256(canonical_bytes(blank).rstrip()).hexdigest()",
+            "after": "    blank['fingerprint'] = None",
             "aim": "plain",
-            "before": "    return hashlib.sha256(canonical_bytes(blank)).hexdigest()",
-            "bug_key": "0fd36471deb7b8b0e6978fcce46d536782b691f05f1bf46a8f2b3fdb2733873b",
-            "case": "a signed package's `fingerprint`; the proof says it equals the sha256 of the file's bytes with that field emptied to `\"\"`; the changed code records the sha256 of those bytes without their trailing newline, a different 64-character value",
+            "before": "    blank['fingerprint'] = ''",
+            "bug_key": "1f819658b8546e239f0833155cbb792a609c24d7cd8bd6b8d2436a4d2e5b2009",
+            "case": "a signed package's `fingerprint` against the sha256 of the file's bytes with that field emptied to `\"\"`; the proof says they are equal; the changed code records the sha256 of the bytes with the field set to `null`, a different value",
             "file": "scripts/export/package.py",
-            "line": 886,
+            "line": 972,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a0d9146f077c679df2a00a5a14f9733fec00846e13db8cbacf1b85bef657c159",
-        "commit": "09731f0dec9e33d0bada1aa1e899c83806049745",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
+        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-32: the test reads the committed package's bytes, checks `fingerprint` against the pattern of 64 lowercase hexadecimal characters, and compares it with the value `fingerprint_by_hand` gives for those bytes, which is the proof's case and its result.",
-          "PROOF-32: `fingerprint_by_hand` is not shown, so the comparison is independent only if that helper takes the sha256 over the bytes itself and does not call the package code.",
-          "PROOF-17: the test changes the first `\"passed\"` to `\"failed\"`, confirms the bytes changed, runs the check, and compares the exit code with 1 and the whole first line with the sentence the proof names, built from the recorded fingerprint and the by-hand sha256 of the edited bytes.",
-          "PROOF-17: the test also asserts the two values differ, so every value the proof names is compared and no change that breaks the case gets past it.",
-          "Findings: the spot tests found nothing, and both tests hold assertions that can fail against values named in their proofs."
+          "PROOF-32: the test reads the committed package's bytes, checks `fingerprint` against the pattern of 64 lowercase hexadecimal characters and compares it with `fingerprint_by_hand` of those bytes, which is the proof's case and both of its results.",
+          "PROOF-32: `fingerprint_by_hand` is not shown, so the test's source alone does not show that the expected value is computed apart from the package code, as the proof's \"taken separately\" requires.",
+          "PROOF-17: the test changes the first `\"passed\"` to `\"failed\"`, confirms the bytes changed, runs the check and compares the exit code with 1 and the whole first line with the proof's sentence, filled with the fingerprint as written and the hand-computed one of the edited bytes.",
+          "PROOF-17: the test also asserts that the two values differ, so every result the proof names is observed, though the \"gives\" value rests on the same helper that is not shown.",
+          "Findings: the spot tests found nothing, and both tests hold assertions that can fail and compare against the values their proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -1000,8 +1050,8 @@
   "feature": "package",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T13:24:28Z",
-      "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
+      "at": "2026-10-05T14:08:28Z",
+      "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
