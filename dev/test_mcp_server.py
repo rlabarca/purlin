@@ -116,6 +116,17 @@ class TestTransport:
         answers = [json.loads(line) for line in lines]
         assert [(a['jsonrpc'], a['id']) for a in answers] == [
             ('2.0', 1), ('2.0', 2), ('2.0', 3)], stdout
+        # A JSON-RPC answer holds `jsonrpc`, `id` and its `result`, and no
+        # other member: each of the three tools answers one text.
+        assert [sorted(a) for a in answers] == [
+            ['id', 'jsonrpc', 'result']] * 3, stdout
+        for answer in answers:
+            content = answer['result']['content']
+            assert [sorted(part) for part in content] == [
+                ['text', 'type']], answer
+            assert content[0]['type'] == 'text', answer
+            assert type(content[0]['text']) is str and content[0]['text'], \
+                answer
 
     # purlin: server PROOF-2
     def test_tools_list_names_the_three_tools_each_taking_an_optional_root(
@@ -334,6 +345,13 @@ class TestTheStatusScript:
         assert printed == purlin_status.sync_status(project.root) + '\n'
         assert printed.startswith('Purlin status:') and 'login' in printed
         assert code == 0, printed
+        # The text the tool answers, asked of the server as a client asks it.
+        responses, _stderr = _rpc(project.root, _call(
+            'sync_status', {'project_root': project.root}))
+        assert len(responses) == 1, responses
+        assert printed == _text(responses[0]) + '\n', (printed, responses)
+        assert printed.splitlines()[0] == 'Purlin status: %s, plugin %s' % (
+            os.path.basename(project.root), _version()), printed
 
     # purlin: server PROOF-174
     def test_an_empty_folder_is_refused_in_one_line(self, tmp_path):
@@ -364,6 +382,17 @@ class TestTheStatusScript:
         assert printed.splitlines()[0] == 'specs/auth/login.md: 2 rules', printed
         assert 'mistake' not in printed, printed
         assert code == 0, printed
+        # The view of 2 rules and 3 proofs is all it prints: no line before
+        # it, and none after its last proof.
+        assert printed == (
+            'specs/auth/login.md: 2 rules\n'
+            '  RULE-1  no test  waiting\n'
+            '    no test: no test for PROOF-1\n'
+            '    PROOF-1  no test\n'
+            '  RULE-2  no test  waiting\n'
+            '    no test: no test for PROOF-2, PROOF-3\n'
+            '    PROOF-2  no test\n'
+            '    PROOF-3  no test\n'), printed
 
     # purlin: server PROOF-178
     def test_a_name_no_spec_has_is_said_so(self, project):
@@ -423,19 +452,33 @@ class TestOneSpecsView:
             self, project):
         _one_of_two_tested(project)
         lines = _view(project)
-        assert _under(lines, '  RULE-2  no test  waiting')[:2] == [
+        # Exactly the two lines under `RULE-2`, and exactly the one under
+        # `RULE-1`: no reason for a cell that needs no work, no line twice.
+        assert _under(lines, '  RULE-2  no test  waiting') == [
             '    no test: no test for PROOF-2',
             '    PROOF-2  no test'], lines
-        assert _under(lines, '  RULE-1  passed  not audited')[0] == (
-            '    PROOF-1  passed  tests/test_login.py::test_proof_1'), lines
+        assert _under(lines, '  RULE-1  passed  not audited') == [
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1'], lines
+        assert lines == [
+            'specs/auth/login.md: 2 rules',
+            '  RULE-1  passed  not audited',
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1',
+            '  RULE-2  no test  waiting',
+            '    no test: no test for PROOF-2',
+            '    PROOF-2  no test'], lines
 
     # purlin: server PROOF-182
     def test_a_strong_rule_shows_no_reason(self, project):
         _one_of_two_tested(project)
         project.audit('RULE-1')
         lines = _view(project)
-        assert _under(lines, '  RULE-1  passed  strong')[0] == (
-            '    PROOF-1  passed  tests/test_login.py::test_proof_1'), lines
+        # The one line under it: no reason, and the test named once.
+        assert _under(lines, '  RULE-1  passed  strong') == [
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1'], lines
+        assert lines[1:4] == [
+            '  RULE-1  passed  strong',
+            '    PROOF-1  passed  tests/test_login.py::test_proof_1',
+            '  RULE-2  no test  waiting'], lines
 
     # purlin: server PROOF-183
     def test_each_rule_ends_on_its_proof_lines(self, project):
@@ -552,6 +595,14 @@ class TestTheDriftScript:
         assert lines[0].startswith('Since your last pull, '), printed
         assert lines[1:] == ['1 rule added: login RULE-3.'], printed
         assert code == 0, printed
+        # The whole line naming the range: how long ago, the commit the
+        # checkout was at, the one it is at now, and the 1 commit between.
+        before, after = _git(project.root, 'rev-parse', 'HEAD~1',
+                             'HEAD').stdout.split()
+        assert re.fullmatch(
+            r'Since your last pull, \d+ seconds? ago \(%s\.\.%s, 1 commit\)\.'
+            % (before[:7], after[:7]), lines[0]), printed
+        assert printed.endswith('.\n1 rule added: login RULE-3.\n'), printed
 
 
 # ---------------------------------------------------------------------------
@@ -614,6 +665,27 @@ class TestAToolThatFails:
         assert texts[0] == 'Error running sync_status: boom', texts
         assert texts[1].startswith('Purlin status: '), texts
         assert 'login' in texts[1], texts
+        # The status table once over: its opening lines, its one row naming
+        # `login`, and the one line it ends on.
+        table = texts[1].splitlines()
+        assert table[:8] == [
+            'Purlin status: %s, plugin %s' % (
+                os.path.basename(project.root), _version()),
+            'Tests: not met',
+            'Sign-off: not signed',
+            '',
+            'Spec   Rules  Proofs         Tests',
+            '\u2500' * 35,
+            'login  2      2 \u00b7 2 no test  0 of 2',
+            '\u2500' * 35], texts
+        assert [line for line in table if line.startswith('login')] == [
+            'login  2      2 \u00b7 2 no test  0 of 2'], texts
+        assert [line for line in table
+                if line.startswith('Purlin status: ')] == table[:1], texts
+        assert texts[1].count('Purlin status: ') == 1, texts
+        assert table[-1] == ('  2 rules to write a test for: purlin:build'), \
+            texts
+        assert len(calls) == 2, calls
 
 
 # ---------------------------------------------------------------------------
@@ -719,6 +791,17 @@ class TestThePluginManifest:
         assert len(lines) == 1, (stdout, stderr)
         assert json.loads(lines[0])['result']['serverInfo']['name'] == \
             'purlin', stdout
+        # As Claude Code starts it: the manifest's own environment and no
+        # `PURLIN_PYTHON`, so the resolver finds the interpreter by name.
+        as_started = dict(os.environ, **entry['env'])
+        as_started.pop('PURLIN_PYTHON', None)
+        stdout, stderr = _child(project.root, json.dumps(_initialize()) + '\n',
+                                command=command, env=as_started)
+        lines = stdout.splitlines()
+        assert len(lines) == 1, (stdout, stderr)
+        answer = json.loads(lines[0])
+        assert (answer['jsonrpc'], answer['id']) == ('2.0', 1), stdout
+        assert answer['result']['serverInfo']['name'] == 'purlin', stdout
 
     # purlin: server PROOF-158
     def test_the_plugin_entry_asks_the_resolver_for_a_soft_exit(self):
