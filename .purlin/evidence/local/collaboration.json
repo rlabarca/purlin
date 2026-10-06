@@ -47,34 +47,28 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T13:24:28Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T15:58:26Z",
+      "commit": "1178ccc431bb5e216bfb9dc5af5591033c7a1b37",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "66606c1b6cba42a4cea5e178f1bd089fe2d3c5a79b431df613bc640f96b08b13",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
-        "tests": "8ea2cc45dd82fd6d06c47d5733f02336f9099b4641338224a7dcaa8e17b19b44"
+        "tests": "6cd5142c2191315f8b762fd32b62a29375f0bd0af1e3a7dbcb89954fbf97b687"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T13:24:28Z",
-            "commit": "b54a34ac44c4867746c444e17353b3a9e910c891",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
-          "result": "pass",
+          "result": "not run",
           "rule": "RULE-1",
           "test": "dev/test_collaboration.py::test_three_people_reach_a_signed_version"
         }
       ],
       "rules": {
-        "RULE-1": "passed"
+        "RULE-1": "not run"
       },
       "runner": "rich-labarca"
     }
