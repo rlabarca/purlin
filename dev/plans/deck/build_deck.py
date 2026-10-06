@@ -174,8 +174,8 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'the last audit are tried again, so it stays fast, and nothing waits on it. The AI has no tools: '
  'it can read and change nothing. In one study a bug aimed past the tests found a real gap 87.7 '
  'percent of the time, against 12.2 percent for a bug written without seeing them (Kiele et al., '
- 'ESEM 2026). The full reasoning, the sources and a trial on a sample project are on the audit '
- 'page of the docs.',
+ 'ESEM 2026). The full reasoning, the sources and a trial on a sample project are on the '
+ 'audit research page of the docs.',
  lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs %s on the version to sign. It reruns what changed and carries the rest forward.' % m('purlin:test --all --commit')),
