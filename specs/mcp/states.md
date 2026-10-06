@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 138
-> Highest-Proof: 326
+> Highest-Rule: 139
+> Highest-Proof: 329
 
 ## Rules
 
@@ -35,7 +35,7 @@
 - RULE-23: A rule's bucket is exactly one of `untested`, `failing`, `partial`, `by_hand` and `passed`: `failing` where its passed cell reads `failed`, `partial` where it reads `partial`, `by_hand` where it reads `checked at sign-off`, `passed` where it reads `passed`, and `untested` where it reads any other word, a rule no proof line names included
 - RULE-119: Each rule is counted once, under the spec that owns it: an anchor's rules count in the anchor's row and in the project summary, and in no feature's row
 - RULE-48: `proofs` counts every proof line the rollup's rules write, once each, and `proofs_without_test` counts those of them that no marker tied to a test declaration names, read from the test files and not from the evidence, so a proof whose marked test has not run yet has a test; `proofs_without_test_ids` names them; a `@manual` proof is left out, because its spec already says no test is written for it
-- RULE-27: The payload carries schema version 17 and the top-level keys `generated_at`, `generated_by`, `project`, `version`, `branch`, `commit`, `dirty`, `summary`, `features`, `left`, `met`, `signoff`, `last_line`, `os_words`, `evidence`, `information` and `warnings`
+- RULE-27: The payload carries schema version 18 and the top-level keys `generated_at`, `generated_by`, `project`, `version`, `branch`, `commit`, `dirty`, `summary`, `features`, `left`, `met`, `signoff`, `last_line`, `os_words`, `evidence`, `information` and `warnings`
 - RULE-81: `summary` carries `steps`, holding `passed` and `by_hand`, `audit` and `sentence`; `left` lists the work left, each entry with `kind`, `count`, `text` and `command`, the kind `to_correct` counting test comments rather than rules and `to_commit` counting features; `met` is true where no entry of `left` is of a blocking kind; `last_line` is the status's last line, or null where it prints none; the status report ends on the same sentence and lines
 - RULE-28: A feature entry carries its spec path, its category, `current`, true when its newest section is current, and `evidence`, which per source is null or the file's path, whether it is committed as it stands and each section's commit, time and whether it is current
 - RULE-120: After a test run, with no other command run, `.purlin/report-data.js` holds `const PURLIN_DATA = `, then the payload of that run's results, then a semicolon, and the text between reads back as that payload
@@ -70,6 +70,7 @@
 - RULE-134: Over 20 such tests, the warning lists the first 20 and then `  and <n> more`
 - RULE-135: The dashboard data the status writes carries that warning as one line, the last of its warnings: `<n> tests still carry a marker from Purlin 0.9.5, which is not read. Run purlin:status to see each.`, opening `1 test still carries` for one
 - RULE-136: The status of a project Purlin 0.9.5 set up, while its upgrade is pending, writes no file: `purlin-report.html` and `.purlin/report-data.js` stay byte for byte as they were, and where the project has neither, neither is written
+- RULE-139: In the payload a test that reads `fail` carries `failure` where a current section keeps a text its report held for it: the text of each case that failed or stopped on an error, a blank line between two, each under a line `<case name>:` where the test has more than one case; a failing test the evidence keeps no text for, and a test that did not fail, carry no `failure`
 
 ## Proof
 
@@ -116,7 +117,7 @@
 - PROOF-30 (RULE-119): A project holds the feature `login` of two rules and the anchor `security` of one rule; the project summary counts 3 rules and 2 features
 - PROOF-238 (RULE-119): The feature `login` of 11 passing rules sits beside the anchor `security` of 8 passing rules; `login`'s row reads `11` under `Rules` and `11 of 11` under `Tests`
 - PROOF-84 (RULE-48): With nothing run, a test file holds a test marked for `PROOF-1` and none marked for `PROOF-2`; the feature's rollup and the project summary each read `proofs_without_test` 1 and `proofs_without_test_ids` exactly `PROOF-2`, `RULE-1`'s passed cell reads `not run` and `RULE-2`'s reads `no test`
-- PROOF-31 (RULE-27): The payload reads `schema_version` 17 and carries exactly the seventeen top-level keys the rule names beside it, with `generated_at` ending in `Z`
+- PROOF-31 (RULE-27): The payload reads `schema_version` 18 and carries exactly the seventeen top-level keys the rule names beside it, with `generated_at` ending in `Z`
 - PROOF-98 (RULE-81): Over two rules whose tests pass on committed evidence, with no `signed/*` tag, `left` is empty, `met` is true and `last_line` reads `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`
 - PROOF-213 (RULE-81): Of 2 rules one passes its test and one has no test. `sync_status` ends on `2 rules. 1 passes its tests.`, `Left to do:`, `1 rule to write a test for: purlin:build`; the dashboard data counts 2 rules, 1 passing, and that one line
 - PROOF-128 (RULE-28): With an uncommitted local section from `linux`, `login` reads `current` true, and `evidence.local` names `.purlin/evidence/local/login.json`, `committed` false, and the one platform `linux` with its commit, its time and `current` true
@@ -189,3 +190,6 @@
 - PROOF-320 (RULE-136): A project holds the settings file Purlin 0.9.5 wrote, with no `tests` key, a `purlin-report.html` reading `<html>the page Purlin 0.9.5 wrote</html>` and a `.purlin/report-data.js` of its own, both ignored by git; the status command prints its three lines, and every file under the project outside `.git` holds the bytes it held before
 - PROOF-321 (RULE-136): For that same project the `sync_status` tool answers its three lines, and every file under the project outside `.git` holds the bytes it held before
 - PROOF-322 (RULE-136): The same project with no `purlin-report.html` and no `.purlin/report-data.js`, both paths ignored by git, has neither after the status command printed its three lines
+- PROOF-327 (RULE-139): `PROOF-1`'s test failed with one case whose text is `AssertionError: sum was wrong`, a blank line and `tests/test_login.py:9: AssertionError`, and `PROOF-2`'s test passed; the payload's `PROOF-1` lists exactly one test, `tests/test_login.py`, `test_proof_1`, `fail`, with `failure` that text exactly, and `PROOF-2`'s one test reads `pass` and holds no `failure`
+- PROOF-328 (RULE-139): The failing test's report held three cases, `test_proof_1[a]` passing, `test_proof_1[b]` failing with `boom` and `test_proof_1[c]` stopped on an error with `fixture broke`; its `failure` reads `test_proof_1[b]:`, `boom`, a blank line, `test_proof_1[c]:`, `fixture broke`
+- PROOF-329 (RULE-139): `PROOF-1`'s test failed and the evidence keeps no `reported` for it; the payload's entry for the test holds exactly `file`, `name` and `result` `fail`

@@ -6,7 +6,7 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 17, written on
+The samples under `dev/fixtures/report/` are payloads at schema 18, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
@@ -1077,13 +1077,13 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 17. '
+        'This data was written for schema 3 and this page reads schema 18. '
         'Run purlin:status to write it again.']
     # On screen, not only in the page: the one notice is drawn.
     assert [notice.is_visible()
             for notice in page.query_selector_all('.notice')] == [True]
     assert page.locator('.notice').inner_text().strip() == (
-        'This data was written for schema 3 and this page reads schema 17. '
+        'This data was written for schema 3 and this page reads schema 18. '
         'Run purlin:status to write it again.')
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -2804,3 +2804,91 @@ def test_a_rule_with_no_proof_names_where_its_tests_were_carried_from(
     assert rows['Carried from'] == 'Mac a1b2c3d', rows
     assert list(rows)[-2:] == ['Last run', 'Carried from'], rows
     page.close()
+
+
+# ---------------------------------------------------------------------------
+# What a failing test's tool reported
+# ---------------------------------------------------------------------------
+
+FAILURE_TEXT = ("AssertionError: expected 'Account locked'\n\n"
+                'def test_locks_after_three_bad_passwords():\n'
+                ">       assert shown == 'Account locked'\n"
+                "E       AssertionError: expected 'Account locked'\n\n"
+                'tests/test_login.py:41: AssertionError')
+
+# Each failure panel on the rule screen: its text, how far it runs past its
+# own box sideways, and the line before it, which names the test.
+FAILURE_PANELS = r"""() => Array.from(
+    document.querySelectorAll('.ptests pre.failure, .tests pre.failure'))
+  .map(node => ({
+    text: node.textContent,
+    over: node.scrollWidth - node.clientWidth,
+    before: node.previousElementSibling.innerText.trim(),
+  }))"""
+
+
+def given_a_failure(payload, text=FAILURE_TEXT):
+    """`login RULE-1`'s first proof's first test failed, with `text` as what
+    its tool reported. The test's `(file, name)`."""
+    test = rule_of(payload, 'login', 'RULE-1')['proofs'][0]['tests'][0]
+    test['result'] = 'fail'
+    if text is None:
+        test.pop('failure', None)
+    else:
+        test['failure'] = text
+    return test['file'], test['name']
+
+
+# purlin: purlin_report PROOF-287
+def test_a_failing_test_shows_what_its_tool_reported(browser, tmp_path):
+    payload = payload_named('regulated')
+    file, name = given_a_failure(payload)
+    page = open_board(browser, tmp_path, payload)
+    open_rule(page, 'login', 'RULE-1')
+    panels = page.evaluate(FAILURE_PANELS)
+    page.close()
+    assert [panel['text'] for panel in panels] == [FAILURE_TEXT], panels
+    assert panels[0]['before'].replace(' ', '') == (
+        '%s::%s' % (file, name)).replace(' ', ''), panels
+
+
+# purlin: purlin_report PROOF-288
+def test_a_failing_test_with_no_text_and_a_passing_one_show_no_panel(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    given_a_failure(payload, text=None)
+    page = open_board(browser, tmp_path / 'none', payload)
+    open_rule(page, 'login', 'RULE-1')
+    assert page.evaluate(FAILURE_PANELS) == []
+    page.close()
+    # A test that passed shows none, whatever its entry holds.
+    payload = payload_named('regulated')
+    test = rule_of(payload, 'login', 'RULE-1')['proofs'][0]['tests'][0]
+    test['result'], test['failure'] = 'pass', FAILURE_TEXT
+    page = open_board(browser, tmp_path / 'passed', payload)
+    open_rule(page, 'login', 'RULE-1')
+    assert page.evaluate(FAILURE_PANELS) == []
+    page.close()
+
+
+# purlin: purlin_report PROOF-289
+def test_a_long_failure_text_never_scrolls_the_page_sideways(browser,
+                                                             tmp_path):
+    long = 'E   ' + 'x' * 400 + '\n' + FAILURE_TEXT
+    for width in (1500, 390):
+        for theme in ('dark', 'light'):
+            payload = payload_named('regulated')
+            given_a_failure(payload, text=long)
+            page = open_in_theme(browser, tmp_path / ('%d-%s' % (width, theme)),
+                                 payload, theme)
+            page.set_viewport_size({'width': width, 'height': 900})
+            open_rule(page, 'login', 'RULE-1')
+            (panel,) = page.evaluate(FAILURE_PANELS)
+            sideways = page.evaluate(
+                'document.documentElement.scrollWidth'
+                ' - document.documentElement.clientWidth')
+            ratios = [item[3] for item in every_text(page)
+                      if item[0].startswith('E   xxx')]
+            page.close()
+            assert panel['over'] <= 0 and sideways <= 0, (width, theme, panel)
+            assert ratios and min(ratios) >= 7, (width, theme, ratios)

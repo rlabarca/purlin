@@ -15,8 +15,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 122
-> Highest-Proof: 338
+> Highest-Rule: 123
+> Highest-Proof: 342
 
 ## Rules
 
@@ -70,6 +70,7 @@
 - RULE-17: `--test` and `--audit` take no result into `.purlin/evidence/ci/`: only `--ci` writes a section there, and all another run changes in that folder is a section it carries forward as RULE-116 says
 - RULE-12: `--ci` covers only the features that have a proof tagged `@env` for this machine's system and writes, for each, this system's section of `.purlin/evidence/ci/<feature>.json`, listing those proofs alone and the rules they prove, on whatever branch it runs, and prints `Evidence written to .purlin/evidence/ci/<feature>.json.`, or `to .purlin/evidence/ci/ for <n> features.` where several ran; it writes nothing under `.purlin/evidence/local/`, and exits 1 when a test tied to one of those proofs failed or could not run and 0 otherwise, whatever else it found, a test tied to no such proof included
 - RULE-75: Only `--audit` audits: a `--ci` run calls no model and writes no `audit`
+- RULE-123: A test run keeps each report file it read as `.purlin/runtime/kept/<sha256><extension>`, the bytes as the suite left them, the sha256 the one each result's `reported.report` names and the extension the report's own, `.json` for a `gotest` report read from the command's standard output; and it removes each kept file whose sha256 no evidence file on disk names
 
 ## Proof
 
@@ -196,3 +197,7 @@
 - PROOF-305 (RULE-113): With no such file, `--all --test` exits 0 and its output holds no `no marker`
 - PROOF-306 (RULE-113): With the twelve files, `--feature feat --test` exits 0 and its output holds no `no marker`
 - PROOF-307 (RULE-113): A pytest suite's command names the folder `tests` and no `{files}`; `tests/test_feat.py` holds the passing test `test_ok` marked for `feat PROOF-1` and `tests/test_plain_01.py` the passing test `test_plain` with no marker. `--all --test` exits 0, the suite's report holds `test_ok` and `test_plain`, and the output holds no `no marker`
+- PROOF-339 (RULE-123): A project's one pytest test passes and `purlin:test feat` runs; `.purlin/runtime/kept/` holds exactly one file, `<sha256>.xml`, whose bytes give that sha256, the sha256 of `.purlin/runtime/reports/pytest.xml` and the one `PROOF-1`'s `reported.report` names
+- PROOF-340 (RULE-123): After a first run whose test passes, the test is changed to fail and `purlin:test feat` runs again; the evidence names another report than the first run's, and `.purlin/runtime/kept/` holds exactly that one file
+- PROOF-341 (RULE-123): `purlin:test --all --commit` passes the slow `PROOF-2`, another commit follows, and a plain `purlin:test feat --commit` leaves the slow test out and carries its result; `PROOF-2`'s entry holds `carried` and the `reported` the first run wrote, `PROOF-1`'s names another report, and `.purlin/runtime/kept/` holds exactly those two reports, each under its sha256 with `.xml`
+- PROOF-342 (RULE-123): A `gotest` suite's command is `cat report.json` and its `report` is `-`; after `purlin:test cart`, `PROOF-1`'s `reported.report` reads `file` `-` and the sha256 of `report.json`'s bytes, and `.purlin/runtime/kept/` holds exactly `<that sha256>.json`

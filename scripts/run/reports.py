@@ -29,12 +29,19 @@ the outer parts when two tests share it. A case that matches more than one
 test is not counted for any of them, and the run says so: Purlin never
 guesses.
 
+Beside its outcome each case carries what the report holds for it: its
+name, how long it took and, where it failed, stopped on an error or was
+skipped, the text the report holds for that. `reported` gives them as the
+evidence keeps them for one test, and `sources` the bytes each case was
+read from, which the run keeps under the file's sha256.
+
 `references/formats/marker_format.md` is the contract.
 """
 
 import json
 import os
 import re
+import hashlib
 import shlex
 import sys
 import xml.etree.ElementTree as ElementTree
@@ -77,13 +84,17 @@ class Case(object):
     `reason` is the text the test tool gave for a skipped case, or None.
     `error` is true for a failed case its tool reports as an error and not
     as a failure: the test stopped, in its setup say, before it could fail.
+    `duration` is how long the case took, in seconds, as the report gives
+    it, or None; `text` is the whole text the report holds for a case that
+    failed or stopped on an error, or None; `source` is the report file the
+    case was read from, as `read_report` names it.
     """
 
     __slots__ = ('file', 'classname', 'name', 'outcome', 'package', 'reason',
-                 'error')
+                 'error', 'duration', 'text', 'source')
 
     def __init__(self, name, outcome, classname='', file=None, package=None,
-                 reason=None, error=False):
+                 reason=None, error=False, duration=None, text=None):
         self.name = name
         self.outcome = outcome
         self.classname = classname or ''
@@ -91,6 +102,9 @@ class Case(object):
         self.package = package
         self.reason = reason
         self.error = bool(error)
+        self.duration = duration
+        self.text = text
+        self.source = None
 
     def __repr__(self):
         return 'Case(%s %s %s %s)' % (self.file or self.classname,
@@ -100,12 +114,14 @@ class Case(object):
 
 class Outcome(str):
     """One case's outcome as `tie` gives it: `pass`, `fail` or `skip`,
-    carrying the case's `reason` and whether it is an `error`."""
+    carrying the case's `reason` and whether it is an `error`, and `case`,
+    the report's own case, where it was made from one."""
 
-    def __new__(cls, outcome, reason=None, error=False):
+    def __new__(cls, outcome, reason=None, error=False, case=None):
         made = str.__new__(cls, outcome)
         made.reason = reason
         made.error = bool(error)
+        made.case = case
         return made
 
 
@@ -113,6 +129,42 @@ def _text_of(text):
     """`text` stripped, or None where nothing is left."""
     text = (text or '').strip()
     return text or None
+
+
+def _seconds(value):
+    """A report's duration as seconds, a number, or None where it gives
+    none that can be read. `0.012` and `1` are seconds as written;
+    `00:00:01.5000000`, as TRX writes a duration, is 1.5."""
+    text = str(value if value is not None else '').strip()
+    if not text:
+        return None
+    try:
+        if ':' in text:
+            seconds = 0.0
+            for part in text.split(':'):
+                seconds = seconds * 60 + float(part)
+        else:
+            seconds = float(text)
+    except ValueError:
+        return None
+    if seconds != seconds or seconds in (float('inf'), float('-inf')) \
+            or seconds < 0:
+        return None
+    return round(seconds, 6)
+
+
+def _whole(*parts):
+    """The texts a report holds for one failure as one text: each part
+    that says something, in order, one that a later part already holds left
+    out, a blank line between two. None where no part says anything."""
+    kept = []
+    parts = [part.strip('\r\n') for part in parts
+             if part and part.strip()]
+    for index, part in enumerate(parts):
+        if any(part.strip() in later for later in parts[index + 1:]):
+            continue
+        kept.append(part.rstrip())
+    return '\n\n'.join(kept) or None
 
 
 # ---------------------------------------------------------------------------
@@ -137,8 +189,14 @@ def read_junit(text):
             elif tag == 'testcase':
                 kinds = {_local(grand.tag): grand for grand in list(child)}
                 reason = None
+                text = None
                 if set(kinds) & {'failure', 'error'}:
                     outcome = FAIL
+                    text = _whole(*[part for grand in list(child)
+                                    if _local(grand.tag) in ('failure',
+                                                             'error')
+                                    for part in (grand.get('message'),
+                                                 grand.text)])
                 elif 'skipped' in kinds:
                     outcome = SKIP
                     skipped = kinds['skipped']
@@ -151,7 +209,9 @@ def read_junit(text):
                                   child.get('file') or suite_file,
                                   reason=reason,
                                   error=('error' in kinds
-                                         and 'failure' not in kinds)))
+                                         and 'failure' not in kinds),
+                                  duration=_seconds(child.get('time')),
+                                  text=text))
     if _local(root.tag) == 'testcase':
         wrapper = ElementTree.Element('testsuite')
         wrapper.append(root)
@@ -177,8 +237,11 @@ def read_trx(text):
             continue
         outcome = str(node.get('outcome') or '').lower()
         reason = None
+        text = None
         if outcome in _TRX_FAIL:
             result = FAIL
+            said = _trx_output(node)
+            text = _whole(said.get('message'), said.get('trace'))
         elif outcome in _TRX_PASS:
             result = PASS
         else:
@@ -190,13 +253,15 @@ def read_trx(text):
             full = re.sub(r'\(.*\)$', '', node.get('testName') or '')
             classname, _, name = full.rpartition('.')
         cases.append(Case(name, result, classname, reason=reason,
-                          error=outcome in _TRX_ERROR))
+                          error=outcome in _TRX_ERROR,
+                          duration=_seconds(node.get('duration')),
+                          text=text))
     return cases
 
 
-def _trx_reason(result):
-    """A skipped TRX result's reason: `Output/ErrorInfo/Message`, else the
-    last line of `Output/StdOut`; None where it holds neither."""
+def _trx_output(result):
+    """What a TRX result's `Output` holds: `stdout`, and its `ErrorInfo`'s
+    `message` and `trace`, each present only where the result holds it."""
     found = {}
     for output in list(result):
         if _local(output.tag) != 'Output':
@@ -208,6 +273,15 @@ def _trx_reason(result):
                 for grand in list(child):
                     if _local(grand.tag) == 'Message':
                         found.setdefault('message', grand.text)
+                    elif _local(grand.tag) == 'StackTrace':
+                        found.setdefault('trace', grand.text)
+    return found
+
+
+def _trx_reason(result):
+    """A skipped TRX result's reason: `Output/ErrorInfo/Message`, else the
+    last line of `Output/StdOut`; None where it holds neither."""
+    found = _trx_output(result)
     message = _text_of(found.get('message'))
     if message:
         return message
@@ -226,6 +300,7 @@ def read_gotest(text):
     """Every test `go test -json` reported passing, failing or skipping."""
     cases = []
     said = {}
+    printed = {}
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith('{'):
@@ -242,6 +317,7 @@ def read_gotest(text):
             output = str(event.get('Output') or '')
             if output.strip() and not _GO_OWN_LINE.match(output):
                 said[key] = output
+                printed.setdefault(key, []).append(output)
             continue
         if action not in (PASS, FAIL, SKIP):
             continue
@@ -250,7 +326,10 @@ def read_gotest(text):
             reason = _text_of(_GO_WHERE.sub('', said[key], count=1))
         cases.append(Case(str(event['Test']), action,
                           package=str(event.get('Package') or ''),
-                          reason=reason))
+                          reason=reason,
+                          duration=_seconds(event.get('Elapsed')),
+                          text=(_whole(''.join(printed.get(key) or ()))
+                                if action == FAIL else None)))
     return cases
 
 
@@ -271,31 +350,71 @@ def read_report(fmt, project_root, report, stdout=''):
     report or it cannot be read, else None.
     """
     reader = READERS[fmt]
-    if report == '-':
-        texts = [stdout or '']
-    else:
-        full = os.path.join(project_root, *report.split('/'))
-        if os.path.isdir(full):
-            texts = []
-            for name in sorted(os.listdir(full)):
-                if name.lower().endswith(_DIRECTORY_EXTENSIONS[fmt]):
-                    texts.append(_read(os.path.join(full, name)))
-            if not texts:
-                return [], 'wrote no report in %s' % report
-        elif os.path.isfile(full):
-            texts = [_read(full)]
-        else:
-            return [], 'wrote no report at %s' % report
+    files, problem = _report_files(fmt, project_root, report)
+    if problem:
+        return [], problem
     cases = []
-    for text in texts:
+    for source, full in files:
+        text = (stdout or '') if full is None else _read(full)
         if text is None:
             return [], 'wrote a report at %s that could not be read' % report
         try:
-            cases.extend(reader(text.lstrip('﻿')))
+            found = reader(text.lstrip('\ufeff'))
         except (ElementTree.ParseError, ValueError) as error:
             return [], 'wrote a report at %s that is not %s: %s' % (
                 report, fmt, error)
+        for case in found:
+            case.source = source
+        cases.extend(found)
     return cases, None
+
+
+def _report_files(fmt, project_root, report):
+    """`([(source, full path)], problem)` for the files one report is read
+    from. `source` is the file's path relative to the project root, `/`
+    separated, and `-` with no full path for the command's standard
+    output."""
+    if report == '-':
+        return [('-', None)], None
+    full = os.path.join(project_root, *report.split('/'))
+    if os.path.isdir(full):
+        files = [('%s/%s' % (report.rstrip('/'), name),
+                  os.path.join(full, name))
+                 for name in sorted(os.listdir(full))
+                 if name.lower().endswith(_DIRECTORY_EXTENSIONS[fmt])]
+        if not files:
+            return [], 'wrote no report in %s' % report
+        return files, None
+    if os.path.isfile(full):
+        return [(report, full)], None
+    return [], 'wrote no report at %s' % report
+
+
+# The extension a kept copy of the command's standard output is given.
+_STDOUT_EXTENSIONS = {'junit': '.xml', 'trx': '.trx', 'gotest': '.json'}
+
+
+def sources(fmt, project_root, report, stdout=''):
+    """`{source: (sha256, bytes, extension)}` for the files `read_report`
+    read one report from, as the suite left them: the bytes of each file,
+    and of the standard output, encoded as UTF-8, for a report of `-`.
+    `extension` is the file's own, the format's for the standard output.
+    A file that cannot be read is left out."""
+    found = {}
+    files, _problem = _report_files(fmt, project_root, report)
+    for source, full in files:
+        if full is None:
+            data = (stdout or '').encode('utf-8')
+            extension = _STDOUT_EXTENSIONS[fmt]
+        else:
+            try:
+                with open(full, 'rb') as handle:
+                    data = handle.read()
+            except (IOError, OSError):
+                continue
+            extension = os.path.splitext(full)[1].lower()
+        found[source] = (hashlib.sha256(data).hexdigest(), data, extension)
+    return found
 
 
 def _read(path):
@@ -557,7 +676,7 @@ def tie(project_root, suite, cases, marked):
         if len(found) == 1:
             path, test = found[0]
             outcomes.setdefault((path, test.line), []).append(
-                Outcome(case.outcome, case.reason, case.error))
+                Outcome(case.outcome, case.reason, case.error, case))
         elif len(found) > 1:
             line = AMBIGUOUS % (case.name, len(found),
                                 ', '.join(sorted({path for path, _t in found})))
@@ -600,6 +719,73 @@ def reason_of(outcomes):
         if reason:
             return reason
     return None
+
+
+# The longest text the evidence keeps for one case, in characters. A
+# longer one keeps its first and its last `TEXT_LIMIT // 2` characters
+# around `TEXT_CUT`, and its case says how many were left out.
+TEXT_LIMIT = 20000
+TEXT_CUT = '\n[... %d characters cut ...]\n'
+
+# What a case reads in the evidence: an error apart from a failure.
+ERROR = 'error'
+
+
+def cut_text(text):
+    """`(text, cut)`: `text` as the evidence keeps it, and how many
+    characters were left out of its middle, 0 for a text within
+    `TEXT_LIMIT`."""
+    text = str(text)
+    if len(text) <= TEXT_LIMIT:
+        return text, 0
+    half = TEXT_LIMIT // 2
+    cut = len(text) - 2 * half
+    return text[:half] + TEXT_CUT % cut + text[-half:], cut
+
+
+def reported(outcomes, hashes=None):
+    """What the report holds for one test, as the evidence keeps it, or
+    None where no case of a report was tied to it.
+
+    `{cases, report}`. `cases` is one entry per case, in the report's
+    order: `name`, the case's name as the report gives it; `class`, the
+    class, module or package the report names for it, where it names one;
+    `outcome`, `pass`, `fail`, `error` or `skip`; `duration`, in seconds,
+    where the report gives one; `text`, the whole text the report holds for
+    a failure, an error or a skip, where it holds one, and `cut`, how many
+    characters `cut_text` left out of it, where it left some out. `report`
+    is `{file, sha256}`, the report file the first case was read from and
+    the sha256 of its bytes, `hashes` being `{source: sha256}`; None where
+    the file's bytes were not read.
+    """
+    cases = []
+    source = None
+    for outcome in outcomes or ():
+        case = getattr(outcome, 'case', None)
+        if case is None:
+            continue
+        if source is None:
+            source = case.source
+        entry = {'name': case.name}
+        where = case.classname or case.package
+        if where:
+            entry['class'] = where
+        entry['outcome'] = (ERROR if case.outcome == FAIL and case.error
+                            else case.outcome)
+        if case.duration is not None:
+            entry['duration'] = case.duration
+        text = case.text if case.outcome == FAIL else (
+            case.reason if case.outcome == SKIP else None)
+        if text:
+            entry['text'], cut = cut_text(text)
+            if cut:
+                entry['cut'] = cut
+        cases.append(entry)
+    if not cases:
+        return None
+    sha = (hashes or {}).get(source)
+    return {'cases': cases,
+            'report': {'file': source, 'sha256': sha} if sha else None}
 
 
 def test_name(path, test, fmt):

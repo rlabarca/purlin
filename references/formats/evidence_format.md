@@ -1,10 +1,10 @@
-> Format-Version: 16
+> Format-Version: 17
 
 # Evidence format
 
 The evidence is what a test run and an audit leave behind for one feature:
-each proof's result on each operating system, the machine the tests ran
-on, the commit and the time, and,
+each proof's result on each operating system, what the suite's report holds
+for each test, the machine the tests ran on, the commit and the time, and,
 once an audit has read the feature, what the audit found for each rule.
 There is one JSON file per feature per source, and a reader parses it to
 decide every rule's cells.
@@ -58,7 +58,13 @@ operating system that ran the feature, one section each.
       "rules": {"RULE-1": "passed", "RULE-2": "not run"},
       "proofs": [
         {"id": "PROOF-1", "rule": "RULE-1", "result": "pass", "env": null,
-         "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password"},
+         "manual": false, "test": "tests/test_login.py::test_rejects_a_wrong_password",
+         "reported": {
+           "cases": [{"name": "test_rejects_a_wrong_password",
+                      "class": "tests.test_login", "outcome": "pass",
+                      "duration": 0.012}],
+           "report": {"file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "<sha256>"}}},
         {"id": "PROOF-2", "rule": "RULE-2", "result": "nothing to check",
          "reason": "this project has no screens", "env": null, "manual": false,
          "test": "tests/test_login.py::test_every_screen_has_a_title"},
@@ -150,6 +156,7 @@ Each `proofs` entry:
 | `manual` | bool | whether the proof is tagged `@manual` |
 | `test` | string | `<file>::<name>` for the test that observed the proof, `""` when nothing did. The name is the test's own, as the marker format spells it |
 | `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
+| `reported` | object | optional: what the suite's report holds for the test, `{cases, report}`. See "What the report held" |
 | `carried` | object | optional: present only on an entry whose result the run that wrote the section's `commit` did not take. It names the run that took the result: `commit`, the full sha, `at`, `machine` and `email`, as that run's section held them. An entry with no `carried` was taken by the run the section names. See "Carried forward" |
 
 A test is tied to its proof by the marker comment above it, as
@@ -187,6 +194,70 @@ A reader takes a proof's result in a section as the worst of its entries:
 run`, else `nothing to check` where one reads so, with its `reason`, else
 `pass`. A proof has passed only when every test tied to it ran and
 passed.
+
+### What the report held
+
+`reported` keeps what the test tool itself reported for one test, beside the
+result Purlin reads from it:
+
+```json
+"reported": {
+  "cases": [
+    {"name": "test_total[uk]", "class": "tests.test_cart", "outcome": "pass",
+     "duration": 0.004},
+    {"name": "test_total[fr]", "class": "tests.test_cart", "outcome": "fail",
+     "duration": 0.011,
+     "text": "AssertionError: assert 4 == 5\n\ndef test_total(country):\n>       assert total(country) == 5\nE       AssertionError: assert 4 == 5\n\ntests/test_cart.py:9: AssertionError"}
+  ],
+  "report": {"file": ".purlin/runtime/reports/pytest.xml", "sha256": "<sha256>"}
+}
+```
+
+| Field | Type | What it holds |
+|---|---|---|
+| `cases` | array | one entry per case of the report tied to the test, in the report's order. A test that is not parametrised has one |
+| `report` | object or null | `{file, sha256}`: the report file the first case was read from, relative to the project root, `-` for the command's standard output, and the sha256 of that file's bytes as the suite left it. Null where the bytes could not be read |
+
+Each `cases` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `name` | string | the case's name as the report gives it: `test_total[uk]`, `cart > adds two prices`, `Total(country: "uk")`, `TestTotal/uk` |
+| `class` | string | optional: the class, module or package the report names for the case. Left out where it names none |
+| `outcome` | string | `pass`, `fail`, `error` or `skip`. `error` is a case its tool reports as an error and not as a failure: the test stopped, in its setup say, before it could fail. Purlin reads both `fail` and `error` as `fail` |
+| `duration` | number | optional: how long the case took, in seconds, as the report gives it. Left out where the report gives none |
+| `text` | string | optional: for `fail` and `error`, the whole text the report holds for it; for `skip`, the reason the tool gave. Left out where the report holds none, and for `pass` |
+| `cut` | int | optional: present only where `text` was longer than 20,000 characters. The text then holds its first 10,000 and its last 10,000 characters around the line `[... <n> characters cut ...]`, and `cut` is `<n>` |
+
+`references/formats/marker_format.md`, "The four report formats", says
+where each format holds a case's duration and its text. What each gives:
+
+| Format | `duration` | `text` for a failure |
+|---|---|---|
+| `junit` | the case's `time`; left out where the writer adds none | each `failure` and `error` child's `message` and text |
+| `trx` | the result's `duration`; left out where it has none | the result's error `Message` and `StackTrace` |
+| `gotest` | the event's `Elapsed`; left out where it has none | what the test printed |
+| `exit` | none | none |
+
+An `exit` suite writes no report, so its entries hold no `reported`. Neither
+does an entry whose test the run left out, one whose proof is tagged `@env`
+for another operating system, one with an empty `test`, or one whose test
+the report holds no case for.
+
+A result carried forward keeps the `reported` it had when it was taken: its
+durations, its texts and the report it names are those of the run its
+`carried` names.
+
+**The report file.** A run keeps each report file it read on the machine
+that ran it, as `.purlin/runtime/kept/<sha256><extension>`, the bytes as the
+suite left them and the extension the report's own. `.purlin/runtime/` is
+ignored by git, so the file is not committed there. A run removes each kept
+file whose sha256 no evidence file on disk names. At the first sign-off of a
+version `purlin:sign` commits, beside the evidence package, each report the
+package lists that the signing machine still keeps
+(`references/formats/package_format.md`, "Outputs"). A report taken on
+another machine, or removed since, is not there to commit, and the evidence
+still names it by its sha256.
 
 ### The audit
 
@@ -387,7 +458,11 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 ## Retention
 
 A file keeps the newest section per operating system and the newest audit
-entry per rule. The history is the file's `git log`. Nothing is pruned.
+entry per rule. The history is the file's `git log`. Within a file, every
+write drops the entries of rules the spec no longer carries. A whole file is
+deleted only where no spec defines its feature: every run deletes such a
+file, under `local/` and `ci/`, and prints `Removed <path>: no spec defines
+<feature>.`
 
 A run that sees the same results over the same fingerprint on the same
 `machine`, with the same `dirty`, as the section already there leaves the
@@ -400,6 +475,12 @@ other section replaces it, with its own `at`, `commit`, `dirty` and `email`.
 carried forward is the result the section on disk already holds, so the file
 stays as it was, with no `carried` in it. A result the run took itself
 replaces an entry the section on disk holds as `carried`.
+
+Of `reported`, each case's `duration` and the `report` are left out of the
+comparison as well: they say when a run happened, not what it saw. A section
+left as it was keeps the durations and the report of the run that wrote it,
+and that report stays kept. The cases' names, outcomes and texts are
+compared, so a test that fails with another text replaces the section.
 
 ## The two commits
 

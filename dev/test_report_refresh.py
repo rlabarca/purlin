@@ -163,7 +163,7 @@ def _write_page(root, text):
 def test_status_replaces_an_older_page_with_the_plugins_own(browser,  # noqa: F811
                                                             tmp_path):
     shipped = build_page()
-    older = shipped.replace('var SCHEMA = 17;', 'var SCHEMA = 11;')
+    older = shipped.replace('var SCHEMA = 18;', 'var SCHEMA = 11;')
     assert older != shipped
     made = Project()
     try:

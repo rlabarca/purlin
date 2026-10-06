@@ -303,3 +303,55 @@ class _Out(object):
 
     def text(self):
         return ''.join(self.lines)
+
+
+# What a pytest suite's report holds for the two tests of `login`.
+REPORT_BYTES = (b'<?xml version="1.0" encoding="utf-8"?>\n<testsuites>'
+                b'<testsuite name="pytest" tests="2">'
+                b'<testcase classname="tests.test_login" '
+                b'name="test_valid_credentials_return_200" time="0.25"/>'
+                b'<testcase classname="tests.test_login" '
+                b'name="test_a_bad_password_is_denied" time="0.5"/>'
+                b'</testsuite></testsuites>\n')
+REPORT_FROM = '.purlin/runtime/reports/pytest.xml'
+
+
+def report_sha(data=REPORT_BYTES):
+    return hashlib.sha256(data).hexdigest()
+
+
+def name_a_report(made, source='local', feature='login', data=REPORT_BYTES,
+                  keep=True):
+    """Give every result of a feature's evidence file what a report held
+    for its test, as a run writes it, naming one report file. The sha256.
+
+    Each entry gains `reported`: one passing case, 0.25 seconds, read from
+    `.purlin/runtime/reports/pytest.xml`. With `keep` the report's bytes
+    are on this machine, under `.purlin/runtime/kept/`, as a run leaves
+    them; without, the evidence names a report this machine does not hold.
+    """
+    sha = report_sha(data)
+    rel = '.purlin/evidence/%s/%s.json' % (source, feature)
+    path = os.path.join(made.root, *rel.split('/'))
+    with open(path, encoding='utf-8') as handle:
+        held = json.load(handle)
+    for section in held['platforms'].values():
+        for entry in section['proofs']:
+            if entry.get('test'):
+                entry['reported'] = reported_for(entry['test'], sha)
+    write(path, json.dumps(held, indent=2, sort_keys=True))
+    if keep:
+        kept = os.path.join(made.root, '.purlin', 'runtime', 'kept',
+                            sha + '.xml')
+        os.makedirs(os.path.dirname(kept), exist_ok=True)
+        with open(kept, 'wb') as handle:
+            handle.write(data)
+    return sha
+
+
+def reported_for(test, sha):
+    """What `name_a_report` writes for one test, `<file>::<name>`."""
+    return {'cases': [{'name': test.split('::')[-1],
+                       'class': 'tests.test_login', 'outcome': 'pass',
+                       'duration': 0.25}],
+            'report': {'file': REPORT_FROM, 'sha256': sha}}

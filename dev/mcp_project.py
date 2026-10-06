@@ -307,3 +307,26 @@ def _rpc(root, *requests, **kwargs):
         stdout, stderr = out.getvalue(), err.getvalue()
     return [json.loads(line) for line in stdout.splitlines()
             if line.strip()], stderr
+
+
+def _report_held(project, text, feature='login', cases=None):
+    """Give each failing result of `feature`'s local section what its
+    report held: one failing case with `text`, or `cases`; then commit."""
+    rel = os.path.join('.purlin', 'evidence', 'local', '%s.json' % feature)
+    path = os.path.join(project.root, rel)
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    for section in data['platforms'].values():
+        for entry in section['proofs']:
+            if entry['result'] != 'fail':
+                continue
+            name = entry['test'].split('::')[-1]
+            entry['reported'] = {
+                'cases': cases or [{'name': name, 'class': 'tests.test_login',
+                                    'outcome': 'fail', 'duration': 0.01,
+                                    'text': text}],
+                'report': {'file': '.purlin/runtime/reports/pytest.xml',
+                           'sha256': 'a' * 64}}
+    _write(path, json.dumps(data, indent=2, sort_keys=True) + '\n')
+    _git(project.root, 'add', '-A')
+    _git(project.root, 'commit', '-q', '-m', 'purlin: evidence reported')

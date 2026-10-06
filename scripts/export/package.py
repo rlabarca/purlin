@@ -14,7 +14,9 @@ every proof is `@manual` has no test, so each of its results reads
 `checked at sign-off`. Above them it carries whether the tests are met, the
 total, the count that pass, what the audit found over the rules that pass
 their tests and have a tested proof, what is left to do, the runs the
-results came from and every hand check. It is written to
+results came from, every hand check and every test report its results name.
+Each result lists its tests with what the suite's report held for each. It is
+written to
 
     .purlin/evidence/package/<version>.json
 
@@ -67,6 +69,7 @@ from purlin import (PURLIN_VERSION,                            # noqa: E402
                     evidence as evidence_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
+                    outputs as outputs_module,
                     payload as payload_module,
                     project as project_module,
                     signatures as signatures_module,
@@ -85,7 +88,7 @@ CONFIG_PATH = '.purlin/config.json'
 # are met is what a reader sees first after the schema.
 TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',
              'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',
-             'features', 'hand_checks', 'warnings', 'fingerprint')
+             'features', 'hand_checks', 'outputs', 'warnings', 'fingerprint')
 
 CELLS = ('passed', 'strong')
 
@@ -384,6 +387,7 @@ def build(project_root, version):
         'runs': runs_of(seen),
         'features': entries,
         'hand_checks': _hand_checks(entries),
+        'outputs': _outputs(entries, version),
         'warnings': warnings,
         'fingerprint': '',
     }
@@ -601,8 +605,63 @@ def _results(rule_id, proofs, sections, same):
                     'out_of_date': sorted(entry['out_of_date']),
                     'same_code': bool(same.get(section.get('commit') or '')),
                     'carried': _carried(section, ids),
-                    'nothing_to_check': _nothing_to_check(section, ids)})
+                    'nothing_to_check': _nothing_to_check(section, ids),
+                    'tests': _result_tests(section, ids)})
     out.sort(key=lambda item: (item['os'], item['source']))
+    return out
+
+
+def _result_tests(section, ids):
+    """`[{proof, test, result, reported}]`: each test the section lists for
+    the rule, in the section's order, with what the suite's report holds
+    for it as the evidence keeps it, None where the evidence keeps none. A
+    proof no test is tied to has no entry."""
+    out = []
+    for entry in (section or {}).get('proofs') or ():
+        if not isinstance(entry, dict) or entry.get('id') not in ids \
+                or not entry.get('test'):
+            continue
+        reported = entry.get('reported')
+        out.append({'proof': entry.get('id'), 'test': entry.get('test'),
+                    'result': entry.get('result'),
+                    'reported': (json.loads(json.dumps(reported))
+                                 if isinstance(reported, dict) else None)})
+    return out
+
+
+def _outputs(entries, version):
+    """`outputs[]`: one entry per report file the package's results name,
+    by file.
+
+    Each is `{kind, file, sha256, from, tests}`: `report`, where the file
+    is committed beside the package when the machine that signs first keeps
+    it, the sha256 of its bytes, the path the run read it from, and how
+    many test results name it. It is read from the evidence alone, so the
+    same commit lists the same outputs on every machine.
+    """
+    found = {}
+    for feature in entries:
+        for rule in feature['rules']:
+            for result in rule['results']:
+                for test in result['tests']:
+                    report = (test.get('reported') or {}).get('report') or {}
+                    sha = str(report.get('sha256') or '')
+                    if not re.match(r'^[0-9a-f]{64}$', sha):
+                        continue
+                    source = str(report.get('file') or '')
+                    known = found.setdefault(sha, {'from': source,
+                                                   'tests': set()})
+                    known['tests'].add((feature['name'], result['os'],
+                                        result['source'], test['proof'],
+                                        test['test']))
+    out = [{'kind': outputs_module.REPORT,
+            'file': outputs_module.output_rel(
+                version, outputs_module.REPORT, sha,
+                outputs_module.extension_of(known['from'])),
+            'sha256': sha, 'from': known['from'],
+            'tests': len(known['tests'])}
+           for sha, known in found.items()]
+    out.sort(key=lambda item: item['file'])
     return out
 
 
@@ -803,6 +862,16 @@ def taken_dirty(package, project_root):
 
 _PROOF_LINE = r'^\s*-\s+%s\s*\('
 
+# What git prints per commit a rule or a proof is read from: the sha, the
+# author's email, then each `Co-Authored-By` trailer's value, whatever the
+# case of its key's letters, the values parted by `\x1f`
+# as well: a text's `splitlines` leaves that character alone.
+_CO_AUTHORS = ('%(trailers:key=Co-authored-by,valueonly,unfold,'
+               'separator=%x1f)')
+_COMMIT_FORMAT = '--format=%H %ae%x1f' + _CO_AUTHORS
+# How many commits one `git log` is asked for the trailers of.
+_TRAILER_BATCH = 500
+
 
 class _Authors(object):
     """`authors` for each rule, read from git in the checkout."""
@@ -813,6 +882,8 @@ class _Authors(object):
         self._tests = None
         self._logs = {}
         self._reader = None
+        self._changes = {}
+        self._co_authors = {}
 
     def prefetch(self, features):
         """Ask git every question `of` will ask for these features, several
@@ -835,6 +906,15 @@ class _Authors(object):
                     lambda args: _git_out(self.tree, *args), asked)):
                 self._logs[args] = listed
         self._reader = wording_module.reader(self.tree, files)
+        # One more question, for every test at once: the co-authors of the
+        # commits the blames named.
+        changed = {found[0] for feature in features
+                   for rule in feature.get('rules') or ()
+                   if rule.get('feature') == feature.get('name')
+                   for test in _tests(rule)
+                   for found in [self._change(feature.get('name'), test)]
+                   if found}
+        self._ask_co_authors(sorted(changed))
 
     def _log(self, args):
         if args not in self._logs:
@@ -845,14 +925,14 @@ class _Authors(object):
         """The `git log` that finds who first wrote a rule's words, or None."""
         if not (text and spec):
             return None
-        return ('log', '--reverse', '--format=%H %ae', '-S', text, '--', spec)
+        return ('log', '--reverse', _COMMIT_FORMAT, '-S', text, '--', spec)
 
     def _proof_args(self, spec, proof_id):
         """The `git log` over a proof's own line, or None where it has none."""
         pattern = re.compile(_PROOF_LINE % re.escape(str(proof_id)))
         for index, line in enumerate(self._lines(spec), 1):
             if pattern.match(line):
-                return ('log', '-s', '--format=%H %ae',
+                return ('log', '-s', _COMMIT_FORMAT,
                         '-L%d,%d:%s' % (index, index, spec))
         return None
 
@@ -875,9 +955,10 @@ class _Authors(object):
         args = self._rule_args(spec, text)
         if args:
             listed = self._log(args)
-            found = _pair(listed.splitlines()[0]) if listed else None
+            found = self._commit(listed.splitlines()[0]) if listed else None
         return {'written_by': found[1] if found else None,
-                'commit': found[0] if found else None}
+                'commit': found[0] if found else None,
+                'co_authors': self._named(found)}
 
     def _proof(self, spec, proof_id):
         """Who first wrote the proof's line and who last changed it."""
@@ -885,28 +966,70 @@ class _Authors(object):
         args = self._proof_args(spec, proof_id)
         if args:
             listed = self._log(args)
-            history = [_pair(line) for line in listed.splitlines()
+            history = [self._commit(line) for line in listed.splitlines()
                        if re.match(r'^[0-9a-f]{40,64} ', line)]
         written = history[-1] if history else None
         changed = history[0] if history else None
         return {'id': proof_id,
                 'written_by': written[1] if written else None,
                 'written_commit': written[0] if written else None,
+                'written_co_authors': self._named(written),
                 'changed_by': changed[1] if changed else None,
-                'changed_commit': changed[0] if changed else None}
+                'changed_commit': changed[0] if changed else None,
+                'changed_co_authors': self._named(changed)}
+
+    def _commit(self, line):
+        """`(sha, email)` for one line of `_COMMIT_FORMAT`, its co-authors
+        kept for `_named`."""
+        head, _, trailers = line.partition('\x1f')
+        found = _pair(head)
+        self._co_authors[found[0]] = _values(trailers)
+        return found
+
+    def _named(self, found):
+        """The co-authors of the commit `found` names, `[]` where it names
+        none or there is no commit."""
+        if not found:
+            return []
+        if found[0] not in self._co_authors:
+            self._ask_co_authors([found[0]])
+        return list(self._co_authors.get(found[0]) or ())
+
+    def _ask_co_authors(self, shas):
+        """Read the co-authors of every commit in `shas` git has not given
+        yet, `_TRAILER_BATCH` commits to a process."""
+        wanted = [sha for sha in shas if sha not in self._co_authors]
+        for start in range(0, len(wanted), _TRAILER_BATCH):
+            batch = wanted[start:start + _TRAILER_BATCH]
+            listed = _git_out(self.tree, 'log', '--no-walk=unsorted',
+                              '--format=%H%x1f' + _CO_AUTHORS, *batch)
+            for line in listed.splitlines():
+                sha, _, trailers = line.partition('\x1f')
+                self._co_authors[sha.strip()] = _values(trailers)
+            for sha in batch:
+                self._co_authors.setdefault(sha, [])
 
     def _test(self, feature, test):
         """Who last changed one tied test, as `wording.test_last_change` reads it."""
-        span = self._span(feature, test)
-        if self._reader is None:
-            self._reader = wording_module.reader(self.tree)
-        found = (wording_module.test_last_change(self.tree, test['file'],
-                                                 span[0], span[1],
-                                                 reader=self._reader)
-                 if span else None)
+        found = self._change(feature, test)
         return {'file': test['file'], 'name': test['name'],
                 'changed_by': found[1] if found else None,
-                'changed_commit': found[0] if found else None}
+                'changed_commit': found[0] if found else None,
+                'changed_co_authors': self._named(found)}
+
+    def _change(self, feature, test):
+        """`(sha, email)` of the commit that last changed one tied test, or
+        None, each test read once."""
+        key = (feature, test['file'], test['name'], test['proof'])
+        if key not in self._changes:
+            span = self._span(feature, test)
+            if self._reader is None:
+                self._reader = wording_module.reader(self.tree)
+            self._changes[key] = (
+                wording_module.test_last_change(
+                    self.tree, test['file'], span[0], span[1],
+                    reader=self._reader) if span else None)
+        return self._changes[key]
 
     def _span(self, feature, test):
         """`(marker line, last line)` of a tied test, or None where it is not found."""
@@ -935,6 +1058,12 @@ class _Authors(object):
 def _pair(line):
     sha, _, email = line.partition(' ')
     return sha, email.strip() or None
+
+
+def _values(trailers):
+    """Each trailer value of a `\\x1f`-parted line, as git gives it."""
+    return [value.strip() for value in trailers.split('\x1f')
+            if value.strip()]
 
 
 # ---------------------------------------------------------------------------
@@ -1007,6 +1136,31 @@ def check_file(path):
     except (IOError, OSError) as error:
         return 'the file could not be read: %s' % error
     return check_bytes(data)
+
+
+def check_outputs(path):
+    """`(listed, kept, differing)` for the outputs a package file lists,
+    read beside it: how many it lists, how many are there and give the
+    sha256 it records, and `[(file, sha256 its bytes give)]` for each that
+    is there and gives another. `path` is a package that matches its
+    fingerprint; an output is looked for under the package's own folder,
+    wherever that folder is.
+    """
+    with open(path, 'rb') as handle:
+        listed = json.loads(handle.read().decode('utf-8')).get('outputs') or []
+    folder = os.path.dirname(os.path.abspath(path))
+
+    def read(rel):
+        if not rel.startswith(PACKAGE_DIR + '/'):
+            return None
+        try:
+            with open(os.path.join(folder, *rel[len(PACKAGE_DIR) + 1:]
+                                   .split('/')), 'rb') as handle:
+                return handle.read()
+        except (IOError, OSError):
+            return None
+    kept, differing = outputs_module.check(listed, read)
+    return len(listed), kept, differing
 
 
 # ---------------------------------------------------------------------------

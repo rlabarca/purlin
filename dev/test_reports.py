@@ -13,6 +13,7 @@ Each marked test shows one case. Where several cases come from one run, the
 run is made once, in a fixture of this module, and each case reads its part.
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -1125,3 +1126,196 @@ class TestAJavaScriptTitle:
         assert _results(_evidence(root)) == {
             ('PROOF-1', ''): 'missing',
             ('PROOF-2', 'tests/login.test.ts::second'): 'pass'}, out
+
+
+# ---------------------------------------------------------------------------
+# What the report holds for a test, beside its outcome
+# ---------------------------------------------------------------------------
+
+def _go_events(events):
+    return ''.join(json.dumps(dict(event, Package='example.com/app')) + '\n'
+                   for event in events)
+
+
+def _outcome(name, outcome, classname='tests.test_x', text=None, reason=None,
+             duration=None, error=False, source='reports/pytest.xml'):
+    """One case as `tie` hands it on."""
+    case = reports.Case(name, outcome, classname, reason=reason, error=error,
+                        duration=duration, text=text)
+    case.source = source
+    return reports.Outcome(outcome, reason, error, case)
+
+
+class TestTheDuration:
+
+    # purlin: reports PROOF-130
+    def test_a_junit_case_carries_its_time_in_seconds(self):
+        timed, untimed = reports.read_junit(
+            '<testsuite><testcase classname="tests.test_x" name="test_a" '
+            'time="0.25"/><testcase classname="tests.test_x" name="test_b"/>'
+            '</testsuite>')
+        assert (timed.duration, untimed.duration) == (0.25, None)
+
+    # purlin: reports PROOF-131
+    def test_a_trx_result_carries_its_duration_in_seconds(self):
+        document = _trx([('A.T', 'Slow', 'Passed'), ('A.T', 'Bare', 'Passed')])
+        document = document.replace(
+            '<UnitTestResult testId="t0"',
+            '<UnitTestResult duration="00:01:02.5000000" testId="t0"')
+        slow, bare = reports.read_trx(document)
+        assert (slow.duration, bare.duration) == (62.5, None)
+
+    # purlin: reports PROOF-132
+    def test_a_go_event_carries_its_elapsed_seconds(self):
+        timed, untimed = reports.read_gotest(_go_events([
+            {'Action': 'pass', 'Test': 'TestTotal', 'Elapsed': 1.5},
+            {'Action': 'pass', 'Test': 'TestBare'}]))
+        assert (timed.duration, untimed.duration) == (1.5, None)
+
+
+class TestTheFailureText:
+
+    # purlin: reports PROOF-133
+    def test_a_junit_failure_carries_its_message_and_its_text(self):
+        failed, passed, repeated = reports.read_junit(
+            '<testsuite>'
+            '<testcase classname="tests.test_x" name="test_a">'
+            '<failure message="boom">Traceback line\nValueError: detail'
+            '</failure></testcase>'
+            '<testcase classname="tests.test_x" name="test_b"/>'
+            '<testcase classname="tests.test_x" name="test_c">'
+            '<error message="ValueError: detail">Traceback line\n'
+            'ValueError: detail</error></testcase>'
+            '</testsuite>')
+        assert failed.text == 'boom\n\nTraceback line\nValueError: detail'
+        assert passed.text is None
+        # A message the text already holds is not written twice.
+        assert repeated.text == 'Traceback line\nValueError: detail'
+
+    # purlin: reports PROOF-134
+    def test_a_trx_failure_carries_its_message_and_its_stack_trace(self):
+        document = _trx([('A.T', 'Fails', 'Failed'), ('A.T', 'Ok', 'Passed')])
+        document = document.replace(
+            '<UnitTestResult testId="t0" outcome="Failed"/>',
+            '<UnitTestResult testId="t0" outcome="Failed"><Output><ErrorInfo>'
+            '<Message>Assert.Equal() Failure</Message>'
+            '<StackTrace>at App.Tests.GreetingTests.Fails() in Tests.cs:line 9'
+            '</StackTrace></ErrorInfo></Output></UnitTestResult>')
+        failed, passed = reports.read_trx(document)
+        assert failed.text == ('Assert.Equal() Failure\n\nat '
+                               'App.Tests.GreetingTests.Fails() in '
+                               'Tests.cs:line 9')
+        assert passed.text is None
+
+    # purlin: reports PROOF-135
+    def test_a_go_failure_carries_what_the_test_printed(self):
+        failed, passed = reports.read_gotest(_go_events([
+            {'Action': 'output', 'Test': 'TestTotal',
+             'Output': '=== RUN   TestTotal\n'},
+            {'Action': 'output', 'Test': 'TestTotal',
+             'Output': '    cart_test.go:12: got 4, want 5\n'},
+            {'Action': 'output', 'Test': 'TestTotal',
+             'Output': '    cart_test.go:13: the basket held 2 items\n'},
+            {'Action': 'output', 'Test': 'TestTotal',
+             'Output': '--- FAIL: TestTotal (0.00s)\n'},
+            {'Action': 'fail', 'Test': 'TestTotal'},
+            {'Action': 'output', 'Test': 'TestOk',
+             'Output': '    cart_test.go:20: fine\n'},
+            {'Action': 'pass', 'Test': 'TestOk'}]))
+        assert failed.text == ('    cart_test.go:12: got 4, want 5\n'
+                               '    cart_test.go:13: the basket held 2 items')
+        assert passed.text is None
+
+
+class TestWhatIsKeptForATest:
+
+    # purlin: reports PROOF-136
+    def test_each_case_is_kept_with_its_name_outcome_time_and_text(self):
+        sha = 'a' * 64
+        kept = reports.reported([
+            _outcome('test_many[1]', 'pass', duration=0.5),
+            _outcome('test_many[2]', 'fail', duration=0.25,
+                     text='assert 2 == 3'),
+            _outcome('test_many[3]', 'fail', text='fixture broke',
+                     error=True),
+            _outcome('test_many[4]', 'skip', classname='',
+                     reason='not today')],
+            {'reports/pytest.xml': sha})
+        assert kept == {
+            'cases': [
+                {'name': 'test_many[1]', 'class': 'tests.test_x',
+                 'outcome': 'pass', 'duration': 0.5},
+                {'name': 'test_many[2]', 'class': 'tests.test_x',
+                 'outcome': 'fail', 'duration': 0.25,
+                 'text': 'assert 2 == 3'},
+                {'name': 'test_many[3]', 'class': 'tests.test_x',
+                 'outcome': 'error', 'text': 'fixture broke'},
+                {'name': 'test_many[4]', 'outcome': 'skip',
+                 'text': 'not today'}],
+            'report': {'file': 'reports/pytest.xml', 'sha256': sha}}
+        assert reports.reported([]) is None
+
+    # purlin: reports PROOF-137
+    def test_a_text_over_the_limit_is_cut_in_its_middle_and_says_so(self):
+        long = 'a' * 10000 + 'b' * 5000 + 'c' * 10000
+        (case,) = reports.reported(
+            [_outcome('test_a', 'fail', text=long)])['cases']
+        assert case['text'] == ('a' * 10000
+                                + '\n[... 5000 characters cut ...]\n'
+                                + 'c' * 10000)
+        assert case['cut'] == 5000
+        whole = 'a' * 20000
+        (case,) = reports.reported(
+            [_outcome('test_a', 'fail', text=whole)])['cases']
+        assert case['text'] == whole and 'cut' not in case
+
+    # purlin: reports PROOF-138
+    def test_a_run_keeps_what_pytest_reported_for_each_test(self, tmp_path):
+        root = _project(tmp_path, [suites.pytest_suite()])
+        _write(root, 'tests/test_login.py', (
+            'import pytest\n\n'
+            '# purlin: login PROOF-1\n'
+            'def test_ok():\n    assert 1 + 1 == 2\n\n'
+            '# purlin: login PROOF-2\n'
+            'def test_bad():\n    assert 1 + 1 == 3, "sum was wrong"\n\n'
+            '# purlin: login PROOF-3\n'
+            '@pytest.mark.parametrize("n", [1, 2])\n'
+            'def test_many(n):\n'
+            '    if n == 2:\n        pytest.skip("not today")\n'))
+        _run(root, '--all', '--test')
+        kept = {entry['id']: entry['reported']
+                for entry in _evidence(root)['proofs']}
+        report = root / '.purlin' / 'runtime' / 'reports' / 'pytest.xml'
+        named = {'file': '.purlin/runtime/reports/pytest.xml',
+                 'sha256': hashlib.sha256(report.read_bytes()).hexdigest()}
+        assert [kept[proof]['report'] for proof in sorted(kept)] == [named] * 3
+
+        (ok,) = kept['PROOF-1']['cases']
+        assert isinstance(ok.pop('duration'), float)
+        assert ok == {'name': 'test_ok', 'class': 'tests.test_login',
+                      'outcome': 'pass'}
+
+        (bad,) = kept['PROOF-2']['cases']
+        lines = bad.pop('text').splitlines()
+        assert lines[0] == 'AssertionError: sum was wrong'
+        assert '>       assert 1 + 1 == 3, "sum was wrong"' in lines
+        assert lines[-1] == 'tests/test_login.py:9: AssertionError'
+        assert isinstance(bad.pop('duration'), float)
+        assert bad == {'name': 'test_bad', 'class': 'tests.test_login',
+                       'outcome': 'fail'}
+
+        assert [(case['name'], case['outcome'], case.get('text'))
+                for case in kept['PROOF-3']['cases']] == [
+            ('test_many[1]', 'pass', None), ('test_many[2]', 'skip',
+                                             'not today')]
+
+    # purlin: reports PROOF-139
+    def test_a_file_of_an_exit_suite_keeps_nothing_from_a_report(self,
+                                                                 tmp_path):
+        root = _project(tmp_path, [{
+            'name': 'shell', 'run': 'bash {files}', 'report': None,
+            'format': 'exit', 'files': ['tests/*.sh']}], spec=_spec('login', 1))
+        _write(root, 'tests/check.sh', '# purlin: login PROOF-1\nexit 0\n')
+        _run(root, '--all', '--test')
+        (entry,) = _evidence(root)['proofs']
+        assert entry['result'] == 'pass' and 'reported' not in entry

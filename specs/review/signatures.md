@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py, scripts/mcp/purlin/facts.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 142
-> Highest-Proof: 293
+> Highest-Rule: 145
+> Highest-Proof: 299
 
 ## Rules
 
@@ -51,6 +51,9 @@
 - RULE-140: The sign-off records whether the list holding those lines was opened as `audit_list_opened`, and the package holds each such sentence under its rule's audit `no_bug`
 - RULE-141: For results a run carried forward, the walk's opening line reads `Carried forward from earlier runs by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.`, naming who took them, on which machine, and the time and commit of the newest run among them
 - RULE-142: At a hand check's stop, a system's result line ends `; <PROOF-N> carried forward from <sha7>` for the proofs whose result a run carried forward, the proofs of one commit together, joined by `, `
+- RULE-143: The overview ends on one line counting the rules, the proofs and the tests whose last change, as the package's `authors` give it, names a co-author, `  A co-author is named on the last change of <n> rules, <n> proofs and <n> tests.`, a count of one reading `1 rule`, `1 proof` or `1 test` and a test tied to several proofs counted once, and the sign-off file records the three counts as `shown.overview.co_authors`
+- RULE-144: The first sign-off of a version commits, in the same signed commit as the package, each test report the package lists that this machine keeps under `.purlin/runtime/kept/`, at the path the package gives and byte for byte, with a `.gitattributes` beside the reports reading `* -text`; a listed report this machine does not keep is left out and refuses nothing; and a later sign-off adds its own file alone
+- RULE-145: After the co-author line the overview says how many of the test reports the package lists are kept with it, `  Test reports kept with the package: <k> of <n>.`, counted on this machine where the sign-off writes the package and in the commit where the package is committed, followed where the first sign-off finds some missing by ` 1 is not on this machine, so it is not kept.` or ` <m> are not on this machine, so they are not kept.`; where the package lists none the line reads `  No test report is kept: no result names one.`; and the sign-off file records the two counts as `shown.overview.reports`
 
 ## Proof
 
@@ -148,3 +151,9 @@
 - PROOF-289 (RULE-140): With `login RULE-1` settled with its test unchanged, the walk answered `list`, `go on` and `y` signs; the sign-off records `audit_list_opened` true, and in the committed package `login RULE-1` reads `strong` and its `no_bug` is exactly `PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`
 - PROOF-290 (RULE-141): Two rules' results were taken by `pat.product@labconnect.example` on `pat-laptop` at 08:05 UTC on 2026-09-30 at the commit `<c>`, and a later run carried them forward onto the commit being signed; the walk's first line reads `Carried forward from earlier runs by pat.product@labconnect.example on pat-laptop, the newest at 2026-09-30 08:05 UTC on <sha7 of c>: 2 rules on Linux/Unix.`, and its second `Signing <version> at <sha7>.`
 - PROOF-291 (RULE-142): `login RULE-2`, a hand check, has `PROOF-3`, whose result a run on `dana-laptop` carried forward from the commit `<c>`; the first line under `Results` at its stop reads `  Linux/Unix: passed on dana-laptop; PROOF-3 carried forward from <sha7 of c>`
+- PROOF-294 (RULE-143): The commit that last changed `test_valid_credentials_return_200` ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and no other commit of the project names a co-author; the walk, answered yes, prints `  A co-author is named on the last change of 0 rules, 0 proofs and 1 test.` within the four lines after `Signing 2.1.0 at <sha7>.`, and the sign-off file's `shown.overview.co_authors` reads `{"rules": 0, "proofs": 0, "tests": 1}`
+- PROOF-295 (RULE-144): Each result of a project names one report, whose bytes this machine keeps as `.purlin/runtime/kept/<sha256>.xml`, and the walk is answered yes; the signed commit changes exactly four files, the package, the sign-off, `.purlin/evidence/package/2.1.0.outputs/reports/<sha256>.xml` and `.purlin/evidence/package/2.1.0.outputs/.gitattributes`, the committed report's bytes are the kept file's, and the committed `.gitattributes` reads `* -text` and a line end
+- PROOF-296 (RULE-144): Each result names one report and this machine keeps no file for it; the walk, answered yes, exits 0, prints no line beginning `No sign-off`, its signed commit changes exactly the package and the sign-off, its overview's last line reads `  Test reports kept with the package: 0 of 1. 1 is not on this machine, so it is not kept.`, and the sign-off file's `shown.overview.reports` reads `{"named": 1, "kept": 0}`
+- PROOF-299 (RULE-144): After a first sign-off that committed one report, `.purlin/runtime/` is removed and a second signer, `quinn@acme.com`, answers yes; the overview's last line reads `  Test reports kept with the package: 1 of 1.` and the second signed commit changes exactly `.purlin/evidence/package/2.1.0.signoffs/quinn.json`
+- PROOF-297 (RULE-145): Each result names one report this machine keeps, and the walk is answered yes; the overview's last line reads `  Test reports kept with the package: 1 of 1.`, and the sign-off file's `shown.overview.reports` reads `{"named": 1, "kept": 1}`
+- PROOF-298 (RULE-145): Over a project whose evidence holds no `reported`, the walk is answered yes; the overview's last line reads `  No test report is kept: no result names one.`, and the sign-off file's `shown.overview.reports` reads `{"named": 0, "kept": 0}`

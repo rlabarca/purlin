@@ -44,7 +44,9 @@ import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
-from sign_project import SPEC, TEST_FILE, TEST_NAMES, Project, _Out, git, write  # noqa: E402
+from sign_project import (REPORT_BYTES, SPEC, TEST_FILE,  # noqa: E402
+                          TEST_NAMES, Project, _Out, git, name_a_report,
+                          report_sha, write)
 
 
 # ---------------------------------------------------------------------------
@@ -1976,3 +1978,147 @@ class TestTheAgent:
         assert code == 1
         assert len(lines) == 1
         assert lines[0].startswith('The package does not match its fingerprint: ')
+
+
+# ---------------------------------------------------------------------------
+# What git holds of an AI's help
+# ---------------------------------------------------------------------------
+
+CLAUDE = 'Claude Opus 5.5 <noreply@anthropic.com>'
+
+
+class TestTheCoAuthors:
+
+    # purlin: signatures PROOF-294
+    def test_the_overview_counts_the_last_changes_that_name_a_co_author(self):
+        made = Project()
+        try:
+            write(os.path.join(made.root, 'tests', 'test_login.py'),
+                  TEST_FILE.replace('== 200', '== 200  # the token'))
+            git(made.root, 'add', '-A')
+            done = git(made.root, 'commit', '-q', '-m', 'test(login): the token',
+                       '-m', 'Co-Authored-By: %s' % CLAUDE)
+            assert done.returncode == 0, done.stderr
+            write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+            commit_all(made, 'chore: version')
+            passing(made)
+            commit_all(made)
+            key(made.root)
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            at = next(i for i, line in enumerate(lines)
+                      if line.startswith('Signing 2.1.0 at '))
+            assert ('  A co-author is named on the last change of 0 rules, '
+                    '0 proofs and 1 test.') in lines[at + 1:at + 5], lines
+            assert signed_off(made)['shown']['overview']['co_authors'] == {
+                'rules': 0, 'proofs': 0, 'tests': 1}
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# The test reports kept with the package
+# ---------------------------------------------------------------------------
+
+OUTPUTS = '.purlin/evidence/package/%s.outputs' % VERSION
+KEPT = '%s/reports/%s.xml' % (OUTPUTS, report_sha())
+SIGNOFF = '%s/jane.json' % SIGNOFFS
+
+
+def reported(keep=True):
+    """`ready()`, each result naming one report, its bytes on this machine
+    where `keep`."""
+    made = ready(signer=False)
+    name_a_report(made, keep=keep)
+    commit_all(made)
+    key(made.root)
+    return made
+
+
+def overview_of(lines):
+    """The overview: the indented lines after `Signing <version> at <sha7>.`"""
+    at = next(i for i, line in enumerate(lines)
+              if line.startswith('Signing '))
+    end = at + 1
+    while end < len(lines) and lines[end].startswith('  '):
+        end += 1
+    return lines[at + 1:end]
+
+
+class TestTheKeptReports:
+
+    # purlin: signatures PROOF-295
+    def test_the_first_sign_off_commits_the_reports_this_machine_keeps(self):
+        made = reported()
+        try:
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            assert sorted(changed_in_head(made.root)) == sorted([
+                PACKAGE, SIGNOFF, KEPT, OUTPUTS + '/.gitattributes'])
+            held = subprocess.run(['git', 'show', 'HEAD:' + KEPT],
+                                  cwd=made.root, capture_output=True).stdout
+            assert held == REPORT_BYTES
+            attributes = subprocess.run(
+                ['git', 'show', 'HEAD:%s/.gitattributes' % OUTPUTS],
+                cwd=made.root, capture_output=True).stdout
+            assert attributes == b'* -text\n'
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-296
+    def test_a_report_this_machine_does_not_hold_refuses_nothing(self):
+        made = reported(keep=False)
+        try:
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            assert not [line for line in lines
+                        if line.startswith('No sign-off')], lines
+            assert sorted(changed_in_head(made.root)) == sorted([PACKAGE,
+                                                                 SIGNOFF])
+            assert overview_of(lines)[-1] == (
+                '  Test reports kept with the package: 0 of 1. 1 is not on '
+                'this machine, so it is not kept.')
+            assert signed_off(made)['shown']['overview']['reports'] == {
+                'named': 1, 'kept': 0}
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-297
+    def test_the_overview_counts_the_reports_kept(self):
+        made = reported()
+        try:
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            assert overview_of(lines)[-1] == (
+                '  Test reports kept with the package: 1 of 1.')
+            assert signed_off(made)['shown']['overview']['reports'] == {
+                'named': 1, 'kept': 1}
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-298
+    def test_with_no_report_named_the_overview_says_so(self, signed):
+        code, lines, _asked = walked(signed, ['y'])
+        assert code == 0, lines
+        assert overview_of(lines)[-1] == (
+            '  No test report is kept: no result names one.')
+        assert signed_off(signed)['shown']['overview']['reports'] == {
+            'named': 0, 'kept': 0}
+
+    # purlin: signatures PROOF-299
+    def test_a_later_signer_reads_the_reports_the_commit_holds(self):
+        made = reported()
+        try:
+            assert walked(made, ['y'])[0] == 0
+            # The second signer's machine keeps no report of its own.
+            import shutil
+            shutil.rmtree(os.path.join(made.root, '.purlin', 'runtime'))
+            key(made.root, email='quinn@acme.com', name='Quinn', file='quinn')
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            assert overview_of(lines)[-1] == (
+                '  Test reports kept with the package: 1 of 1.')
+            assert changed_in_head(made.root) == [
+                '%s/quinn.json' % SIGNOFFS]
+        finally:
+            made.close()

@@ -179,6 +179,8 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     skipped test's tool gave or None, and `carried` where the result is one
     an earlier run took and this run carried forward: the `commit`, `at`,
     `machine` and `email` of that run, written on the entry as it is given.
+    An entry's `reported`, what the suite's report holds for the test, is
+    written on each result the test gave on this system, as it is given.
     One `proofs` entry is written per
     (id, test) pair, and one with an empty `test` for a proof nothing
     observed. A tied test that neither passed nor failed is `missing`, a
@@ -219,12 +221,13 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
             rules[rule_id] = _rule_marked_word(observed.get(rule_id), seen)
             for entry in seen:
                 status = entry.get('status')
-                listed.append({'id': rule_id, 'rule': rule_id, 'env': None,
-                               'manual': False, 'result': (
-                                   status if status in ('pass', 'fail')
-                                   else 'missing'),
-                               'test': '%s::%s' % (entry.get('test_file', ''),
-                                                   entry.get('test_name', ''))})
+                listed.append(_with_reported({
+                    'id': rule_id, 'rule': rule_id, 'env': None,
+                    'manual': False, 'result': (
+                        status if status in ('pass', 'fail')
+                        else 'missing'),
+                    'test': '%s::%s' % (entry.get('test_file', ''),
+                                        entry.get('test_name', ''))}, entry))
             continue
         rules[rule_id] = rule_word(proof_ids, proofs, observed, host_os)
         for proof_id in proof_ids:
@@ -241,9 +244,9 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                 test = '%s::%s' % (entry.get('test_file', ''),
                                    entry.get('test_name', ''))
                 if nothing is not None:
-                    listed.append(_with_carried(dict(
+                    listed.append(_with_reported(_with_carried(dict(
                         base, result=reader.NOTHING_TO_CHECK,
-                        reason=nothing[index], test=test), entry))
+                        reason=nothing[index], test=test), entry), entry))
                     continue
                 # A test carrying a Mac proof's marker and a Windows proof's
                 # marker runs on the Mac and proves the Mac proof alone.
@@ -252,7 +255,12 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                     status if took
                     else 'not run' if entry.get('held') else unseen),
                     test=test)
-                listed.append(_with_carried(made, entry) if took else made)
+                if took:
+                    made = _with_carried(made, entry)
+                # A test another system's proof is tied to proves nothing
+                # here, and one the run left out gave no result.
+                listed.append(made if foreign or entry.get('held')
+                              else _with_reported(made, entry))
             if not seen:
                 listed.append(dict(base, result=unseen, test=''))
     return {
@@ -277,6 +285,15 @@ def _with_carried(listed, entry):
     if isinstance(carried, dict):
         listed['carried'] = {key: carried.get(key) or ''
                              for key in CARRIED_KEYS}
+    return listed
+
+
+def _with_reported(listed, entry):
+    """`listed` holding `reported` where the run handed the entry what the
+    suite's report holds for its test."""
+    reported = entry.get('reported')
+    if isinstance(reported, dict) and reported.get('cases'):
+        listed['reported'] = json.loads(json.dumps(reported))
     return listed
 
 
@@ -333,6 +350,19 @@ def write_carried(project_root, source, feature, info, os_name, commit):
         data, info.get('rule_order') or ()))
 
 
+def _reported_seen(entry):
+    """`{reported: [...]}` for what `_same_observation` compares of an
+    entry's `reported`: each case without its `duration`; `{}` where the
+    entry holds none."""
+    reported = entry.get('reported')
+    if not isinstance(reported, dict):
+        return {}
+    return {'reported': [
+        {key: value for key, value in case.items() if key != 'duration'}
+        if isinstance(case, dict) else case
+        for case in reported.get('cases') or ()]}
+
+
 def _rule_marked_word(status, seen):
     """The word a rule with no proof reads from the tests marked with its id."""
     if status == 'fail':
@@ -354,7 +384,10 @@ def _same_observation(one, other):
     whose `dirty` differs, replaces the section. A proof entry's `carried`
     is left out, since a result this run carried forward is the result the
     other run took; but a result the new run took itself replaces one the
-    section on disk holds as carried.
+    section on disk holds as carried. Of an entry's `reported`, how long
+    each case took and which report file it was read from are left out as
+    well: they say when the run happened. The cases, their outcomes and
+    their texts are compared.
     """
     def seen(section):
         found = {key: value for key, value in (section or {}).items()
@@ -362,8 +395,9 @@ def _same_observation(one, other):
         found['dirty'] = bool(found.get('dirty'))
         if isinstance(found.get('proofs'), list):
             found['proofs'] = [
-                {key: value for key, value in entry.items()
-                 if key != 'carried'}
+                dict({key: value for key, value in entry.items()
+                      if key not in ('carried', 'reported')},
+                     **_reported_seen(entry))
                 if isinstance(entry, dict) else entry
                 for entry in found['proofs']]
         return found

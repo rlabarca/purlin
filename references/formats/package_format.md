@@ -1,4 +1,4 @@
-> Format-Version: 16
+> Format-Version: 17
 
 # Package format
 
@@ -10,9 +10,11 @@ for a reviewer who cannot open the repository. It holds, in this order:
 - what the audit found, and what is left to do;
 - who ran the tests, where and when;
 - every rule: its words, its proofs and its tests, each result on each
-  operating system, what the audit found, and who wrote and last changed the
-  rule, each proof and each test;
-- every hand check.
+  operating system with what the test tool reported for each test, what the
+  audit found, who wrote and last changed the rule, each proof and each
+  test, and the co-authors git names on those commits;
+- every hand check;
+- every test report its results name.
 
 ```
 .purlin/evidence/package/<version>.json
@@ -29,6 +31,15 @@ The sign-offs sit beside the package, one file per signer:
 ```
 .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
 ```
+
+So do the outputs kept for the version, the test reports its results were
+read from, which the first sign-off commits with the package:
+
+```
+.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>
+```
+
+"Outputs" says which are there.
 
 A sign-off never rewrites the package, so every sign-off of a version carries
 the same `fingerprint`. `signature_format.md` holds the sign-off's fields.
@@ -96,6 +107,11 @@ built at the tag again reads the same commit.
     {"checked": "in the sign-offs", "feature": "accession_screen",
      "proofs": ["PROOF-3"], "rule": "RULE-2"}
   ],
+  "outputs": [
+    {"file": ".purlin/evidence/package/0.1.0.outputs/reports/<sha256>.xml",
+     "from": ".purlin/runtime/reports/pytest.xml", "kind": "report",
+     "sha256": "<sha256>", "tests": 61}
+  ],
   "warnings": [],
   "fingerprint": "<sha256>"
 }
@@ -119,6 +135,7 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `runs` | array | one entry per group of results sharing a source, a system, who took them, a machine and whether they were carried forward. See "Runs" |
 | `features` | array | one entry per spec, ordered by name |
 | `hand_checks` | array | one entry per rule with a `@manual` proof, by feature then rule number. See "Hand checks" |
+| `outputs` | array | one entry per test report the results name, by `file`; `[]` where no result names one. See "Outputs" |
 | `warnings` | array of strings | each warning reading the specs and the evidence raised. A warning about a `signed/*` tag is not among them: a tag is a checkout's own, and one commit gives the same bytes in every clone |
 | `fingerprint` | string | sha256 hex. See "The fingerprint" |
 
@@ -166,7 +183,7 @@ A feature entry holds exactly these five fields.
 | `results` | array | one entry per evidence section that holds a result for the rule, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit last found for the rule, which may be out of date. Null where no audit has read it |
 | `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `passed` reads `checked at sign-off` for a rule whose every proof is `@manual`, until a sign-off that counts has noted it on its wording as it stands, and then `passed`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
-| `authors` | object | who wrote and last changed the rule, its proofs and its tests. See "Authors" |
+| `authors` | object | who wrote and last changed the rule, its proofs and its tests, and the co-authors those commits name. See "Authors" |
 
 Each `results` entry:
 
@@ -184,6 +201,7 @@ Each `results` entry:
 | `same_code` | bool | true when every commit from the result's `commit` to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting of `.purlin/config.json` as it was. A result counts for a sign-off only where it is true |
 | `carried` | array | `{proof, commit, at, machine, email}` per proof of the rule whose result the section's own run did not take, by proof number: the proof, and the full sha, the time, the machine and the email of the run that took it, as `evidence_format.md` gives `carried`. `[]` where the section's own run took every result |
 | `nothing_to_check` | array | `{proof, reason}` per proof whose every tied test skipped with a reason beginning `nothing to check:`, the reason the text after it |
+| `tests` | array | `{proof, test, result, reported}` per test the section lists for the rule, in the section's order: the proof, or the `RULE-N` for a test marked with the rule's own id, the test as `<file>::<name>`, the result the evidence holds for it, `pass`, `fail`, `missing`, `not run` or `nothing to check`, and `reported`, what the suite's report holds for the test, as `evidence_format.md`, "What the report held", gives it: each case's name, outcome, duration and text, and the report file it was read from with its sha256. `reported` is null where the evidence keeps none. A proof no test is tied to has no entry |
 
 `audit`:
 
@@ -210,9 +228,57 @@ null.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `rule` | object | `{written_by, commit}`: the oldest commit whose diff adds the rule's words, whatever id they stood under, so a renumber does not move it |
-| `proofs` | array | `{id, written_by, written_commit, changed_by, changed_commit}` per proof: the commit that first wrote the proof's line, followed through each later edit of it, and the commit that last changed it |
-| `tests` | array | `{file, name, changed_by, changed_commit}` per test in `tests`: the newest commit that changed the lines from the test's comment to its last line, or any line of a file run whole |
+| `rule` | object | `{written_by, commit, co_authors}`: the oldest commit whose diff adds the rule's words, whatever id they stood under, so a renumber does not move it |
+| `proofs` | array | `{id, written_by, written_commit, written_co_authors, changed_by, changed_commit, changed_co_authors}` per proof: the commit that first wrote the proof's line, followed through each later edit of it, and the commit that last changed it |
+| `tests` | array | `{file, name, changed_by, changed_commit, changed_co_authors}` per test in `tests`: the newest commit that changed the lines from the test's comment to its last line, or any line of a file run whole |
+
+**Co-authors.** `co_authors`, `written_co_authors` and `changed_co_authors`
+are arrays of strings: the value of each `Co-Authored-By` trailer of the
+commit named beside it, as `git log --format='%(trailers:key=Co-authored-by,valueonly)'`
+gives it, whatever the case of the key's letters, in the order the commit
+holds them. A commit made with an AI's help usually ends on such a line:
+
+```
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+and its array reads `["Claude Opus 5.5 <noreply@anthropic.com>"]`. A commit
+with no such line, and a commit git cannot give, read `[]`. The package
+records what the commit holds. It does not say which co-author is an AI,
+and a commit an AI helped with that carries no such line reads `[]`.
+
+### Outputs
+
+An output is a file a result was read from. There is one kind, `report`: a
+test suite's report as the suite wrote it. Each `outputs` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `kind` | string | `report` |
+| `file` | string | where the file is committed beside the package, `/` separated: `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the extension that of the report the run read, `.txt` for a report read from the command's standard output |
+| `sha256` | string | the sha256 of the file's bytes, as the evidence records it |
+| `from` | string | the path the run read the report from, relative to the project root, or `-` |
+| `tests` | int | how many test results in the package name this report |
+
+The list is read from the evidence alone: it names every report a result's
+`reported.report` names, whether or not the file is kept. So the same commit
+lists the same outputs on every machine.
+
+**Which are kept.** The first sign-off of a version commits, in the same
+signed commit as the package, each listed report the signing machine still
+keeps under `.purlin/runtime/kept/`, at its `file`, byte for byte, and a
+`.gitattributes` in `<version>.outputs/` reading `* -text`, so git rewrites
+no line end in them. A report is not there to commit where its results were
+taken on another machine, a project's own run on another system say, or
+where the file was removed since. Such a report is left out and the sign-off
+goes on: a sign-off is never refused for a missing report. The package
+still lists it, and each result still names it by its sha256.
+
+A result names no report where its test belongs to an `exit` suite, which
+writes none, or where its `reported` is null.
+
+`purlin:sign --check <file>` says which listed reports are beside the
+package. See "The fingerprint".
 
 ### Hand checks
 
@@ -265,7 +331,8 @@ proof tagged `@slow` that reads `not run`:
 
 ## The canonical form
 
-The same commit always gives the same bytes, with the same version of Purlin:
+The same commit always gives the same bytes, with the same version of Purlin,
+whichever reports the machine keeps:
 
 - The top-level keys in the order above. Every other object's keys sorted.
 - Lists in the order this page gives them.
@@ -295,6 +362,14 @@ exits 1. Its reasons:
 | The content gives another fingerprint | `the package records the fingerprint <recorded> and its content gives <computed>` |
 | The bytes are not the canonical form | `the fingerprint matches the content, but the bytes are not in the canonical form` |
 | The file cannot be opened | `the file could not be read: <the operating system's message>` |
+
+Where the package matches and lists outputs, `--check` then looks for each
+beside it, under the folder the package file is in, and prints `Reports
+beside the package that match their sha256: <k> of <n>.` A report that is
+not there is not counted and fails nothing. One that is there and gives
+another sha256 prints `A report beside the package does not match it: <file>
+gives the sha256 <computed>, and the package records <recorded>.`, and the
+command exits 1.
 
 The fingerprint shows the file was not changed after it was written. It is
 not a signature: each sign-off carries it as `package_hash`, and the sign-off's

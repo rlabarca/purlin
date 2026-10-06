@@ -204,6 +204,7 @@ from purlin import (console as console_module,                # noqa: E402
                     specs as specs_module,
                     status as status_module,
                     wording as wording_module)
+from purlin import outputs as outputs_module                   # noqa: E402
 import evidence as evidence_writer                             # noqa: E402
 import reports as reports_module                               # noqa: E402
 
@@ -654,6 +655,7 @@ class SuiteRun(object):
         self.reasons = {}         # (path, test line) -> [skip reason]
         self.ran_as = {}          # (path, test line) -> the report's name
         self.file_results = {}    # path -> pass | fail, for an exit suite
+        self.hashes = {}          # report file -> the sha256 of its bytes
         self.failures = []
         self.failed_tests = False  # it ran, and at least one test failed
         self.problems = []
@@ -671,7 +673,7 @@ class SuiteRun(object):
 
 
 def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
-              marked=None, action='test', option='', held=()):
+              marked=None, action='test', option='', held=(), keep=False):
     """Run one suite and read what it saw. A `SuiteRun`.
 
     `files` is the test files to hand `{files}`, or empty for a suite
@@ -682,7 +684,9 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     command the run was started by, `test` or `audit`, which a timeout
     names as the one to run again with a longer limit. `option` is the
     tool's own option that leaves the slow tests out, and `held` the files
-    of an `exit` suite that are not run.
+    of an `exit` suite that are not run. With `keep`, each file the report
+    was read from is kept under its sha256, `outputs.keep`, for a sign-off
+    to commit with the package; the sha256 is taken either way.
     """
     done = SuiteRun(suite)
     mark = len(log)
@@ -730,6 +734,11 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
         # tests, which the report itself says.
         done.failures.append(NO_REPORT % (suite.name, problem))
         return done
+    for source, (sha, data, extension) in reports_module.sources(
+            suite.format, project_root, report, stdout).items():
+        done.hashes[source] = sha
+        if keep:
+            outputs_module.keep(project_root, data, extension)
     here = {path: found for path, found in (marked or {}).items()
             if markers_module.suite_of(path, [suite]) is suite}
     done.outcomes, done.problems = reports_module.tie(project_root, suite,
@@ -789,7 +798,9 @@ def marker_results(scan, suites, runs, held=()):
 
     Each entry is `{status, test_file, test_name, line, reason, held}`,
     `status` being `pass`, `fail` or `not run`, and `reason` the text a test
-    that was skipped gave, or None. A test with no result that the report
+    that was skipped gave, or None. A test of a report also carries
+    `reported`, what the report holds for its cases, `reports.reported`'s
+    answer, None where it holds none. A test with no result that the report
     holds under another spelling of its title carries that name as `ran_as`. A test of a report also carries
     `errored`, true where it reads `fail` on an error and no failure. A marker no test follows gets no entry:
     the run reports it by file and line instead. `held` is the `(path, test
@@ -837,6 +848,8 @@ def marker_results(scan, suites, runs, held=()):
                     'line': marker.line, 'reason': reason,
                     'held': left_out,
                     'errored': reports_module.errored(cases),
+                    'reported': reports_module.reported(
+                        cases, done.hashes if done else None),
                     'ran_as': (done.ran_as.get((path, test.line))
                                if done is not None and not cases else None),
                     'title': test.name})
@@ -992,11 +1005,13 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
             where = dict(earlier) if isinstance(earlier, dict) else dict(taken)
             if listed['result'] == evidence_reader.NOTHING_TO_CHECK:
                 out[marker_id].append(dict(
-                    entry, held=False, carried=where, reason='%s %s' % (
+                    entry, held=False, carried=where,
+                    reported=listed.get('reported'), reason='%s %s' % (
                         evidence_reader.NOTHING_TO_CHECK_PREFIX,
                         listed.get('reason') or '')))
             else:
                 out[marker_id].append(dict(entry, held=False, carried=where,
+                                           reported=listed.get('reported'),
                                            status=listed['result']))
     return out
 
@@ -1602,7 +1617,8 @@ def main(argv=None):
               flush=True)
         done = run_suite(project_root, suite, files, log, args.arm_timeout,
                          scan, 'audit' if args.action == 'audit' else 'test',
-                         plan.options.get(suite.name, ''), held_files)
+                         plan.options.get(suite.name, ''), held_files,
+                         keep=True)
         runs.append(done)
         failures.extend(done.failures)
         if done.failures or done.failed_tests:
@@ -1740,6 +1756,7 @@ def main(argv=None):
         # evidence still writes what it saw, which is where a reader finds
         # out what went missing. Only the tests decide the exit code.
         _ci(project_root, args, features, sections, log, os_name, started)
+        outputs_module.prune(project_root)
         print('')
         print(status_module.sync_status(project_root))
         return 1 if tests_failed else 0
@@ -1749,6 +1766,8 @@ def main(argv=None):
     carried, carried_by_os = carry_forward(project_root, features, carry,
                                            work or started)
     removed = _prune(project_root, features)
+    # The reports no evidence file names any longer are not kept.
+    outputs_module.prune(project_root)
     for line in carried_system_lines(carried_by_os, os_name):
         print(line)
     written = paths + [

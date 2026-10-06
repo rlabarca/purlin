@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 17;
+var SCHEMA = 18;
 
 /* The two facts the top bar states, as the payload gives them: whether the
    tests are met on the committed evidence, the payload's `met`, and whether

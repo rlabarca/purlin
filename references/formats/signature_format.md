@@ -1,4 +1,4 @@
-> Format-Version: 16
+> Format-Version: 17
 
 # Signature Format
 
@@ -46,7 +46,9 @@ same version writes over it.
       "systems": [{"os": "linux", "rules": 19, "passing": 18,
                    "hand_checks": 1}],
       "audit": {"strong": 17, "weak": 1, "spot_checked": 0, "out_of_date": 0,
-                "not_audited": 0}
+                "not_audited": 0},
+      "co_authors": {"rules": 2, "proofs": 5, "tests": 14},
+      "reports": {"named": 3, "kept": 2}
     },
     "runs": [{"at": "2026-10-01T12:17:13Z", "by": "dana.dev@labconnect.example",
               "commit": "<40 hex>", "machine": "dana-laptop", "os": "linux",
@@ -78,7 +80,7 @@ Every field is REQUIRED, in this order.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`, `passing` counting the rules that pass their tests, a rule checked by hand alone not among them; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong` |
+| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`, `passing` counting the rules that pass their tests, a rule checked by hand alone not among them; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong`; and `co_authors`, `{rules, proofs, tests}`, how many rules, proofs and tests the package's `authors` give a co-author for on the last change, a test counted once, printed as `  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.`; and `reports`, `{named, kept}`, how many test reports the package lists and how many are committed with it, printed as `  Test reports kept with the package: 2 of 3.` |
 | `runs` | array | the package's `runs`, as the walk's opening lines named them |
 | `hand_checks` | array | every hand check walked, in the order walked: `{feature, rule}` |
 | `audit_list_opened` | bool | whether the signer asked to see the audit's findings |

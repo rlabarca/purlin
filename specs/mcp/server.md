@@ -7,8 +7,8 @@
 >   that does not have the tools.
 > Scope: scripts/mcp/purlin/server.py, scripts/mcp/purlin/project.py, scripts/run/purlin_status.py, scripts/run/purlin_drift.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
-> Highest-Rule: 45
-> Highest-Proof: 188
+> Highest-Rule: 46
+> Highest-Proof: 191
 
 ## Rules
 
@@ -32,6 +32,7 @@
 - RULE-43: Under a rule's line, each reason of a cell whose word is neither `passed`, `strong`, `not audited` nor `waiting` reads `    <the cell's word>: <reason>`, the passed cell's reasons first; a cell reading one of those four shows no reason, since none names work to do
 - RULE-44: After the reasons, each proof of the rule reads `    <PROOF-N>  <the proof's result>  <file>::<test name>`, each further test of the proof on a line of its own, set under the first; a proof with no test reads `    <PROOF-N>  <the proof's result>`; a rule no proof line names lists each test marked with its own id as `    <RULE-N>  <file>::<test name>`
 - RULE-45: Under the lines of a proof whose results a run carried forward, one line per operating system reads `      carried forward from <sha7> on <System>`, the first 7 characters of the commit the results were taken at and the system as `Linux/Unix`, `macOS` or `Windows`; a rule no proof line names gets the line under its own tests, and a proof whose own run took its results gets none
+- RULE-46: Under the lines of a proof one of whose tests failed, and under a failing test marked with a rule's own id, one line per such test reads `      failed with: <text>`, the first line that says something of the text the evidence keeps from its report, a line over 200 characters cut to its first 200 and ended `...`; a failing test the evidence keeps no text for has no such line
 
 ## Proof
 
@@ -79,3 +80,6 @@
 - PROOF-186 (RULE-45): `PROOF-1`'s one result, in this machine's current section, is marked carried from the commit `a1b2c3d4...`; the lines under `  RULE-1  passed  not audited` are `    PROOF-1  passed  tests/test_login.py::test_proof_1` and `      carried forward from a1b2c3d on <System>`, the system as `Linux/Unix`, `macOS` or `Windows`
 - PROOF-187 (RULE-45): `PROOF-1`'s test passed in a current section this machine's own run took; the spec's view holds no line with `carried forward`
 - PROOF-188 (RULE-45): `RULE-1` has no proof, and the one test marked with its id holds a result carried from the commit `a1b2c3d4...`; the view's last two lines are `    RULE-1  tests/test_login.py::test_rule_1` and `      carried forward from a1b2c3d on <System>`
+- PROOF-189 (RULE-46): `PROOF-1`'s test failed, and the evidence keeps for it a text whose first line is `AssertionError: expected 'Account locked'` over three more lines; the one line after `    PROOF-1  failed  tests/test_login.py::test_proof_1` under its rule reads `      failed with: AssertionError: expected 'Account locked'`
+- PROOF-190 (RULE-46): The text the evidence keeps for the failing test is a first line of 250 `x` and a second line `second line`; the view holds the line `      failed with: `, 200 `x` and `...`, and no line holds `second line`
+- PROOF-191 (RULE-46): `PROOF-1`'s test failed and the evidence keeps no text for it; the view holds `    PROOF-1  failed  tests/test_login.py::test_proof_1` and no line holding `failed with`

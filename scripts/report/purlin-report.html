@@ -103,6 +103,8 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .ptests p:last-child{margin-bottom:0}
 .ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
 .ptests .dot,.tests .dot{margin-top:.45em}
+pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere}
+pre.failure:last-child{margin-bottom:0}
 [data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
@@ -503,7 +505,9 @@ function testLines(tests) {
     return '<p><span class="dot" role="img" title="' + esc(word)
       + '" aria-label="' + esc(word) + '" style="color:var(--state-'
       + tone(word) + ')"></span><span class="mono">' + esc(t.file) + ' :: '
-      + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
+      + esc(t.name).split('::').join('::<wbr>') + '</span></p>'
+      + (t.result === 'fail' && t.failure
+        ? '<pre class="code failure">' + esc(t.failure) + '</pre>' : '');
   }).join('');
 }
 function carriedRow(carried) {
@@ -578,7 +582,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 17;
+var SCHEMA = 18;
 var TESTS = 'Tests';
 var SIGNOFF = 'Sign-off';
 var MET = 'met';
