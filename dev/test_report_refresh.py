@@ -145,6 +145,10 @@ def test_status_names_the_branch_and_the_commit_it_ran_on():
         head = _git(made.root, 'rev-parse', 'HEAD')
         assert data['branch'] == 'feature/login'
         assert len(head) == 40 and data['commit'][:7] == head[:7]
+        # The commit itself, whole, as git names it: a string of its 40
+        # characters, with nothing before, between or after them.
+        assert type(data['commit']) is str and data['commit'] == head
+        assert _git(made.root, 'rev-parse', data['commit']) == head
     finally:
         made.close()
 

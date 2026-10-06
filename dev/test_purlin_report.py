@@ -263,13 +263,18 @@ def test_no_colour_is_written_as_hex_outside_the_token_block():
     inside, outside = token_block(build_page())
     assert re.search(r'--canvas\s*:', inside)
     assert re.findall(r'#[0-9a-fA-F]{3,8}\b', outside) == []
+    # A script can write a colour in two halves, `'#' + 'C0793F'`: read the
+    # page again with each join of two quoted strings closed up.
+    joined = re.sub(r'''(['"])\s*\+\s*\1''', '', outside)
+    assert re.findall(r'#[0-9a-fA-F]{3,8}\b', joined) == []
 
 
 # purlin: purlin_report PROOF-4
 def test_no_shadow_and_no_gradient(page_text):
     _inside, outside = token_block(page_text)
-    assert 'box-shadow' not in outside
-    assert 'gradient' not in page_text
+    # A stylesheet reads a property at any casing, so the page is read so too.
+    assert 'box-shadow' not in outside.lower()
+    assert 'gradient' not in page_text.lower()
 
 
 # purlin: purlin_report PROOF-5
@@ -280,7 +285,9 @@ def test_no_request_to_anything_outside_the_page(page_text):
     assert '<link' not in page_text
     assert '@import' not in page_text
     assert 'fetch(' not in page_text
-    assert not re.search(r'(?:src|href)\s*=\s*"https?:', page_text)
+    # An address in double quotes, in single quotes or in none, at any casing.
+    assert re.findall(r'''(?:src|href)\s*=\s*["']?\s*https?:''', page_text,
+                      re.I) == []
 
 
 # The characters a page could draw as an affordance: arrows, geometric
@@ -310,7 +317,8 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
     found = glyphs_in(page_text)
     assert {u'\u25b6', u'\u25bc', u'\u25d0', u'\u25d1'} <= found, found
     assert found - set(ALLOWED_GLYPHS) == set(), found
-    assert page_text.count('<svg') == 0
+    # A browser reads a tag at any casing, so `<SVG` is an element too.
+    assert page_text.lower().count('<svg') == 0
     assert 'icon' not in page_text.lower()
 
 
@@ -399,7 +407,13 @@ def test_the_theme_button_swaps_to_light(browser, tmp_path, process):
     assert page.get_attribute('html', 'data-theme') == 'light'
     assert [one != two for one, two in zip(dark, light)] == [True] * 3, (
         dark, light)
-    assert len(page.query_selector_all('.tile')) == TILES[process]
+    tiles = page.query_selector_all('.tile')
+    assert len(tiles) == TILES[process]
+    # Drawn, not only in the page: each box takes up room on the screen.
+    assert [tile.is_visible() for tile in tiles] == [True] * TILES[process]
+    assert [bool(tile.bounding_box()) and tile.bounding_box()['width'] > 0
+            and tile.bounding_box()['height'] > 0 for tile in tiles] == [
+                True] * TILES[process]
     page.close()
 
 
@@ -457,6 +471,14 @@ def test_a_step_box_counts_the_rules_that_reached_it(browser, tmp_path):
     found = boxes(page)
     assert [(label, count) for label, count, _ in found] == [
         ('No proof', '0'), ('Passing', '7'), ('Strong', '3')], found
+    # Left to right as they are drawn: each box by its left edge on screen.
+    drawn = page.eval_on_selector_all(
+        '.tile', "els => els.map(e => [e.getBoundingClientRect().left,"
+        " e.getBoundingClientRect().top,"
+        " e.querySelector('.tile-l').textContent.trim()])")
+    assert [label for _, _, label in sorted(drawn)] == [
+        'No proof', 'Passing', 'Strong'], drawn
+    assert len({top for _, top, _ in drawn}) == 1, drawn
     assert page.eval_on_selector_all(
         '.tile-l', 'els => els.map(e => getComputedStyle(e).textTransform)'
     ) == ['uppercase'] * 4
@@ -527,6 +549,11 @@ def test_the_passing_box_carries_the_total(browser, tmp_path):
     total = page.query_selector('.tile-t')
     label = total.evaluate_handle('el => el.previousElementSibling')
     assert label.evaluate(LOOK) == total.evaluate(LOOK)
+    # The colour as it is seen: neither line is drawn through an opacity.
+    through = ("el => { let o = 1; for (let n = el; n && n.nodeType === 1;"
+               " n = n.parentElement) { o *= Number(getComputedStyle(n)"
+               ".opacity); } return o; }")
+    assert label.evaluate(through) == total.evaluate(through) == 1
     page.close()
 
 
@@ -580,6 +607,8 @@ def test_the_failing_box_stands_between_passing_and_strong(browser, tmp_path):
     found = boxes(page)
     hover = box_hovers(page)['Failing']
     page.close()
+    assert [label for label, _, _ in found] == [
+        'No proof', 'Passing', 'Failing', 'Strong'], found
     assert [(label, count) for label, count, _ in found][1:] == [
         ('Passing', str(payload['summary']['steps']['passed'])),
         ('Failing', '3'),
@@ -846,22 +875,20 @@ def test_a_hand_check_is_counted_by_hand_and_out_of_the_strong_share(
 # purlin: purlin_report PROOF-44
 def test_every_cell_of_a_spec_row_carries_its_hover(browser, tmp_path):
     """The columns the board dropped became the hovers the cells carry."""
-    page = open_board(browser, tmp_path, payload_named('regulated'))
+    # The clock stands at the moment the sample was written, 2026-10-01
+    # 10:42:13 UTC, 19 days after its runs and its audit of 2026-09-12.
+    page = open_board(browser, tmp_path, payload_named('regulated'),
+                      clock_at='2026-10-01T10:42:13Z')
     login = hovers(page)['login']
     page.close()
     assert login['Spec'] == 'specs/auth/login.md'
     assert login['Proofs'] == 'every proof has a test'
     # Newest run first: Windows ran after Linux, and one of its four rules
     # failed there.
-    tests = login['Tests'].split('\n')
-    assert len(tests) == 2, tests
-    assert tests[0].startswith('Windows · ci · ')
-    assert tests[0].endswith('· 3 passed · 1 failed')
-    assert tests[1].startswith('Linux/Unix · ci · ')
-    assert tests[1].endswith('· 4 passed')
-    strong = login['Strong'].split('\n')
-    assert len(strong) == 1, strong
-    assert strong[0].startswith('audit · ci · ')
+    assert login['Tests'].split('\n') == [
+        'Windows · ci · 19 days old · 3 passed · 1 failed',
+        'Linux/Unix · ci · 19 days old · 4 passed'], login
+    assert login['Strong'].split('\n') == ['audit · ci · 19 days old'], login
     assert 'Signed' not in login
 
 
@@ -944,7 +971,11 @@ def test_a_band_folds_from_the_keyboard(browser, tmp_path):
     assert narrow.get_attribute(AUTH_BAND, 'aria-expanded') == 'false'
     assert narrow.evaluate('document.activeElement.getAttribute("data-group")') \
         == 'auth'
-    assert 'login' not in narrow.inner_text('.tbl')
+    # Hidden in the table that listed it, and nowhere else on the screen.
+    assert listed_in(narrow, 'specs') == ['invoice', 'export']
+    assert narrow.query_selector_all('[data-feature="login"]') == []
+    assert 'login' not in narrow.inner_text('[data-table="specs"]')
+    assert 'login' not in narrow.inner_text('body')
     narrow.close()
 
 
@@ -952,8 +983,12 @@ def test_a_band_folds_from_the_keyboard(browser, tmp_path):
 def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     assert rule_ids(page) == []
+    # On screen anywhere, in any cell, not only in a rule's own row.
+    assert re.findall(r'RULE-\d+', page.inner_text('body')) == []
     page.click('[data-act="feature"][data-feature="login"]')
     assert rule_ids(page) == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4']
+    assert re.findall(r'RULE-\d+', page.inner_text('body')) == [
+        'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4']
     assert [text.count('STRONG') for text in texts(page, '.rule .rp')] == [
         1, 1, 0, 0]
     page.close()
@@ -967,7 +1002,21 @@ def test_an_open_spec_shows_its_description(browser, tmp_path):
         '.tr[data-feature="login"]',
         "el => { const d = el.nextElementSibling; return [d.textContent.trim(),"
         " d.nextElementSibling.getAttribute('data-rule')]; }")
+    # Drawn where a person reads it: the line takes up room on the screen,
+    # under the row and over `RULE-1`.
+    row, line, rule = page.eval_on_selector(
+        '.tr[data-feature="login"]',
+        "el => [el, el.nextElementSibling,"
+        " el.nextElementSibling.nextElementSibling].map(e => {"
+        " const b = e.getBoundingClientRect();"
+        " return {top: b.top, bottom: b.bottom, height: b.height}; })")
+    shown = page.locator('.tr[data-feature="login"] + *').inner_text().strip()
+    seen = page.locator('.tr[data-feature="login"] + *').is_visible()
     page.close()
+    assert seen and line['height'] > 0, line
+    assert row['bottom'] <= line['top'] < line['bottom'] <= rule['top'], (
+        row, line, rule)
+    assert shown == beneath, shown
     assert beneath == ('Signing in with an email address and a password, and '
                        'locking an account after repeated failures.'), beneath
     assert after == 'RULE-1', after
@@ -1030,6 +1079,12 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
     assert texts(page, '.notice') == [
         'This data was written for schema 3 and this page reads schema 17. '
         'Run purlin:status to write it again.']
+    # On screen, not only in the page: the one notice is drawn.
+    assert [notice.is_visible()
+            for notice in page.query_selector_all('.notice')] == [True]
+    assert page.locator('.notice').inner_text().strip() == (
+        'This data was written for schema 3 and this page reads schema 17. '
+        'Run purlin:status to write it again.')
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
     assert page.query_selector_all('.tbl') == []
@@ -1191,7 +1246,13 @@ def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
     two = [unread_proof_line('login'), unread_proof_line('invoice')]
     payload['warnings'] = two + tags
     page = open_board(browser, tmp_path, payload)
-    assert texts(page, '.notice-text') == two + tags
+    shown = texts(page, '.notice-text')
+    assert shown == two + tags
+    # The three lines about no one spec are the ones the proof names.
+    assert [line.split(':')[0] for line in shown[2:]] == [
+        'signed/0.3.0 is not in this checkout',
+        'signed/0.2.0 is not in this checkout',
+        'signed/0.1.0 is not in this checkout'], shown
     assert notice_hovers(page) == [None] * 5
     page.close()
 
@@ -1451,6 +1512,16 @@ def test_a_planted_bug_the_tests_caught_is_not_shown(browser, tmp_path):
     assert lines[0] == 'Weak.', lines
     assert bugs == [], bugs
     assert not [line for line in lines if 'planted' in line], lines
+    # No line names the bug in any words: none holds the word, the bug's
+    # proof or the file it was planted in, and the panel reads as it does
+    # with no bug recorded at all.
+    assert not [line for line in lines if 'bug' in line.lower()
+                or 'PROOF-2' in line or 'src/billing/invoice.py' in line], lines
+    plain = open_sample(browser, tmp_path / 'no-bug', 'regulated')
+    open_rule(plain, 'invoice', 'RULE-2')
+    without = panel_lines(plain, 'Audit')
+    plain.close()
+    assert lines == without, (lines, without)
 
 
 # purlin: purlin_report PROOF-147
@@ -1492,6 +1563,10 @@ def test_a_spot_checked_rule_reads_why_no_bug_was_caught(browser, tmp_path):
     lines = panel_lines(page, 'Audit')
     page.close()
     assert strong.startswith('SPOT-CHECKED'), strong
+    # The word once, in capitals, and then the cell's one reason alone.
+    assert strong == ('SPOT-CHECKED The spot tests found nothing. '
+                      + ANCHOR_SENTENCE), strong
+    assert strong.lower().count('spot-checked') == 1, strong
     assert lines[:2] == [
         'Spot-checked.',
         'The spot tests found nothing. ' + ANCHOR_SENTENCE], lines
@@ -1528,6 +1603,9 @@ def test_an_audit_out_of_date_keeps_its_last_result_on_screen(browser,
     assert strong.startswith('OUT OF DATE'), strong
     for reason in OUT_OF_DATE_REASONS:
         assert reason in strong, strong
+    # The word once, and the two reasons straight after it.
+    assert strong == ('OUT OF DATE code changed since a1b2c3d; the last '
+                      'audit found it strong on 2026-09-13'), strong
     assert lines[0].startswith('Out of date:'), lines
     assert lines[1] == 'Strong. It found nothing.', lines
 
@@ -1538,6 +1616,9 @@ def test_a_rule_with_no_proof_reads_its_reason(browser, tmp_path):
     open_rule(solo, 'login', 'RULE-3')
     passed = solo.evaluate(KV_ROWS)['Passed']
     assert passed.startswith('NO TEST') and 'no proof written' in passed
+    # The whole row, and the badge alone: `NO TEST`, not a word beside it.
+    assert passed == 'NO TEST no proof written', passed
+    assert solo.evaluate(PASSED_PILL)[0] == 'NO TEST'
     assert 'No proof written.' in solo.inner_text('.wrap')
     solo.close()
 
@@ -1562,7 +1643,7 @@ PASSED_PILL = """() => {
 
 
 # purlin: purlin_report PROOF-244
-def test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off_as_passed(
+def test_a_hand_check_no_sign_off_noted_is_passed_as_checked_at_sign_off(
         browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="invoice"]')
@@ -1748,7 +1829,9 @@ def test_a_passing_test_marked_with_the_rules_id_shows_passed(browser,
 
 # Every element that draws a text node of its own, its colour, the ground under
 # it composited through each translucent background up to the page, and the
-# WCAG contrast ratio of the two. Every text is measured, whatever its colour.
+# WCAG contrast ratio of the two. Every text is measured, whatever its colour,
+# as it is seen: an `opacity` on the element or on anything it stands in
+# thins the ink over the ground before the two are compared.
 TEXT_CONTRAST = """() => {
   function parse(c) {
     const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) { return null; }
@@ -1792,7 +1875,12 @@ TEXT_CONTRAST = """() => {
     if (!box.width || !box.height || style.visibility === 'hidden') { continue; }
     const under = ground(el);
     const fill = 'rgb(' + under.slice(0, 3).map(Math.round).join(', ') + ')';
+    let through = 1;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      through *= Number(getComputedStyle(n).opacity);
+    }
     let ink = parse(style.color);
+    ink = [ink[0], ink[1], ink[2], ink[3] * through];
     if (ink[3] < 1) { ink = over(ink, under); }
     out.push([node.textContent.trim().slice(0, 40), style.color, fill,
               ratio(ink, under)]);
@@ -1877,6 +1965,21 @@ def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
     assert low == [], low
     assert checked > 300, checked
     assert tones & measured == tones, (tones, measured)
+    # Each sample's board with its first spec open, measured here as it is
+    # seen, through any opacity it is drawn at: nothing under 7:1, the rule
+    # texts of the open spec among what was measured.
+    for process in PROCESSES:
+        payload = payload_named(process)
+        page = open_in_theme(browser, tmp_path / ('board-' + process),
+                             payload, 'light')
+        page.click('.tr')
+        rule_texts = texts(page, '.rule .rt')
+        found = every_text(page)
+        page.close()
+        assert rule_texts, process
+        assert [item for item in found if item[3] < 7] == [], (process, found)
+        assert {text[:40] for text in rule_texts} <= {
+            item[0] for item in found}, (process, rule_texts)
 
 
 # ---------------------------------------------------------------------------
@@ -1975,6 +2078,10 @@ def test_an_anchors_rule_is_listed_under_the_anchor_alone(browser, tmp_path):
         page.click('[data-act="feature"][data-feature="%s"]' % name)
     assert texts(page, '.rule[data-feature="receipt"] .rid') == ['RULE-1']
     assert texts(page, '.rule .rt').count(ANCHOR_TEXT) == 1
+    # Once on the whole screen, whatever element draws it.
+    assert page.inner_text('body').count(ANCHOR_TEXT) == 1
+    assert page.inner_text(
+        '.rule[data-feature="checkout_design"]').count(ANCHOR_TEXT) == 1
     assert texts(page, '.rule[data-feature="checkout_design"] .rt') == [
         ANCHOR_TEXT]
     page.close()
@@ -2102,8 +2209,15 @@ def test_the_anchors_stand_in_a_section_of_their_own(browser, tmp_path):
     anchors = listed_in(page, 'anchors')
     heads = texts(page, '[data-table="anchors"] .th > div')
     specs = listed_in(page, 'specs')
+    # Everything the section's table holds: its headings, then its rows.
+    held = page.eval_on_selector(
+        '[data-table="anchors"] .tbl',
+        'e => Array.from(e.children).map(c => c.className)')
+    opened = texts(page, '[data-table="anchors"] .rule .rid')
     page.close()
     assert below
+    assert held == ['th', 'tr', 'tr'], held
+    assert opened == [], opened
     assert anchors == ['checkout_design', 'security_baseline'], anchors
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong']
     assert specs == ['login', 'invoice', 'export'], specs
@@ -2314,11 +2428,16 @@ def test_no_audit_and_no_sign_off_show_two_boxes_and_not_signed_plain(
              for tone in ('pass', 'warn', 'fail', 'neutral')]
     border = page.eval_on_selector_all(
         '.topbar .fact', 'els => getComputedStyle(els[1]).borderTopColor')
+    # The colour each word of the box is drawn in, not the box's own.
+    words = page.eval_on_selector_all(
+        '.topbar .fact', "els => Array.from(els[1].querySelectorAll('*'))"
+        ".map(e => [e.textContent.trim(), getComputedStyle(e).color])")
     heads = head_labels(page)
     page.close()
     assert list(found) == ['Tests', 'Sign-off'], found
     assert found['Sign-off']['word'] == 'not signed'
     assert found['Sign-off']['color'] == border == plain
+    assert words == [['Sign-off', plain], ['not signed', plain]], words
     assert plain not in tones
     assert heads == ['Spec', 'Rules', 'Proofs', 'Tests'], heads
 
@@ -2492,13 +2611,18 @@ def test_an_anchor_no_audit_read_has_an_empty_strong_cell(browser, tmp_path):
 # purlin: purlin_report PROOF-253
 def test_an_anchors_strong_hover_says_first_that_no_bug_is_planted(
         browser, tmp_path):
-    page = open_sample(browser, tmp_path, 'team')
+    # The clock stands at the moment the sample was written, 2026-10-01
+    # 10:42:13 UTC, 19 days after its audit of 2026-09-12.
+    page = open_sample(browser, tmp_path, 'team',
+                       clock_at='2026-10-01T10:42:13Z')
     found = hovers(page)
     page.close()
     lines = found['checkout_design']['Strong'].split('\n')
     assert len(lines) == 2, lines
     assert lines[0] == NO_ANCHOR_BUG, lines
     assert lines[1].startswith('audit · local · '), lines
+    assert lines == ["No bug is planted for an anchor's rule.",
+                     'audit · local · 19 days old'], lines
     assert NO_ANCHOR_BUG not in found['receipt']['Strong'], found['receipt']
 
 
@@ -2646,6 +2770,23 @@ def test_a_proof_whose_run_took_its_results_has_no_such_row(browser,
     open_rule(page, 'login', 'RULE-1')
     assert 'Carried from' not in page.evaluate(PROOF_ROWS)[0]
     page.close()
+    # The same where the data names nothing carried at all: the sample as
+    # it is written, whose proof holds no `carried`, and the proof given
+    # `carried` as nothing.
+    payload = payload_named('regulated')
+    assert 'carried' not in rule_of(payload, 'login', 'RULE-1')['proofs'][0]
+    for name, carried in (('absent', False), ('null', True)):
+        if carried:
+            carried_from(payload, None)
+        page = open_board(browser, tmp_path / name, payload)
+        open_rule(page, 'login', 'RULE-1')
+        rows = page.evaluate(PROOF_ROWS)[0]
+        shown = page.inner_text('.panel.proof')
+        page.close()
+        assert list(rows) == ['PROOF-1', 'Result', 'Tests', 'lines'], (
+            name, rows)
+        assert rows['lines'] == [], (name, rows)
+        assert 'carried from' not in shown.lower(), (name, shown)
 
 
 # purlin: purlin_report PROOF-286
