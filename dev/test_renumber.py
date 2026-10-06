@@ -317,14 +317,22 @@ class TestTheRest:
         root = _merged_twice(tmp_path)
         before = _sha(root, 'refs/remotes/origin/qa/age-proofs')
         _code, lines = _renumber(root, '--dry-run')
-        assert (
+        sentence = (
             'origin/qa/age-proofs names login PROOF-4 at tests/test_qa.py:1, '
             'which this checkout does not change. If it means the line that '
-            'moves, move it to PROOF-5 on that branch.') in lines, lines
+            'moves, move it to PROOF-5 on that branch.')
+        assert sentence in lines, lines
         assert [line for line in lines if 'names login' in line
                 and 'which this checkout' in line] == [
             line for line in lines if line.startswith('origin/qa/age-proofs')]
-        _renumber(root, '--yes')
+        # The one comment is named once, as the plan's last line before the
+        # closing one, in the dry run and in the run that makes the edits.
+        assert [line for line in lines if 'origin/' in line] == [sentence], \
+            lines
+        assert lines.index(sentence) == len(lines) - 2, lines
+        _code, lines = _renumber(root, '--yes')
+        assert [line for line in lines if 'origin/' in line] == [sentence], \
+            lines
         assert _sha(root, 'refs/remotes/origin/qa/age-proofs') == before
 
     # purlin: renumber PROOF-11
@@ -372,6 +380,16 @@ class TestAsking:
         assert lines[0] == 'login: PROOF-4 at line 13 becomes PROOF-5: "B".', \
             lines
         assert lines[-2:] == ['Do it? [y/N] ', 'Nothing is changed.'], lines
+        # The whole plan, each of its four lines once and in its place, then
+        # the question and the ending: nothing else is printed.
+        assert lines == [
+            'login: PROOF-4 at line 13 becomes PROOF-5: "B".',
+            'tests/test_b.py:1 names login PROOF-4 and moves to PROOF-5.',
+            'login: > Highest-Proof: 4 becomes 5.',
+            'origin/qa/age-proofs names login PROOF-4 at tests/test_qa.py:1, '
+            'which this checkout does not change. If it means the line that '
+            'moves, move it to PROOF-5 on that branch.',
+            'Do it? [y/N] ', 'Nothing is changed.'], lines
         assert _files(root) == before
 
     # purlin: renumber PROOF-16
@@ -409,10 +427,24 @@ class TestConflicts:
         _code, lines = _renumber(root, '--dry-run')
         assert ('login: the conflict at line 6 takes > Highest-Proof: 10, the '
                 'higher of 9 and 10.') in lines, lines
-        _renumber(root, '--yes')
+        # The conflict took 10 and not 9: the renumbering the same plan
+        # holds raises the line from 10, and from no other number.
+        assert [line for line in lines if '> Highest-Proof:' in line] == [
+            'login: the conflict at line 6 takes > Highest-Proof: 10, the '
+            'higher of 9 and 10.',
+            'login: > Highest-Proof: 10 becomes 11.'], lines
+        _code, lines = _renumber(root, '--yes')
+        assert [line for line in lines if '> Highest-Proof:' in line] == [
+            'login: the conflict at line 6 takes > Highest-Proof: 10, the '
+            'higher of 9 and 10.',
+            'login: > Highest-Proof: 10 becomes 11.'], lines
         after = _read(root, SPEC).decode('utf-8').splitlines()
         assert len([line for line in after
                     if line.startswith('> Highest-Proof:')]) == 1, after
+        # The one line left, at the place the conflict opened, line 6.
+        assert [(number, line) for number, line in enumerate(after, 1)
+                if line.startswith('> Highest-Proof:')] == [
+            (6, '> Highest-Proof: 11')], after
 
     # purlin: renumber PROOF-19
     def test_one_conflict_resolved_and_nothing_renumbered(self, tmp_path):

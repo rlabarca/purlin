@@ -2,144 +2,110 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:58:11Z",
         "bugs": {
           "PROOF-1": {
             "after": "    return ''",
             "aim": "past the test",
             "before": "    return status_module.sync_status(project_root)",
-            "bug_key": "606ad7bdd8ae72694c898c08ab5236be211c546a5d4992b7ef6f31ede6a58a21",
+            "bug_key": "856a93b219ef79a396193df5c412a5bf61f04df819281bf24e3a7c9b2993ed71",
             "case": "a green run on feature-x with run 987; the proof says the output ends with the status table; the changed code ends the output with an empty line and no table",
             "file": "dev/windows_run.py",
             "line": 209,
-            "result": "survived",
-            "test_key": "660b6817ca3af69dece91cff1c53c5e7b14d619f8cdd3032b26ba22a785086a8",
+            "result": "caught",
             "why": ""
           },
           "PROOF-2": {
             "after": "    return ''",
             "aim": "past the test",
             "before": "    return status_module.sync_status(project_root)",
-            "bug_key": "fc05cd9d0e618e0fd9c8f5b46949b5983314aa3e9f71308f17f24d3bf1dbd393",
+            "bug_key": "31576db676180b585ce0ad60ae9104408a4981a0c3f0514e34cc484719a2b7c4",
             "case": "gh run watch exits 1; the proof says the output ends with the status table after the failure line; the changed code prints an empty line where the table should be",
             "file": "dev/windows_run.py",
             "line": 209,
-            "result": "survived",
-            "test_key": "1c40279f23d7c341fcb92770eda0f162518e8040dd43b2be6dd3e3052a3d853d",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "63241770d06ed25dea1ae8e90bae888cd7d856922378259484364498d6884074",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "3085a184e29f910b0cb290273ac22f1c03e1e6e0",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-1: the test replaces every started process with a fake and compares the four commands, in order, with fixed values, along with the folder each ran in and the exit code 0, so a wrong command, order or exit code fails it.",
-          "PROOF-1: the test replaces the function that builds the status table with one returning a fixed string, so it observes that something is printed last and never that the real status table is.",
-          "PROOF-2: the test runs real git against a bare repository, compares the push, watch, pull and delete in order, reads the failure sentence as a whole printed line and the exit code 1, and confirms that the run's commit arrived and the run branch is gone.",
-          "PROOF-2: the status table is replaced by the same fixed string here, so the real table going missing or coming back empty after a red run would still pass.",
-          "The spot tests found nothing, and they miss the replaced status table because each test does assert on a printed value, only not on one the real table code produced."
-        ],
-        "findings": [
-          "PROOF-1: the test still passes when dev/windows_run.py:209 reads \"return ''\"",
-          "PROOF-1: the AI says this breaks: a green run on feature-x with run 987; the proof says the output ends with the status table; the changed code ends the output with an empty line and no table",
-          "PROOF-2: the test still passes when dev/windows_run.py:209 reads \"return ''\"",
-          "PROOF-2: the AI says this breaks: gh run watch exits 1; the proof says the output ends with the status table after the failure line; the changed code prints an empty line where the table should be"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "155a06576a2c16ee37bee96744d460111af20147f926063988d6cea245cc5fbf",
         "rule_hash": "d6c574281b3fbd5f6fe8b86e12e53bb9ca24ee2342cb378a862095e8d9f781d0",
-        "test_hash": "aa1d2c2431e841744430186e4ada1454eb23da948a64cb6e5eee8aa8ec8339b9",
-        "verdict": "weak"
+        "test_hash": "d4043ea6b16eddb9bc295ffa1e8765fcf718479b49f51bd2e0e712be0bb59934",
+        "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:58:11Z",
         "bugs": {
           "PROOF-3": {
             "after": "    return any(line.startswith('??') for line in (status or '').splitlines())",
             "aim": "past the test",
             "before": "    return any(line.strip() for line in (status or '').splitlines())",
-            "bug_key": "5002bd914348056378cff9aba6a1700c7d334b526d1a4b867b9a9776976340e7",
+            "bug_key": "98d35c30c05d0ce60985511c6e8de43f40b7b74f73f03f5ba9c1c605cd7c4472",
             "case": "one new file staged with git add and not committed; the proof says exit 1, the not-committed line and no push; the changed code prints `Pushing <branch> as run/<branch>-<sha7>.` and starts the push",
             "file": "dev/windows_run.py",
             "line": 204,
-            "result": "survived",
-            "test_key": "03b6572b29f815ff7b4d06579937a7334e499d18bbc082ba2bc04cc714a90c1e",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "63241770d06ed25dea1ae8e90bae888cd7d856922378259484364498d6884074",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "3085a184e29f910b0cb290273ac22f1c03e1e6e0",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-3: the test writes one untracked file, replaces the command runner with a recorder, and observes the exit code `1`, the printed lines as exactly one line equal to `NOT_COMMITTED`, and that no command was started, which are the three results the proof names.",
-          "PROOF-3: the only uncommitted file the test tries is an untracked one, so a file that is staged or a tracked file that is modified could go unrefused and the test would still pass.",
-          "PROOF-3: the test compares the output with a name `NOT_COMMITTED` whose definition is not in the source shown, so if that name is taken from `dev/windows_run.py` a change to the sentence itself would also pass.",
-          "PROOF-3: the test reads standard output only, so anything written to standard error is not observed.",
-          "Findings: none were reported by the spot tests, and the test does assert on a value that can fail for the untracked-file case."
-        ],
-        "findings": [
-          "PROOF-3: the test still passes when dev/windows_run.py:204 reads \"return any(line.startswith('??') for line in (status or '').splitlines())\"",
-          "PROOF-3: the AI says this breaks: one new file staged with git add and not committed; the proof says exit 1, the not-committed line and no push; the changed code prints `Pushing <branch> as run/<branch>-<sha7>.` and starts the push"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "352ac3d7b57d0a0c3adbbd3c9164b8a80ad234a17c0d290d33c88423bdbd9438",
         "rule_hash": "50c041c5b6024a064ad9a0a490643bcf4cde5f7bca4b9bf9149f779264ee65ee",
-        "test_hash": "eb9162d811c37b940a05986735b29c87b9386db95bb4208a5548b7e87402b9cc",
-        "verdict": "weak"
+        "test_hash": "c1089cce9b414744894559b196487bd80ad1ee9f6d355f431adf7ec4d3ab181c",
+        "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:58:11Z",
         "bugs": {
           "PROOF-4": {
             "after": "          echo python3 scripts/run/purlin_run.py --ci --commit",
             "aim": "past the test",
             "before": "          python3 scripts/run/purlin_run.py --ci --commit",
-            "bug_key": "49975abb078bb742fb5ed7dfe695bbc1adf53663aaa8c7a2cc485208267eb26e",
+            "bug_key": "730284d5788df4751809a15e10fc2e1dfa3755f16d82cbaef0915be722769448",
             "case": "the workflow's step after setup; the proof says it runs scripts/run/purlin_run.py --ci --commit; the changed workflow only echoes that command, so no test runs and no commit is made",
             "file": ".github/workflows/windows.yml",
             "line": 61,
-            "result": "survived",
-            "test_key": "c9deb89c121c80c389e4f8187173d9015d0dd9f18753c0c71e6afe19be19259b",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "63241770d06ed25dea1ae8e90bae888cd7d856922378259484364498d6884074",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "3085a184e29f910b0cb290273ac22f1c03e1e6e0",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-4: the test compares the whole `on` block with the push of `branches: ['run/**']`, so any other trigger fails it.",
-          "PROOF-4: the test requires `runs-on` to read `windows-latest` once and refuses any other system name or a matrix, as the proof names.",
-          "PROOF-4: the test finds the run step by a line that ends in `scripts/run/purlin_run.py --ci --commit`, and does not read what starts that line, so a line that prints the command or comments it out still passes.",
-          "PROOF-4: the test requires exactly one later step under `if: always()` holding `git push origin \"HEAD:${GITHUB_REF_NAME}\"`, which is the push the proof names.",
-          "PROOF-4: the test reads the workflow file as text and starts nothing, so it shows what the file says and not what a run does.",
-          "PROOF-4: the spot tests found nothing, and they do not weigh whether a matched line is a command that is executed."
-        ],
-        "findings": [
-          "PROOF-4: the test still passes when .github/workflows/windows.yml:61 reads \"echo python3 scripts/run/purlin_run.py --ci --commit\"",
-          "PROOF-4: the AI says this breaks: the workflow's step after setup; the proof says it runs scripts/run/purlin_run.py --ci --commit; the changed workflow only echoes that command, so no test runs and no commit is made"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "f2defaacd1435d0f99848dda6c73634b98a6d28311b7598dc295aad585362da3",
         "rule_hash": "b70593ee376887a28f4ab600e8238024c2e4c21de7c4df5ed28e38f62b972e1f",
-        "test_hash": "f2d8d29e71431c92938660a9a44a5e8fc5fd98418f1a5a72a2909dce7be6c4b6",
-        "verdict": "weak"
+        "test_hash": "632305496a84d48d63f3d976f3f98a6970d7475199168d2d306c1cd5491ada81",
+        "verdict": "strong"
       }
     }
   },
   "feature": "windows_run",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:56Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:57:57Z",
+      "commit": "3085a184e29f910b0cb290273ac22f1c03e1e6e0",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "63241770d06ed25dea1ae8e90bae888cd7d856922378259484364498d6884074",
         "spec": "86773a0ca775404b0236263c93e13badc074f866881e5bd933495eab48847985",
-        "tests": "a93bea2cf3c58d3b13a1b93150afb0110bc26481b4cdf6ae3fbe9eb664de82dd"
+        "tests": "f0d68e4b11dc3dc70a03465b2c72d0e387ace0e9b04f3fa6b352872db405f88d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

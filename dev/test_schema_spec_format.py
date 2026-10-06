@@ -85,6 +85,17 @@ def test_the_format_reference_names_two_sections_and_no_third():
     named = re.findall(r'`(## [^`]+)`', req_match.group(1))
     assert named == ['## Rules', '## Proof'], (
         f"the format names exactly two sections and no third: {named}")
+    # No third, however it is written: the numbered list holds two items,
+    # each opening on its section's name, and the text under the heading
+    # holds a section name, in backticks or not, at those two places alone.
+    section = req_match.group(1)
+    listed = re.findall(r'^[ \t]*(?:\d+[.)]|[-*+])[ \t]+(.*)$', section,
+                        re.MULTILINE)
+    assert len(listed) == 2, listed
+    assert listed[0].startswith('`## Rules`: '), listed
+    assert listed[1].startswith('`## Proof`: '), listed
+    assert re.findall(r'#+[ \t]*\w+', section) == ['## Rules', '## Proof'], (
+        section)
 
 
 # purlin: schema_spec_format PROOF-13
@@ -479,6 +490,13 @@ def test_a_new_proof_after_the_highest_is_deleted_takes_the_next_number():
                and '`PROOF-10` to `PROOF-12` were deleted' in s
                and s.endswith('gives its next proof `PROOF-13`.')
                for s in sentences), sentences
+    # The whole sentence, word for word, and the page's one sentence on that
+    # spec: a word between its parts that turns the claim round fails it.
+    assert [s for s in sentences
+            if '`PROOF-10` to `PROOF-12` were deleted' in s] == [
+        'A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to '
+        '`PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its '
+        'next proof `PROOF-13`.'], sentences
 
 
 # ---------------------------------------------------------------------------

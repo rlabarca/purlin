@@ -35,18 +35,17 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:57:03Z",
         "bugs": {
           "PROOF-15": {
             "after": "            'lines': (_conflict_lines(feature, found) + move_lines\n                      + highest_lines + other),",
             "aim": "past the test",
             "before": "            'lines': (_conflict_lines(feature, found) + move_lines\n                      + comment_lines + highest_lines + other),",
-            "bug_key": "36a5e2f774cc9e715e38078216bd7c57cb769e0a2b1c9867cfea580f31c7e683",
+            "bug_key": "6a262bcb0f951d147889c1f85062470ef07a5e50047be5187a1bb30e6fdd2a3a",
             "case": "a run after the merge with neither `--dry-run` nor `--yes` and nothing to answer from; the proof says the plan is printed before `Do it? [y/N] `; the changed code prints the plan without its test comment line",
             "file": "scripts/spec/renumber.py",
             "line": 590,
-            "result": "survived",
-            "test_key": "ef92c7d83d6aa82225964059205f936398b07c2e7e1f76dff60770239ba84840",
+            "result": "caught",
             "why": ""
           },
           "PROOF-16": {
@@ -62,28 +61,19 @@
           }
         },
         "code_hash": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "851242656b545e651d06e28ec0a6abb06eed5ee4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-15: the test runs with no answer and compares the exit code, the first plan line, the last two lines against `Do it? [y/N] ` and `Nothing is changed.`, and every file against its earlier bytes.",
-          "PROOF-15: the test reads only the first line of the plan, so a plan missing its test comment line or any later line still passes.",
-          "PROOF-16: the test answers `y` and compares the last line with the whole sentence the proof names, so a different ending fails it.",
-          "PROOF-16: the test also reads the spec for the PROOF-5 line but never reads the test file, so the count of `1 test comment` is taken from the printed sentence alone.",
-          "The rule also names `yes`, `--yes` and an answer other than yes, and neither proof covers those."
-        ],
-        "findings": [
-          "PROOF-15: the test still passes when scripts/spec/renumber.py:590 reads \"+ highest_lines + other),\"",
-          "PROOF-15: the AI says this breaks: a run after the merge with neither `--dry-run` nor `--yes` and nothing to answer from; the proof says the plan is printed before `Do it? [y/N] `; the changed code prints the plan without its test comment line"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "0a71e85bbd73616560b1d041af673d70f18fa988618672a9c8211582584d4902",
         "rule_hash": "c61bdc4720d61f5c8252f0be2c4d566e1a19c2b539a46f012be3b34d15e1c2a8",
-        "test_hash": "df2e2ac7fd9f46e7e0c6cefee96e2a67a336de5e60ac8150578f9354fb4b6b65",
-        "verdict": "weak"
+        "test_hash": "79540c370849043ac881c03173926a0d882961833a664e5a864ef10173869ac2",
+        "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:57:03Z",
         "bugs": {
           "PROOF-17": {
             "after": "        return ours + [(number, line) for number, line in theirs\n                       if line.strip() in held]",
@@ -100,12 +90,11 @@
             "after": "            if kind not in best or entry[0] < best[kind][0]:",
             "aim": "past the test",
             "before": "            if kind not in best or entry[0] > best[kind][0]:",
-            "bug_key": "4c7f552058d1ed63dff28df041d025a96528c49fa2e8409e40d3ddc6b0024ac2",
+            "bug_key": "bfeb316bd8a44d931022aad75bbcea3dc73b09dacc06618526f7f0ce1da9b753",
             "case": "HEAD's side holds > Highest-Proof: 9 and the branch's > Highest-Proof: 10 in a conflict at line 6; the proof says the conflict takes 10 and one line stays; the changed code leaves the one line reading > Highest-Proof: 9",
             "file": "scripts/spec/renumber.py",
             "line": 305,
-            "result": "survived",
-            "test_key": "dffe9e868f945fa7867c41a6b826961f86b8306abdc0c0254382afc4a52b29b2",
+            "result": "caught",
             "why": ""
           },
           "PROOF-19": {
@@ -121,28 +110,16 @@
           }
         },
         "code_hash": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "851242656b545e651d06e28ec0a6abb06eed5ee4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-17: the test confirms the conflict opens at line 20, looks for the exact dry-run sentence, then after `--yes` checks the exit code, that no conflict line is left and that both `RULE-9: A` and `RULE-10: B` are in the spec, which is everything the proof names.",
-          "PROOF-18: the test confirms the five conflict lines at line 6, looks for the exact dry-run sentence, and after `--yes` counts one `> Highest-Proof:` line without reading its number, so a spec left with `> Highest-Proof: 9` still passes.",
-          "PROOF-19: the test compares the last printed line with the exact closing sentence, looks for both proof lines, checks that no conflict line is left and compares git's status with `UU specs/auth/login.md`, which is everything the proof names.",
-          "The spot tests found nothing, and each test does assert on values its proof names; what they miss is the number on the kept `> Highest-Proof:` line in PROOF-18."
-        ],
-        "findings": [
-          "PROOF-18: the test still passes when scripts/spec/renumber.py:305 reads \"if kind not in best or entry[0] < best[kind][0]:\"",
-          "PROOF-18: the AI says this breaks: HEAD's side holds > Highest-Proof: 9 and the branch's > Highest-Proof: 10 in a conflict at line 6; the proof says the conflict takes 10 and one line stays; the changed code leaves the one line reading > Highest-Proof: 9"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-17 is longer than 60 words and holds two actions, a dry run and a run with `--yes`.",
-          "PROOF-18 holds two actions, a dry run and a run with `--yes`, and names no value for the one `> Highest-Proof:` line the spec holds after the run."
-        ],
         "proof_hash": "9100356db7baeca281c13c958d194601979155c418b9e1df1cc66578d168a80c",
         "rule_hash": "0cfb2db455ac6a196ba4093aa0802f4682e39fb2cdcf5240924938d0e7fdbc39",
-        "test_hash": "a27c7cf40441c1bb7eca3d4879a9628baf2e6a3e31bb8880ae11e0d72ea132c7",
-        "verdict": "weak"
+        "test_hash": "8586de892a8c1f72a01e994097658fb87ac09754a6e8703b48565e9c3ad0598e",
+        "verdict": "strong"
       },
       "RULE-13": {
         "at": "2026-10-06T15:44:24Z",
@@ -400,42 +377,31 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:57:03Z",
         "bugs": {
           "PROOF-10": {
             "after": "                lines.extend([OTHER_BRANCH % (_short(full), name, item, path,\n                                              number, moved[item][0])] * 2)",
             "aim": "past the test",
             "before": "                lines.append(OTHER_BRANCH % (_short(full), name, item, path,\n                                             number, moved[item][0]))",
-            "bug_key": "5dd333e4a807def57e35e01bc27b60bc04c891f456fd7e0a08afa1675214e452",
+            "bug_key": "3553690fa83d1a94d5ba97cfaaa46bfa634d374b80c66ae1e3d3496f2312dca2",
             "case": "origin/qa/age-proofs holds one unmerged comment naming login PROOF-4; the proof says the plan reads the sentence naming it at tests/test_qa.py:1, once; the changed code prints that sentence twice in the plan",
             "file": "scripts/spec/renumber.py",
             "line": 545,
-            "result": "survived",
-            "test_key": "672f7e59ad7641ea800a49bc13c668b487fa3f349b5d6813e245ac72e8a3aeeb",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "851242656b545e651d06e28ec0a6abb06eed5ee4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-10: the test reads the dry-run plan and checks that the proof's full sentence is among its lines, with the branch, the file, the line `1` and `PROOF-5` all as the proof names them.",
-          "PROOF-10: the test checks that every line naming a comment on another branch opens with `origin/qa/age-proofs`, so a line for any other branch would fail it.",
-          "PROOF-10: the test never counts how often the sentence appears, so a plan that names the one comment twice still passes both checks on the plan.",
-          "PROOF-10: the test compares the commit `origin/qa/age-proofs` names before the dry run and after the `--yes` run, which is the proof's second result.",
-          "PROOF-10: the test does not read what the `--yes` run prints, so the plan is observed only in the dry run.",
-          "The spot tests found nothing, and the test does assert the proof's values; what it misses is a repeat of the sentence."
-        ],
-        "findings": [
-          "PROOF-10: the test still passes when scripts/spec/renumber.py:545 reads \"lines.extend([OTHER_BRANCH % (_short(full), name, item, path,\"",
-          "PROOF-10: the AI says this breaks: origin/qa/age-proofs holds one unmerged comment naming login PROOF-4; the proof says the plan reads the sentence naming it at tests/test_qa.py:1, once; the changed code prints that sentence twice in the plan"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "67d3ba837ca9cbcf25b23472662ac2be38f0b7a022d93a6427ec8caddc1596f5",
         "rule_hash": "850208181f42d490fb09fd45bf38e11e13475304c68564346384a2f721552090",
-        "test_hash": "7ca0d7417544c24086eb394c57c5d317117ce211155af0976ead72e35bb366f9",
-        "verdict": "weak"
+        "test_hash": "96bcd94fe257b49e4d08534a2b0723c11a88a94aaf6ad5e75b71bdf81efed06f",
+        "verdict": "strong"
       },
       "RULE-9": {
         "at": "2026-10-06T15:44:24Z",
@@ -489,14 +455,14 @@
   "feature": "renumber",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:56Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:56:48Z",
+      "commit": "851242656b545e651d06e28ec0a6abb06eed5ee4",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
         "spec": "dca6fbd47142575445b3d47929d07ab394c7dcb4f1c6ec2df2a9e99b4e08687b",
-        "tests": "41d2da4420a087ddfd4118540c78f3bac8f420eba4d576fb56f66166935daa6c"
+        "tests": "407fee6ad43a2b58c3f43bcab85120330f6dedd4b4b81981d5186befcb44f6f8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
