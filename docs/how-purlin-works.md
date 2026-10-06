@@ -43,11 +43,11 @@ Everything else Purlin prints is information.
 
 ```mermaid
 flowchart LR
-    S["purlin:spec<br>rules and proofs"] --> B["purlin:build<br>code and tests"]
-    B --> T{"purlin:test<br>every rule passes?"}
-    T -->|no| L(["Left to do,<br>with the command that does it"])
-    T -->|yes| C["purlin:test --all --commit<br>Tests: met"]
-    C --> G["purlin:sign<br>one signature"]
+    S["<b>purlin:spec</b><br>rules and proofs"] --> B["<b>purlin:build</b><br>code and tests"]
+    B --> T{"<b>purlin:test</b><br>every rule passes?"}
+    T -->|no| L(["<b>Left to do</b><br>with the command that does it"])
+    T -->|yes| C["<b>purlin:test --all --commit</b><br>Tests: met"]
+    C --> G["<b>purlin:sign</b><br>one signature"]
     G --> V(["signed/#lt;version#gt;"])
 ```
 

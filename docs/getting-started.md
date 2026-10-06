@@ -19,11 +19,11 @@ For a developer putting Purlin on a project. The example is a Python project tha
 
 ```mermaid
 flowchart LR
-    I["Install<br>the plugin"] --> N["purlin:init<br>sets the project up"]
-    N --> S["purlin:spec<br>writes the rules"]
-    S --> B["purlin:build<br>code and tests"]
-    B --> T["purlin:test<br>runs your tests"]
-    T --> R(["3 rules.<br>3 pass their tests."])
+    I["<b>Install</b><br>the plugin"] --> N["<b>purlin:init</b><br>sets the project up"]
+    N --> S["<b>purlin:spec</b><br>writes the rules"]
+    S --> B["<b>purlin:build</b><br>code and tests"]
+    B --> T["<b>purlin:test</b><br>runs your tests"]
+    T --> R(["3 rules. 3 pass their tests."])
 ```
 
 **1. Install.** Purlin needs git, Python 3.9 or later, and
