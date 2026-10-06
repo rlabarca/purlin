@@ -149,12 +149,11 @@ For a file changed after it was written, it prints
 A sign-off file is not checkable alone. The signed commit that added it binds the sign-off,
 the package and the code.
 
-## For regulated work, the package is what you hand over
+## In regulated work, file the package in your document control system
 
-Purlin supplies evidence. It does not claim compliance. You file the evidence package and its
-sign-offs, from the tagged commit, in your system of record, which carries the approval that
-counts. [Purlin in regulated work](regulated.md) says what a validation reader finds in the
-package and where Purlin stops.
+A Purlin sign-off is an engineering sign-off. It does not claim compliance. In regulated work, use Purlin beside a validated document control system, such as Veeva. File the evidence package and its sign-offs there, from the tagged commit, and approve and sign them there.
+
+[Purlin in regulated work](regulated.md) gives the workflow step by step, what a validation reader finds in the package, and where Purlin stops.
 
 ## Read next
 
