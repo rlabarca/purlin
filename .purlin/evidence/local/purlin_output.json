@@ -34,18 +34,17 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:34:44Z",
         "bugs": {
           "PROOF-2": {
             "after": "            lines.append(f'{name}: {row['error']}')",
             "aim": "past the test",
             "before": "            lines.append('%s: %s' % (name, row['error']))",
-            "bug_key": "c3cf079e4d1c322dec2a73eb8630ef05f655f225829b3d6f01a1a01da5413d4a",
+            "bug_key": "96d2146b4f414ae167891f4b5fcb81acb5526d3442f67a0fdea3187883c9bd2e",
             "case": "scripts/anchor/upstream.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file reuses the string's own quote inside an f-string, which 3.9 rejects as a syntax error",
             "file": "scripts/anchor/upstream.py",
             "line": 487,
-            "result": "survived",
-            "test_key": "2e89208f7645e3e4c6fc6af0f78ba4f40d83df4953038eb7df6d8ce3b326c48f",
+            "result": "caught",
             "why": ""
           },
           "PROOF-4": {
@@ -72,29 +71,16 @@
           }
         },
         "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "commit": "e9b5584ed9ef9bf01b8d0a1b191df932b01554de",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-2: the test parses every tracked Python file under scripts/ with a helper and compares the files it rejects with an empty list, so a file the helper rejects fails it.",
-          "PROOF-2: the test does not start Python 3.9 itself; if the helper relies on a newer interpreter's own 3.9 mode, syntax that mode does not check, such as a quote reused inside an f-string, still passes.",
-          "PROOF-2: the test also asserts more than 20 Python files were read and that a file holding a match statement is named, so an empty file list or a helper that accepts everything fails it.",
-          "PROOF-4: the test sets up a project under Python 3.9, runs the tests, and asserts exit 0 and the exact line `Markers: 1 tied to a test, 0 not tied.` in the output, which is what the proof names.",
-          "PROOF-5: the test asks for the status under Python 3.9 and asserts exit 0 and a row matching `app  1  1`, so it checks the row for `app` and the exit the proof names.",
-          "The spot tests found nothing, and each test holds assertions that can fail against values the proofs name."
-        ],
-        "findings": [
-          "PROOF-2: the test still passes when scripts/anchor/upstream.py:487 reads \"lines.append(f'{name}: {row['error']}')\"",
-          "PROOF-2: the AI says this breaks: scripts/anchor/upstream.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file reuses the string's own quote inside an f-string, which 3.9 rejects as a syntax error"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-4 and PROOF-5 name only the allowed case; no proof of the rule names a failure case, such as a file that Python 3.9 rejects."
-        ],
         "proof_hash": "9595d2c89c408b9a6a252869ad680b7ed1b3aa1c8dd0d22680dddbd28da32ea9",
         "rule_hash": "83b3d888c56bb0bfb2bde8748a501a2ba2e50bcf2ace37991b81fdedf5d14d35",
-        "test_hash": "a49571465c5278f4d2f731ddce0614ef1494a3d2dbde3ba0db2de00407b389c0",
-        "verdict": "weak"
+        "test_hash": "a116e46359ad787ebb3666548c4c7b172fab336c43cbc9e9f3ee24d9b15d3baf",
+        "verdict": "strong"
       },
       "RULE-3": {
         "at": "2026-10-05T18:49:48Z",
