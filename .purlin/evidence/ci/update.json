@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T16:32:17Z",
-      "commit": "e6af8b18a3b6d577355829b016f6842a9c1dc770",
+      "at": "2026-10-06T17:23:16Z",
+      "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
         "spec": "19eac679801822452c4495fb2ea7f3d28a1eac599d2ce472a4105a93b04eaba5",
-        "tests": "ad37c4d949fb6ddd959f7b54c084c3965f54e45718d7eaed26a00b91fef2fce3"
+        "tests": "b4289308af529aa9e1af60d767013d99d70c7a7a8b98b167447cc0d433963a65"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
