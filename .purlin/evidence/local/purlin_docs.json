@@ -76,31 +76,41 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-06T15:44:24Z",
         "bugs": {
           "PROOF-24": {
-            "after": "Each checkout of a repository, a worktree included, lacks its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
+            "after": "Each checkout of a repository, a worktree included, has its own results, its own status and never its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
             "aim": "past the test",
             "before": "Each checkout of a repository, a worktree included, has its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
-            "bug_key": "895894f8518758db8cf193f46d110bafe6e93ef20904c6e4c4f1a5d50cb1e78d",
-            "case": "the one paragraph of docs/working-together.md that names a worktree; the proof says it says each checkout has its own results and its own dashboard; the changed paragraph says each checkout lacks its own results and its own dashboard",
+            "bug_key": "a8ed2be7b0978002e94dd1f7e4b5ce7881ab1dc403c43133ac58c9b07cac6168",
+            "case": "the one paragraph of docs/working-together.md that names a worktree; the proof says its `Each checkout` sentence says each checkout has its own results and its own dashboard; the changed sentence says each checkout has never its own dashboard",
             "file": "docs/working-together.md",
             "line": 160,
-            "result": "caught",
+            "result": "survived",
+            "test_key": "d438b785907da32fd912e38c0d81ec32e6d91b8ae0dcdf81a5f10e80368e72a2",
             "why": ""
           }
         },
         "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "explanation": [
+          "PROOF-24: the test counts the paragraphs that name a worktree and requires exactly 1, which is the proof's first claim.",
+          "PROOF-24: the test looks for a word of denial only between `Each checkout` and ` has its own results`, so a denial between `has its own results` and `its own dashboard.` passes although the sentence no longer says the checkout has its own dashboard.",
+          "PROOF-24: the test finds `Each checkout` anywhere in the paragraph and does not check that a sentence opens with it, so the phrase in mid-sentence would still pass.",
+          "PROOF-24: the test accepts `merge` or `merged` as a whole word and the backticked `purlin:status` with no word character, colon or hyphen on either side, which matches the proof's naming of merging and the whole command.",
+          "PROOF-24: the proof's own words bound the denial to before `has`, so the planted change breaks what the sentence says about the dashboard, not that clause."
+        ],
+        "findings": [
+          "PROOF-24: the test still passes when docs/working-together.md:160 reads \"Each checkout of a repository, a worktree included, has its own results, its own status and never its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.\"",
+          "PROOF-24: the AI says this breaks: the one paragraph of docs/working-together.md that names a worktree; the proof says its `Each checkout` sentence says each checkout has its own results and its own dashboard; the changed sentence says each checkout has never its own dashboard"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "f0e44dedf54ad79e979a9753e1ed9dd65b61b6271a7ff57a265a6fd855d56fb0",
+        "proof_hash": "442ec2de74fe4721ec63b7c4cfaafa9f78fc914f1b2197b16ac315cef3a49ccd",
         "rule_hash": "1f3f502cd01fce46fb61442e9e0e4206945004ba4eff4951f20dcbf3def99ac0",
-        "test_hash": "6ccf7ed7b0ec01847691d07c8e6903ba6e14694907087d0c8e740dad39e8fb39",
-        "verdict": "strong"
+        "test_hash": "aff0ee94953619497cea6022eeb3b9e71cee365524b6fde2469f0b09acc631cd",
+        "verdict": "weak"
       },
       "RULE-17": {
         "at": "2026-10-05T18:47:45Z",

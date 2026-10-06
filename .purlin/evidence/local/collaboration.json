@@ -1,4 +1,49 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "    return ([{'proof': proof.get('id'), 'file': test.get('name'),",
+            "aim": "past the test",
+            "before": "    return ([{'proof': proof.get('id'), 'file': test.get('file'),",
+            "bug_key": "8dfee3781f310cb2e054820ccddaf3ca648bdcde9210f40074ff3db215973c17",
+            "case": "Quinn signs `0.1.0` and the package at `signed/0.1.0` is read in a fresh clone; the proof says the package describes the code under it; the changed code gives a package whose every test entry names the test's name as its file, so it points at no test file of the project",
+            "file": "scripts/export/package.py",
+            "line": 474,
+            "result": "survived",
+            "test_key": "a7c2f04bfe28e0146767589c6b56380d918b3f04d907000ccb7fd33dd9cfcfc9",
+            "why": ""
+          }
+        },
+        "code_hash": "66606c1b6cba42a4cea5e178f1bd089fe2d3c5a79b431df613bc640f96b08b13",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-1: the test walks three clones through both collisions, the renumbering, the stale comment, the hand-off and both sign-offs, and asserts the printed lines, the spec numbers, the comment counts, the tag's commit and the sign-off entries at each step.",
+          "PROOF-1: for \"the package describes the code under it\" the test compares the package's tag, version, `met`, commit distance, rule count and rule ids, and reads no rule's text, proofs, tests, results or authors, so a package that misnames every test file still passes.",
+          "PROOF-1: the fingerprint check is computed over whatever the package holds, so it confirms the bytes are self-consistent and not that the content is right.",
+          "PROOF-1: \"no command fails unexpectedly\" is checked through the exit codes the team recorded, and \"every warning is resolved\" through the final payload's empty `warnings` and `left`, both of which a wrong package field leaves untouched.",
+          "PROOF-1: the spot tests found nothing, and that holds for what they check: the test asserts throughout, mocks nothing and takes its expected values from literals and the spec's fixtures."
+        ],
+        "findings": [
+          "PROOF-1: the test still passes when scripts/export/package.py:474 reads \"return ([{'proof': proof.get('id'), 'file': test.get('name'),\"",
+          "PROOF-1: the AI says this breaks: Quinn signs `0.1.0` and the package at `signed/0.1.0` is read in a fresh clone; the proof says the package describes the code under it; the changed code gives a package whose every test entry names the test's name as its file, so it points at no test file of the project"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-1 holds several cases in one: two collisions merged in opposite orders, a comment left on a moved number, a refused sign-off and two sign-offs that count.",
+          "PROOF-1 names its expected result as \"every check of RULE-1 holds\", which restates the rule and gives no value of its own beside `0.1.0`."
+        ],
+        "proof_hash": "bdc5d16c1962fa9806e4cfaba1688bacb39e9f08367be9edf610077111eb04ea",
+        "rule_hash": "4cbafafd9d9f5ac89eae5cf8052d1950979452e8574ef3317f2591da2a75a797",
+        "test_hash": "5bb7fd0234b63f08f586ba99da19141386a158d3ee95496e7ca31e2ef0f215d6",
+        "verdict": "weak"
+      }
+    }
+  },
   "feature": "collaboration",
   "platforms": {
     "macos": {

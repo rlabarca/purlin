@@ -1,9 +1,770 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-18": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-108": {
+            "after": "        else:\n            self.name('kept', rel)",
+            "aim": "plain",
+            "before": "        else:\n            self.name('wrote', rel)",
+            "bug_key": "051c71c519a845fa5a8df9e603371188889aebf2d57432ddf303af9a74f61703",
+            "case": "a pytest project is set up; the proof says the paths that appear are exactly those the summary reports as wrote or copied; the changed code reports .purlin/config.json, .gitignore and .purlin/evidence/README.md as kept although they newly appear",
+            "file": "scripts/init/scaffold.py",
+            "line": 177,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-108: the test lists the project before and after the run, takes the paths the summary reports as `wrote` or `copied`, asserts each is on disk and asserts the newly appeared paths equal that list, so a path that appears unreported or is reported without appearing fails it.",
+          "PROOF-108: the test requires the list of written paths to be non-empty, so a summary that reports nothing as written fails rather than passing on two empty lists.",
+          "PROOF-108: the listing and summary-parsing helpers are not shown, so whether the listing leaves out any folder init could write into cannot be read from the test alone."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "22c862953ffab1bf159c0e45c7cf6eb61ed267a7cc2fc18faa35f20f9eb50c51",
+        "rule_hash": "bfc2de26a7cf8eea82621e4f24384eea6cfbdff9617fec300636f57f6b7b9815",
+        "test_hash": "29010e2c9d7a333bfa7d8b646a1a024e2490822c2808eb59720e71221c4c2340",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-20": {
+            "after": "                '.purlin/run/')",
+            "aim": "plain",
+            "before": "                '.purlin/runtime/')",
+            "bug_key": "35e34ce239195a0081f3d4958afe0379f3345516833b1ff4910e5697e5abc317",
+            "case": "init is run twice on the same project; the proof says no summary line of the second run begins `wrote` and every file reads the same; the changed code prints `wrote .gitignore` on the second run and appends the Purlin block to `.gitignore` a second time",
+            "file": "scripts/init/scaffold.py",
+            "line": 220,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-48": {
+            "after": "              'tests': written if isinstance(written, dict)",
+            "aim": "plain",
+            "before": "              'tests': written if isinstance(written, list)",
+            "bug_key": "42f53c9c197f6f3ef4e975508d450c464d2e8694502f1e634bc69cbfde746672",
+            "case": "settings carrying one suite `unit` running `make test REPORT={report}`, then init runs again; the proof says `tests` is exactly that one suite; the changed code replaces `tests` with the template's empty list",
+            "file": "scripts/init/scaffold.py",
+            "line": 209,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-20: the test runs init twice, requires that no line of the second summary starts with `wrote`, and compares the whole tree before and after the second run, which is both results the proof names.",
+          "PROOF-20: how much the comparison covers depends on the `tree` helper, which is not shown, so whether it reads folders and leaves out only `.git/` cannot be judged from the test's own lines.",
+          "PROOF-48: the test writes one `unit` suite running `make test REPORT={report}` into the settings, runs init again, and compares `tests` with that suite in full and its names with `['unit']`, so a dropped, altered or added suite fails it.",
+          "PROOF-48: nothing in the test's own lines makes the project a pytest project, so that part of the proof's case rests on the `project` fixture, which is not shown.",
+          "PROOF-130: the test writes a `.gitignore` ending in a carriage return and line feed, runs init twice, compares the file's bytes after each run, and counts `.purlin/report-data.js` once in the first run's file.",
+          "PROOF-130: nothing in the test's own lines limits it to Windows, so on another system it checks the same bytes without the text-mode translation the proof is about.",
+          "Findings: the spot tests found nothing, and each test holds failable assertions on values its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-130 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "752e39bfbba4b020032f28d560060888e2a436a594ae8321f6b982cd4db4bc45",
+        "rule_hash": "e8de4847977945e33e8b739c42ab36a83238e4be7de9e7ea933ff61456332ded",
+        "test_hash": "9a74230f2a059eed92c61e6af1dd919ee9cc62bf9cb4d96b4e7efcce6fa0f2fd",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-22": {
+            "after": "    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip(),\n              'plugin': PLUGIN_ROOT,",
+            "aim": "plain",
+            "before": "    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip(),",
+            "bug_key": "7d9670634a4fa747d733faadea98026f18a6386dc0b14fd52b699ca843334c01",
+            "case": "a pytest project set up from a marketplace-style copy and from this checkout; the proof says both end with the same files; the changed code writes each plugin's own folder into `.purlin/config.json`, so the two files differ",
+            "file": "scripts/init/scaffold.py",
+            "line": 209,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-23": {
+            "after": "# Purlin runtime: the test reports and the run log of pytest -cdev/pytest.ini, never committed",
+            "aim": "past the test",
+            "before": "# Purlin runtime: the test reports and the run log, never committed",
+            "bug_key": "03523cdfc806481c3217908f74005c3af6a323eb6bcf5d5b3bdbdad1663bbda5",
+            "case": "init sets up a pytest project; the proof says no file holds a relative path starting `dev/`; the changed code writes `.gitignore` holding `-cdev/pytest.ini`, the relative path `dev/pytest.ini` attached to a `-c` option",
+            "file": "templates/gitignore.purlin",
+            "line": 1,
+            "result": "survived",
+            "test_key": "2887300c08c8cc1ebcbd9c8a13af9a0b7fdf0c25331b6e9a53f9844eaece46f7",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-22: the test sets one pytest project up from the copy and one from the checkout, drops `.purlin/report-data.js` from both, and compares the two trees and the two masked outputs for equality, which is what the proof names.",
+          "PROOF-22: the expected tree and output come from the checkout's own run, as the proof asks, so a mistake both runs share is not seen by this test.",
+          "PROOF-22: how much of each file `tree` compares, and what `masked` hides, are in helpers not shown, so whether a difference in file contents or in a printed plugin path fails the test cannot be read from here.",
+          "PROOF-23: the test sets a project up, checks that some readable file exists, and checks every such file for `/dev/` once `/dev/null` is removed and for `dev/` or `dev\\` by a pattern.",
+          "PROOF-23: the pattern does not match a `dev/` that directly follows a letter, a digit, `_`, `.`, `/`, `\\` or `-`, so a relative path attached to a short option, such as `-cdev/pytest.ini`, passes.",
+          "PROOF-23: removing every `/dev/null` before the search also removes it from a longer path such as `/dev/nullable/x`, which then passes the first check.",
+          "PROOF-132: the test checks each readable file for the copy's path spelled both ways, as the proof names, but never checks that any file was read, so an empty project would pass.",
+          "Findings: the spot tests found nothing, and each of the three tests holds an assertion that can fail."
+        ],
+        "findings": [
+          "PROOF-23: the test still passes when templates/gitignore.purlin:1 reads \"# Purlin runtime: the test reports and the run log of pytest -cdev/pytest.ini, never committed\"",
+          "PROOF-23: the AI says this breaks: init sets up a pytest project; the proof says no file holds a relative path starting `dev/`; the changed code writes `.gitignore` holding `-cdev/pytest.ini`, the relative path `dev/pytest.ini` attached to a `-c` option"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-132 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "e65658008ef555a244405fc3f9f46a9cafe5016dcc51a876db85c93f298d32e4",
+        "rule_hash": "dd720ef58678d01376d4a92b666261edb14e16148b86476c73bf9b2d9e717e87",
+        "test_hash": "02b8f209c3e25746b48527369495a177d7fa243c9ca9edb4ef4b7468ef822b29",
+        "verdict": "weak"
+      },
+      "RULE-24": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-112": {
+            "after": "    write_gitignore(plan)\n    if os.path.isfile(os.path.join(root, '.git', 'hooks', 'pre-push')):\n        with open(os.path.join(root, '.git', 'hooks', 'pre-push'), 'a') as handle:\n            handle.write('exit 0\\n')",
+            "aim": "plain",
+            "before": "    write_gitignore(plan)",
+            "bug_key": "cef5fb7a2452bc323ae4b20acc1d8042efb9fce30ca44f1579bbd4a1289152fd",
+            "case": "a project whose .git/hooks/pre-push reads echo mine is set up; the proof says the hook reads the same afterwards; the changed code leaves it reading echo mine followed by a line exit 0",
+            "file": "scripts/init/scaffold.py",
+            "line": 380,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-24": {
+            "after": "    write_evidence(plan)\n    os.makedirs(os.path.join(root, '.git', 'hooks'), exist_ok=True)\n    with open(os.path.join(root, '.git', 'hooks', 'pre-commit'), 'w') as handle:\n        handle.write('#!/bin/sh\\n')",
+            "aim": "plain",
+            "before": "    write_evidence(plan)",
+            "bug_key": "04c680885ea838e5f0cac87835a39dd5771964b347aae4d1171f0c0575418896",
+            "case": "init is run on a project with no pre-commit hook; the proof says the files under .git/hooks/ are exactly those there before, with no pre-commit among them; the changed code leaves a new .git/hooks/pre-commit",
+            "file": "scripts/init/scaffold.py",
+            "line": 381,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-24: the test lists the names under `.git/hooks/` before and after the run, asserts the two lists are equal and that neither `pre-push` nor `pre-commit` is in the later one, which is what the proof names.",
+          "PROOF-24: the test compares file names only, so a change to the contents of a hook already there is outside what it observes; the proof speaks of which files are there, and PROOF-112 covers contents for `pre-push`.",
+          "PROOF-24: where the project in the fixture has no `.git/hooks/` folder both lists are empty, and a hook written by the run would still make them differ.",
+          "PROOF-112: the test writes `echo mine` to `.git/hooks/pre-push`, runs init and compares the whole file with `echo mine` and its line ending, so any change to the hook's text fails it.",
+          "PROOF-112: the test reads the hook's text and not its permissions, which the proof does not name either.",
+          "The spot tests found nothing: both tests assert, each on a value the code cannot supply, and the values the proofs name appear in the test file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7fb266c7c5dc5df7a6389907f6e4b547286675ea8b24c5bebde73b44dfd3b2ac",
+        "rule_hash": "e586e04b7c3d019de95978f87b273b2d32166b0fe465bd8039571e22c4937c99",
+        "test_hash": "1df61cb5bbff2f668d5384d1c9256dcaa833eae91139e5eef754dbd41bc60de1",
+        "verdict": "strong"
+      },
+      "RULE-33": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-177": {
+            "after": "    for command in args.test_command[1:]:\n        handed += ['--test-command', command]",
+            "aim": "plain",
+            "before": "    for command in args.test_command:\n        handed += ['--test-command', command]",
+            "bug_key": "88f8de024015a751afd006738b0e3731cb827440935bf0a9e1064334e9b612a3",
+            "case": "`--update --apply config --test-command \"pytest=make test REPORT={report}\"` on settings 0.9.5 wrote; the proof says the settings then hold one suite, `pytest`, running `make test REPORT={report}`; the changed code hands over no test command, so the settings do not hold that command",
+            "file": "scripts/init/scaffold.py",
+            "line": 335,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-33": {
+            "after": "    if args.update and args.apply is not None:\n        return delegate_update(args)",
+            "aim": "plain",
+            "before": "    if args.update:\n        return delegate_update(args)",
+            "bug_key": "12bc0ad93619f9127da4fd6ad1702485b70f53c73b28015c91d8b3d4bd0c6ebe",
+            "case": "`--update --yes` on a project init has just set up; the proof says it exits 0 and prints `Nothing is pending: this project is at <version>.`; the changed code runs setup again and prints setup's summary and the status lines instead",
+            "file": "scripts/init/scaffold.py",
+            "line": 356,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-33: the test sets a project up, runs `--update --yes`, and checks the exit code is 0 and that `Nothing is pending: this project is at <VERSION>.` is a whole line of the output, which is what the proof names.",
+          "PROOF-33: nothing is pending in this case, so the test would pass the same whether or not `--yes` was handed on.",
+          "PROOF-177: the test writes and commits the settings 0.9.5 wrote, runs the update with `--apply config` and the test command, and checks the exit code, the full list of suites by name and command, and `version` against the plugin's version, which is what the proof names.",
+          "PROOF-177: the test reads \"asks no question\" as the absence of `[y/N]` in standard output, so a question worded another way or printed to standard error would pass.",
+          "The spot tests found nothing, and nothing in either test contradicts that: both assert literal values the code cannot influence, apart from `VERSION`, which the proof itself names as the source."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d8021ea75a053c5073dae56c6f8e9adb7ab2b1c38c322b166a5ea2a93c163eea",
+        "rule_hash": "e936a0a5355618868e883b1efbdc48b4c86cebfde15f5c314d4d29e47d129092",
+        "test_hash": "f173c7635fdadd185bd18a74e27499ceef0c60c0f9083ddad2d9dded9b8ac736",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-119": {
+            "after": "__pycache__/\n.purlin/evidence/",
+            "aim": "plain",
+            "before": "__pycache__/",
+            "bug_key": "5a09deca3a7e39f91792cae9bdcbe3d6f16793661a4e3acd4ebc29d3c66d9d8a",
+            "case": "the audited python project at VERSION 0.1.0 runs purlin:sign --answers answered yes; the proof says exit 0, a signed commit and the line Signed 0.1.0 as jane@acme.com; with the changed template the evidence is ignored and never committed, so there is no committed evidence to sign and no such line",
+            "file": "templates/gitignore.purlin",
+            "line": 12,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-36": {
+            "after": ".purlin/runtime/\n.purlin/evidence/local/",
+            "aim": "plain",
+            "before": ".purlin/runtime/",
+            "bug_key": "a2f8f29491b47abc3f14a6676a75c330332df2d09a56243a2998a377206c958a",
+            "case": "a python project with one committed spec runs purlin:test --all --commit; the proof says the evidence commit holds .purlin/evidence/local/greeting.json and the run exits 0; with the changed template git ignores that file, so the evidence commit does not hold it",
+            "file": "templates/gitignore.purlin",
+            "line": 3,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-93": {
+            "after": "/purlin-report.html\n.purlin/evidence/**/*.json",
+            "aim": "plain",
+            "before": "/purlin-report.html",
+            "bug_key": "b54465fc84c4e2d11f60aa499530365a50f0f57979a3f50d40d1a4bbce0eaaa7",
+            "case": "the first sign-off of the 0.1.0 project; the proof says it writes the tag signed/0.1.0 on its commit and prints the push line; with the changed template the evidence files are ignored and never committed, so the sign-off has nothing to sign and writes no tag",
+            "file": "templates/gitignore.purlin",
+            "line": 6,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-36: the test reads the exit code, the work commit's subject, the evidence commit's subject built from the work commit's sha7, the evidence path among the commit's paths and the last printed line, which is each result the proof names.",
+          "PROOF-36: the last line is compared with the constant SIGN_OPTIONAL, defined outside the test's body, so the test body alone does not show that it holds the sentence the proof quotes.",
+          "PROOF-119: the test reads the exit code, a signature header on the commit and the printed line with `0.1.0` and `jane@acme.com`, so it observes each result the proof names.",
+          "PROOF-119: the key ending comes from the fixture's facts, and the test checks that a signature header is present, not that the signature was made by that key.",
+          "PROOF-93: the test reads the tag `signed/0.1.0` among the tags, that the tagged commit is the head, that the branch is main and the exact push line, which is what the proof names.",
+          "All three bugs change the ignore file init writes, on the claim that an ignored evidence file cannot be committed or signed; that claim rests on code not shown in the request.",
+          "Findings: none were reported by the spot tests, and the tests shown each hold failable assertions on literal values from their proofs."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "89722230cf7294daa96e62c9b9bf55510c7de1a5d4ec97c17ebd2a8e58f30083",
+        "rule_hash": "6beb8091146b8ab0f8a7a58ac8039f8cf3686d147504cc284c6e9424e3ff3771",
+        "test_hash": "8de406a8fa2edb6e01a9fbbfdb216f6515e0a319d608add5cc651e9c1a94cc91",
+        "verdict": "strong"
+      },
+      "RULE-37": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-37": {
+            "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('tests/conftest.py', '')",
+            "aim": "past the test",
+            "before": "    write_gitignore(plan)\n    write_evidence(plan)",
+            "bug_key": "e1e6864376f012707764526704ab1fac8aafa8d265174b8c92f6186d425f911d",
+            "case": "a python project set up with nothing to answer from; the proof says there is no `conftest.py`; the changed code has init write an empty tests/conftest.py into the project's tests",
+            "file": "scripts/init/scaffold.py",
+            "line": 381,
+            "result": "survived",
+            "test_key": "cbda74e9528d01611bc9dc94150bfbce18aba66aa672f93e960f2c2b9aeced05",
+            "why": ""
+          },
+          "PROOF-94": {
+            "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('tests/vitest.config.ts', '')",
+            "aim": "past the test",
+            "before": "    write_gitignore(plan)\n    write_evidence(plan)",
+            "bug_key": "94090cc3fe7799848c278feaea9fa50dd183220d201298d48c25f306ba1be85c",
+            "case": "a typescript project set up with nothing to answer from; the proof says there is no `vitest.config.ts`; the changed code has init write an empty tests/vitest.config.ts into the project",
+            "file": "scripts/init/scaffold.py",
+            "line": 381,
+            "result": "survived",
+            "test_key": "92495a5b1a084ddd692748b33f5ce4c1f5d27f8db322d808e399ce5b1ae99c32",
+            "why": ""
+          },
+          "PROOF-95": {
+            "after": "  \"tests\": [\"dotnet\"]",
+            "aim": "plain",
+            "before": "  \"tests\": []",
+            "bug_key": "f733bf7551c53977a7a6a2cf9b1c6fd2036473b5cdcc57fb9b123cb8a1fef0bf",
+            "case": "a C# project set up with nothing to answer from; the proof says `tests` is empty after init; the changed code writes `tests` holding one entry, \"dotnet\"",
+            "file": "templates/config.json",
+            "line": 2,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-37: the test reads init's exit code, the `tests` setting after init, the absence of `conftest.py` among the files after init, the suggested name `pytest` and both printed lines the proof names, all from a walk built in a fixture outside the test's own lines.",
+          "PROOF-37: the absence check looks for the exact entry `conftest.py` in a list of files, so a `conftest.py` written under a folder may not be seen if that list holds paths.",
+          "PROOF-94: the test reads the empty `tests` setting, the absence of `vitest.config.ts`, the suggested name `vitest` and the line `1 rule. 1 passes its tests.`; the skip where npm cannot install Vitest is not in the test's own lines and would sit in the fixture.",
+          "PROOF-94: the absence check has the same exact-entry form as PROOF-37's, so a `vitest.config.ts` under a folder may not be seen.",
+          "PROOF-95: the test reads the empty `tests` setting, the suggested name `dotnet` and the line `1 rule. 1 passes its tests.`, which are the values the proof names; the skip where `dotnet` is not installed is not in the test's own lines.",
+          "The spot tests found nothing, and each test does compare the literal values its proof marks; what they miss is how the walk's facts are gathered, which the shown lines do not hold."
+        ],
+        "findings": [
+          "PROOF-37: the test still passes when scripts/init/scaffold.py:381 reads \"plan.write('tests/conftest.py', '')\"",
+          "PROOF-37: the AI says this breaks: a python project set up with nothing to answer from; the proof says there is no `conftest.py`; the changed code has init write an empty tests/conftest.py into the project's tests",
+          "PROOF-94: the test still passes when scripts/init/scaffold.py:381 reads \"plan.write('tests/vitest.config.ts', '')\"",
+          "PROOF-94: the AI says this breaks: a typescript project set up with nothing to answer from; the proof says there is no `vitest.config.ts`; the changed code has init write an empty tests/vitest.config.ts into the project"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-37 holds more than one action: the setup, the first test run that suggests an entry, and the run with the entry written.",
+          "PROOF-94 holds a second case, the skip where npm cannot install Vitest, beside the case that runs.",
+          "PROOF-95 holds a second case, the skip where `dotnet` is not installed, beside the case that runs."
+        ],
+        "proof_hash": "7631c93ab2ba704d57dd5c62de67ed728bab80271537847457403181ff9e9306",
+        "rule_hash": "a1ffc08493ff063f9d356429ffc88439caa84c027d4d2ae9dcccce74f8e1753b",
+        "test_hash": "4c84871727ca02e16d932b6457bc8e3ceefe3008d688dc4012597d6846c61a61",
+        "verdict": "weak"
+      },
+      "RULE-47": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-47": {
+            "after": "    plan.write(EVIDENCE_DIR + '/README.md',\n               _read_bytes(PLUGIN_ROOT, EVIDENCE_README).rstrip(), exact=True)",
+            "aim": "plain",
+            "before": "    plan.write(EVIDENCE_DIR + '/README.md',\n               _read_bytes(PLUGIN_ROOT, EVIDENCE_README), exact=True)",
+            "bug_key": "99ae512443947a70b8f0b75a63a28473ddf29cfbaa3a9c9f5a7da145df5972ae",
+            "case": "init run once in a fresh project; the proof says `.purlin/evidence/README.md` is byte for byte the same as `templates/evidence-readme.md`; the changed code writes it without its closing line ending, so the bytes differ",
+            "file": "scripts/init/scaffold.py",
+            "line": 231,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-47: the test runs init, reads the written README and the shipped template as bytes and compares them whole, so any difference in the written file fails it.",
+          "PROOF-47: the test also checks that the written text holds `local/` and `ci/` and that the summary gives `wrote` for the README, which are the three results the proof names.",
+          "PROOF-47: the expected bytes come from the template file on disk and not from init's own code, so the comparison does not check the code against itself.",
+          "PROOF-47: the proof names `templates/evidence-readme.md`, a file of the plugin's source, where PROOF-136 says \"the README Purlin ships\", which a person who cannot read code can judge.",
+          "PROOF-136: the test body is the same as PROOF-47's and nothing in the lines shown makes it Windows-only or sets up a Windows line-ending case, so any restriction to Windows must come from outside the lines shown.",
+          "The spot tests found nothing, and that holds: both tests assert, no assertion is always true, nothing is mocked or swallowed, and the proofs' values `local/`, `ci/` and `wrote` are in the test file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: PROOF-136 needs Windows, and this machine is macOS."
+        ],
+        "proof_hash": "0d5c9c9d8c69744d1a9a7f2f3d84ef7a5a03ad03494828f9cceacd49c8ce197f",
+        "rule_hash": "67aa72483656fd782c8ed77a338ed480b0907d99fe594edde9293eb9412d86f0",
+        "test_hash": "98f1deda5fff165a9881ed38fff779812edb0322492290637b5bd1a112c84198",
+        "verdict": "strong"
+      },
+      "RULE-67": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-153": {
+            "after": "# Dashboard page, rewritten with its data, never committed\npurlin-report.html",
+            "aim": "plain",
+            "before": "# Dashboard page, rewritten with its data, never committed\n/purlin-report.html",
+            "bug_key": "f291d77faec816f650859268a0fb41167cf52cf4a5577b7b6b0bd4236f4b5f83",
+            "case": "a new project set up; the proof says `.gitignore` holds the line `/purlin-report.html`; the changed code writes the line `purlin-report.html` and no line `/purlin-report.html`",
+            "file": "templates/gitignore.purlin",
+            "line": 5,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-154": {
+            "after": "# Purlin runtime: the test reports and the run log, never committed\n.purlin/runtime",
+            "aim": "plain",
+            "before": "# Purlin runtime: the test reports and the run log, never committed\n.purlin/runtime/",
+            "bug_key": "2d9dff8af3b7ec05d33b0f0aef79fc33836dd224067e7d070dbb9641bfff159a",
+            "case": "a new project set up; the proof says `.gitignore` holds the line `.purlin/runtime/`; the changed code writes the line `.purlin/runtime` and no line `.purlin/runtime/`",
+            "file": "templates/gitignore.purlin",
+            "line": 2,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-176": {
+            "after": "# Python's bytecode cache, never committed\n__pycache__",
+            "aim": "plain",
+            "before": "# Python's bytecode cache, never committed\n__pycache__/",
+            "bug_key": "9bde648713b481f4043bbe0ff1fa1dba54837532cfd77fd20dea6e69777732eb",
+            "case": "a new project set up; the proof says `.gitignore` holds the line `__pycache__/`; the changed code writes the line `__pycache__` and no line `__pycache__/`",
+            "file": "templates/gitignore.purlin",
+            "line": 11,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-153: the test sets up a project and checks that `/purlin-report.html` is a whole line of the `.gitignore` it wrote, which is the case and the value the proof names.",
+          "PROOF-154: the test sets up a project and checks that `.purlin/runtime/` is a whole line of the `.gitignore` it wrote, which is the case and the value the proof names.",
+          "PROOF-176: the test sets up a project and checks that `__pycache__/` is a whole line of the `.gitignore` it wrote, which is the case and the value the proof names.",
+          "The spot tests found nothing, and each test compares an exact line taken from the proof and not from the code, so a missing or altered line fails it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "de412811ed3a507474e7956ca8326cb7f278a617bb53cf923769e4ad94ee7b59",
+        "rule_hash": "ec40c6666c2a0272784320a8ee6fa0b6945a4f9a65a7ef3216add49169031fda",
+        "test_hash": "9757e3db919af5a2131e3c02a4bdbe1e52f05913488a7903e4d11d02a95e7b4c",
+        "verdict": "strong"
+      },
+      "RULE-68": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-157": {
+            "after": "    except EOFError:\n        return 'y'",
+            "aim": "plain",
+            "before": "    except EOFError:\n        return ''",
+            "bug_key": "f5d30ace0075135dd26da8b6a297fdfd174a0a495649be33a0b8e3e1fcfa9710",
+            "case": "a pytest project set up with nothing to answer from; the proof says no line starts `Committed` and the last commit is the one it had before; the changed code reads the end of input as yes, commits and prints `Committed <sha7>, the files setup wrote:`",
+            "file": "scripts/init/scaffold.py",
+            "line": 115,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-158": {
+            "after": "    paths = to_commit(root, plan.files)\n    if paths and args.yes:\n        print(COMMIT_QUESTION)\n    if paths and (args.yes or yes_or_no(COMMIT_QUESTION) in ('y', 'yes')):",
+            "aim": "past the test",
+            "before": "    paths = to_commit(root, plan.files)\n    if paths and (args.yes or yes_or_no(COMMIT_QUESTION) in ('y', 'yes')):",
+            "bug_key": "b9e54d4ec58ab3c55f84890219c04c3b1e7b84030cde3dd34f09aebd6ef0d669",
+            "case": "a pytest project set up with `--yes`; the proof says no commit question is shown; the changed code prints the line `Commit the files setup wrote?` before it commits",
+            "file": "scripts/init/scaffold.py",
+            "line": 389,
+            "result": "survived",
+            "test_key": "f3efa96bd87f8635a1cb22b31f3ce6b5870ac54bf3f030d9c5c9709bcdbd7b4a",
+            "why": ""
+          },
+          "PROOF-160": {
+            "after": "COMMIT_SUBJECT = 'chore(init): set up purlin'",
+            "aim": "plain",
+            "before": "COMMIT_SUBJECT = 'chore(init): set up Purlin'",
+            "bug_key": "98c7dc4b47112879b559656eccf56439430bd39ac572cd931a5f743b88f05233",
+            "case": "a git project with no commit yet set up with `--yes`; the proof says its one commit is `chore(init): set up Purlin`; the changed code gives one commit `chore(init): set up purlin`",
+            "file": "scripts/init/scaffold.py",
+            "line": 56,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-157: the test runs setup with no input, finds the question line, checks it sits right after the last `wrote`, `kept` or `copied` line, checks no line starts `Committed`, and compares the last commit with the one read before, so each result the proof names is observed.",
+          "PROOF-157: the question line is found through the constant `COMMIT`, whose value is not in the source shown, so whether it holds the proof's `Commit the files setup wrote? [y/N] ` cannot be read here.",
+          "PROOF-158: the test reads the last commit's subject, the `Committed` line with the first seven characters of the last commit, and the three file lines after it, each against the values the proof names.",
+          "PROOF-158: the test takes \"no commit question is shown\" as the absence of `[y/N]` alone, so the question's words printed without that suffix would still pass.",
+          "PROOF-158: `project.run()` is a helper whose source is not shown, so that it passes `--yes` is assumed and not read.",
+          "PROOF-160: the test first checks the project has no commit, runs setup, and compares the whole list of commit subjects with the single `chore(init): set up Purlin`, so both the count and the subject the proof names are observed.",
+          "PROOF-160: `made.run()` is the same unshown helper, so that it passes `--yes` is assumed here too.",
+          "The rule also says `y` and `yes` commit and that any other answer or an empty one commits nothing; of the three proofs shown, only the end of input and `--yes` are exercised, so a typed answer is not observed by these tests.",
+          "Findings: the spot tests found nothing, and each test holds failable assertions on values its proof names."
+        ],
+        "findings": [
+          "PROOF-158: the test still passes when scripts/init/scaffold.py:389 reads \"if paths and args.yes:\"",
+          "PROOF-158: the AI says this breaks: a pytest project set up with `--yes`; the proof says no commit question is shown; the changed code prints the line `Commit the files setup wrote?` before it commits"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "abaaeb13998c204d804d49094f539550969e8a71544ea6a1ae4f55cf4f5cc0f6",
+        "rule_hash": "3c16851228bed2db36c94b6e4eb009b6244dc8220c71977cab3c6c8307bfe769",
+        "test_hash": "8991285b4929b657e507efb7ecf5980718bfe22c82642a1f89b59249cff667fa",
+        "verdict": "weak"
+      },
+      "RULE-70": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-159": {
+            "after": "        done = _git_run(root, 'commit', '-q', '-m', COMMIT_SUBJECT)",
+            "aim": "plain",
+            "before": "        done = _git_run(root, 'commit', '-q', '-m', COMMIT_SUBJECT,\n                        '--', *paths)",
+            "bug_key": "87edf1574ccf82a1bb83c22eba32e70dc4b1e1227b60f0e1cf59075fa8894029",
+            "case": "a project with notes.txt staged is set up with --yes; the proof says the commit holds exactly .gitignore, .purlin/config.json and .purlin/evidence/README.md and notes.txt is still staged; the changed code commits notes.txt too and leaves nothing staged",
+            "file": "scripts/init/scaffold.py",
+            "line": 281,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-174": {
+            "after": "COMMIT_SUBJECT = 'chore(init): set up purlin'",
+            "aim": "plain",
+            "before": "COMMIT_SUBJECT = 'chore(init): set up Purlin'",
+            "bug_key": "0ab1aa31e006e7bbe41f7b2bf5c822c610e5db8820ad162dd5b77ccb270a9088",
+            "case": "a git project with no commit is set up with nothing to answer from, then again with --yes; the proof says its one commit is `chore(init): set up Purlin`; the changed code makes the commit `chore(init): set up purlin`",
+            "file": "scripts/init/scaffold.py",
+            "line": 56,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-175": {
+            "after": "            for entry in status.stdout.split(b'\\0')\n            if len(entry) > 3 and entry.startswith(b'??')}",
+            "aim": "plain",
+            "before": "            for entry in status.stdout.split(b'\\0') if len(entry) > 3}",
+            "bug_key": "a4e6575644d5eed022544807d101e0dc4a79a99f11684876df67b6b96ba24d85",
+            "case": "a project whose commit holds README.md and a .gitignore reading node_modules/ is set up with nothing to answer from, then with --yes; the proof says the commit holds exactly .gitignore, .purlin/config.json and .purlin/evidence/README.md; the changed code leaves .gitignore out",
+            "file": "scripts/init/scaffold.py",
+            "line": 273,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-159: the test stages notes.txt, runs setup, and compares the sorted names in the HEAD commit with the three files the proof names and the staged list with notes.txt, so it observes both results the proof names.",
+          "PROOF-174: the test runs setup with no answer, checks that no commit exists, runs again with --yes, and compares the three lines after the `Committed <sha7>` line, in order, and the full list of commit subjects with the values the proof names.",
+          "PROOF-174: the test reads only the three lines after the `Committed` line, so a fourth file line printed after them would still pass.",
+          "PROOF-175: the test commits README.md and a .gitignore reading node_modules/, checks the first run leaves HEAD as it was, then checks the second run adds one commit on top whose sorted names are the three files the proof names.",
+          "The spot tests found nothing, and each test compares literal values taken from its proof rather than values taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "38e8edbce5065668310780e25b8771fc0b1e5febe623f8d603806b3adf19c4d0",
+        "rule_hash": "0e86a2541ff123bb3b03e793dc842580d518865f5bb2bfd151fdc7cad8773f55",
+        "test_hash": "bd9a2063b19855ce99d566861372b0d0929481f50285f4f166e4dd925aabb96a",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-61": {
+            "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('jest.config.js', 'module.exports = {};\\n', own=True)",
+            "aim": "plain",
+            "before": "    write_gitignore(plan)\n    write_evidence(plan)",
+            "bug_key": "4f69bae7478280b75bc58624e5ca5796a1f23d5663c766687cfbbe6b4c36f556",
+            "case": "a Jest project whose jest.config.js reads \"// ours\" is set up; the proof says the file still reads \"// ours\" and the summary does not name it; the changed code rewrites it to \"module.exports = {};\" and prints \"wrote jest.config.js\"",
+            "file": "scripts/init/scaffold.py",
+            "line": 381,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('conftest.py', '')",
+            "aim": "plain",
+            "before": "    write_gitignore(plan)\n    write_evidence(plan)",
+            "bug_key": "94838d6e23f80bfa1b3b51290357b3215b932e49431f7dd7d8da077df4dc3375",
+            "case": "a pytest project with no conftest.py is set up; the proof says it holds no conftest.py afterwards, the summary names none and only Purlin's seven paths are added; the changed code writes conftest.py and prints \"wrote conftest.py\"",
+            "file": "scripts/init/scaffold.py",
+            "line": 381,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-8: the test removes `conftest.py`, runs setup, and asserts the file is absent, the output does not hold `conftest.py`, every earlier file is unchanged in the tree and the added paths equal the proof's seven exactly, so each result the proof names is compared.",
+          "PROOF-8: the byte-for-byte comparison rests on the `tree` helper, whose source is not shown, so whether it reads file contents or only names cannot be seen from the test.",
+          "PROOF-61: the test writes `// ours` into `jest.config.js`, runs setup, and asserts the file reads `// ours` and the output does not hold `jest.config.js`, which are both results the proof names.",
+          "The spot tests found nothing, and both tests hold failable assertions on the values their proofs name.",
+          "No proof of the rule names a Vitest configuration or a logger directly; a logger file in the pytest project would be seen only through PROOF-8's list of added paths."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "a7ee578ea337cabb7cf4a42445427b2c113f0316da8cbc8040a8ecd03cec4ba9",
+        "rule_hash": "9f49e645b6e51e9f2a51051d3441c336d05548df8e3c3c86cd62c82596c25c3c",
+        "test_hash": "dbdcaf2a12d3ddc25200a30f6dd4d1d25a99e3a32a3daca206d2746d50dc9e99",
+        "verdict": "strong"
+      },
+      "RULE-82": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-128": {
+            "after": "        return EXIT_BAD_INVOCATION",
+            "aim": "plain",
+            "before": "        return EXIT_UNREADABLE_SETTINGS",
+            "bug_key": "6981759b42365aff9e4d40e7225487db694bfbaa401ab798a770196174da50a1",
+            "case": "setup of a project whose .purlin/config.json holds a comma after its last value; the proof says it exits 1; the changed code exits 2",
+            "file": "scripts/init/scaffold.py",
+            "line": 373,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-161": {
+            "after": "        if line.startswith('error: '):",
+            "aim": "plain",
+            "before": "        if line.startswith(('fatal: ', 'error: ')):",
+            "bug_key": "506555271726de04fc009dc80928f24b7be8b4afebbb344d072314f9db6a5cc7",
+            "case": "setup with --yes where git has no author email and guessing is off; the proof says the line ends `no email was given and auto-detection is disabled.`; the changed code ends it with the first line git printed, `Author identity unknown.`",
+            "file": "scripts/init/scaffold.py",
+            "line": 244,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-31": {
+            "after": "        print(NOT_A_REPOSITORY)",
+            "aim": "plain",
+            "before": "        print(NOT_A_REPOSITORY, file=sys.stderr)",
+            "bug_key": "43cc31e63a887d829fca4be5c0833e2e27a53403902ecc5282f1b798a99dea6b",
+            "case": "init with --yes in an empty folder that is not a git repository; the proof says the error output is the one line `This is not a git repository. Run git init, then purlin:init.`; the changed code prints that line on standard output and leaves the error output empty",
+            "file": "scripts/init/scaffold.py",
+            "line": 365,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-31: the test runs setup with `--yes` in a new empty folder outside any repository and compares the exit code with 2, the whole error output with the proof's line and the folder's listing with an empty list, so each of the three results the proof names is checked.",
+          "PROOF-128: the test writes a settings file with a comma after its last value, compares the exit code with 1, looks for the proof's sentence as a whole line of the output and compares the project's files before and after.",
+          "PROOF-128: the test takes the cause in the middle of that sentence from Python's own JSON reader on the same text, not from setup, and accepts the sentence on either the standard or the error output.",
+          "PROOF-161: the test removes every author git could find, turns guessing off, runs setup with `--yes` and looks for the proof's sentence as a whole line of the standard output and for `.purlin/config.json` among the staged files, so both results the proof names are checked.",
+          "PROOF-161: the test also compares the exit code with 0, which the proof does not name.",
+          "The spot tests found nothing, and each test reads the values its proof names after running setup itself."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "35ff6a8c6f03e32f9e400b9fdeffdc70c32c4017721df54547484a703db71795",
+        "rule_hash": "f52e17b9784db091adc8655c56ad02e954f96c95610d080319554a54a12b3f8e",
+        "test_hash": "2da0f61955e173a841652f8667aaaf9a968c6b7fff7eaa75b992584d1e7fbd87",
+        "verdict": "strong"
+      },
+      "RULE-83": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-171": {
+            "after": "    sys.stderr.write('Skip the proofs for other systems? [y/N] ')\n    sys.stderr.flush()\n    paths = to_commit(root, plan.files)",
+            "aim": "past the test",
+            "before": "    paths = to_commit(root, plan.files)",
+            "bug_key": "bd6d906470a5909f6f3bc3bd934b3a323646862ffa441efd428ef38b9f57133e",
+            "case": "a new pytest project with a proof tagged for another system, set up with nothing to answer from; the proof says `[y/N]` appears exactly once, on the commit line; the changed code's output holds `[y/N]` twice, the second on a question written to standard error",
+            "file": "scripts/init/scaffold.py",
+            "line": 388,
+            "result": "survived",
+            "test_key": "8c9af131ed25ee15fdacc4fb0dcd38ce16c5d12292758fff8b177a63f6766dc8",
+            "why": ""
+          },
+          "PROOF-172": {
+            "after": "              else ['pytest']}",
+            "aim": "plain",
+            "before": "              else template['tests']}",
+            "bug_key": "43c359337d644369ac3b18ba6bcabe951d79d21ce4f1c4c365e196c9117b9f3b",
+            "case": "a new pytest project set up with nothing to answer from; the proof says `tests` is an empty list; the changed code writes `tests` as [\"pytest\"]",
+            "file": "scripts/init/scaffold.py",
+            "line": 210,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-88": {
+            "after": "    for line in plan.lines:\n        print(line)\n    sys.stderr.write('Which command runs the tests? ')\n    sys.stderr.flush()\n    sys.stdin.readline()",
+            "aim": "past the test",
+            "before": "    for line in plan.lines:\n        print(line)",
+            "bug_key": "b2f3fc1b5774abe6282291ea4b3fc3fb678aca99d160033b959cfd60e2c4a644",
+            "case": "an empty git project set up with nothing to answer from; the proof says the one question asked is `Commit the files setup wrote?`; the changed code also asks `Which command runs the tests?` on standard error and reads an answer",
+            "file": "scripts/init/scaffold.py",
+            "line": 385,
+            "result": "survived",
+            "test_key": "4ddcbd2a9d57737c74da460d4014ccbcba01c32599b98139740bf19c350d5827",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-171: the test tags a proof for another system, runs setup, and checks that standard output holds `[y/N]` once and that its line equals a constant `COMMIT`, whose definition is not shown.",
+          "PROOF-171: the test never reads standard error, so a second `[y/N]` question written there would still pass.",
+          "PROOF-172: the test reads the settings file and compares its sorted keys with `tests` and `version`, `tests` with an empty list, and `version` with a constant `VERSION`, whose source is not shown.",
+          "PROOF-172: every value the proof names is compared, so a wrong key set, a non-empty `tests` or a wrong `version` fails it, provided `VERSION` is read from the plugin's file and not from the code under test.",
+          "PROOF-88: the test checks the exit code, that the only standard-output line ending ` [y/N] ` is `Commit the files setup wrote?`, that standard output holds one `?`, and that `tests` is an empty list.",
+          "PROOF-88: the count of questions is taken from standard output alone, so a second question asked on standard error would still pass.",
+          "Findings: the spot tests found nothing, and each test holds failable assertions on the values its proof names."
+        ],
+        "findings": [
+          "PROOF-171: the test still passes when scripts/init/scaffold.py:388 reads \"sys.stderr.write('Skip the proofs for other systems? [y/N] ')\"",
+          "PROOF-171: the AI says this breaks: a new pytest project with a proof tagged for another system, set up with nothing to answer from; the proof says `[y/N]` appears exactly once, on the commit line; the changed code's output holds `[y/N]` twice, the second on a question written to standard error",
+          "PROOF-88: the test still passes when scripts/init/scaffold.py:385 reads \"sys.stderr.write('Which command runs the tests? ')\"",
+          "PROOF-88: the AI says this breaks: an empty git project set up with nothing to answer from; the proof says the one question asked is `Commit the files setup wrote?`; the changed code also asks `Which command runs the tests?` on standard error and reads an answer"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "2aad491aa847b2e45331de52c4ac963b8bb5cb975d3a263078c368ac00173dce",
+        "rule_hash": "c62df1950c217c9e0c637a561d1a7ab255972975894f07f2bc7bf77146651280",
+        "test_hash": "215494b453346cbeb291c98ab023070f7906145f058fcb8f2d798c974a7e697c",
+        "verdict": "weak"
+      },
+      "RULE-84": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-178": {
+            "after": "    for flag in ('--update', '--yes', '--Force'):",
+            "aim": "past the test",
+            "before": "    for flag in ('--update', '--yes'):",
+            "bug_key": "e4c21d4ca8754e03a6fe07fd9244641759e1b53952da46319771dce481bae322",
+            "case": "setup's usage asked for with `--help`; the proof says it lists exactly `--apply`, `--help`, `--project-root`, `--test-command`, `--update` and `--yes`; the changed code also lists `--Force`",
+            "file": "scripts/init/scaffold.py",
+            "line": 316,
+            "result": "survived",
+            "test_key": "3c3526c2d7aacecbf8d6c68ea5b589e094d2cd761242c59d2ac23720f61b3bda",
+            "why": ""
+          }
+        },
+        "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-178: the test runs setup with `--help`, reads exit 0 and compares the sorted set of flags found in the usage with the six the proof names.",
+          "PROOF-178: the flags are found with a pattern that matches only names opening with a lower-case letter, so a listed flag that opens with a capital or a digit is not seen.",
+          "PROOF-178: the test runs setup with `--colour` and reads exit 2, `unrecognized arguments: --colour` in the error output and the project's tree equal to the tree taken before the run, which is what the proof names for that case.",
+          "PROOF-178: the spot tests found nothing, and each assertion compares against a literal or a tree taken before the run, none against a value the code under test computes."
+        ],
+        "findings": [
+          "PROOF-178: the test still passes when scripts/init/scaffold.py:316 reads \"for flag in ('--update', '--yes', '--Force'):\"",
+          "PROOF-178: the AI says this breaks: setup's usage asked for with `--help`; the proof says it lists exactly `--apply`, `--help`, `--project-root`, `--test-command`, `--update` and `--yes`; the changed code also lists `--Force`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-178 holds two cases, the usage listed with `--help` and the refusal of `--colour`."
+        ],
+        "proof_hash": "b018143907ceb1f16a39e46fec3d4b4fd9585cde0f124d51f1d3b37ab836b477",
+        "rule_hash": "597597cf4025a924aaeb6557e345445d5295a7b1b08532da3ba624f3a088717d",
+        "test_hash": "ed5b7869bcf392f5ef265d25b7c16bfbfb0b9527074e23d9dd31c55ee6e1c49f",
+        "verdict": "weak"
+      }
+    }
+  },
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:50Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T15:07:55Z",
+      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +775,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -28,12 +783,6 @@
           "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_nothing_is_written_into_a_pytest_suite"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -42,12 +791,6 @@
           "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_runner_config_the_project_wrote_is_left_alone"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-108",
           "manual": false,
@@ -56,12 +799,6 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_what_appears_is_exactly_what_the_summary_wrote"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -70,12 +807,6 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_a_second_run_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -84,12 +815,6 @@
           "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_tests_setting_the_project_carries_is_kept"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
@@ -98,12 +823,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -112,12 +831,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_the_copy_sets_a_project_up_the_same_way"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-23",
           "manual": false,
@@ -126,12 +839,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_no_project_file_names_a_development_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-132",
           "manual": false,
@@ -140,12 +847,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -154,12 +855,6 @@
           "test": "dev/test_init_scaffold.py::TestNoHookIsInstalled::test_no_git_hook_is_written_at_all"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-112",
           "manual": false,
@@ -168,12 +863,6 @@
           "test": "dev/test_init_scaffold.py::TestNoHookIsInstalled::test_a_hook_someone_else_wrote_is_left_alone"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -182,12 +871,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_the_project_to_the_upgrade"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-177",
           "manual": false,
@@ -196,12 +879,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_over_the_migrations_named_and_a_test_command"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-36",
           "manual": false,
@@ -210,12 +887,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_test_run_commits_the_work_then_its_evidence"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-119",
           "manual": false,
@@ -224,12 +895,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_sign_off_makes_a_signed_commit_naming_the_signer"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-93",
           "manual": false,
@@ -238,12 +903,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_first_sign_off_writes_the_signed_tag"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-37",
           "manual": false,
@@ -252,12 +911,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_python_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-94",
           "manual": false,
@@ -266,12 +919,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_typescript_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-95",
           "manual": false,
@@ -280,12 +927,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_csharp_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -294,12 +935,6 @@
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_first_run_writes_the_readme"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-136",
           "manual": false,
@@ -308,12 +943,6 @@
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_on_windows_the_readme_is_the_bytes_purlin_ships"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-153",
           "manual": false,
@@ -322,12 +951,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_dashboard_page"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-154",
           "manual": false,
@@ -336,12 +959,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_runtime_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-176",
           "manual": false,
@@ -350,12 +967,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_bytecode_cache"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-157",
           "manual": false,
@@ -364,12 +975,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_with_no_answer_nothing_is_committed"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-158",
           "manual": false,
@@ -378,12 +983,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_yes_commits_the_files_and_names_them"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-160",
           "manual": false,
@@ -392,12 +991,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_project_with_no_commit_gets_setup_s_as_its_first"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-159",
           "manual": false,
@@ -406,12 +999,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_file_already_staged_stays_out_of_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-174",
           "manual": false,
@@ -420,12 +1007,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_second_run_with_yes_commits_what_the_first_wrote"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-175",
           "manual": false,
@@ -434,12 +1015,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_tracked_gitignore_is_committed_by_the_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-31",
           "manual": false,
@@ -448,12 +1023,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_outside_a_repository_setup_refuses"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-128",
           "manual": false,
@@ -462,12 +1031,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_a_settings_file_that_cannot_be_read_stops_setup"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-161",
           "manual": false,
@@ -476,12 +1039,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_git_refusing_leaves_the_files_staged_and_says_so"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-171",
           "manual": false,
@@ -490,12 +1047,6 @@
           "test": "dev/test_init_scaffold.py::TestTheQuestion::test_a_foreign_proof_adds_no_question_to_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-172",
           "manual": false,
@@ -504,12 +1055,6 @@
           "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_settings_hold_version_and_an_empty_tests"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
@@ -518,12 +1063,6 @@
           "test": "dev/test_init_scaffold.py::TestTheQuestion::test_an_empty_project_is_asked_only_whether_to_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:50Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-178",
           "manual": false,

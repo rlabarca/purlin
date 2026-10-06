@@ -1,9 +1,306 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "0.10",
+            "aim": "plain",
+            "before": "0.10.0",
+            "bug_key": "f24c2e4b72e151ad61143d54c79c2e8e2689d3031aaa08a62d9d466d41e26f86",
+            "case": "the VERSION file at the project root is read; the proof says it holds exactly three whole numbers joined by dots; the changed file holds 0.10, two numbers",
+            "file": "VERSION",
+            "line": 1,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-14": {
+            "after": null,
+            "aim": "plain",
+            "before": null,
+            "bug_key": "713287b9ce64cfe436c740569dafe15ef5563a98e58fe6ec884f172fd496d60b",
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "why": "the check that refuses `v0.10.0` is version_text_is_semver, which is in none of the files given, and the test hands it a literal string that none of those files can change."
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-1: the test reads the real VERSION file and asserts version_text_is_semver accepts its text, so the meaning of \"three whole numbers and nothing else\", and the setting aside of whitespace, rest on a helper whose source is not shown.",
+          "PROOF-14: the test hands the literal 'v0.10.0' to the same helper and asserts it is refused, which is the proof's value and result, but it reads no VERSION file, so \"read the same way\" is shown only for the helper and not for the reading of the file.",
+          "No proof of the rule names a file with something after the numbers, such as a second line or a suffix, so \"nothing else\" is shown only for a letter in front."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: the model found no change that would break PROOF-14: the check that refuses `v0.10.0` is version_text_is_semver, which is in none of the files given, and the test hands it a literal string that none of those files can change."
+        ],
+        "proof_hash": "3fb6a7f77c91c8150c835819ef8988fa52d085192a45928097091b295181d11a",
+        "rule_hash": "4c459eb9778ffca941022c74b71922a240214a133bc83f127172d7b5ecd8d00e",
+        "test_hash": "095e1cb99f2a9993dd09103c7f8f223958e2739b27e59b50571f648c1990f322",
+        "verdict": "strong"
+      },
+      "RULE-12": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-39": {
+            "after": "    moved = re.sub(r\"(--branch signed/)\\S+\", lambda m: m.group(0), text)",
+            "aim": "plain",
+            "before": "    moved = re.sub(r\"(--branch signed/)\\S+\", lambda m: m.group(1) + new, text)",
+            "bug_key": "4b1f1d4cb2a1c304b847b5f31556ecc3675617f2601373eaef6f23d8f980b466",
+            "case": "a page with git clone --branch signed/1.2.3, the script run with 9.8.7; the proof says the page then reads signed/9.8.7; the changed code leaves the page reading signed/1.2.3",
+            "file": "dev/bump_version.sh",
+            "line": 76,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "data[\"version\"] = data.get(\"version\", new)",
+            "aim": "plain",
+            "before": "data[\"version\"] = new",
+            "bug_key": "412da98d519621961211cc0a94a40207c7f057f3faef0ee67352f1125c692584",
+            "case": "a temporary project at 1.2.3, the script run with 9.8.7; the proof says both JSON files then read 9.8.7; the changed code leaves both JSON files reading 1.2.3",
+            "file": "dev/bump_version.sh",
+            "line": 85,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-7: the test checks the starting `1.2.3` in the `VERSION` file and both JSON files, runs the script with `9.8.7`, and compares the exit code with 0 and all three files with the literal `9.8.7`, so it observes every result the proof names.",
+          "PROOF-39: the test compares the whole page after the bump with a literal text holding `signed/9.8.7`, which covers both the new tag and \"otherwise unchanged\" for that page.",
+          "PROOF-39: after setting the page back to `signed/1.2.3`, the test compares the exit code of `--check` with 1 and the page's line with `DRIFT 1.2.3 (expected 9.8.7)` word for word.",
+          "The spot tests found nothing, and both tests compare literals the proofs name rather than values taken from the script."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-39 holds two cases, the bump moving the page's tag and `--check` naming the drift after the page is set back."
+        ],
+        "proof_hash": "8c528c3ca5ad7040bbebc68d151b3c800e1f4f9dadbc09d0a5e0de751f788956",
+        "rule_hash": "ae5a92fca79e037cc33f05e25348ce12790533b4efeeb18f0b21e10d58199775",
+        "test_hash": "e3bc5383f3ad0b8092749237cf03a0437914d2bb54aedef05be214ba52d7b929",
+        "verdict": "strong"
+      },
+      "RULE-14": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-29": {
+            "after": "        printf '  %-30s DRIFT %s (expected %s)\\n' \"$rel\" \"$CURRENT\" \"$got\"",
+            "aim": "plain",
+            "before": "        printf '  %-30s DRIFT %s (expected %s)\\n' \"$rel\" \"$got\" \"$CURRENT\"",
+            "bug_key": "5b926425e08a3118922894dbed5317f444c7b29d27e3e617b453cd840d4047cd",
+            "case": "VERSION at 9.8.7 and .purlin/config.json at 1.2.3, then --check; the proof says the config line reads DRIFT 1.2.3 (expected 9.8.7); the changed code gives DRIFT 9.8.7 (expected 1.2.3)",
+            "file": "dev/bump_version.sh",
+            "line": 124,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-29: the test builds a temporary project at 9.8.7, sets the settings file to 1.2.3, runs --check and compares the exit code with 1, which is the value the proof names.",
+          "PROOF-29: the test compares the settings line's words with DRIFT, 1.2.3, (expected and 9.8.7), and the plugin manifest line's words with ok and 9.8.7, so both lines the proof names are checked against literals.",
+          "PROOF-29: the lines are compared word by word, so a change in the spacing between the words would pass, while any change to a word, a version or the exit code fails the test.",
+          "PROOF-29: the spot tests found nothing, and the test leaves no value of the proof unchecked."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "dd6c76ec9284492a159ae6a6e59a4105e014da3b428eccc085200ffbea1d5ce4",
+        "rule_hash": "5f4cbb9392e25f3b9b4a4b8e6dcef1d32f7db06833be12ad3e7ba6cc0c46a27c",
+        "test_hash": "214c100c315f43f8faf29de5a6c6437d39f0113fb31e8b4602c42ffc53fa19b8",
+        "verdict": "strong"
+      },
+      "RULE-16": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-38": {
+            "after": "  \"name\": \"purlin-marketplace\",\n  \"owner\": {",
+            "aim": "past the test",
+            "before": "  \"name\": \"purlin\",\n  \"owner\": {",
+            "bug_key": "3cac8d8d7c2023f15f5726e0b7474621c72e0e0c66035b964fd258ac2ad28c75",
+            "case": "the marketplace manifest's name is read; the proof says `purlin`; the changed manifest gives `purlin-marketplace`",
+            "file": ".claude-plugin/marketplace.json",
+            "line": 2,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-38: the test loads the real manifest and asserts that `marketplace_problems` returns an empty list, so everything the proof names is checked only through that helper, whose source is not shown here.",
+          "PROOF-38: the two made-up manifests show the helper reporting a second plugin and a source other than `./`, which are two of the proof's three values.",
+          "PROOF-38: no made-up manifest carries a wrong marketplace name or a single plugin with a wrong name, so the test does not show that the helper compares either with `purlin`.",
+          "PROOF-38: the spot tests found nothing, and that holds as far as the text goes: the test asserts against literals and `purlin` and `./` both appear in its file."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "8cb73ba5829e6ec9297f22b3383d29b3716e078d567111a9340e886cfdfa0f5e",
+        "rule_hash": "a4c6cffb4712dc30f7cc870379cf872671066a07d8a79b7301342ae5ae14b9ab",
+        "test_hash": "b5217a869cd20228a0f15ceccef807523b7ce932ecced8ca39bc68ce191db353",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-16": {
+            "after": "SERVER_INFO = {\"name\": \"purlin\", \"version\": \"0.10.0\"}",
+            "aim": "plain",
+            "before": "SERVER_INFO = {\"name\": \"purlin\", \"version\": PURLIN_VERSION}",
+            "bug_key": "d9b64fa34c489fb005032c0bdc16efbbaef0ea1fa864571f89c714054d2c9ee2",
+            "case": "a client sends the opening handshake to a copied server beside a VERSION file reading 9.8.7; the proof says the answer names purlin at version 9.8.7; the changed code gives version 0.10.0",
+            "file": "scripts/mcp/purlin/server.py",
+            "line": 41,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-2": {
+            "after": "PURLIN_VERSION = '0.10.0'",
+            "aim": "plain",
+            "before": "PURLIN_VERSION = _read_version()",
+            "bug_key": "cd5d61c35e5df006f539ccc015c1637ded6360767d26cc2fe8c05f62328b4dcb",
+            "case": "a copied package beside a VERSION file reading 9.8.7, loaded in a fresh process; the proof says the package and its server report 9.8.7; the changed code gives 0.10.0 for both",
+            "file": "scripts/mcp/purlin/__init__.py",
+            "line": 36,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-2: the test copies the package beside a VERSION file reading 9.8.7 and compares the two reported values with the list of 9.8.7 twice, which is the pair the proof names.",
+          "PROOF-2: the two values come from a helper whose source is not shown, so the reading takes on trust that it loads the copy in a fresh process and reads both the package's and the server's value.",
+          "PROOF-16: the test starts the copied server as a process, sends the opening handshake and compares the whole server description with the name purlin and version 9.8.7, as the proof names.",
+          "PROOF-16: the test also requires a clean exit before reading the answer, so a server that fails to start fails the test.",
+          "The spot tests found nothing, and both tests compare a literal 9.8.7 that differs from this checkout's 0.10.0, so a version written into the code would show."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "cee4b79bdecb10f08fd9848c0fa74d929b666c7df3633b14da38caf2a709b199",
+        "rule_hash": "a952f42cdc6cc36aaabf559289201e34c7955cdb52969d82e530e039cb277936",
+        "test_hash": "19cdf4c43e035887eb8f73cd6e613d8f47c5e42cbe4215e853aa21c24837cdda",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-21": {
+            "after": "    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip().rsplit('.', 1)[0],",
+            "aim": "plain",
+            "before": "    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip(),",
+            "bug_key": "abac3d9338a0c09403aefe6e8c89e904c2e021f5e630905fffbf5e2eaa4df323",
+            "case": "setup run with --yes in a new empty git repository; the proof says the config's version reads exactly what VERSION reads, 0.10.0; the changed code writes 0.10",
+            "file": "scripts/init/scaffold.py",
+            "line": 208,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-21: the test runs setup with `--yes` in a new git repository holding no files, asserts the exit code is 0, then reads the new project's `.purlin/config.json` and compares its `version` key for equality with the text of the `VERSION` file, which is the case and both results the proof names.",
+          "PROOF-21: the expected value comes from `version_file_text()`, a helper whose source is not shown; the check is independent of the code under test only if that helper reads the `VERSION` file itself rather than going through the setup code.",
+          "PROOF-21: the spot tests found nothing, and the comparison is an exact equality on the one value the proof names, so a wrong, missing or truncated version fails it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "3149252d4b6882b5e7c9a8d37b2491d37769b90ed4c382295a088d6316be044b",
+        "rule_hash": "14ef8e0be81e4891926409c2be75e5b4be2808720c46b262d1def02e68f62c38",
+        "test_hash": "e409eeeaa8bd6098b8550b75edd169d9344a630564be2be26f019f32091bc063",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-5": {
+            "after": "  \"version\": \"0.10.0 \",",
+            "aim": "past the test",
+            "before": "  \"version\": \"0.10.0\",",
+            "bug_key": "c59c465ea02a58b02b1bff1d55de5dd51355c1e6a40b418e046fd95f40b43179",
+            "case": "the `version` key of `.claude-plugin/plugin.json` read beside the `VERSION` file; the proof says the value is exactly `0.10.0`, as `VERSION` reads; the changed manifest gives `0.10.0 ` with a trailing space",
+            "file": ".claude-plugin/plugin.json",
+            "line": 3,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-5: the test hands the real manifest to assert_matches_version_file, whose body is not in the request, so whether it compares the `version` value exactly or after trimming white space cannot be read from the test's own lines.",
+          "PROOF-5: the test also runs a copy with no `version` key and a copy left at an older version through two more helpers and expects each to fail, which shows the check can fail but is beyond the one case the proof names.",
+          "PROOF-5: the spot tests found nothing, and that holds as far as the test's own lines show: no literal expected value is needed, since the proof names a relation between two files and no value in backticks other than the path and the key.",
+          "PROOF-5: the planted bug keeps the key and the number and adds one trailing space to the value, so it is caught only if the comparison is exact on the manifest's side."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "b31a7b47ffdc2668d1cdcfef6a85ae4a35331dcfb0f680e7683a0f01c4915451",
+        "rule_hash": "5191125edb3dbf65539ffbd6bdccbbf7d21c18dd684f9f481e93945a134c94ee",
+        "test_hash": "fe5efdccf0b3f5226575dd88433f978efeee04c90c7a72dfd160819db87d0db7",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-06T15:44:24Z",
+        "bugs": {
+          "PROOF-6": {
+            "after": "  \"version\": \"0.10.0 \",",
+            "aim": "past the test",
+            "before": "  \"version\": \"0.10.0\",",
+            "bug_key": "d26b582748b93f1d032e9fa69ffc71fb813170bd1104a10bdad77a56fd0d7f1d",
+            "case": "this repository's `.purlin/config.json` read against `VERSION`; the proof says its `version` is exactly `0.10.0`, what `VERSION` reads; the changed file gives `0.10.0 ` with a trailing space",
+            "file": ".purlin/config.json",
+            "line": 2,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "448679e52bea8ad48609ee8a68a13d8130ee25754099d528730b5f949667435b",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "explanation": [
+          "PROOF-6: the test hands `.purlin/config.json` to `assert_matches_version_file`, a helper whose source is not shown, so whether the `version` value is compared exactly or after trimming white space cannot be read from the test's own lines.",
+          "PROOF-6: the test then checks that a copy with no `version` key and a copy with an older version both fail, which shows the comparison can fail on a missing or different number but not on a value differing only in white space.",
+          "PROOF-6: the expected value comes from the `VERSION` file and not from a literal in the test, which is what the proof names, so a change to `VERSION` alone would also be seen as a mismatch.",
+          "The spot tests found nothing, and nothing in the test's own lines contradicts that: it calls three asserting helpers and swallows no error."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "00df63dfce7fa5756ae6484e6e648d9033815329c89d132700fe991d25d15c48",
+        "rule_hash": "947c113fb11f5d6aab935058350449be02c37970c23975e3ec786701fa659228",
+        "test_hash": "06f1004b48ba03a171484f7162df024bde51ba88d221c2e7dac6e7af1327b0bc",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-10-03T16:58:49Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T15:07:56Z",
+      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -14,12 +311,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -28,12 +319,6 @@
           "test": "dev/test_purlin_version.py::test_the_version_file_holds_one_version"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-14",
           "manual": false,
@@ -42,12 +327,6 @@
           "test": "dev/test_purlin_version.py::test_a_letter_before_the_numbers_fails"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -56,12 +335,6 @@
           "test": "dev/test_purlin_version.py::test_a_copied_package_reports_the_version_file_beside_it"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -70,12 +343,6 @@
           "test": "dev/test_purlin_version.py::test_the_copied_server_names_that_version_on_the_handshake"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -84,12 +351,6 @@
           "test": "dev/test_purlin_version.py::test_a_project_init_sets_up_is_stamped_with_the_version_file"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -98,12 +359,6 @@
           "test": "dev/test_purlin_version.py::test_the_plugin_manifest_carries_the_version_file"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -112,12 +367,6 @@
           "test": "dev/test_purlin_version.py::test_this_repositorys_settings_carry_the_version_file"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -126,12 +375,6 @@
           "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_file_and_both_json_files"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
@@ -140,12 +383,6 @@
           "test": "dev/test_purlin_version.py::test_the_bump_moves_the_docs_examples_tag_and_the_check_names_its_drift"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -154,12 +391,6 @@
           "test": "dev/test_purlin_version.py::test_the_check_names_the_location_that_drifted"
         },
         {
-          "carried": {
-            "at": "2026-10-03T16:58:49Z",
-            "commit": "8e1b07d607a3fa33fb5cb0819c77e891319d421f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,

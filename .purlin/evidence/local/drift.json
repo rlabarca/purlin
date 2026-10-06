@@ -34,7 +34,7 @@
         "verdict": "strong"
       },
       "RULE-10": {
-        "at": "2026-10-05T18:47:59Z",
+        "at": "2026-10-06T15:44:24Z",
         "bugs": {
           "PROOF-17": {
             "after": "            row['remote_sha'] = result['remote_sha'][:8]",
@@ -59,28 +59,40 @@
             "why": ""
           },
           "PROOF-40": {
-            "after": "        return {'error': url[:200]}",
+            "after": "        return {'error': ' '.join(result.stderr.split()[:2])[:200]}",
             "aim": "past the test",
             "before": "        return {'error': ' '.join(result.stderr.split())[:200]}",
-            "bug_key": "223ece91915a95d94ffdfdafae348706ff9ad5a483094e689f2475791ce47923",
-            "case": "the anchor policy pinned to a path with no repository; the proof says the row and the line hold a reason naming that path; the changed code gives the bare path alone, with none of git's message saying why it could not be read",
+            "bug_key": "978a0d738036c45f1acee7556c2c8a623495458cba48b6bb79adf04951e74ed8",
+            "case": "the anchor `policy` pinned to a source path where no repository exists; the proof says the reason is git's own message for that path, saying more than the path; the changed code gives only `fatal: '<the path>'`, with none of git's words on why",
             "file": "scripts/mcp/purlin/drift.py",
             "line": 199,
-            "result": "caught",
+            "result": "survived",
+            "test_key": "b4984b0479bb075d189c41f707e83912c01864b9b22efd57c009af19da339044",
             "why": ""
           }
         },
         "code_hash": "d742e6aad5ddbe06401ca1b6fdf10819211ba005a0fb3e0cf7161b069408ac15",
-        "commit": "67c84358808275836365042584ad0fb9bda06b20",
+        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "explanation": [
+          "PROOF-17: the test pins an anchor to a real repository's first commit, adds a second, and compares the single row's name, its `behind` status, the new commit's 7-character sha and the whole line against shas it got from git itself.",
+          "PROOF-19: the test compares the whole row against a literal with `unpinned` and no sha, looks for the exact line, and checks that no process was handed the source.",
+          "PROOF-40: the test compares the row's name, `error` status, missing sha and the whole row, and counts the exact line once, but it takes the reason from the row the code produced.",
+          "PROOF-40: the reason is bounded only as a start of git's own message that holds the path and differs from it, so a reason cut off straight after the path, with none of git's words on why, still passes."
+        ],
+        "findings": [
+          "PROOF-40: the test still passes when scripts/mcp/purlin/drift.py:199 reads \"return {'error': ' '.join(result.stderr.split()[:2])[:200]}\"",
+          "PROOF-40: the AI says this breaks: the anchor `policy` pinned to a source path where no repository exists; the proof says the reason is git's own message for that path, saying more than the path; the changed code gives only `fatal: '<the path>'`, with none of git's words on why"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "68348edfd84d928dad9beda10b745f38e80665ccb624c2c996cf06dad89a4c44",
+        "notes": [
+          "PROOF-40 is longer than 60 words."
+        ],
+        "proof_hash": "b8d88a9851555bb01ea43726a67d70e15eadf4b92d7a82c0ef9457a46e5f3109",
         "rule_hash": "a2a61cb6332a982d73711b5652ebcc1e83f151c39a6834efb05eaa9ce9c8e75f",
-        "test_hash": "39f6ce45bbf8f2a45dcf793fc12821a7804ae6c28919b72a1dc6df850cc413a4",
-        "verdict": "strong"
+        "test_hash": "e39cbfef09cc82d52b4989515beb9ff436044d7a0151fd0477e0d0c6770b1e61",
+        "verdict": "weak"
       },
       "RULE-11": {
         "at": "2026-10-05T18:42:48Z",
