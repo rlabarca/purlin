@@ -28,8 +28,12 @@ flowchart LR
 - **More cases cost one sentence each.** A new case is a new proof line. The test follows.
 - **Nothing passes quietly.** A rule with no test is listed. A result stops counting when its
   rule, proof, test or code changes.
-- **The tests are tested.** The [audit](audit.md) plants a small bug for each proof and checks
-  that its test fails.
+- **The tests are spot-checked.** The [audit](audit.md) plants one small bug for each proof
+  and checks that its test fails. That shows the test can fail. It does not show the test
+  catches every fault.
+
+Purlin does not measure how much more is tested. It makes each of these the ordinary way to
+work.
 
 ## The evidence is one file, per version
 
@@ -100,11 +104,29 @@ records that your own process can use.
 - **It cannot prove your code is correct.** It shows which rules have tests, that the tests
   pass, and that they catch a planted bug.
 
+## What your procedures decide
+
+- **How you qualify Purlin.** State what you use it for, pin its version, and control its
+  updates, as for any tool your process relies on.
+- **What risk asks for.** Purlin treats every rule alike. Your risk assessment says which
+  requirements need more than these tests.
+- **What kind of testing this is.** These are a developer's tests on a developer's machine.
+  They are not acceptance testing in a qualified environment.
+- **Who reviews the tests.** The same AI session can write the code and its tests. Decide who
+  reads them.
+- **That every requirement has a rule.** Purlin does not compare your approved requirements
+  with its rules.
+- **The run you release on.** A full run carries forward results for code that did not
+  change. For a version meant for release, run every test: `purlin:test --clean --commit`.
+- **What was observed.** A result is pass or fail. Where you need the value a test saw, keep
+  the test's own log with the package.
+
 ## Using it
 
 1. Product and QA write the rules and proofs from the approved requirements: `purlin:spec`.
 2. The build writes code and tests to them: `purlin:build`.
-3. Every build runs them: `purlin:test`.
+3. Every build runs them: `purlin:test`. Before a release, `purlin:test --clean --commit`
+   runs every one.
 4. Check the tests would catch a bug: `purlin:audit`.
 5. When the team is done, a person signs: `purlin:sign`.
 6. File the evidence package and its sign-offs in your document control system, and approve
