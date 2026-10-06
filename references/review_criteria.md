@@ -17,6 +17,12 @@ The audit reads a rule when all of these hold:
 - it has no audit entry, or its entry is out of date because the rule, its proofs, its tests or
   its feature's code changed since, or a proof it plants a bug for has no result recorded.
 
+A test is compared by its own lines, from its declaration to the end of its body. A test
+changed through a helper it calls, with its own lines as they were, keeps its audit result.
+Change the test's own lines to have a new bug planted, or run `purlin:audit --all`, which reads
+the rule again with the spot tests and the model's reading and keeps each planted bug's
+result.
+
 An anchor's rules are read once, as the anchor's. `purlin:audit --all` reads every rule that
 passes its tests again. A rule whose every proof is `@manual` has no test to read, so it is not
 read.

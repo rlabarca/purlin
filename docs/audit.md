@@ -103,6 +103,10 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
   bugs, so a result is kept until the rule, its proof, its test or its code changes.
 - It does not say why a test now catches a bug it missed. If the code changed and the test did
   not, and the test now fails with the bug, the bug reads `caught`.
+- It does not read a test again because a helper it calls changed. A result is kept until the
+  test's own lines change: change them to have a new bug planted, or run `purlin:audit --all`,
+  which reads every rule again with the spot tests and the AI's reading and keeps each planted
+  bug's result.
 - It reads only rules whose tests pass. A failing test is fixed first.
 - It plants no bug for an anchor's rule, so an anchor's rule reads `spot-checked`, never
   `strong`.
