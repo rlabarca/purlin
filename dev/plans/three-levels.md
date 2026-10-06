@@ -1786,6 +1786,71 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - This amends decision 107's "only the sign-off requires every result to be taken on this
       exact version of the code" and decision 121's line on slow results: a carried result is
       recorded on this version, and says where it was taken.
+130. **The answers after the goal-seek test** (added 2026-10-03). A real AI session given only
+    a goal took the intended path on a sample project; what it showed was decided so:
+    - **A plain audit plants a surviving bug again before any new one**, where the code changed
+      and the test did not. Only a bug that can no longer be planted is replaced.
+    - **The first run commits the settings file**, after a question that says so: `Write this
+      tests setting to .purlin/config.json and commit that file? [y/N]`.
+    - **A sign-off is optional, and every line says so.** In the owner's words: "many people
+      wont elect to do the signoff in their project, so it must be written as optional". The
+      last line reads `Every rule passes its tests on the committed evidence. Optional: sign
+      this version with purlin:sign`.
+    - **`purlin:init --update` on a project 0.9.5 never set up restores the files setup
+      writes** and says only that.
+    - **The deck and the docs are changed when their source is**; nothing waits in a staging
+      area. Pushing waits for the owner's word.
+131. **The code says planted bug** (added 2026-10-05): `scripts/review/planted_bug.py`, the
+    evidence fields `bugs` and `bug_key`, the reply line `no bug:`. No page shows an example
+    requirement number. The Windows workflow installs pytest alone.
+132. **Purlin is audited whole, and what the audit showed is fixed** (added 2026-10-06). Every
+    rule was read in four batches and every finding worked by the build skill's steps: 566 of
+    569 rules strong.
+    - **Tests to leave out are named exactly**, so a test whose name begins with another's is
+      not left out with it.
+    - **A settle reads the spot tests again**, and **runs the slow test of the rule it
+      settles**.
+    - **The full run reads an audited anchor's spot tests again**, so its audit result stays
+      current.
+    - **An audit result is kept until the test's own lines change**; the audit page says so.
+133. **The docs are short** (added 2026-10-06), which reverses decision 120's "the docs stay as
+    long as they are". In the owner's words: "Every single decision does not have to be
+    encoded in the docs. Images should help a lot. Sentences should be shorter. Paragraphs
+    should be shorter. Headings should get big ideas across."
+    - A heading states the idea. Detail lives in the references. The only pictures added are
+      simple flow diagrams, with each box's name in bold.
+    - The audit's research moves to a page of its own.
+    - **One page for regulated work**, `docs/regulated.md`: Purlin is used beside a validated
+      document control system, such as Veeva; it names Part 11, GAMP 5 and Computer Software
+      Assurance as context and claims compliance with none. The README points regulated
+      readers at the sign-off page, which points there.
+134. **What the evidence holds for a regulated reader** (added 2026-10-06).
+    - **The test tool's own output is kept**: each test's name, outcome, duration and full
+      failure text; for a signed version the tool's report is committed with the package.
+    - **AI help is recorded where git shows it**: for each rule, proof and test, whether its
+      last change was made with an AI's help, and which.
+    - **Purlin does not compare a list of approved requirements with its rules**; that stays
+      with the document control system.
+    - **A carried result is shown at the sign-off and refused by nothing.** A regulated team
+      releases on `purlin:test --clean --commit`.
+135. **Prompts and skills are tested like anything else** (added 2026-10-06). In the owner's
+    words: "purlin must be able to create formal testing and validation evidence around a
+    codebase that produces AI prompts and skills as part of its output. it should work for
+    things like claude projects that create artifacts", and "make sure we are doing these
+    additions with the least amount of change, in an elegant way.. dont just bolt this on".
+    The plan is `dev/plans/ai-proofs-plan.md`; it goes into 0.10.0, before any sign-off.
+    - **The check stays an ordinary test** in the project's own test tool, which calls one
+      helper Purlin ships to run a skill or a prompt on a sample and hand back the output.
+    - **Two tags.** `@ai`: the test checks an AI's output exactly. `@graded`: an AI grades the
+      output against the proof's own sentence, and nothing else.
+    - **It runs several times, and all must pass.** Every run is recorded.
+    - **Results are per model.** The project's settings name the models it validates against.
+    - **A graded rule counts as passing and reads `graded`**, never `passed`.
+    - **An AI proof is a slow proof**: skipped by a plain run, run by `purlin:test --all`.
+    - **The audit plants a wrong output** and replays the same test on it.
+    - **The output is kept for a signed version**, committed with the package.
+    - **`purlin:spec-from-code` drafts behaviour rules and sample cases** for a prompt or a
+      skill.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
