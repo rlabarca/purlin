@@ -121,13 +121,25 @@ records that your own process can use.
 - **What was observed.** A result is pass or fail. Where you need the value a test saw, keep
   the test's own log with the package.
 
-## Using it
+## The workflow, step by step
 
-1. Product and QA write the rules and proofs from the approved requirements: `purlin:spec`.
-2. The build writes code and tests to them: `purlin:build`.
-3. Every build runs them: `purlin:test`. Before a release, `purlin:test --clean --commit`
-   runs every one.
-4. Check the tests would catch a bug: `purlin:audit`.
-5. When the team is done, a person signs: `purlin:sign`.
-6. File the evidence package and its sign-offs in your document control system, and approve
-   it there.
+Each step has a part in Purlin and a part in your document control system.
+
+| Step | In Purlin | In your document control system |
+|---|---|---|
+| 1. Requirements | | Approve the requirements. Each has a number. |
+| 2. Rules and test cases | Product and QA write a rule for each requirement, with its number in it, and the proofs: `purlin:spec`. | Approve the test cases, or require a review when they are merged. |
+| 3. Build | The AI writes the code and the tests to the proofs: `purlin:build`. A person reads the tests. | |
+| 4. Test, every build | `purlin:test` runs what changed and says what is left to do. | |
+| 5. Check the tests | `purlin:audit` plants a bug for each proof. Strengthen what it finds weak. | |
+| 6. A failure on a release version | Fix it and run again. The earlier result is in git. | Raise the deviation and close it. |
+| 7. The release run | `purlin:test --clean --commit` runs every test on the version to release. | |
+| 8. Sign-off | A person reads the evidence and signs it: `purlin:sign`. This is an engineering sign-off. | |
+| 9. Approval | | File the evidence package and its sign-offs. Approve and sign there. |
+| 10. A change | Change the rule or the code. Its results stop counting until the tests run again. | Approve the change to the requirement. |
+
+**Three habits make the evidence hold up:**
+
+- Write the requirement's number into its rule, so the package traces to it.
+- Never reword a rule or a proof to make a test pass. Change the requirement first.
+- Release on a `--clean` run, from a commit with nothing uncommitted.
