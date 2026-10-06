@@ -110,7 +110,12 @@ section holds:
 - the commit of the code it describes, and the time;
 - who ran it, and on which machine;
 - the fingerprint of the spec, code and tests it saw;
-- each rule's word, and each proof's result and test.
+- each rule's word, and each proof's result and test;
+- what the suite's report holds for each test: its name there, its outcome, how long it took
+  and, where it failed or was skipped, the whole text the tool reported.
+
+The run also keeps each report file it read under `.purlin/runtime/kept/`, which git ignores, so
+`purlin:sign` can commit it with the evidence package. Nothing changes in how a test is written.
 
 It prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count
 for several features. It does not commit the evidence.

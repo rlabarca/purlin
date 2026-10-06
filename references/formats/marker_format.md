@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Marker format
 
@@ -132,6 +132,8 @@ any number of `<testsuite>` elements:
 | the file | `file` on the `<testcase>`, else `file` or `filepath` on its `<testsuite>`, where the writer adds one |
 | the outcome | a `<failure>` or `<error>` child fails it, a `<skipped>` child skips it, and otherwise it passed |
 | a skip's reason | the `<skipped>` child's `message`, else its text |
+| how long it took | `time`, in seconds; none where the case has no `time` |
+| a failure's text | each `<failure>` and `<error>` child's `message` and then its text, in order, a blank line between two; a `message` the text already holds is left out |
 
 ### `trx`
 
@@ -142,6 +144,8 @@ What `dotnet test --logger trx` writes. Purlin reads each `UnitTestResult`:
 | the outcome | `outcome`: `Passed`, `Warning`, `Completed` and `PassedButRunAborted` pass; `Failed`, `Error`, `Timeout` and `Aborted` fail; any other value is skipped |
 | the class and method | the `TestMethod` of the `UnitTest` whose `id` is the result's `testId`: its `className` (a nested class after `+`) and its `name` |
 | a skip's reason | the result's `Output/ErrorInfo/Message`, else the last line of `Output/StdOut` |
+| how long it took | `duration`, written `hh:mm:ss.fffffff`, read as seconds; none where the result has no `duration` |
+| a failure's text | the result's `Output/ErrorInfo/Message`, then its `Output/ErrorInfo/StackTrace`, a blank line between them |
 
 ### `gotest`
 
@@ -154,12 +158,28 @@ command's standard output when `report` is `-`. Purlin reads each event whose
 `screens_test.go` gives `nothing to check: no screens`. Every other event, and
 every line that is not JSON, is left alone.
 
+How long a test took is the `Elapsed` of its `pass`, `fail` or `skip` event,
+in seconds, none where the event has no `Elapsed`. A failed test's text is
+every `output` event of the test, in order, `go test`'s own `=== ` and `--- `
+lines aside.
+
 ### `exit`
 
 No report. Each file `files` matches is one test: the command runs once per
 file, with `{files}` that one file, and the file passes when the command exits
 0. This is how shell and SQL scripts are tests. A file of an `exit` suite
-gives no skip reason.
+gives no skip reason, no duration and no failure text: there is no report to
+read them from.
+
+### What is kept of a report
+
+For each test the evidence keeps what the report holds for its cases, under
+`reported`: each case's name, its outcome, how long it took and, where it
+failed, stopped on an error or was skipped, the text above. The run also
+keeps each report file it read, under the sha256 of its bytes, so a sign-off
+can commit it with the evidence package.
+`references/formats/evidence_format.md`, "What the report held", holds the
+fields.
 
 ## Tying a result to its marker, by name
 

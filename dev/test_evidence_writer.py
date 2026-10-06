@@ -680,8 +680,12 @@ def test_a_run_after_a_commit_outside_the_records_writes_the_new_head(
     section = _evidence(root)['platforms'][HERE]
     assert section['commit'] == _head(root)
     assert section['at'] != before['at']
-    assert (section['rules'], section['proofs'], section['fingerprint']) == (
-        before['rules'], before['proofs'], before['fingerprint'])
+    # Each entry but what its report held, which names another report file.
+    def results(found):
+        return [{key: value for key, value in entry.items()
+                 if key != 'reported'} for entry in found['proofs']]
+    assert (section['rules'], results(section), section['fingerprint']) == (
+        before['rules'], results(before), before['fingerprint'])
 
 
 # purlin: evidence_writer PROOF-97
@@ -1126,3 +1130,90 @@ def test_over_five_features_the_subject_counts_them(tmp_path):
         'purlin: specs, tests and settings for 6 features'), out
     assert _git(root, 'log', '-1', '--format=%b',
                 'HEAD^').strip().splitlines() == names, out
+
+
+# ---------------------------------------------------------------------------
+# What the suite's report holds for a test
+# ---------------------------------------------------------------------------
+
+def _reported(duration=0.25, sha='a' * 64, outcome='pass', text=None):
+    """What a run hands over for one test of one case."""
+    case = {'name': 'test_a', 'class': 'tests.a', 'outcome': outcome,
+            'duration': duration}
+    if text is not None:
+        case['text'] = text
+    return {'cases': [case],
+            'report': {'file': '.purlin/runtime/reports/pytest.xml',
+                       'sha256': sha}}
+
+
+# purlin: evidence_writer PROOF-100
+def test_an_entry_holds_what_the_report_holds_for_its_test():
+    failed = _reported(outcome='fail', text='assert 2 == 3')
+    seen = {'PROOF-1': [dict(_seen('fail'), reported=failed)]}
+    (entry,) = _listed({'PROOF-1': PLAIN}, seen)
+    assert entry['result'] == 'fail'
+    assert entry['reported'] == {
+        'cases': [{'name': 'test_a', 'class': 'tests.a', 'outcome': 'fail',
+                   'duration': 0.25, 'text': 'assert 2 == 3'}],
+        'report': {'file': '.purlin/runtime/reports/pytest.xml',
+                   'sha256': 'a' * 64}}
+
+
+# purlin: evidence_writer PROOF-101
+def test_a_test_left_out_or_tied_to_another_systems_proof_holds_none():
+    other = 'windows' if HERE != 'windows' else 'linux'
+    left_out = {'PROOF-1': [dict(_seen('not run'), held=True,
+                                 reported=_reported())]}
+    (entry,) = _listed({'PROOF-1': PLAIN}, left_out)
+    assert entry['result'] == 'not run' and 'reported' not in entry
+    foreign = {'PROOF-1': [dict(_seen('pass'), reported=_reported())]}
+    (entry,) = _listed({'PROOF-1': {'manual': False, 'env': other}}, foreign)
+    assert entry['result'] == 'not run' and 'reported' not in entry
+    # A test with no case in any report was handed nothing to keep.
+    (entry,) = _listed({'PROOF-1': PLAIN}, {'PROOF-1': [_seen('pass')]})
+    assert 'reported' not in entry
+
+
+# purlin: evidence_writer PROOF-102
+def test_a_section_carried_forward_keeps_what_each_report_held():
+    section = _section()
+    section['proofs'][0]['reported'] = _reported(duration=0.5)
+    carried = writer.carry_section(section, 'b' * 40)
+    assert carried['commit'] == 'b' * 40
+    assert carried['proofs'][0]['reported'] == _reported(duration=0.5)
+    assert carried['proofs'][0]['carried']['commit'] == 'a' * 40
+
+
+def _merged(kept_reported, new_reported, result='fail'):
+    """The section a file holds once a run over the same code, on the same
+    machine, hands in `new_reported` over a section holding `kept_reported`."""
+    kept = _section(result=result, at='2026-09-01T00:00:00Z')
+    kept['proofs'][0]['reported'] = kept_reported
+    new = _section(result=result, at='2026-09-02T00:00:00Z')
+    new['proofs'][0]['reported'] = new_reported
+    merged = writer.merge_section(_file(platforms={HERE: kept}), 'local',
+                                  'feat', 'specs/a/feat.md', HERE, new,
+                                  ['RULE-1'])
+    return merged['platforms'][HERE]
+
+
+# purlin: evidence_writer PROOF-103
+def test_another_duration_and_another_report_file_leave_the_section():
+    kept = _merged(
+        _reported(duration=0.25, sha='a' * 64, outcome='fail', text='boom'),
+        _reported(duration=0.75, sha='b' * 64, outcome='fail', text='boom'))
+    assert kept['at'] == '2026-09-01T00:00:00Z'
+    assert kept['proofs'][0]['reported'] == _reported(
+        duration=0.25, sha='a' * 64, outcome='fail', text='boom')
+
+
+# purlin: evidence_writer PROOF-104
+def test_another_failure_text_replaces_the_section():
+    kept = _merged(
+        _reported(sha='a' * 64, outcome='fail', text='boom'),
+        _reported(sha='b' * 64, outcome='fail', text='another failure'))
+    assert kept['at'] == '2026-09-02T00:00:00Z'
+    assert kept['proofs'][0]['reported']['cases'][0]['text'] == (
+        'another failure')
+    assert kept['proofs'][0]['reported']['report']['sha256'] == 'b' * 64

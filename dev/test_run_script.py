@@ -93,6 +93,13 @@ def _rule(root, feature, rule_id):
     return next(r for r in entry['rules'] if r['id'] == rule_id)
 
 
+def _results_alone(entries):
+    """Each evidence entry without `reported`, what the suite's report held
+    for its test, which holds a duration and a report's sha256."""
+    return [{key: value for key, value in entry.items() if key != 'reported'}
+            for entry in entries]
+
+
 def _passed_word(root, feature, rule_id):
     """The word the rule's passed cell reads, which is what the evidence moves."""
     return _rule(root, feature, rule_id)['cells']['passed']['word']
@@ -216,7 +223,8 @@ class TestTheTestArmRunsEachSuite:
         code, output = _run(root, '--all', '--test')
         data = _proofs(root, 'feat')
         assert data is not None, output
-        assert data == [{'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass',
+        assert _results_alone(data) == [{
+            'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass',
                          'env': None, 'manual': False,
                          'test': 'tests/test_feat.py::test_ok'}]
         assert code == 0, output
@@ -504,7 +512,7 @@ class TestEveryRunEndsOnTheSummary:
                 'src/gone.py. Run purlin:build login, or correct the path '
                 'with purlin:spec login.') in lines, output
         assert _started(output) == ['pytest'], output
-        assert _proofs(root, 'login') == [{
+        assert _results_alone(_proofs(root, 'login')) == [{
             'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass', 'env': None,
             'manual': False, 'test': 'tests/test_feat.py::test_login'}], output
         assert code == 0, output
@@ -3016,3 +3024,98 @@ class TestASignOffAfterARunOverEveryFeature:
             'purlin:sign.' % (_head(root)[:7],
                               purlin_evidence.os_word(HERE_OS))])
         assert later != _head(root)
+
+
+# ---------------------------------------------------------------------------
+# The reports a run keeps
+# ---------------------------------------------------------------------------
+
+def _kept(root):
+    """`{file name: sha256 of its bytes}` under `.purlin/runtime/kept/`."""
+    import hashlib
+    folder = root / '.purlin' / 'runtime' / 'kept'
+    if not folder.is_dir():
+        return {}
+    return {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(folder.iterdir())}
+
+
+def _report_named(root, proof_id, feature='feat'):
+    (entry,) = [entry for entry in _proofs(root, feature)
+                if entry['id'] == proof_id]
+    return entry['reported']['report']['sha256']
+
+
+class TestTheReportsARunKeeps:
+
+    # purlin: run_script PROOF-339
+    def test_the_report_is_kept_under_its_sha256(self, tmp_path):
+        import hashlib
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        report = root / '.purlin' / 'runtime' / 'reports' / 'pytest.xml'
+        sha = hashlib.sha256(report.read_bytes()).hexdigest()
+        assert _report_named(root, 'PROOF-1') == sha
+        assert _kept(root) == {sha + '.xml': sha}
+
+    # purlin: run_script PROOF-340
+    def test_a_report_no_evidence_names_is_removed(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        assert _run(root, '--feature', 'feat', '--test')[0] == 0
+        first = _report_named(root, 'PROOF-1')
+        # The test now fails, so the next run replaces the section.
+        (root / 'tests' / 'test_feat.py').write_text(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_ok():\n'
+            '    assert 2 + 2 == 5, "the sum was wrong"\n',
+            encoding='utf-8')
+        assert _run(root, '--feature', 'feat', '--test')[0] == 1
+        second = _report_named(root, 'PROOF-1')
+        assert second != first
+        assert _kept(root) == {second + '.xml': second}
+
+    # purlin: run_script PROOF-341
+    def test_a_carried_slow_result_keeps_its_own_report(self, tmp_path):
+        root, taken = TestSlowProofs._carried_after_another_commit(tmp_path)
+        (then,) = [entry for entry in taken['proofs']
+                   if entry['id'] == 'PROOF-2']
+        section = _evidence(root)['platforms'][HERE_OS]
+        (slow,) = [entry for entry in section['proofs']
+                   if entry['id'] == 'PROOF-2']
+        (fast,) = [entry for entry in section['proofs']
+                   if entry['id'] == 'PROOF-1']
+        assert 'carried' in slow and slow['result'] == 'pass', slow
+        assert slow['reported'] == then['reported']
+        earlier = then['reported']['report']['sha256']
+        later = fast['reported']['report']['sha256']
+        assert earlier != later
+        assert _kept(root) == {earlier + '.xml': earlier,
+                               later + '.xml': later}
+
+    # purlin: run_script PROOF-342
+    def test_a_report_read_from_the_output_is_kept_as_it_was_printed(
+            self, tmp_path):
+        import hashlib
+        root = tmp_path / 'go'
+        shutil.copytree(os.path.join(REPO, 'dev', 'fixtures', 'reports', 'go'),
+                        str(root))
+        (root / '.purlin').mkdir()
+        (root / '.purlin' / 'config.json').write_text(json.dumps({
+            'version': purlin_payload.PURLIN_VERSION, 'tests': [{
+                'name': 'go', 'run': 'cat report.json', 'report': '-',
+                'format': 'gotest', 'files': ['**/*_test.go']}]}),
+            encoding='utf-8')
+        (root / 'specs' / 'shop').mkdir(parents=True)
+        (root / 'specs' / 'shop' / 'cart.md').write_text(
+            '# Feature: cart\n\n> Scope: cart/\n\n## Rules\n\n'
+            '- RULE-1: Two prices add up\n\n## Proof\n\n'
+            '- PROOF-1 (RULE-1): 2 and 3 total 5\n', encoding='utf-8')
+        _run(root, '--feature', 'cart', '--test')
+        (entry,) = _proofs(root, 'cart')
+        sha = hashlib.sha256((root / 'report.json').read_bytes()).hexdigest()
+        assert entry['reported']['report'] == {'file': '-', 'sha256': sha}
+        assert _kept(root) == {sha + '.json': sha}
