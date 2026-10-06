@@ -352,6 +352,8 @@ def test_every_backup_keeps_its_file_s_path_under_one_folder(tmp_path,
                for rel in backups), sorted(backups)
     for rel in backups:
         assert rel in before, rel
+        # A copy: the file's bytes as they were before the update, every one.
+        assert backups[rel] == before[rel], rel
     earlier = _git(root, 'rev-parse', '--short', 'HEAD~1').stdout.strip()
     assert BACKUPS_LINE % earlier in printed, printed
     # Every run file 0.9.5 committed beside a spec: the update deletes each.

@@ -116,7 +116,7 @@ class TestNoPictograph:
         rels = tracked_files(ROOT)
         assert any(rel.startswith('scripts/') for rel in rels), rels
         assert any(rel.startswith('templates/') for rel in rels), rels
-        assert pictographs(ROOT, rels) == []
+        assert pictographs(ROOT, rels) == [], 'a file Purlin ships holds one'
         # The glyphs Purlin prints pass; a check mark, a warning sign, a
         # rocket and a heart with its variation selector are each found.
         assert not any(is_pictograph(c) and ord(c) not in ALLOWED
@@ -324,7 +324,8 @@ class TestPython39:
     def test_every_python_file_under_scripts_parses_as_39(self, tmp_path):
         rels = tracked_files(ROOT, ('scripts',))
         assert sum(rel.endswith('.py') for rel in rels) > 20, rels
-        assert python_files_that_do_not_parse_as_39(ROOT, rels) == []
+        assert python_files_that_do_not_parse_as_39(ROOT, rels) == [], (
+            'a script does not parse as Python 3.9')
         # A file holding a `match` statement is named.
         (tmp_path / 'later.py').write_text(
             'command = "go"\n' + LATER_THAN_39, encoding='utf-8')

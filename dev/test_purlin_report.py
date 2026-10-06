@@ -1254,6 +1254,10 @@ def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
         'signed/0.2.0 is not in this checkout',
         'signed/0.1.0 is not in this checkout'], shown
     assert notice_hovers(page) == [None] * 5
+    # No part of a notice has a hover either.
+    assert page.eval_on_selector_all(
+        '.notice, .notice *',
+        'els => els.filter(e => e.hasAttribute("title")).length') == 0
     page.close()
 
 
