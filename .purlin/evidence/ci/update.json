@@ -2,24 +2,18 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T19:27:57Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T16:32:17Z",
+      "commit": "e6af8b18a3b6d577355829b016f6842a9c1dc770",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
         "spec": "19eac679801822452c4495fb2ea7f3d28a1eac599d2ce472a4105a93b04eaba5",
-        "tests": "b2ea44bdc19db0a5f1eb51e99ed4dee0336edbeefd5437909aa1df17be6a1ca1"
+        "tests": "ad37c4d949fb6ddd959f7b54c084c3965f54e45718d7eaed26a00b91fef2fce3"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T19:27:57Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-117",
           "manual": false,
@@ -28,12 +22,6 @@
           "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:27:57Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
@@ -42,12 +30,6 @@
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:27:57Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,

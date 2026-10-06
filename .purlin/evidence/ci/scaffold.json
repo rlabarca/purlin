@@ -2,24 +2,18 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-10-05T19:27:56Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T16:32:16Z",
+      "commit": "e6af8b18a3b6d577355829b016f6842a9c1dc770",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
         "spec": "af442f2b5e679cac087b9330564cd09a386d2e506f0c8ba1fc1fb4eff2dbebbe",
-        "tests": "9222b69fb3eda4fce1a35d16069c9c639d2f2487a8f52ff81adb487b575c5325"
+        "tests": "eb33c81bfe12eb5cc8d53e49957ec5107a2ba3c038edf3f2f41dc7d87fef1c0c"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T19:27:56Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
@@ -28,12 +22,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:27:56Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-132",
           "manual": false,
@@ -42,12 +30,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:27:56Z",
-            "commit": "d2cfbc0422fdf6eb6bbb8462784aa4a78ba80f52",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-136",
           "manual": false,
