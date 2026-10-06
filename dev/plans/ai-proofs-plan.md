@@ -267,8 +267,8 @@ proofs of 3.11 are slow and reach a real model, as the install test does.
 
 1. The merges. `bash dev/run_tests.sh` to 0 failed.
 2. `purlin_run.py --test --all --commit --clean`, `python3 dev/windows_run.py`.
-3. The audit of every spec the round changed, each finding worked by the build skill's
-   steps, until the status reads as it did before the round: every rule passing, the audit
+3. The audit of every spec in the project, since the owner held the audit back until this
+   round ends, each finding worked by the build skill's steps, until the status reads as it did before the round: every rule passing, the audit
    current, the anchor audited last.
 4. A real session, given a sample project that holds one skill and one prompt and the goal
    `Write the rules and tests for this skill and this prompt with Purlin, and get them
