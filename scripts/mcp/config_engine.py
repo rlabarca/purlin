@@ -22,10 +22,11 @@ KNOWN_KEYS = ('version', 'tests')
 UPGRADE_KEYS = ('test_framework', 'spec_dir', 'pre_push', 'report', 'digest',
                 'audit_criteria')
 
-SETTINGS_NOT_READ = '.purlin/config.json carries %s, which this version does not read. '
+SETTINGS_FILE = '.purlin/config.json'
+SETTINGS_NOT_READ = 'This version does not read %s.'
 SETTINGS_RUN_UPDATE = 'Run purlin:init --update.'
-SETTINGS_REMOVE = 'Remove it from .purlin/config.json.'
-SETTINGS_REMOVE_MANY = 'Remove them from .purlin/config.json.'
+SETTINGS_REMOVE = 'Remove it from the file.'
+SETTINGS_REMOVE_MANY = 'Remove them from the file.'
 
 
 def settings_warnings(config):
@@ -42,7 +43,9 @@ def settings_warnings(config):
         fix = SETTINGS_RUN_UPDATE
     else:
         fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY
-    return [SETTINGS_NOT_READ % ', '.join(others) + fix]
+    from purlin import notices
+    return [notices.line('setting_unread', SETTINGS_FILE,
+                         SETTINGS_NOT_READ % ', '.join(others), fix)]
 
 
 # How `resolve_project_root` found the root it returned, in the order it

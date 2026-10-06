@@ -470,29 +470,21 @@ def _render(result):
         if status == 'current':
             lines.append('%s: the pin is current. Run purlin:status %s to see '
                          'its rules.' % (name, name))
-        elif status == 'behind':
-            lines.append('%s: the pin %s is behind its source, now %s. Run '
-                         'purlin:anchor sync %s.'
-                         % (name, (row.get('pinned') or '')[:7],
-                            (row.get('remote_sha') or '')[:7], name))
-        elif status == 'unpinned':
-            lines.append('%s: names a source and no pin. Run purlin:anchor sync '
-                         '%s.' % (name, name))
+        elif status in ('behind', 'unpinned'):
+            lines.append(drift_module.pin_line(row))
         elif status == 'synced':
             lines.append('%s: %s. Pin advanced from %s to %s. Commit it as '
                          'anchor(%s): sync (%s), then run purlin:test.'
                          % (name, row['summary'], (row.get('previous') or 'none')[:7],
                             row['pinned'][:7], name, row['pinned'][:7]))
         elif row.get('not_a_spec'):
-            lines.append('%s: %s' % (name, row['error']))
+            lines.append(drift_module.pin_line(row))
         elif 'source' not in row:
             # A name no anchor carries: nothing was read, so no source is named.
             lines.append('%s: %s. Run purlin:status to see the anchors this '
                          'project has.' % (name, row['error']))
         else:
-            lines.append('%s: the source could not be read (%s). Check its '
-                         '> Source: line, then run purlin:anchor sync %s.'
-                         % (name, row.get('error', 'unknown'), name))
+            lines.append(drift_module.pin_line(row))
     if not lines:
         lines.append('No anchors name a git source.')
     return lines

@@ -1118,7 +1118,7 @@
   "generated_at": "2026-10-01T10:42:13Z",
   "generated_by": "sync_status",
   "information": [
-    "receipt: 1 file its scope names is not written yet: src/billing/receipt_pdf.py. Run purlin:build receipt, or correct the path with purlin:spec receipt."
+    "receipt: spec ahead of its code. src/billing/receipt_pdf.py is not written yet. Run purlin:build receipt, or purlin:spec receipt to correct the path."
   ],
   "last_line": null,
   "left": [
@@ -1142,6 +1142,28 @@
     }
   ],
   "met": false,
+  "notices": [
+    {
+      "tone": "warn",
+      "kind": "to_repair",
+      "label": "spec to repair",
+      "about": "refund PROOF-2",
+      "feature": "refund",
+      "rule": null,
+      "rest": "It is written twice, and the second is read. Run purlin:spec refund.",
+      "text": "refund PROOF-2: spec to repair. It is written twice, and the second is read. Run purlin:spec refund."
+    },
+    {
+      "tone": "neutral",
+      "kind": "not_written",
+      "label": "spec ahead of its code",
+      "about": "receipt",
+      "feature": "receipt",
+      "rule": null,
+      "rest": "src/billing/receipt_pdf.py is not written yet. Run purlin:build receipt, or purlin:spec receipt to correct the path.",
+      "text": "receipt: spec ahead of its code. src/billing/receipt_pdf.py is not written yet. Run purlin:build receipt, or purlin:spec receipt to correct the path."
+    }
+  ],
   "os_words": {
     "linux": {
       "short": "Lin",
@@ -1157,7 +1179,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 18,
+  "schema_version": 19,
   "signoff": {
     "commit": null,
     "since": null,
@@ -1200,6 +1222,6 @@
   },
   "version": "0.10.0",
   "warnings": [
-    "refund: PROOF-2 is written twice; the second is read. Run purlin:spec refund."
+    "refund PROOF-2: spec to repair. It is written twice, and the second is read. Run purlin:spec refund."
   ]
 }

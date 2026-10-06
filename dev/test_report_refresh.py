@@ -163,7 +163,7 @@ def _write_page(root, text):
 def test_status_replaces_an_older_page_with_the_plugins_own(browser,  # noqa: F811
                                                             tmp_path):
     shipped = build_page()
-    older = shipped.replace('var SCHEMA = 18;', 'var SCHEMA = 11;')
+    older = shipped.replace('var SCHEMA = 19;', 'var SCHEMA = 11;')
     assert older != shipped
     made = Project()
     try:
@@ -221,7 +221,7 @@ def _between(text):
 
 
 NO_SCOPE_SPEC = SPEC.replace('> Scope: src/login.py\n', '')
-NO_FILES = ('1 spec names no files, so its tests run every time: login. Run '
+NO_FILES = ('login: spec with no scope. Its tests run every time. Run '
             'purlin:spec login to add its > Scope: line.')
 
 
@@ -231,6 +231,7 @@ def test_the_data_file_carries_the_line_for_a_spec_that_names_no_files():
     made = Project(spec=NO_SCOPE_SPEC)
     try:
         text = purlin_status.sync_status(made.root)
+        assert NO_FILES.startswith('login: spec with no scope. ')
         assert _between(text)[0] == NO_FILES, text
         assert text.count(NO_FILES) == 1, text
         data = _data(made.root)
@@ -260,7 +261,7 @@ def test_the_data_file_carries_an_anchor_rule_with_nothing_to_check():
                                         reason='this project has no screens')
         with open(path, 'w', encoding='utf-8') as handle:
             json.dump(file, handle)
-        line = ('screens RULE-1 passes with nothing to check here: this '
+        line = ('screens RULE-1: nothing to check here. It passes: this '
                 'project has no screens.')
         text = purlin_status.sync_status(made.root)
         assert _between(text)[0] == line, text
@@ -273,7 +274,8 @@ def test_the_data_file_carries_an_anchor_rule_with_nothing_to_check():
 def test_the_data_file_carries_a_changed_tests_setting_first(tmp_path):
     root, _sha = _touched_project(tmp_path)
     _setting_gains_v(root)
-    said = 'The tests setting changed, so every result is out of date.'
+    said = ('.purlin/config.json: tests setting changed. Every result is out '
+            'of date. Run purlin:test --all.')
     text = purlin_status.sync_status(str(root))
     assert said in _between(text), text
     assert _data(root)['warnings'][0] == said, _data(root)['warnings']
@@ -309,8 +311,8 @@ def test_the_data_file_carries_an_anchor_whose_pin_is_behind(tmp_path):
                   % (source, old), name='policy', category='_anchors')
         _git(made.root, 'add', '-A')
         _git(made.root, 'commit', '-q', '-m', 'anchor(policy): create')
-        line = ('policy: the pin %s is behind its source, now %s. Run '
-                'purlin:anchor sync policy.' % (old[:7], new[:7]))
+        line = ('policy: anchor pin behind. The pin %s is behind its source, '
+                'now %s. Run purlin:anchor sync policy.' % (old[:7], new[:7]))
         text = purlin_status.sync_status(made.root)
         assert line in _between(text), text
         warnings = _data(made.root)['warnings']
@@ -330,11 +332,11 @@ def test_the_data_file_carries_the_uncommitted_spec_files_on_one_line():
         made.spec(SPEC.replace('login', 'logout'), name='logout')
         text = purlin_status.sync_status(made.root)
         between = _between(text)
-        assert between[between.index('Uncommitted spec changes:') + 1:][:2] == [
-            '   M specs/auth/login.md', '  ?? specs/auth/logout.md'], text
+        line = ('specs/: spec change not committed. M specs/auth/login.md, '
+                '?? specs/auth/logout.md. Commit them.')
+        assert between.count(line) == 1, text
         warnings = _data(made.root)['warnings']
-        assert ('Uncommitted spec changes: M specs/auth/login.md, '
-                '?? specs/auth/logout.md') in warnings, warnings
+        assert line in warnings, warnings
     finally:
         made.close()
 

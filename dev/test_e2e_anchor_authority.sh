@@ -389,13 +389,13 @@ run_upstream "$PROJECT7" add "$BARE7" --path specs/security.md --name ext_securi
 printf '%s' "$LOCAL_ANCHOR" > "$PROJECT7/specs/_anchors/local_security.md"
 commit_project "$PROJECT7" "pin a source that carries a scope"
 status_out=$(run_status "$PROJECT7")
-expected="ext_security: its source, $BARE7, carries > Scope:, which Purlin does not read on an anchor, so the line is read as nothing. Ask the owners of $BARE7 to take it out, then run purlin:anchor sync ext_security."
+expected="ext_security: line not read. Its source, $BARE7, carries > Scope:, which Purlin does not read on an anchor. Ask its owners to take it out, then run purlin:anchor sync ext_security."
 ok=true
 detail="$status_out"
 grep -q '^> Scope: src/api.py$' "$PROJECT7/specs/_anchors/ext_security.md" || {
   ok=false; detail="the copy did not keep its source's > Scope: line"; }
 [[ "$(grep -cF "$expected" <<<"$status_out")" == "1" ]] || ok=false
-grep -q 'is not read on an anchor, because' <<<"$status_out" && ok=false
+grep -q 'so > Scope: is not read' <<<"$status_out" && ok=false
 grep -q 'local_security: .*not read' <<<"$status_out" && ok=false
 record "the status names the source's owners once and warns of nothing else" "$ok" "$detail"
 

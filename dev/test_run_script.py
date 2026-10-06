@@ -391,8 +391,9 @@ class TestATestCommentToCorrect:
         markers = next(index for index, line in enumerate(lines)
                        if line.startswith('Markers: '))
         named = [index for index, line in enumerate(lines) if line.startswith(
-            'tests/test_feat.py:3 names feat PROOF-1, whose wording changed '
-            'after the test was last changed in')]
+            'feat PROOF-1 (RULE-1): test comment to correct. "observe thing" '
+            'became "observe the thing" after tests/test_feat.py:3 last '
+            'changed (') and line.endswith('). Run purlin:build feat.')]
         # The run's own line, straight after `Markers:`. The status the run
         # ends on names the comment again further down, so a line anywhere
         # after `Markers:` would not show the run printed one.
@@ -508,9 +509,9 @@ class TestEveryRunEndsOnTheSummary:
         _git_repo(root)
         code, output = _run(root, '--all', '--test')
         lines = output.splitlines()
-        assert ('login: 1 file its scope names is not written yet: '
-                'src/gone.py. Run purlin:build login, or correct the path '
-                'with purlin:spec login.') in lines, output
+        assert ('login: spec ahead of its code. src/gone.py is not written '
+                'yet. Run purlin:build login, or purlin:spec login to correct '
+                'the path.') in lines, output
         assert _started(output) == ['pytest'], output
         assert _results_alone(_proofs(root, 'login')) == [{
             'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass', 'env': None,
@@ -2532,7 +2533,8 @@ def _setting_gains_v(root):
 
 class TestAChangedTestsSetting:
 
-    SAID = 'The tests setting changed, so every result is out of date.'
+    SAID = ('.purlin/config.json: tests setting changed. Every result is out '
+            'of date. Run purlin:test --all.')
 
     # purlin: states PROOF-306
     def test_the_status_says_so_once(self, tmp_path):
@@ -2540,6 +2542,9 @@ class TestAChangedTestsSetting:
         _setting_gains_v(root)
         lines = purlin_status.sync_status(str(root)).splitlines()
         assert lines.count(self.SAID) == 1, lines
+        assert self.SAID == (
+            '.purlin/config.json: tests setting changed. Every result is out '
+            'of date. Run purlin:test --all.')
 
     # purlin: states PROOF-307
     def test_an_edited_test_file_alone_is_not_the_setting(self, tmp_path):
@@ -2553,7 +2558,8 @@ class TestAChangedTestsSetting:
         # No line holds the sentence, with or without anything around it.
         assert self.SAID not in text, lines
         assert [line for line in lines
-                if 'tests setting changed' in line] == [], lines
+                if 'tests setting changed' in line
+                or 'Every result is out of date.' in line] == [], lines
         assert any('tests changed since' in line or 'to test' in line
                    for line in lines), lines
 
@@ -2563,7 +2569,7 @@ class TestAChangedTestsSetting:
         _setting_gains_v(root)
         _code, output = _run(root, '--test')
         lines = output.splitlines()
-        said = 'The tests setting changed, so every result is out of date.'
+        said = self.SAID
         assert lines.count(said) == 1, output
         assert lines.index(said) < next(
             index for index, line in enumerate(lines)
@@ -2591,16 +2597,15 @@ class TestAMarkerFrom095StillInATest:
         _git_repo(root)
         code, output = _run(root, '--all', '--test')
         lines = output.splitlines()
-        said = ['1 test still carries a marker from Purlin 0.9.5, which is '
-                'not read:',
-                '  tests/test_feat.py:6  feat RULE-1',
-                'For each, write the proof with purlin:spec, put the comment '
-                'above the test, and take the old tag out.']
+        said = ['tests/test_feat.py:6: marker from Purlin 0.9.5. It is not '
+                'read. Write the proof with purlin:spec, put the comment '
+                'above the test, and take the old tag out.',
+                '  tests/test_feat.py:6  feat RULE-1']
         assert code == 0, output
         assert lines.count(said[0]) == 1, output
         at = lines.index(said[0])
-        assert lines[at:at + 3] == said, output
-        assert output.count('a marker from Purlin 0.9.5') == 1, output
+        assert lines[at:at + 2] == said, output
+        assert output.count('marker from Purlin 0.9.5') == 1, output
         assert at > next(
             index for index, line in enumerate(lines)
             if line.startswith('Purlin status:')), output

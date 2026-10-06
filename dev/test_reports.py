@@ -600,9 +600,8 @@ class TestThroughARun:
     # purlin: reports PROOF-5
     def test_a_marker_above_nothing_is_tied_to_no_test(self, untied_run):
         code, out, results = untied_run
-        assert ('tests/test_login.py:9 names login PROOF-3 and no test '
-                'follows it. Put the comment directly above a test, or run '
-                'purlin:build to repair it.') in out.splitlines(), out
+        assert ('login PROOF-3: test comment with no test. No test follows '
+                'tests/test_login.py:9. Run purlin:build.') in out.splitlines(), out
         assert results[('PROOF-3', '')] == 'missing'
         assert code == 1
 
@@ -613,9 +612,9 @@ class TestThroughARun:
             '# purlin: login PROOF-1\ndef test_x():\n    pass\n\n'
             '# purlin: login PROOF-2\ndef test_x():\n    pass\n'),
             _spec('login', 2))
-        assert ("The report's test_x matches 2 tests in tests/test_login.py, "
-                'so its result is not counted. Give the tests different '
-                'names, then run purlin:test.') in out.splitlines(), out
+        assert ('test_x: test name not unique. It matches 2 tests in '
+                'tests/test_login.py, so its result is not counted. Give the '
+                'tests different names, then run purlin:test.') in out.splitlines(), out
         assert {key[0]: value for key, value in results.items()} == {
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
@@ -626,9 +625,9 @@ class TestThroughARun:
             'import pytest\n\n'
             '# purlin: login RULE-1\n'
             'def test_ok():\n    pass\n'), _spec('login', 1))
-        assert ('tests/test_login.py:3 names login RULE-1, which has proofs; '
-                'a comment names one of its proofs. Correct the comment, or '
-                'run purlin:build to repair it.') in out.splitlines(), out
+        assert ('login RULE-1: test comment to correct. tests/test_login.py:3 '
+                'names the rule, and a comment names one of its proofs. Run '
+                'purlin:build.') in out.splitlines(), out
         assert code == 1, out
         section = _evidence(tmp_path / 'project')
         assert section['rules']['RULE-1'] != 'passed', section
@@ -798,9 +797,9 @@ class TestThroughARun:
     def test_a_marker_naming_a_feature_no_spec_has_is_printed_and_exits_1(
             self, tmp_path):
         code, out, lines = self._names_nothing(tmp_path, 'nosuch PROOF-1')
-        assert ('tests/test_login.py:13 names nosuch PROOF-1, which no spec '
-                'has. Correct the comment, or run purlin:build to repair '
-                'it.') in lines, out
+        assert ('nosuch PROOF-1: test comment to correct. '
+                'tests/test_login.py:13 names it, and no spec has it. Run '
+                'purlin:build.') in lines, out
         assert code == 1
 
     @staticmethod
@@ -1108,9 +1107,9 @@ class TestAJavaScriptTitle:
             "it(`greets ${name}`, () => {});\n"), [('greets x', True)],
             spec=_spec('login', 1))
         lines = out.splitlines()
-        assert ("tests/login.test.ts:4: the test's title is not one plain "
-                'string, so its result cannot be matched. Write it as one '
-                'string.') in lines, out
+        assert ('tests/login.test.ts:4: test title not read. It is not one '
+                'plain string, so its result cannot be matched. Write it as '
+                'one string.') in lines, out
         assert 'Markers: 0 tied to a test, 1 not tied.' in lines, out
         assert code == 1, out
 

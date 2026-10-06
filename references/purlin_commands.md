@@ -221,7 +221,7 @@ A run names each rule where it reports the problem:
 - `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`,
   where some of the rule's proofs have no test.
 - `<feature> <RULE-N> has no test. Run purlin:build <feature>.`, where none of them has one.
-- `<file>:<line> names <feature> <ID>, which no spec has. Correct the comment, or run purlin:build to repair it.`
+- `<feature> <ID>: test comment to correct. <file>:<line> names it, and no spec has it. Run purlin:build.`
 
 `scripts/review/ai_audit.py --rule` names a rule no spec has:
 `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`

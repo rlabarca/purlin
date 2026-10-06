@@ -89,8 +89,9 @@ this project instead.
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py" sync [<name> | --all] [--check] [--json]
 ```
 
-`--check` reports without writing, one line per anchor: `security_baseline: the pin abc1234
-is behind its source, now 9f8e7d6. Run purlin:anchor sync security_baseline.` It exits 1 when a
+`--check` reports without writing, one line per anchor: `security_baseline: anchor pin behind.
+The pin abc1234 is behind its source, now 9f8e7d6. Run purlin:anchor sync security_baseline.`
+It exits 1 when a
 pin is behind and 2 when a source could not be read. `purlin:drift` and `purlin:status` run the
 same check and say an anchor is behind its source; neither pulls. Only `purlin:anchor sync`
 pulls.

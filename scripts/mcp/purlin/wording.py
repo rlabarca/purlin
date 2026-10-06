@@ -31,11 +31,16 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-STALE = ('%s:%d names %s %s, whose wording changed after the test was last changed in %s: '
-         'it read "%s" and now reads "%s". ')
-STALE_BUILD = ('Run purlin:build %s to make the test show it; the line clears once the test '
-               'changes.')
-STALE_MOVE = 'Its old wording is now %s: move the comment there.'
+from purlin import notices                                     # noqa: E402
+
+# What a line says is wrong: what changed in the proof's wording
+# (`notices.changed_words`), the test's file and line, the sha7 of the commit
+# that last changed the test. `STALE_REWORDED` where the two wordings share
+# too little to show a change.
+STALE = '%s after %s:%d last changed (%s).'
+STALE_REWORDED = 'It %s after %s:%d last changed (%s).'
+# What to do where the old wording is now another proof's: that proof.
+STALE_MOVE = 'Move the comment to %s, which holds the old wording.'
 
 NONE_TO_CORRECT = 'No test comment to correct.'
 ONE_TO_CORRECT = '1 test comment to correct.'
@@ -84,16 +89,29 @@ def stale_comments(project_root, features, scanned=None):
             continue
         now_under = next((other for other in sorted(words, key=_number)
                           if other != marker.id and words[other] == old), None)
-        text = STALE % (path, marker.line, marker.feature, marker.id, sha[:7],
-                        old, new)
-        text += (STALE_MOVE % now_under) if now_under else (
-            STALE_BUILD % marker.feature)
+        text = stale_line(features[marker.feature], path, marker, sha[:7],
+                          old, new, now_under)
         found.append({'file': path, 'line': marker.line,
                       'feature': marker.feature, 'id': marker.id,
                       'commit': sha[:7], 'old': old, 'new': new,
                       'now_under': now_under, 'text': text})
     found.sort(key=lambda entry: (entry['file'], entry['line'], entry['id']))
     return found
+
+
+def stale_line(info, path, marker, commit, old, new, now_under):
+    """One test comment to correct, as every surface prints it:
+    `package PROOF-3 (RULE-3): test comment to correct. "sixteen" became
+    "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run
+    purlin:build package.` on one line. Neither wording is printed whole."""
+    about, rule = notices.about_proof(info, marker.feature, marker.id)
+    changed = notices.changed_words(old, new)
+    wrong = (STALE_REWORDED if changed == notices.REWORDED else STALE) % (
+        changed, path, marker.line, commit)
+    do = (STALE_MOVE % now_under if now_under
+          else notices.run('purlin:build %s' % marker.feature))
+    return notices.line('to_correct', about, wrong, do, feature=marker.feature,
+                        rule=rule, proof=marker.id)
 
 
 def test_last_change(project_root, path, marker_line, end_line, reader=None):

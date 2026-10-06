@@ -6,7 +6,7 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 18, written on
+The samples under `dev/fixtures/report/` are payloads at schema 19, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
@@ -724,27 +724,68 @@ def forty_passing_specs_then_one_failing(payload):
     payload['features'].append(spec('zz_last', 'zeta', 'failed'))
 
 
-# The four lines a real project's status printed between its table and its
-# sentence: two warnings, of three lines and of two on a 1500-pixel screen,
-# and two lines of information.
-FOUR_LINES = [
-    'pipeline/tests/test_pitch_crosscheck.py:175 names pitch_crosscheck '
-    'PROOF-7, whose wording changed after the test was last changed in '
-    'ebfe120: it read "Transcribe the reference lead with the cross-check '
-    'disabled in config and" and now reads "Transcribe a synthesised stem '
-    'with the cross-check disabled in config,". Run purlin:build '
-    'pitch_crosscheck to make the test show it; the line clears once the '
-    'test changes.',
-    '9 tests still carry a marker from Purlin 0.9.5, which is not read: '
-    'packages/sunvox-project/test/generated_track.unit.test.ts:334, '
-    'packages/web/test/parameter_lfo.test.ts:154, and 7 more. For each, '
-    'write the proof with purlin:spec, put the comment above the test, and '
-    'take the old tag out.',
-    '1 spec names no files, so its tests run every time: patch_graph. Run '
-    'purlin:spec patch_graph to add its > Scope: line.',
-    'pack_acceptance: 1 file its scope names is not written yet: '
-    'projects/1-groovevox-13-3-samplepack2. Run purlin:build '
-    'pack_acceptance, or correct the path with purlin:spec pack_acceptance.']
+def status_sentences():
+    """The modules whose sentences the status writes."""
+    mcp = os.path.join(ROOT, 'scripts', 'mcp')
+    if mcp not in sys.path:
+        sys.path.insert(0, mcp)
+    from purlin import evidence, specs, status, wording
+    return specs, status, wording, evidence
+
+
+def notice_module():
+    status_sentences()
+    from purlin import notices
+    return notices
+
+
+def give_lines(payload, warnings=(), information=()):
+    """Give the payload these lines as the data file carries them: its
+    `warnings`, its `information` and the `notices` written over both, the
+    working tree's own first where the payload reads dirty."""
+    status_sentences()
+    from purlin import payload as payload_module, report_data
+    payload['warnings'] = list(warnings)
+    payload['information'] = list(information)
+    payload['notices'] = payload_module.notice_entries(dict(
+        payload, warnings=([report_data.TREE_DIRTY] if payload.get('dirty')
+                           else []) + list(warnings)))
+    return [str(line) for line in list(warnings) + list(information)]
+
+
+def reworded_proof_line(name='pitch_crosscheck'):
+    """The warning the status writes for a test whose proof was reworded."""
+    import types
+    wording = status_sentences()[2]
+    marker = types.SimpleNamespace(feature=name, id='PROOF-7', line=175)
+    return wording.stale_line(
+        {'proofs_by_rule': {'RULE-3': ['PROOF-7']}},
+        'pipeline/tests/test_%s.py' % name, marker, 'ebfe120',
+        'Transcribe the reference lead with the cross-check disabled',
+        'Transcribe a synthesised stem with the cross-check disabled', None)
+
+
+def not_written_line(name, *files):
+    """The line of information for a spec whose scope names `files`, none
+    written yet."""
+    status = status_sentences()[1]
+    wrong = (status.NOT_WRITTEN_ONE % files[0] if len(files) == 1
+             else status.NOT_WRITTEN_MANY % (len(files), ', '.join(files)))
+    return notice_module().line('not_written', name, wrong,
+                                status.NOT_WRITTEN_DO % (name, name),
+                                feature=name)
+
+
+def four_lines():
+    """The four lines a real project's status printed between its table and
+    its sentence: two warnings, then two lines of information."""
+    status = status_sentences()[1]
+    old = [('packages/web/test/parameter_lfo.test.ts', 154 + number,
+            'parameter_lfo', 'RULE-4') for number in range(9)]
+    return [reworded_proof_line(), status.old_marker_line(old),
+            status.incomplete_line(['patch_graph']),
+            not_written_line('pack_acceptance',
+                             'projects/1-groovevox-13-3-samplepack2')]
 
 
 # purlin: purlin_report PROOF-269
@@ -755,8 +796,8 @@ def test_the_failing_box_and_the_failing_spec_are_on_the_first_screen(
     assert payload['features'][-1]['name'] == 'zz_last'
     assert len(payload['features']) == 46
     payload['dirty'] = False
-    payload['warnings'] = FOUR_LINES[:2]
-    payload['information'] = FOUR_LINES[2:]
+    lines = four_lines()
+    give_lines(payload, lines[:2], lines[2:])
     page = open_board(browser, tmp_path, payload,
                       viewport={'width': 1500, 'height': 900})
     first = page.query_selector('[data-table="specs"] .tr')
@@ -1077,13 +1118,13 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 18. '
+        'This data was written for schema 3 and this page reads schema 19. '
         'Run purlin:status to write it again.']
     # On screen, not only in the page: the one notice is drawn.
     assert [notice.is_visible()
             for notice in page.query_selector_all('.notice')] == [True]
     assert page.locator('.notice').inner_text().strip() == (
-        'This data was written for schema 3 and this page reads schema 18. '
+        'This data was written for schema 3 and this page reads schema 19. '
         'Run purlin:status to write it again.')
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -1111,8 +1152,8 @@ def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
     [warning] = payload['warnings']
     page = open_board(browser, tmp_path, payload)
     assert texts(page, '.notice-text') == [
-        'The working tree has uncommitted changes, so what is on this board '
-        'is not what a commit would carry.', warning]
+        'working tree: changes not committed. This board is not what a '
+        'commit would carry. Commit them, then run purlin:status.', warning]
     found = page.evaluate(STACK)
     page.close()
     assert found['tiles'] <= found['notices'][0], found
@@ -1149,8 +1190,8 @@ STACK = """() => {
 def test_the_boxes_stand_above_the_notices_at_every_width(browser, tmp_path):
     payload = payload_named('regulated')
     forty_passing_specs_then_one_failing(payload)
-    payload['warnings'] = FOUR_LINES[:2]
-    payload['information'] = FOUR_LINES[2:]
+    lines = four_lines()
+    give_lines(payload, lines[:2], lines[2:])
     seen = {}
     for theme in ('dark', 'light'):
         for width in (1500, 1280, 1024, 768, 390):
@@ -1177,30 +1218,12 @@ def test_the_boxes_stand_above_the_notices_at_every_width(browser, tmp_path):
 # Three or more warnings of one kind are one notice
 # ---------------------------------------------------------------------------
 
-def status_sentences():
-    """The modules whose sentences the status writes about one spec."""
-    mcp = os.path.join(ROOT, 'scripts', 'mcp')
-    if mcp not in sys.path:
-        sys.path.insert(0, mcp)
-    from purlin import evidence, specs, status, wording
-    return specs, status, wording, evidence
-
-
 def unread_proof_line(name, proof='PROOF-7b', rule='RULE-6'):
     """The warning the status writes for one lettered proof line of `name`."""
     specs = status_sentences()[0]
-    return specs.PROOF_LINE_UNREAD % (
-        name, specs.NOT_A_PROOF_LINE,
-        '- %s (%s): On a real engine, apply an edit' % (proof, rule), name)
-
-
-def reworded_proof_line(name='pitch_crosscheck'):
-    """The warning the status writes for a test whose proof was reworded."""
-    wording = status_sentences()[2]
-    return (wording.STALE % ('pipeline/tests/test_%s.py' % name, 175, name,
-                             'PROOF-7', 'ebfe120', 'Transcribe the lead',
-                             'Transcribe a stem')
-            + wording.STALE_BUILD % name)
+    return specs._mistake('proof_unread', name, specs.PROOF_LINE_UNREAD % (
+        specs.NOT_A_PROOF_LINE, notice_module().shown(
+            '- %s (%s): On a real engine, apply an edit' % (proof, rule))))
 
 
 def thirty_three_specs():
@@ -1219,13 +1242,13 @@ def test_thirty_three_warnings_of_one_kind_are_one_notice(browser, tmp_path):
     payload['dirty'] = False
     names = thirty_three_specs()
     other = reworded_proof_line()
-    payload['warnings'] = [unread_proof_line(name) for name in names] + [other]
+    give_lines(payload, [unread_proof_line(name) for name in names] + [other])
     assert len(payload['warnings']) == 34
     page = open_board(browser, tmp_path, payload,
                       viewport={'width': 1500, 'height': 900})
     assert texts(page, '.notice-text') == [
-        '33 specs hold a proof line Purlin cannot read: piano_roll, '
-        'sample_voice, and 31 more. Run purlin:status for each.', other]
+        'proof line not read: 33 specs, piano_roll, sample_voice and 31 '
+        'more. Run purlin:status for each.', other]
     assert notice_hovers(page) == ['\n'.join(names), None]
     rows = [page.query_selector('[data-table="%s"] .tr' % table).bounding_box()
             for table in ('anchors', 'specs')]
@@ -1240,19 +1263,22 @@ def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
     from purlin import facts as facts_module
     payload = payload_named('regulated')
     payload['dirty'] = False
-    tags = [facts_module.TAG_NOT_HERE % ('signed/' + version, version, sha)
+    tags = [notice_module().line(
+                'tag_not_here', 'signed/' + version,
+                facts_module.TAG_NOT_HERE % (version, sha),
+                facts_module.TAG_NOT_HERE_DO)
             for version, sha in (('0.3.0', 'c3c3c3c'), ('0.2.0', 'b2b2b2b'),
                                  ('0.1.0', 'a1b2c3d'))]
     two = [unread_proof_line('login'), unread_proof_line('invoice')]
-    payload['warnings'] = two + tags
+    give_lines(payload, two + tags)
     page = open_board(browser, tmp_path, payload)
     shown = texts(page, '.notice-text')
     assert shown == two + tags
     # The three lines about no one spec are the ones the proof names.
-    assert [line.split(':')[0] for line in shown[2:]] == [
-        'signed/0.3.0 is not in this checkout',
-        'signed/0.2.0 is not in this checkout',
-        'signed/0.1.0 is not in this checkout'], shown
+    assert [line.split('. ')[0] for line in shown[2:]] == [
+        'signed/0.3.0: tag not in this checkout',
+        'signed/0.2.0: tag not in this checkout',
+        'signed/0.1.0: tag not in this checkout'], shown
     assert notice_hovers(page) == [None] * 5
     # No part of a notice has a hover either.
     assert page.eval_on_selector_all(
@@ -1267,14 +1293,14 @@ def test_a_grouped_notice_counts_specs_and_stands_where_the_first_stood(
     payload = payload_named('regulated')
     payload['dirty'] = False
     other = reworded_proof_line()
-    payload['warnings'] = [
+    give_lines(payload, [
         unread_proof_line('export'), other,
         unread_proof_line('export', 'PROOF-8b'), unread_proof_line('invoice'),
-        unread_proof_line('login'), unread_proof_line('login', 'PROOF-9b')]
+        unread_proof_line('login'), unread_proof_line('login', 'PROOF-9b')])
     page = open_board(browser, tmp_path, payload)
     assert texts(page, '.notice-text') == [
-        '3 specs hold a proof line Purlin cannot read: export, invoice, and '
-        '1 more. Run purlin:status for each.', other]
+        'proof line not read: 3 specs, export, invoice and 1 more. Run '
+        'purlin:status for each.', other]
     page.close()
 
 
@@ -1282,38 +1308,34 @@ def test_a_grouped_notice_counts_specs_and_stands_where_the_first_stood(
 def test_three_lines_about_one_or_two_specs_name_each_spec(browser, tmp_path):
     payload = payload_named('regulated')
     payload['dirty'] = False
-    payload['warnings'] = [unread_proof_line('login', 'PROOF-%db' % number)
-                           for number in (1, 2, 3)]
+    three = [unread_proof_line('login', 'PROOF-%db' % number)
+             for number in (1, 2, 3)]
+    give_lines(payload, three)
     page = open_board(browser, tmp_path / 'one', payload)
     assert texts(page, '.notice-text') == [
-        'login holds a proof line Purlin cannot read, in 3 places. '
-        'Run purlin:status login.']
+        'proof line not read: login, in 3 places. Run purlin:status login.']
     page.close()
-    payload['warnings'][2] = unread_proof_line('invoice')
+    give_lines(payload, three[:2] + [unread_proof_line('invoice')])
     page = open_board(browser, tmp_path / 'two', payload)
     assert texts(page, '.notice-text') == [
-        '2 specs hold a proof line Purlin cannot read: login and invoice. '
-        'Run purlin:status for each.']
+        'proof line not read: 2 specs, login and invoice. Run purlin:status '
+        'for each.']
     page.close()
 
 
 # purlin: purlin_report PROOF-261
 def test_lines_of_information_group_in_the_neutral_tone(browser, tmp_path):
-    status = status_sentences()[1]
     payload = payload_named('regulated')
     payload['dirty'] = False
-    payload['warnings'] = []
     names = ['export', 'invoice', 'login', 'refund']
-    payload['information'] = [
-        status.NOT_WRITTEN_ONE % (names[0], 'src/a.py', names[0], names[0]),
-        status.NOT_WRITTEN_MANY % (names[1], 2, 'src/b.py, src/c.py',
-                                   names[1], names[1])] + [
-        status.NOT_WRITTEN_ONE % (name, 'src/d.py', name, name)
-        for name in names[2:]]
+    give_lines(payload, [], [
+        not_written_line(names[0], 'src/a.py'),
+        not_written_line(names[1], 'src/b.py', 'src/c.py')] + [
+        not_written_line(name, 'src/d.py') for name in names[2:]])
     page = open_board(browser, tmp_path, payload)
     assert texts(page, '.notice-text') == [
-        '4 specs name a file in the scope that is not written yet: export, '
-        'invoice, and 2 more. Run purlin:status for each.']
+        'spec ahead of its code: 4 specs, export, invoice and 2 more. Run '
+        'purlin:status for each.']
     assert notice_hovers(page) == ['\n'.join(names)]
     dot = page.eval_on_selector('.notice .dot', 'e => e.getAttribute("style")')
     page.close()
@@ -1326,66 +1348,66 @@ def test_rules_with_nothing_to_check_group_in_the_neutral_tone(browser,
     status = status_sentences()[1]
     payload = payload_named('regulated')
     payload['dirty'] = False
-    payload['warnings'] = []
     reason = 'this project has no screens'
     incomplete = status.incomplete_line(['export'])
-    payload['information'] = [
-        status.NOTHING_LINE % ('checkout_design', 'RULE-%d' % number, reason)
-        for number in (1, 2, 3)] + [incomplete]
+    give_lines(payload, [], [
+        notice_module().line(
+            'nothing_to_check', 'checkout_design RULE-%d' % number,
+            status.NOTHING_LINE % reason, feature='checkout_design',
+            rule='RULE-%d' % number)
+        for number in (1, 2, 3)] + [incomplete])
     page = open_board(browser, tmp_path, payload)
     found = texts(page, '.notice-text')
     dots = page.eval_on_selector_all(
         '.notice .dot', 'els => els.map(e => e.getAttribute("style"))')
     page.close()
     assert found == [
-        'checkout_design has a rule that passes with nothing to check here, '
-        'in 3 places. Run purlin:status checkout_design.', incomplete], found
+        'nothing to check here: checkout_design, in 3 places. Run '
+        'purlin:status checkout_design.', incomplete], found
     assert incomplete == (
-        '1 spec names no files, so its tests run every time: export. Run '
+        'export: spec with no scope. Its tests run every time. Run '
         'purlin:spec export to add its > Scope: line.')
     assert dots == ['color:var(--state-neutral)'] * 2, dots
 
 
 def one_line_of_each_kind(name):
-    """`[(what, the line the status writes about `name`)]`, one per kind of
-    warning the status writes about one spec, from the sentences it uses."""
-    specs, _status, wording, evidence = status_sentences()
+    """`[(the kind's words, the line the status writes about `name`)]`, one
+    per kind of warning the status writes about one spec, in the order
+    `notices.KINDS` lists the kinds."""
+    specs, _status, _wording, evidence = status_sentences()
+    notices = notice_module()
+    words = notices.WORDS
     path = evidence.evidence_path('local', name)
     return [
-        ('hold a line under ## Rules with no number',
-         '%s: 1 line under ## Rules is not numbered; a rule is '
-         '`- RULE-N: <text>`. Run purlin:spec %s.' % (name, name)),
-        ("write a rule's number twice",
-         specs.RULE_WRITTEN_TWICE % (name, 'RULE-2', name)),
-        ("write a proof's number twice",
-         specs.PROOF_WRITTEN_TWICE % (name, 'PROOF-2', name)),
-        ('hold a line left from a merge conflict',
-         specs.CONFLICT_MANY % (name, 3, 12, '<<<<<<< HEAD', name)),
-        ('have a name no test comment can name',
-         specs.NAME_REFUSED % (name, 'specs/a/%s.md' % name,
-                               'specs/a/renamed.md')),
-        ('hold a proof line Purlin cannot read',
-         specs.PROOF_LINE_UNREAD % (name, specs.TAG_AT_END,
-                                    '- PROOF-1 @slow (RULE-1): text', name)),
-        ('name another spec on the first line',
-         specs.HEADING_NAMES_OTHER % (name, 'other', name, name, name)),
-        ('tag a proof @slow and @manual',
-         specs.SLOW_AND_MANUAL % (name, 'PROOF-3', name)),
-        ('carry > Requires:, which Purlin does not read',
-         specs.UNREAD_REQUIRES % (name, name)),
-        ('carry > Global:, which Purlin does not read',
-         specs.UNREAD_GLOBAL % (name, name)),
-        ('carry > Scope:, which Purlin does not read on an anchor',
-         specs.UNREAD_SCOPE % (name, name)),
-        ('come from a source with a line Purlin does not read',
-         specs.REMOTE_UNREAD % (name, 'git@example.com:a/b.git',
-                                '> Scope:', 'the line is',
-                                'git@example.com:a/b.git', 'it', name)),
-        ('have a proof reworded after its test was last changed',
-         reworded_proof_line(name)),
-        ('have an evidence file Purlin ignores',
-         '%s is not valid JSON; it is ignored. %s'
-         % (path, evidence.rewrite_fix('local', name))),
+        (words['to_correct'], reworded_proof_line(name)),
+        (words['to_repair'],
+         specs._mistake('to_repair', name, specs.WRITTEN_TWICE,
+                        about='%s RULE-2' % name, rule='RULE-2')),
+        (words['unnumbered'],
+         specs._mistake('unnumbered', name, specs.UNNUMBERED_ONE)),
+        (words['same_name'],
+         specs._mistake('same_name', name, specs.SAME_NAME % (
+             'specs/a/%s.md' % name, 'specs/b/%s.md' % name),
+             specs.SAME_NAME_DO % ('specs/b/%s.md' % name, 'specs/b'))),
+        (words['name_refused'],
+         specs._mistake('name_refused', name, specs.NAME_REFUSED,
+                        specs.NAME_REFUSED_DO % ('specs/a/%s.md' % name,
+                                                 'specs/a/renamed.md'))),
+        (words['proof_unread'],
+         specs._mistake('proof_unread', name, specs.PROOF_LINE_UNREAD % (
+             specs.TAG_AT_END, '- PROOF-1 @slow (RULE-1): text'))),
+        (words['heading'],
+         specs._mistake('heading', name, specs.HEADING_NAMES_OTHER % (
+             'other', name, name))),
+        (words['tags_conflict'],
+         specs._proof_mistake('tags_conflict', {}, name, 'PROOF-3',
+                              specs.SLOW_AND_MANUAL)),
+        (words['line_unread'],
+         specs._mistake('line_unread', name,
+                        specs.UNREAD_FIELD % '> Requires:')),
+        (words['evidence_ignored'],
+         evidence._ignored(path, name, evidence.NOT_JSON,
+                           evidence.rewrite_fix('local', name))),
     ]
 
 
@@ -1396,12 +1418,19 @@ def test_every_kind_of_warning_about_a_spec_groups_under_its_own_words(
     payload['dirty'] = False
     names = ['export', 'invoice', 'login']
     kinds = [one_line_of_each_kind(name) for name in names]
-    payload['warnings'] = [line for kind in zip(*kinds) for _what, line in kind]
-    assert len(payload['warnings']) == 42
+    give_lines(payload,
+               [line for kind in zip(*kinds) for _what, line in kind])
+    assert len(payload['warnings']) == 30
     page = open_board(browser, tmp_path, payload)
     assert texts(page, '.notice-text') == [
-        '3 specs %s: export, invoice, and 1 more. Run purlin:status for each.'
+        '%s: 3 specs, export, invoice and 1 more. Run purlin:status for each.'
         % what for what, _line in kinds[0]]
+    assert [what for what, _line in kinds[0]] == [
+        'test comment to correct', 'spec to repair',
+        'rule line with no number', 'two specs with one name',
+        'spec name not allowed', 'proof line not read',
+        'first line names another spec', 'tags that conflict',
+        'line not read', 'evidence file ignored']
     page.close()
 
 
@@ -2167,9 +2196,9 @@ def test_an_uncommitted_tree_is_named_on_the_board(browser, tmp_path):
     payload = payload_named('regulated')
     assert payload['dirty'] is True
     page = open_board(browser, tmp_path, payload)
-    assert ('The working tree has uncommitted changes, so what is on this '
-            'board is not what a commit would carry.') in texts(
-                page, '.notice-text')
+    assert ('working tree: changes not committed. This board is not what a '
+            'commit would carry. Commit them, then run '
+            'purlin:status.') in texts(page, '.notice-text')
     page.close()
 
 
@@ -2892,3 +2921,121 @@ def test_a_long_failure_text_never_scrolls_the_page_sideways(browser,
             page.close()
             assert panel['over'] <= 0 and sideways <= 0, (width, theme, panel)
             assert ratios and min(ratios) >= 7, (width, theme, ratios)
+
+
+# ---------------------------------------------------------------------------
+# A notice's name and its kind stand apart from the rest
+# ---------------------------------------------------------------------------
+
+def login_reworded(payload):
+    """The regulated sample, clean, given one warning: the test of login's
+    `PROOF-1 (RULE-1)` was last changed before the proof gained a word."""
+    import types
+    wording = status_sentences()[2]
+    marker = types.SimpleNamespace(feature='login', id='PROOF-1', line=12)
+    line = wording.stale_line(
+        {'proofs_by_rule': {'RULE-1': ['PROOF-1']}}, 'tests/test_login.py',
+        marker, '82c91f6', 'the sixteen keys the rule names',
+        'the seventeen keys the rule names', None)
+    payload['dirty'] = False
+    give_lines(payload, [line])
+    return line
+
+
+NOTICE_PARTS = """() => [...document.querySelectorAll('.notice')].map(n => {
+  const name = n.querySelector('.notice-name');
+  const kind = n.querySelector('.notice-kind');
+  return {
+    text: n.querySelector('.notice-text').textContent.trim(),
+    name: name && name.textContent.trim(),
+    nameFont: name && getComputedStyle(name).fontFamily,
+    link: !!(name && name.getAttribute('role') === 'link'),
+    kind: kind && kind.textContent.trim(),
+    kindBorder: kind && getComputedStyle(kind).borderTopWidth,
+    restFont: getComputedStyle(n.querySelector('.notice-text')).fontFamily,
+  };
+})"""
+
+
+# purlin: purlin_report PROOF-290
+def test_a_notice_sets_its_name_in_the_machine_typeface_and_its_kind_as_a_label(
+        browser, tmp_path):
+    payload = payload_named('regulated')
+    line = login_reworded(payload)
+    assert line == (
+        'login PROOF-1 (RULE-1): test comment to correct. "sixteen" became '
+        '"seventeen" after tests/test_login.py:12 last changed (82c91f6). '
+        'Run purlin:build login.')
+    page = open_board(browser, tmp_path, payload)
+    (found,) = page.evaluate(NOTICE_PARTS)
+    page.close()
+    assert found['text'] == line, found
+    assert found['name'] == 'login PROOF-1 (RULE-1)', found
+    assert found['nameFont'].startswith('"Courier New"'), found
+    assert not found['restFont'].startswith('"Courier New"'), found
+    assert found['kind'] == 'test comment to correct', found
+    assert found['kindBorder'] == '1px', found
+
+
+# purlin: purlin_report PROOF-291
+def test_a_notice_fits_every_width_and_its_name_and_kind_measure_7_to_1(
+        browser, tmp_path):
+    for width in (1500, 1024, 390):
+        for theme in ('dark', 'light'):
+            payload = payload_named('regulated')
+            login_reworded(payload)
+            page = open_in_theme(browser, tmp_path / ('%d-%s' % (width, theme)),
+                                 payload, theme)
+            page.set_viewport_size({'width': width, 'height': 900})
+            sideways = page.evaluate(
+                'document.documentElement.scrollWidth'
+                ' - document.documentElement.clientWidth')
+            ratios = {item[0]: item[3] for item in every_text(page)
+                      if item[0] in ('login', 'PROOF-1', '(RULE-1)',
+                                     'test comment to correct')}
+            page.close()
+            assert sideways <= 0, (width, theme, sideways)
+            assert len(ratios) == 4 and min(ratios.values()) >= 7, (
+                width, theme, ratios)
+
+
+# purlin: purlin_report PROOF-292
+def test_a_notices_name_opens_the_rule_it_names(browser, tmp_path):
+    payload = payload_named('regulated')
+    login_reworded(payload)
+    page = open_board(browser, tmp_path / 'by-name', payload)
+    (found,) = page.evaluate(NOTICE_PARTS)
+    assert found['link'] is True, found
+    page.click('.notice-name')
+    page.wait_for_selector('h1', timeout=10000)
+    by_name = page.inner_text('.wrap')
+    notices = len(page.query_selector_all('.notice'))
+    page.close()
+    page = open_board(browser, tmp_path / 'by-row', payload)
+    open_rule(page, 'login', 'RULE-1')
+    by_row = page.inner_text('.wrap')
+    page.close()
+    assert 'RULE-1' in by_name and 'specs/auth/login.md' in by_name, by_name
+    assert by_name == by_row
+    assert notices == 0
+
+
+# purlin: purlin_report PROOF-293
+def test_a_name_the_page_has_no_rule_for_is_not_a_link(browser, tmp_path):
+    notices = notice_module()
+    payload = payload_named('regulated')
+    payload['dirty'] = False
+    give_lines(payload, [
+        notices.line('to_correct', 'nosuch PROOF-1',
+                     'tests/test_login.py:13 names it, and no spec has it.',
+                     notices.run('purlin:build'), feature='nosuch'),
+        unread_proof_line('login')])
+    page = open_board(browser, tmp_path, payload)
+    found = page.evaluate(NOTICE_PARTS)
+    page.click('.notice-name')
+    still = len(page.query_selector_all('.notice'))
+    tables = len(page.query_selector_all('.tbl'))
+    page.close()
+    assert [(item['name'], item['link']) for item in found] == [
+        ('nosuch PROOF-1', False), ('login', False)], found
+    assert still == 2 and tables >= 1

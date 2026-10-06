@@ -266,7 +266,7 @@ NEW5=$(advance_anchor_repo "$BARE5" "specs/no_eval.md" "$ANCHOR_V2")
 
 status_out=$(run_status "$PROJECT5")
 ok=true
-echo "$status_out" | grep -q "no_eval: the pin ${SHA5:0:7} is behind its source" || ok=false
+echo "$status_out" | grep -q "^no_eval: anchor pin behind. The pin ${SHA5:0:7} is behind its source" || ok=false
 echo "$status_out" | grep -q "purlin:anchor sync no_eval" || ok=false
 record "the status table names the anchor and the command to run" "$ok" "$status_out"
 
@@ -342,7 +342,7 @@ init_project "$PROJECT8"
 
 status_out=$(run_status "$PROJECT8")
 ok=true
-echo "$status_out" | grep -q "loose: names a source and no pin" || ok=false
+echo "$status_out" | grep -q "^loose: anchor with no pin. It names a source and no pin." || ok=false
 record "an anchor with a source and no pin is named" "$ok" "$status_out"
 
 # ==========================================================================

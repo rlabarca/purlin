@@ -134,7 +134,7 @@ def test_a_rule_line_with_no_id_is_reported_as_not_numbered(tmp_path):
            '- RULE-1: A proper rule\n\n'
            '## Proof\n- PROOF-1 (RULE-1): Test\n')
     result = purlin_status.sync_status(str(root))
-    assert ('test_feat: 1 line under ## Rules '
+    assert ('test_feat: rule line with no number. 1 line under ## Rules '
             'is not numbered; a rule is `- RULE-N: <text>`. '
             'Run purlin:spec test_feat.') in result.splitlines(), (
         f"the warning must name the spec, count its one line, give the "
@@ -170,8 +170,8 @@ def test_a_rule_number_written_twice_is_warned_of_and_read_once(tmp_path):
                        '- RULE-2: New text\n',
            proofs='- PROOF-1 (RULE-1): Test one\n')
     result = purlin_status.sync_status(str(root))
-    assert ('login: RULE-2 is written twice; the second is read. '
-            'Run purlin:spec login.') in result.splitlines(), result
+    assert ('login RULE-2: spec to repair. It is written twice, and the '
+            'second is read. Run purlin:spec login.') in result.splitlines(), result
     rules = _feature(root, 'login')['rules']
     assert [(r['id'], r['text']) for r in rules] == [
         ('RULE-1', 'One'), ('RULE-2', 'New text')], rules
@@ -272,8 +272,9 @@ def test_a_first_line_naming_another_feature_is_warned_of(tmp_path):
     root = _project(tmp_path)
     _login(root, first_line='# Feature: checkout')
     result = purlin_status.sync_status(str(root))
-    assert ('login: the first line names checkout, but the file is '
-            'login.md, so it is read as login. Run purlin:spec login.') \
+    assert ('login: first line names another spec. It names checkout, and '
+            'the file is login.md, so it is read as login. Run purlin:spec '
+            'login.') \
         in result.splitlines(), result
     names = [f['name'] for f in
              purlin_payload.build_payload(str(root))['features']]
@@ -289,10 +290,9 @@ def test_a_name_with_another_character_is_warned_of_with_the_rename(tmp_path):
     root = _project(tmp_path)
     _write(root, 'specs/intake/sample.age.md', _ONE_RULE % 'sample.age')
     result = purlin_status.sync_status(str(root))
-    assert ('sample.age: the name holds a character other than letters, '
-            'digits, _ and -, so no test comment can name it. Rename the '
-            'file: git mv specs/intake/sample.age.md '
-            'specs/intake/sample_age.md') in result.splitlines(), result
+    assert ('sample.age: spec name not allowed. A name holds letters, '
+            'digits, _ and -, so no test comment can name this one. Run git '
+            'mv specs/intake/sample.age.md specs/intake/sample_age.md.') in result.splitlines(), result
 
 
 # purlin: schema_spec_format PROOF-89
@@ -312,15 +312,15 @@ def test_a_name_with_a_hyphen_is_read_and_not_warned_of(tmp_path):
 # ---------------------------------------------------------------------------
 
 # purlin: schema_spec_format PROOF-90
-def test_a_tag_before_the_rule_ids_is_quoted_whole_with_its_reason(tmp_path):
+def test_a_tag_before_the_rule_ids_is_quoted_by_8_words_with_its_reason(
+        tmp_path):
     root = _project(tmp_path)
     _login(root, proofs='- PROOF-1 (RULE-1): Test one\n'
            '- PROOF-7 @manual (RULE-7): A rejection message for an aged '
            'sample is clear to a technician\n')
     result = purlin_status.sync_status(str(root))
-    assert ('login: a line under ## Proof cannot be read, because a tag goes '
-            'at the end of the line: "- PROOF-7 @manual (RULE-7): A '
-            'rejection message for an aged sample is clear to a technician". '
+    assert ('login: proof line not read. A tag goes at the end of the line: '
+            '"- PROOF-7 @manual (RULE-7): A rejection message for ...". '
             'Run purlin:spec login.') in result.splitlines(), result
 
 
@@ -330,9 +330,9 @@ def test_a_line_that_is_no_proof_line_is_quoted_with_the_form(tmp_path):
     _login(root, proofs='- PROOF-1 (RULE-1): Test one\n'
            '- PROOF-7: no rule named\n')
     result = purlin_status.sync_status(str(root))
-    assert ('login: a line under ## Proof cannot be read, because a proof '
-            'line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule '
-            'named". Run purlin:spec login.') in result.splitlines(), result
+    assert ('login: proof line not read. A proof line reads `- PROOF-N '
+            '(RULE-N): <text>`: "- PROOF-7: no rule named". Run purlin:spec '
+            'login.') in result.splitlines(), result
 
 
 # ---------------------------------------------------------------------------
@@ -413,9 +413,9 @@ def test_two_specs_with_one_name_are_warned_of_with_the_rename(tmp_path):
                '# Feature: login\n\n## Rules\n- RULE-1: One\n\n'
                '## Proof\n- PROOF-1 (RULE-1): Test\n')
     result = purlin_status.sync_status(str(root))
-    assert ('specs/auth/login.md and specs/admin/login.md are both named '
-            'login; only specs/auth/login.md is read. Rename one: git mv '
-            'specs/admin/login.md specs/admin/<new name>.md') \
+    assert ('login: two specs with one name. Only specs/auth/login.md is '
+            'read, not specs/admin/login.md. Run git mv specs/admin/login.md '
+            'specs/admin/<new name>.md.') \
         in result.splitlines(), result
 
 
@@ -530,8 +530,8 @@ def test_a_requires_line_is_warned_of(tmp_path):
     _anchor_spec(root, 'api', '> Description: The api.')
     _login_carrying(root, '> Requires: api')
     result = purlin_status.sync_status(str(root))
-    assert ('login: > Requires: is not read, because every anchor covers the '
-            'whole project. Run purlin:spec login.') \
+    assert ('login: line not read. Every anchor covers the whole project, '
+            'so > Requires: is not read. Run purlin:spec login.') \
         in result.splitlines(), result
 
 
@@ -545,8 +545,8 @@ def test_slow_with_manual_is_warned_of_and_read_as_manual(tmp_path):
            '## Proof\n- PROOF-1 (RULE-1): Check out three items; verify 30.00\n'
            '- PROOF-2 (RULE-2): Print the receipt and read it @manual @slow\n')
     result = purlin_status.sync_status(str(root))
-    assert ('checkout: PROOF-2 is tagged @slow and @manual; a hand check has '
-            'no test to leave out, so it is read as @manual. Run purlin:spec '
+    assert ('checkout PROOF-2 (RULE-2): tags that conflict. It is tagged '
+            '@slow and @manual, and is read as @manual. Run purlin:spec '
             'checkout.') in result.splitlines(), result
     proof = purlin_specs.scan_specs(str(root))['checkout']['proofs']['PROOF-2']
     assert proof['manual'] is True
@@ -570,11 +570,10 @@ def test_a_remote_anchor_carrying_a_scope_line_names_its_source(tmp_path):
     _anchor_spec(root, 'security_baseline', '> Scope: src/',
                  source=BASELINE_SOURCE + ' specs/baseline.md')
     result = purlin_status.sync_status(str(root))
-    assert ('security_baseline: its source, '
+    assert ('security_baseline: line not read. Its source, '
             'https://github.com/acme/policies.git, carries > Scope:, which '
-            'Purlin does not read on an anchor, so the line is read as '
-            'nothing. Ask the owners of https://github.com/acme/policies.git '
-            'to take it out, then run purlin:anchor sync security_baseline.') \
+            'Purlin does not read on an anchor. Ask its owners to take it '
+            'out, then run purlin:anchor sync security_baseline.') \
         in result.splitlines(), result
 
 
@@ -595,8 +594,8 @@ def test_a_proof_number_written_twice_is_warned_of_and_read_once(tmp_path):
            proofs='- PROOF-4 (RULE-1): Old text\n'
                   '- PROOF-4 (RULE-2): New text\n')
     result = purlin_status.sync_status(str(root))
-    assert ('login: PROOF-4 is written twice; the second is read. '
-            'Run purlin:spec login.') in result.splitlines(), result
+    assert ('login PROOF-4: spec to repair. It is written twice, and the '
+            'second is read. Run purlin:spec login.') in result.splitlines(), result
     proofs = purlin_specs.scan_specs(str(root))['login']['proofs']
     assert list(proofs) == ['PROOF-4'], proofs
     assert proofs['PROOF-4']['text'] == 'New text', proofs
@@ -611,6 +610,6 @@ def test_one_line_left_from_a_merge_conflict_is_warned_of_with_its_line(
                      '- PROOF-1 (RULE-1): Test one', '', '',
                      '=======', '- PROOF-2 (RULE-1): Test two'])
     result = purlin_status.sync_status(str(root))
-    assert ('login: 1 line is left from a merge conflict, at line 12: '
-            '=======. Run purlin:spec login.') in result.splitlines(), result
+    assert ('login: spec to repair. 1 line is left from a merge conflict, '
+            'at line 12: =======. Run purlin:spec login.') in result.splitlines(), result
 

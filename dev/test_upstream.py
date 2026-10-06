@@ -414,7 +414,8 @@ def test_check_names_the_source_that_could_not_be_read_and_the_fix(workspace):
     code, out = _cli(workspace, ['sync', '--check'])
     assert code == 2
     assert out.splitlines() == [
-        'no_eval: the source could not be read (%s). Check its > Source: '
+        'no_eval: anchor source not read. Its source could not be read (%s). '
+        'Check its > Source: '
         'line, then run purlin:anchor sync no_eval.' % message[:200]]
 
 
@@ -441,8 +442,8 @@ def test_text_when_behind_names_the_sync_that_fixes_it(workspace):
     code, out = _cli(workspace, ['sync', '--check'])
     assert code == 1
     assert out.splitlines() == [
-        'no_eval: the pin %s is behind its source, now %s. Run purlin:anchor '
-        'sync no_eval.' % (workspace.first_sha[:7], new_sha[:7])]
+        'no_eval: anchor pin behind. The pin %s is behind its source, now %s. '
+        'Run purlin:anchor sync no_eval.' % (workspace.first_sha[:7], new_sha[:7])]
 
 
 # ---------------------------------------------------------------------------
@@ -635,10 +636,9 @@ def _refused(what):
 
 
 def _not_a_spec(source):
-    return ("refunds: its source, %s, is not a spec in Purlin's format kept in "
-            "a git repository, so it cannot be checked. Run purlin:spec "
-            "refunds to take out its > Source: and > Pinned: lines and keep it "
-            "as this project's own anchor." % source)
+    return ("refunds: anchor source not a spec. %s is not a spec in Purlin's "
+            "format kept in a git repository. Run purlin:spec refunds to take "
+            "out its > Source: and > Pinned: lines." % source)
 
 
 # purlin: upstream PROOF-42
@@ -736,7 +736,8 @@ def test_check_names_an_anchor_with_a_source_and_no_pin(workspace):
                % workspace.anchor_repo))
     _code, out = _cli(workspace, ['sync', '--check'])
     assert out.splitlines() == [
-        'loose: names a source and no pin. Run purlin:anchor sync loose.']
+        'loose: anchor with no pin. It names a source and no pin. Run '
+        'purlin:anchor sync loose.']
 
 
 # ---------------------------------------------------------------------------
@@ -754,8 +755,8 @@ def test_the_status_names_a_pin_behind_its_source_and_leaves_the_copy_as_it_was(
         before = handle.read()
     new_sha = _advance(workspace)
     lines = status_module.sync_status(workspace.root).splitlines()
-    line = ('no_eval: the pin %s is behind its source, now %s. Run purlin:anchor '
-            'sync no_eval.' % (workspace.first_sha[:7], new_sha[:7]))
+    line = ('no_eval: anchor pin behind. The pin %s is behind its source, now '
+            '%s. Run purlin:anchor sync no_eval.' % (workspace.first_sha[:7], new_sha[:7]))
     assert line in lines, '\n'.join(lines)
     with open(path, 'rb') as handle:
         assert handle.read() == before

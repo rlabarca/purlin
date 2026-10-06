@@ -34,7 +34,8 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from config_engine import config_problem
-from purlin import (markers as markers_module, specs as specs_module,
+from purlin import (markers as markers_module, notices,
+                    specs as specs_module,
                     wording as wording_module)
 
 # The view's keys, the facts its lines are built from.
@@ -577,20 +578,41 @@ def _proofs_view(before, after):
     return view, lines
 
 
-def _anchor_line(row):
+# What an anchor's line says is wrong, after `<anchor>: <kind>.`
+PIN_BEHIND = 'The pin %s is behind its source, now %s.'
+PIN_MISSING = 'It names a source and no pin.'
+SOURCE_UNREAD = 'Its source could not be read (%s).'
+SOURCE_UNREAD_DO = 'Check its > Source: line, then run purlin:anchor sync %s.'
+SOURCE_REFUSED = 'Its > Source: line %s.'
+SOURCE_NOT_SPEC = "%s is not a spec in Purlin's format kept in a git repository."
+SOURCE_NOT_SPEC_DO = ('Run purlin:spec %s to take out its > Source: and '
+                      '> Pinned: lines.')
+
+
+def pin_line(row):
+    """One row of `pin_report` as the line the status, the dashboard and
+    drift print for it."""
     name = row['anchor']
+    sync = notices.run('purlin:anchor sync %s' % name)
     if row.get('not_a_spec'):
-        return 'anchor %s: %s' % (name, row['error'])
+        return notices.line('source_not_spec', name,
+                            SOURCE_NOT_SPEC % row.get('source', ''),
+                            SOURCE_NOT_SPEC_DO % name, feature=name)
+    if row.get('reason'):
+        return notices.line('source_refused', name,
+                            SOURCE_REFUSED % row['reason'],
+                            notices.run('purlin:spec %s' % name), feature=name)
     if row['status'] == 'behind':
-        return ('anchor %s: the pin %s is behind its source, now %s. Run '
-                'purlin:anchor sync %s.' % (name, (row.get('pinned') or '')[:7],
-                                            row.get('remote_sha'), name))
+        return notices.line('pin_behind', name, PIN_BEHIND % (
+            (row.get('pinned') or '')[:7], (row.get('remote_sha') or '')[:7]),
+            sync,
+            feature=name)
     if row['status'] == 'unpinned':
-        return ('anchor %s: names a source and no pin. Run purlin:anchor '
-                'sync %s.' % (name, name))
-    return ('anchor %s: the source could not be read (%s). Check its > Source: '
-            'line, then run purlin:anchor sync %s.'
-            % (name, row.get('reason') or row.get('error'), name))
+        return notices.line('pin_missing', name, PIN_MISSING, sync,
+                            feature=name)
+    return notices.line('source_unread', name,
+                        SOURCE_UNREAD % row.get('error', 'unknown'),
+                        SOURCE_UNREAD_DO % name, feature=name)
 
 
 # ---------------------------------------------------------------------------
@@ -599,25 +621,35 @@ def _anchor_line(row):
 
 _REMOTES = 'refs/remotes/'
 
-NUMBER_KEPT = ('%s: %s is written twice. The line on %s keeps %s; renumber '
-               'the other to %s and move its test comments with it: "%s".')
-NUMBER_NEITHER = ('%s: %s is written twice, and neither line is on %s. The one '
-                  'that reaches %s first keeps %s; renumber the other to %s '
-                  'and move its test comments with it.')
-NUMBER_ON_DEFAULT = ('%s: %s is written twice on %s itself. Renumber the '
-                     'second to %s and move its test comments with it: "%s".')
-NUMBER_NO_DEFAULT = ('%s: %s is written twice, and this checkout has no copy '
-                     'of a default branch to say which line keeps it. Renumber '
-                     'the one not yet merged to %s and move its test comments '
-                     'with it.')
+# What a number written twice's line says, after `<spec> <id>: number
+# written twice.`: which line keeps it, then what to do, the line that moves
+# shown by its first words.
+NUMBER_KEPT = 'The line on %s keeps it.'
+NUMBER_NEITHER = 'Neither line is on %s, and the one that reaches it first keeps the number.'
+NUMBER_ON_DEFAULT = '%s itself writes it twice.'
+NUMBER_NO_DEFAULT = 'This checkout has no copy of a default branch to say which line keeps it.'
+RENUMBER_OTHER = 'Renumber the other to %s and move its test comments with it.'
+RENUMBER_SECOND = 'Renumber the second to %s and move its test comments with it.'
+RENUMBER_UNMERGED = ('Renumber the one not yet merged to %s and move its test '
+                     'comments with it.')
+RENUMBER_SHOWN = ' It reads "%s".'
 PROOF_WILL_NAME = '%s: %s will name %s.'
-MERGE_LINE = ('A merge is in progress and is not committed, so the range above '
-              'stops before it. Resolve it and commit, then run purlin:drift '
-              'again.')
-AGE_KNOWN = ('%s was last fetched %s ago, and drift does not fetch. Run git '
-             'fetch, then purlin:drift again.')
-AGE_UNKNOWN = ('%s has no record of when it was last fetched, and drift does '
-               'not fetch. Run git fetch, then purlin:drift again.')
+MERGE_LINE = notices.line(
+    'merge', 'MERGE_HEAD', 'The range above stops before it.',
+    'Commit the merge, then run purlin:drift.')
+AGE_KNOWN = 'It was %s ago, and drift does not fetch.'
+AGE_UNKNOWN = 'None is on record, and drift does not fetch.'
+AGE_DO = 'Run git fetch, then purlin:drift.'
+
+
+def _number_line(name, item, wrong, do, text=None):
+    """One number written twice, the line that moves shown by its first
+    `notices.WORDS_SHOWN` words where `text` gives it."""
+    if text:
+        do += RENUMBER_SHOWN % notices.shown(text)
+    return notices.line('number_twice', '%s %s' % (name, item), wrong, do,
+                        feature=name,
+                        rule=item if item.startswith('RULE-') else None)
 
 
 def merge_in_progress(project_root):
@@ -682,8 +714,8 @@ def _age_words(seconds):
 
 def _age_line(ref, age):
     if age is None:
-        return AGE_UNKNOWN % ref
-    return AGE_KNOWN % (ref, _age_words(age))
+        return notices.line('fetch_age', ref, AGE_UNKNOWN, AGE_DO)
+    return notices.line('fetch_age', ref, AGE_KNOWN % _age_words(age), AGE_DO)
 
 
 def text_of(parsed, item_id):
@@ -771,12 +803,14 @@ def numbers_twice(project_root, features, ref, spec_lines=None):
                      'moves': written[-1]}
             if default is None:
                 entry['case'] = 'no_default'
-                entry['line'] = NUMBER_NO_DEFAULT % (name, item, to)
+                entry['line'] = _number_line(name, item, NUMBER_NO_DEFAULT,
+                                             RENUMBER_UNMERGED % to)
             elif item in (default.get('doubled_lines') or {}):
                 entry['case'] = 'on_default'
                 entry['text'] = written[-1]['text']
-                entry['line'] = NUMBER_ON_DEFAULT % (name, item, ref, to,
-                                                     entry['text'])
+                entry['line'] = _number_line(
+                    name, item, NUMBER_ON_DEFAULT % ref, RENUMBER_SECOND % to,
+                    entry['text'])
             else:
                 kept = text_of(default, item)
                 keeper = next((index for index, line in enumerate(written)
@@ -784,16 +818,17 @@ def numbers_twice(project_root, features, ref, spec_lines=None):
                               None)
                 if keeper is None:
                     entry['case'] = 'neither'
-                    entry['line'] = NUMBER_NEITHER % (name, item, ref, ref,
-                                                      item, to)
+                    entry['line'] = _number_line(
+                        name, item, NUMBER_NEITHER % ref, RENUMBER_OTHER % to)
                 else:
                     other = next(line for index, line in enumerate(written)
                                  if index != keeper)
                     entry['case'] = 'kept'
                     entry['moves'] = other
                     entry['text'] = other['text']
-                    entry['line'] = NUMBER_KEPT % (name, item, ref, item, to,
-                                                   entry['text'])
+                    entry['line'] = _number_line(
+                        name, item, NUMBER_KEPT % ref, RENUMBER_OTHER % to,
+                        entry['text'])
             if item.startswith('RULE-'):
                 entry['follows'] = []
                 if ref:
@@ -896,7 +931,7 @@ def compute_drift(project_root, since=None, network=True):
         lines.append(_age_line(ref, branch['age_seconds']))
 
     anchors = pin_report(project_root, features, network=network)
-    lines += [_anchor_line(row) for row in anchors]
+    lines += [pin_line(row) for row in anchors]
 
     merging = merge_in_progress(project_root)
     view.update({'anchors_behind': anchors, 'comments_changed': comments,

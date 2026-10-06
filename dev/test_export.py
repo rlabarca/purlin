@@ -334,9 +334,10 @@ class TestTheFile:
             made.close()
 
     # purlin: package PROOF-3
-    def test_the_sixteen_top_level_keys_come_in_order(self, project):
+    def test_the_seventeen_top_level_keys_come_in_order(self, project):
         holds_the_evidence = project.head()
         package = signed_package(project)
+        assert len(package) == 17
         assert list(package) == TOP_LEVEL
         assert package['schema'] == 'purlin-package/4'
         assert package['purlin_version'] == PURLIN_VERSION

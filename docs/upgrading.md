@@ -105,10 +105,9 @@ It ends with three lists. It changes nothing in them.
   you rewrite it:
 
 ```
-2 tests still carry a marker from Purlin 0.9.5, which is not read:
+2 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
   tests/test_export.py:12  export RULE-3
   tests/test_lock.py:90  lock RULE-4
-For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
 ```
 
 ## Then run every test

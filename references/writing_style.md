@@ -54,6 +54,34 @@ fixture.
 **No superlatives.** No "seamless", "powerful" or "revolutionise", no exclamation marks, no
 rhetorical questions, and no sentence that describes a benefit without naming the mechanism.
 
+## A warning's shape
+
+Every warning and every line of information takes one shape, in the terminal and on the
+dashboard, so a reader learns it once:
+
+```
+<what it is about>: <kind>. <what is wrong>. Run <command>.
+```
+
+```
+package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run purlin:build package.
+```
+
+- **What it is about** comes first, as you would look it up: `<spec> PROOF-N (RULE-N)` for a
+  proof, `<spec> RULE-N` for a rule, `<spec>` for a spec or an anchor, and the thing itself, a
+  tag or a file, where the line is about no one spec.
+- **The kind** is 2 to 5 words, the same every time. Where the status names that work under
+  `Left to do`, the kind is that name: `test comment to correct`, `spec to repair`.
+- **What is wrong** is short. A reworded proof shows the words that changed alone, each side
+  cut to 8 words with ` ...`, or `was reworded` where the two wordings share too little. A rule
+  or a proof is never printed whole.
+- **What to run** is last. Where nothing is to be run, the last sentence says what to do.
+- It is one line, and a path or a name is never cut.
+
+On the dashboard the name is in the machine typeface and the kind is a label. Three or more of
+one kind fold into one notice that opens on the kind:
+`proof line not read: 4 specs, export, invoice and 2 more. Run purlin:status for each.`
+
 ## Short and plain
 
 Purlin's slides are the model. A doc page may say more than a slide, and it says it the same way.

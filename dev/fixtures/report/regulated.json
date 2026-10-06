@@ -1295,6 +1295,28 @@
     }
   ],
   "met": false,
+  "notices": [
+    {
+      "tone": "warn",
+      "kind": "tree_dirty",
+      "label": "changes not committed",
+      "about": "working tree",
+      "feature": null,
+      "rule": null,
+      "rest": "This board is not what a commit would carry. Commit them, then run purlin:status.",
+      "text": "working tree: changes not committed. This board is not what a commit would carry. Commit them, then run purlin:status."
+    },
+    {
+      "tone": "warn",
+      "kind": "unnumbered",
+      "label": "rule line with no number",
+      "about": "invoice",
+      "feature": "invoice",
+      "rule": null,
+      "rest": "2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice.",
+      "text": "invoice: rule line with no number. 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
+    }
+  ],
   "os_words": {
     "linux": {
       "short": "Lin",
@@ -1310,7 +1332,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 18,
+  "schema_version": 19,
   "signoff": {
     "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
     "since": 4,
@@ -1352,6 +1374,6 @@
   },
   "version": "0.10.0",
   "warnings": [
-    "invoice: 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
+    "invoice: rule line with no number. 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
   ]
 }
