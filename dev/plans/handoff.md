@@ -164,21 +164,11 @@ Proofs changed by the owner's answers: `package` PROOF-15, `ai_audit` PROOF-185,
 PROOF-40, `purlin_docs` PROOF-24 and `skill_init` PROOF-24 say more; `run_script` gained
 PROOF-326, run on Windows alone.
 
-What the audit showed about Purlin itself, open for the owner:
-- **A test whose name begins with another test's whole name is left out with it.** The run
-  tells pytest which tests to leave out, and pytest matches those names by prefix
-  (`leave_out` in `scripts/mcp/purlin/frameworks.py`). One test was renamed around it.
-- **A settle does not read the spot tests again for a rule with no surviving bug**, though
-  the reference says it does; a spot-test finding is cleared by a plain audit alone.
-- **A settle never starts a slow proof's test**, so a finding on a slow proof waits for
-  `purlin:test --all` and then the settle.
-- **An audit result is kept while a test's own lines are unchanged**, so a test fixed
-  through its helper is not read again until its body changes.
-- **Any commit puts an anchor's audit results out of date**, as decision 100 says; the
-  anchor is audited last, after the last commit.
-- **`purlin_report` PROOF-233** says the dashboard's data names the first 7 characters of the
-  commit; it holds all 40 and the page shortens it. **`renumber` PROOF-18** names less than
-  its case shows: the plan line `login: > Highest-Proof: 10 becomes 11.`
+What the audit showed about Purlin itself was decided on 2026-10-06 and is built (decision
+132): a test whose name begins with another's is no longer left out with it (for pytest and
+dotnet the slow test is started, and the run says so); a settle reads the spot tests again
+and starts the slow test of the rule it names; the full run reads an audited anchor's spot
+tests again; the audit page says a result is kept until the test's own lines change.
 
 ## What is left
 

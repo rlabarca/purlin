@@ -100,7 +100,8 @@ other page points here rather than defining it again.
 - **finding**: one line saying what a spot test flagged or which planted bug a test did not
   catch. A surviving bug adds a second line, the case the AI says it breaks. A finding makes
   the rule `weak`. A weak rule is left to do as `to strengthen`, and stops nothing.
-- **settle**: to decide a surviving bug's finding with a test run.
+- **settle**: to decide a surviving bug's finding with a test run. A settle also runs the spot
+  tests over the rule's tests again, and starts the test of a slow proof of the rule it names.
   `purlin:audit <feature> RULE-N --settle` plants each bug that survived again and runs its
   proof's test as it stands now. `purlin:build` runs it once the test is stronger. A settle is
   refused for a proof whose test is as it was when the bug got past it, unless `--sound PROOF-N`
