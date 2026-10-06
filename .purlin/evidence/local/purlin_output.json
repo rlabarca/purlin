@@ -2,52 +2,51 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-06T17:31:50Z",
         "bugs": {
           "PROOF-1": {
-            "after": "DOT = ' \u00a9 '",
+            "after": "The format is `references/formats/evidence_format.md` in the Purlin plugin. \u00a9 Purlin.",
             "aim": "past the test",
-            "before": "DOT = ' \u00b7 '",
-            "bug_key": "d3c89ac1cd81ec4cc82c7535084e66116f73d9b057bb3315eb80f034af4584a9",
-            "case": "every tracked file under scripts/ and templates/ is read; the proof says none holds an Extended_Pictographic character other than \u25b6; scripts/mcp/purlin/board.py now holds U+00A9",
-            "file": "scripts/mcp/purlin/board.py",
-            "line": null,
-            "result": "not made",
-            "why": "the test does not pass in a copy of the project"
+            "before": "The format is `references/formats/evidence_format.md` in the Purlin plugin.",
+            "bug_key": "571c5cf9ae6dc7bf91f247eddf53fa65fb92f7d5bdb379d65efe3aa04b4a1e8d",
+            "case": "every tracked file under scripts/ and templates/ is read; the proof says none holds an Extended_Pictographic character; templates/evidence-readme.md now holds U+00A9, which has that property",
+            "file": "templates/evidence-readme.md",
+            "line": 16,
+            "result": "caught",
+            "why": ""
           }
         },
         "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-1: the test lists the tracked files, asserts that some sit under `scripts/` and some under `templates/`, and compares what its pictograph helper finds over all of them with an empty list, so it checks the proof's case and its result.",
-          "PROOF-1: the helpers that decide what counts as a pictograph and what is allowed are not shown, and the test's own specimens are all at U+2705 or above plus U+FE0F, so a pictographic character in a low range, such as U+00A9, is only caught if the helper covers the whole property.",
-          "PROOF-1: the test also asserts that the glyphs Purlin prints are not flagged and that four specimens in a temporary file are reported by line and code point, which shows the helper can fail.",
-          "The spot tests found nothing, and nothing in the test's text contradicts that: it asserts, swallows no error, mocks nothing and compares against literals."
+          "PROOF-1: the test lists every tracked file, asserts that at least one is under scripts/ and one under templates/, and asserts the detector finds nothing in any of them, which is the case the proof names.",
+          "PROOF-1: the test shows the detector firing on only U+2705, U+26A0, U+1F680, U+2764 and U+FE0F in a temporary file, so a detector built on ranges that leave out lower code points with the property, such as U+00A9 or U+2122, would still pass it.",
+          "PROOF-1: the allowed glyphs are checked through the detector and the allowed set together, so the test does not show that `\u25b6` is exempt by the set and not by a gap in the detector.",
+          "Findings: none, and the test's assertions can each fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was planted: the test of PROOF-1 does not pass in a copy of the project."
-        ],
+        "no_bug": [],
         "proof_hash": "3ebaeae756f36ef4a67cdf73c56a3b6222c24d001b5e103f91ea2d6090b758b4",
         "rule_hash": "a3c5be2db592cb7907d48e3d0217fc868d46f0add72b7c60a74f01995d5fd62f",
-        "test_hash": "b7003e3831aeb5da2f72baf9c9fb08cf47b74b1e9f551b116c5c8b23c3ac3b32",
-        "verdict": "spot-checked"
+        "test_hash": "b7da58fe15b32436dc90c72e387c7ee099adebcaf933f6cd210c5a85ccf9c5c3",
+        "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-06T17:31:50Z",
         "bugs": {
           "PROOF-2": {
-            "after": "        print(f'{report['error']}: {report['reason']}')",
+            "after": "            lines.append(f'{name}: {row['error']}')",
             "aim": "past the test",
-            "before": "        print(REFUSED % (report['error'], report['reason']))",
-            "bug_key": "ea190716c1384cf13650f4b18b922d7d50eddb6665910517b59ee67fe6bd0877",
-            "case": "scripts/run/purlin_drift.py is read with the grammar of Python 3.9; the proof says it is accepted; the changed file holds an f-string that reuses its own quote, which Python 3.9 refuses as a syntax error",
-            "file": "scripts/run/purlin_drift.py",
-            "line": null,
-            "result": "not made",
-            "why": "the test does not pass in a copy of the project"
+            "before": "            lines.append('%s: %s' % (name, row['error']))",
+            "bug_key": "c3cf079e4d1c322dec2a73eb8630ef05f655f225829b3d6f01a1a01da5413d4a",
+            "case": "scripts/anchor/upstream.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file reuses the string's own quote inside an f-string, which 3.9 rejects as a syntax error",
+            "file": "scripts/anchor/upstream.py",
+            "line": 487,
+            "result": "survived",
+            "test_key": "2e89208f7645e3e4c6fc6af0f78ba4f40d83df4953038eb7df6d8ce3b326c48f",
+            "why": ""
           },
           "PROOF-4": {
             "after": "    ids.update(zip(present, lines, strict=True))",
@@ -73,26 +72,29 @@
           }
         },
         "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
+        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-2: the test lists the tracked files under scripts/, requires more than 20 Python files among them and an empty answer from a helper defined outside the test, so every file is covered and none is sampled.",
-          "PROOF-2: the test also shows the helper naming a file that holds a match statement, so the check is shown to fail on one construct later than 3.9.",
-          "PROOF-2: what the helper accepts as the grammar of 3.9 is not in the test, so a construct only a real 3.9 parser refuses, such as an f-string reusing its own quote, may pass where the helper parses with a newer interpreter.",
-          "PROOF-4: the test sets a project up and runs the tests under a Python 3.9 it finds, then asserts exit 0 and the exact line `Markers: 1 tied to a test, 0 not tied.` in the output, which are the two results the proof names.",
-          "PROOF-4: whether the run covers every feature depends on a helper the test does not show, and the test does not run where no Python 3.9 is found.",
-          "PROOF-5: the test asks for the status under Python 3.9 and asserts exit 0 and a line opening `app`, 1 and 1, which is the row and the exit the proof names; the rest of the row is not compared, and the proof names none of it.",
-          "The spot tests found nothing: each test holds assertions that can fail, and the values the proofs mark in backticks appear in the test file."
+          "PROOF-2: the test parses every tracked Python file under scripts/ with a helper and compares the files it rejects with an empty list, so a file the helper rejects fails it.",
+          "PROOF-2: the test does not start Python 3.9 itself; if the helper relies on a newer interpreter's own 3.9 mode, syntax that mode does not check, such as a quote reused inside an f-string, still passes.",
+          "PROOF-2: the test also asserts more than 20 Python files were read and that a file holding a match statement is named, so an empty file list or a helper that accepts everything fails it.",
+          "PROOF-4: the test sets up a project under Python 3.9, runs the tests, and asserts exit 0 and the exact line `Markers: 1 tied to a test, 0 not tied.` in the output, which is what the proof names.",
+          "PROOF-5: the test asks for the status under Python 3.9 and asserts exit 0 and a row matching `app  1  1`, so it checks the row for `app` and the exit the proof names.",
+          "The spot tests found nothing, and each test holds assertions that can fail against values the proofs name."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-2: the test still passes when scripts/anchor/upstream.py:487 reads \"lines.append(f'{name}: {row['error']}')\"",
+          "PROOF-2: the AI says this breaks: scripts/anchor/upstream.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file reuses the string's own quote inside an f-string, which 3.9 rejects as a syntax error"
+        ],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was planted: the test of PROOF-2 does not pass in a copy of the project."
+        "no_bug": [],
+        "notes": [
+          "PROOF-4 and PROOF-5 name only the allowed case; no proof of the rule names a failure case, such as a file that Python 3.9 rejects."
         ],
         "proof_hash": "9595d2c89c408b9a6a252869ad680b7ed1b3aa1c8dd0d22680dddbd28da32ea9",
         "rule_hash": "83b3d888c56bb0bfb2bde8748a501a2ba2e50bcf2ace37991b81fdedf5d14d35",
-        "test_hash": "b525a2547ef243589611ed5153dc597a854f8ea890e53eec2823c0405fd30b3f",
-        "verdict": "strong"
+        "test_hash": "a49571465c5278f4d2f731ddce0614ef1494a3d2dbde3ba0db2de00407b389c0",
+        "verdict": "weak"
       },
       "RULE-3": {
         "at": "2026-10-05T18:49:48Z",
