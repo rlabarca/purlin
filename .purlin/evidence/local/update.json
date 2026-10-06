@@ -1505,29 +1505,17 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-06T16:42:21Z",
+        "at": "2026-10-06T17:26:11Z",
         "bugs": {
-          "PROOF-195": {
-            "after": "        if rel.startswith('specs/'):\n            if rel in [r for r in files if r.endswith('.receipt.json')][1:]:\n                out.keep(root, rel)\n            os.remove(os.path.join(root, rel))",
-            "aim": "past the test",
-            "before": "        if rel.startswith('specs/'):\n            os.remove(os.path.join(root, rel))",
-            "bug_key": "b90caa402435206bb4e46039b72e8176c93a5f25d2547e999796cdc87f7a8801",
-            "case": "the update with --yes on the sample v0.9.5 project; the proof says a run file the update deleted has no copy under the backup folder; the changed code copies every deleted run file after the first one there",
-            "file": "scripts/init/update.py",
-            "line": 577,
-            "result": "caught",
-            "why": ""
-          },
           "PROOF-7": {
             "after": "            handle.write(previous.strip())",
             "aim": "past the test",
             "before": "            handle.write(previous)",
-            "bug_key": "b90caa402435206bb4e46039b72e8176c93a5f25d2547e999796cdc87f7a8801",
+            "bug_key": "b1c200610906c139fa3dd848ebbb43742cfa7bfd83128dd6f1a28e624f2c8230",
             "case": "the update with `--yes` on the sample v0.9.5 project; the proof says copies of `.purlin/config.json`, `.gitignore` and a spec are under `.purlin/runtime/update-backup/`; the changed code leaves files there that lack the originals' final newline, so they are not copies",
             "file": "scripts/init/update.py",
             "line": 323,
-            "result": "survived",
-            "test_key": "cd4d1443772e6f26ec4d209efbe2340a2e1fb6b2826e75963b7568e6c4b402a2",
+            "result": "caught",
             "why": ""
           },
           "PROOF-71": {
@@ -1543,31 +1531,18 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
+        "commit": "3bb49ad6d72e4985ba7536a876157348f6cb4711",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-7: the test checks that `.purlin/config.json`, `.gitignore` and a spec are among the backups, that each backup's path is a path the project had before, and that no `*.bak` file exists; it never compares a copy's bytes, so a file at the right path with altered content still passes.",
-          "PROOF-71: the test compares every backup's bytes with the bytes its file had before the run and asserts that there is at least one backup, which is what the proof names.",
-          "PROOF-118: the test makes the same byte-for-byte comparison of every backup as PROOF-71, and nothing in its body is specific to Windows beyond the proof's tag.",
-          "PROOF-195: the test checks that the printed output holds the backups line with the short sha of the commit before the update, that each deleted run file is gone and has no backup, and that `git show` at that commit returns its earlier bytes.",
-          "No spot test fired; the checks in these tests can fail, and the literal values the proofs name are checked through the path strings and the `BACKUPS_LINE` constant."
-        ],
-        "findings": [
-          "PROOF-7: the test still passes when scripts/init/update.py:323 reads \"handle.write(previous.strip())\"",
-          "PROOF-7: the AI says this breaks: the update with `--yes` on the sample v0.9.5 project; the proof says copies of `.purlin/config.json`, `.gitignore` and a spec are under `.purlin/runtime/update-backup/`; the changed code leaves files there that lack the originals' final newline, so they are not copies"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-118 needs Windows, and this machine is macOS."
         ],
-        "notes": [
-          "PROOF-195 is longer than 60 words and holds a second case, the deleted run file with no copy that git still shows, beside the printed line.",
-          "PROOF-7 holds two results, the copies under the backup folder and the absence of `*.bak` files, and shares its test with PROOF-195."
-        ],
         "proof_hash": "57afc17e68d912fd0c52615556015fc0604926cc0c43d5e80d8ee1ff6fcdb6ec",
         "rule_hash": "278eac67ed8862f913c75db59d189eef46c5d6dfe4711115a12fdc58bd3f0bfb",
-        "test_hash": "fc734df94afdb0b21e0202908cb825adf5e0591536b9932add1a4514dcc1e7ba",
-        "verdict": "weak"
+        "test_hash": "434eb77fc82bd2637626b4e5dc919f22387db3cdfd62ba53ab5eda51ecbc22d6",
+        "verdict": "strong"
       },
       "RULE-70": {
         "at": "2026-10-06T15:44:24Z",
