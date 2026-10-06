@@ -2,8 +2,8 @@
   "feature": "config_engine",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T17:23:15Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:21:40Z",
+      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,29 +14,45 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_config_engine.TestWriting",
+                "duration": 0.003,
+                "name": "test_on_windows_a_write_ends_its_lines_with_no_carriage_return",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_config_engine.TestAtomicWrite",
+                "duration": 0.024,
+                "name": "test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_config_engine.py::TestAtomicWrite::test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole"

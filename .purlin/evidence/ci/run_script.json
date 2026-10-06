@@ -2,41 +2,57 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T17:23:15Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:21:40Z",
+      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "d9d157140fa076e224606149574766fd541d15bfddb5a9a7b7b834383bd7b207",
-        "spec": "f31a247bdbdde6b0b766957b335f8600d26a89cdc0a46f6db2d464f9870d1372",
-        "tests": "21b52c6d4805c1e8f043c457ec3cb5e5009d8baae892d15af2649f1f678634f1"
+        "code": "95e1521bd7a74455f9836797f9f724ff342ad2bf3e6322c87286a1f3dcce9e3f",
+        "spec": "f3824c211d3e639bb99069c50b76ec479943f91c51230df1c2b3d89d74ad3da4",
+        "tests": "29f0cddecc6ae00bbab83879d8a8f6255352e3c04bb5d6f648273aa1d128c6d1"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-326",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_run_script.TestNoTestCommand",
+                "duration": 0.073,
+                "name": "test_a_windows_machine_is_suggested_the_launcher",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-63",
           "test": "dev/test_run_script.py::TestNoTestCommand::test_a_windows_machine_is_suggested_the_launcher"
         },
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-229",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_run_script.TestTheConsoleCodecNeverEndsTheRun",
+                "duration": 0.661,
+                "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_run_script.py::TestTheConsoleCodecNeverEndsTheRun::test_a_cp1252_console_gets_the_glyphs_and_no_traceback"

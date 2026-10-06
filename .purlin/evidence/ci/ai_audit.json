@@ -2,27 +2,35 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T17:23:15Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:21:40Z",
+      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "1e59cd62345438bad502f5bfac96d062550203a265e09ab5e5c1482878ff6026",
-        "spec": "3f9dcc6aea105923a82a17245f231ca2afcd2b49d891b1a7ceeeb6b3e14781fc",
-        "tests": "4b648e70d97730ace5e1833451b282d4c771b67005d5ff1cfc536f67c7a14a67"
+        "code": "0d2999958aaa7e29ade3456ac77f272148fd51a2128b31b5deded6203ad77390",
+        "spec": "cbea6661f316d901328b750a0f248080fb34cb5fb431a4e8780949e050a80301",
+        "tests": "e6a5f436e272a1fed29c32a2b77e165e99172794836cf4d359e904e5b7cea0fe"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-82",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_ai_audit.TestTheCall",
+                "duration": 0.825,
+                "name": "test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_ai_audit.py::TestTheCall::test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end"

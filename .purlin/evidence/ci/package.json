@@ -2,27 +2,35 @@
   "feature": "package",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T17:23:15Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:21:40Z",
+      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "6099c361a13a38967ad594ca2243158aa66b843183161345a4fb9843bd61e26a",
-        "spec": "13b585303382f9d6e99346d81599218dfe3a2423a98406bc934e0e2413d5ac42",
-        "tests": "6e47a18ba4c6d81577ed01e001df0d8902e62d78e46170320b3a30bae9558b07"
+        "code": "9f291cc385e8583473d513efe7c19590b02434223e4300e2df3a76eb64b1ea84",
+        "spec": "8cf775b737ec6426d2d6a19cf96913d3758708bf90fa25f02515eb4741b32fbc",
+        "tests": "39908170f4995a4d594c76be5f932ae314b0e993202afed80280f3cbbdb504a5"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T17:23:15Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_export.TestTheBytes",
+                "duration": 4.195,
+                "name": "test_on_windows_two_clones_give_the_same_bytes",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_export.py::TestTheBytes::test_on_windows_two_clones_give_the_same_bytes"

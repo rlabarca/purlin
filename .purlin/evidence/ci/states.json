@@ -2,27 +2,35 @@
   "feature": "states",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T17:23:16Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:21:40Z",
+      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "2381ac6d4833abf32fb3fcf9514518b8e77cce9f05256ea4553fcbfbdb27c8b3",
-        "spec": "89ad5e388dfcc4053a4897d9a62db9d5973b1054e02eab81faf469485bc202bc",
-        "tests": "9f2cea96e487c4865245c83945f701f1ec51eff7292b428b09dc510887f4bd93"
+        "code": "32a24f29e74eeb37437ec0cf8f665e284331c550db8cfcc2ec51b0c201b93073",
+        "spec": "4501b798b15089e9f8a6d08988d4e347fef60adde3408ac6290c786aa2c4d5a8",
+        "tests": "e88a6b6b87548e7c193db1efe983db6c6b842a653b567a9a6a945f9198a12b15"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T17:23:16Z",
-            "commit": "faccb7d34515f5accbc6efb706b39113b0cf3a30",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-218",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_backing_tests.TestTheEvidenceNamesTheTests",
+                "duration": 1.245,
+                "name": "test_a_checkout_with_windows_line_endings_keeps_the_hash",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+            }
+          },
           "result": "pass",
           "rule": "RULE-90",
           "test": "dev/test_backing_tests.py::TestTheEvidenceNamesTheTests::test_a_checkout_with_windows_line_endings_keeps_the_hash"
