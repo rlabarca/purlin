@@ -152,16 +152,17 @@ The `Tests` column counts the words a passed cell can read: `passed`, `partial`,
 `no test`, `not run`, `out of date` and `checked at sign-off`. `references/spec_quality_guide.md`, "When a rule is
 stuck", says what each word means, with its reasons, and what moves it.
 
-A test comment to correct reads `<file>:<line> names <feature> <PROOF-N>, whose wording changed
-after the test was last changed in <sha7>: ...`. It clears once the test itself changes: run
-`purlin:build <feature>`.
+A test comment to correct reads `<feature> <PROOF-N> (<RULE-N>): test comment to correct.
+"<old words>" became "<new words>" after <file>:<line> last changed (<sha7>). Run purlin:build
+<feature>.` It clears once the test itself changes.
 
 Loud failures come first. `Evidence is missing: <what>.` means one of two things:
 
 - a suite left no readable report;
 - a marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
 
-A marker naming nothing a spec has reads `<file>:<line> names <feature> <ID>, which no spec has.`
+A marker naming nothing a spec has reads `<feature> <ID>: test comment to correct. <file>:<line>
+names it, and no spec has it. Run purlin:build.`
 
 ## Step 5: another operating system
 

@@ -27,7 +27,7 @@ Plain language reaches the same place: "what changed", "what did that pull bring
 Run it right after a pull, a merge, a rebase or a checkout of someone else's branch. A merge
 that stopped on conflicts counts once you commit it, `commit (merge)` in git's log of HEAD. The
 range starts where HEAD stood before that action, so it shows what the action brought in and what
-you committed since. Run mid-merge, drift says `A merge is in progress and is not committed`: its
+you committed since. Run mid-merge, drift says `MERGE_HEAD: merge in progress.`: its
 range stops before the merge.
 
 Drift reads only this checkout: it never fetches, pulls or reaches the host, and it never pulls

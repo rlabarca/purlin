@@ -49,7 +49,7 @@ a test is any test in your own suite with one comment above it.
   renumbering, before the `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
 - **The formats** stand at spec 24, anchor 12, evidence 17, signature 17, package 17 and marker 6,
-  the drift criteria at 14, and the dashboard's data at schema 18.
+  the drift criteria at 14, and the dashboard's data at schema 19.
 
 In more words:
 
@@ -122,8 +122,13 @@ In more words:
   changed and moved, each number written twice and which line moves, each test comment whose
   proof's wording changed, and each anchor behind its source. It says how old your copy of the
   default branch is, never fetches and never pulls an anchor.
+- **Every warning takes one shape**, in the terminal and on the dashboard: what it is about, its
+  kind, what is wrong, what to run, on one line. A reworded proof shows the words that changed
+  alone: `package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after dev/test_export.py:336 last changed (82c91f6). Run purlin:build package.`
+  The dashboard sets the name in the machine typeface and the kind as a label, and a name that
+  is a rule or a proof opens that rule.
 - **A spec ahead of its code is information, not a warning**:
-  `login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.`
+  `login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.`
 - **Purlin runs the tests where you are.** A proof tagged `@env(<os>)` for a system your machine
   is not is listed by every status, as `22 rules to test on Windows: run purlin:test on Windows`. Reaching
   that system is your project's own setup: ask the AI, and it writes a file for your git host,

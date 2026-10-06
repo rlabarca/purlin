@@ -25,7 +25,7 @@ its file. The new name is the old one with each such character, and a leading
 `-`, written `_`:
 
 ```
-sample.age: the name holds a character other than letters, digits, _ and -, so no test comment can name it. Rename the file: git mv specs/intake/sample.age.md specs/intake/sample_age.md
+sample.age: spec name not allowed. A name holds letters, digits, _ and -, so no test comment can name this one. Run git mv specs/intake/sample.age.md specs/intake/sample_age.md.
 ```
 
 Two specs with one name in different folders are warned of: only one is read,
@@ -95,8 +95,8 @@ information, naming the files, the build first and the spec second, since
 Purlin cannot tell a file not yet written from a typo:
 
 ```
-login: 1 file its scope names is not written yet: src/gone.py. Run purlin:build login, or correct the path with purlin:spec login.
-states: 3 files its scope names are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or correct the path with purlin:spec states.
+login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.
+states: spec ahead of its code. 3 files are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or purlin:spec states to correct the path.
 ```
 
 The line clears once git has every file the scope names. An anchor's scope is
@@ -111,7 +111,7 @@ in the run's warnings, and `purlin:init --update` removes it.
 `> Requires:` and `> Global:` are not part of the format either, because every
 anchor covers the whole project. A spec that still carries one parses; the line
 is not read, and every status and test run warns of it with its fix:
-`login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.`
+`login: line not read. Every anchor covers the whole project, so > Requires: is not read. Run purlin:spec login.`
 `purlin:init --update` removes both.
 
 ## Rules format
@@ -191,17 +191,17 @@ rule ids:
 ```
 
 A list item under `## Proof` of any other form is not read as a proof. The
-status warns of it in one line that quotes the line whole and gives the reason.
+status warns of it in one line that gives the reason and quotes the line's first 8 words.
 Where `@manual`, `@slow` or `@env(` stands between `PROOF-N` and the rule ids:
 
 ```
-login: a line under ## Proof cannot be read, because a tag goes at the end of the line: "- PROOF-7 @manual (RULE-7): A rejection message for an aged sample is clear to a technician". Run purlin:spec login.
+login: proof line not read. A tag goes at the end of the line: "- PROOF-7 @manual (RULE-7): A rejection message for ...". Run purlin:spec login.
 ```
 
 For any other line:
 
 ```
-login: a line under ## Proof cannot be read, because a proof line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule named". Run purlin:spec login.
+login: proof line not read. A proof line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule named". Run purlin:spec login.
 ```
 
 A proof id written twice is warned of; the proof is read once, with the text of
@@ -253,8 +253,8 @@ any other does. An anchor's proof takes the tag the same way.
 
 `@slow` may stand with `@env(...)`. With `@manual` it is a mistake: a hand
 check has no test to leave out, so the proof is read as `@manual` and the
-status warns `<spec>: PROOF-N is tagged @slow and @manual; a hand check has no
-test to leave out, so it is read as @manual. Run purlin:spec <spec>.`
+status warns `<spec> PROOF-N (RULE-N): tags that conflict. It is tagged @slow
+and @manual, and is read as @manual. Run purlin:spec <spec>.`
 
 Adding or removing `@slow` is no change of a proof's wording, so it names no
 test comment as one to correct.

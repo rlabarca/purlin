@@ -104,17 +104,19 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 Add `--file <path>` for each test file to narrow it. It prints one line per comment, then the
-count, `<n> test comments to correct.` or `No test comment to correct.`:
+count, `<n> test comments to correct.` or `No test comment to correct.` A line names the proof
+and its rule, the words that changed, and the test's file, line and last commit:
 
 ```
-tests/test_login.py:1 names login PROOF-4, whose wording changed after the test was last changed in 3c9d2e1: it read "A" and now reads "B". Run purlin:build login to make the test show it; the line clears once the test changes.
+login PROOF-4 (RULE-2): test comment to correct. "sixteen" became "seventeen" after tests/test_login.py:1 last changed (3c9d2e1). Run purlin:build login.
 ```
 
-For each, read the test against the proof as it reads now. Where the test does not show it, fix
+The line shows the words that changed, not the proof: read the proof in the spec. For each,
+read the test against the proof as it reads now. Where the test does not show it, fix
 the test: the starting situation, the action and each value the proof names are what the test
 sets up, does and asserts. Where it already does, change the test so it states it, in its name
 or an assertion. The line clears once the test's own lines change; never reword the proof to
-fit the test. A line ending `Its old wording is now PROOF-6: move the comment there.` is a
+fit the test. A line ending `Move the comment to PROOF-6, which holds the old wording.` is a
 comment to move, as `purlin:spec`'s "Renumbering" says.
 
 ## Repairing a comment that is nearly a marker

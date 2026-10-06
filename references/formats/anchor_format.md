@@ -93,7 +93,7 @@ The proof then reads `nothing to check` in the evidence, with the text after
 `nothing to check: ` as its reason, and on an anchor its rule counts as passed.
 The status, the dashboard and the evidence package show the reason, so a signer
 sees the rule was not exercised:
-`security_baseline RULE-3 passes with nothing to check here: this project has no screens.`
+`security_baseline RULE-3: nothing to check here. It passes: this project has no screens.`
 Only an anchor's rule counts such a skip as passed; on any other spec's rule it
 reads as not run, its reason kept (`marker_format.md`). A project cannot set
 a pulled rule aside: a pulled rule that fails here is a problem to raise with
@@ -147,9 +147,9 @@ is never checked.
 The status and `purlin:drift` check a pin against its source and pull nothing:
 one cached `git ls-remote` per source per run reads the source's head, and the
 anchor's copy, its pin and the checkout's git objects stay as they were. A pin
-behind its source reads, in the status,
-`X: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync X.`,
-and in drift the same line opening `anchor X:`. Only `purlin:anchor sync X`
+behind its source reads, in the status and in drift,
+`X: anchor pin behind. The pin <old7> is behind its source, now <new7>. Run purlin:anchor sync X.`
+Only `purlin:anchor sync X`
 pulls: it shows the rule delta, rewrites the local copy from the source's new
 head, keeps every `> Note:` line, and advances the pin. It commits nothing; the
 copy is left changed for you to read and commit.
@@ -157,7 +157,7 @@ copy is left changed for you to read and commit.
 A `> Source:` value is repository-supplied text, so it never reaches git in
 option position. A value that begins with `-` or names an `ext::` or `fd::`
 transport is refused before any process starts, and the status line says
-`(source rejected: begins with "-")`.
+`X: anchor source refused. Its > Source: line begins with "-". Run purlin:spec X.`
 
 ### Example: what a consumer's copy looks like
 

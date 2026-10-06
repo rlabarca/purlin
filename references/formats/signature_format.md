@@ -162,7 +162,7 @@ counts, and one of two things holds:
 - This checkout holds no tag `signed/<version>`, as after a pull that fetched
   no tag, and `HEAD` holds the version's package. The sign-off is then read
   at the commit that added the oldest sign-off that counts, and the status
-  adds one line: `signed/<version> is not in this checkout: the sign-off of
+  adds one line: `signed/<version>: tag not in this checkout. The sign-off of
   <version> at <sha7> is read from its files. Run git fetch --tags, or
   purlin:sign if no one wrote the tag.`
 
@@ -172,8 +172,8 @@ is left:
 
 | The tag | The warning |
 |---|---|
-| names a commit that holds no package for its version, as a tag written by hand does | `signed/<version>: it names a commit that holds no evidence package for <version>, so it is not a sign-off. Delete it: git tag -d signed/<version>.` |
-| names a commit that holds the package, and no sign-off of it counts | `signed/<version>: no sign-off of <version> counts: <the reason above, or HEAD holds none>. Restore the files as they were signed, or sign this code: purlin:sign --version <version>.` |
+| names a commit that holds no package for its version, as a tag written by hand does | `signed/<version>: tag with no sign-off. Its commit holds no evidence package for <version>. Run git tag -d signed/<version>.` |
+| names a commit that holds the package, and no sign-off of it counts | `signed/<version>: tag with no sign-off. No sign-off of <version> counts: <the reason above, or HEAD holds none>. Restore the files as they were signed, or run purlin:sign --version <version>.` |
 
 `references/evidence_and_signoff.md` holds when a sign-off counts and what
 the tag `signed/<version>` means.

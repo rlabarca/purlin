@@ -162,7 +162,7 @@ that come back.
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
 status, the dashboard and the evidence package show the reason, as in
-`security_no_dangerous_patterns RULE-3 passes with nothing to check here: this project has no screens.`
+`security_no_dangerous_patterns RULE-3: nothing to check here. It passes: this project has no screens.`
 On a feature's own rule the same skip reads `not run`, its reason kept.
 
 ## A run on another system

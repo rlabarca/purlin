@@ -54,7 +54,7 @@ are not repeated here.
 
 | Key | Line |
 |-----|------|
-| `merge_in_progress` | `A merge is in progress and is not committed, so the range above stops before it. Resolve it and commit, then run purlin:drift again.` |
+| `merge_in_progress` | `MERGE_HEAD: merge in progress. The range above stops before it. Commit the merge, then run purlin:drift.` |
 | `rules_added` | `3 rules added: login RULE-7, RULE-8; export RULE-2.` |
 | `rules_changed` | `2 rules changed: login RULE-3, billing RULE-1.` |
 | `rules_removed` | `1 rule removed: cart RULE-4.` |
@@ -62,10 +62,10 @@ are not repeated here.
 | `proofs_added` | `2 proofs added: sample_age PROOF-5, PROOF-6; stability PROOF-3.` |
 | `proofs_changed` | `sample_age PROOF-1 changed: it read "<old>" and now reads "<new>".` |
 | `proofs_moved` | `sample_age PROOF-4 moved to PROOF-6.` |
-| `numbers_twice` | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
-| `comments_changed` | `tests/test_age.py:14 names sample_age PROOF-4, whose wording changed after the test was last changed in a1b2c3d: it read "<old>" and now reads "<new>". Run purlin:build sample_age to make the test show it; the line clears once the test changes.` |
-| `default_branch` | `origin/main was last fetched 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift again.`, printed only after a `numbers_twice` line |
-| `anchors_behind` | `anchor proof_common: the pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
+| `numbers_twice` | `sample_age PROOF-4: number written twice. The line on origin/main keeps it. Renumber the other to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
+| `comments_changed` | `sample_age PROOF-4 (RULE-2): test comment to correct. "<old words>" became "<new words>" after tests/test_age.py:14 last changed (a1b2c3d). Run purlin:build sample_age.` |
+| `default_branch` | `origin/main: last fetch. It was 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift.`, printed only after a `numbers_twice` line |
+| `anchors_behind` | `proof_common: anchor pin behind. The pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
 
 ### A merge in progress
 
@@ -98,7 +98,7 @@ the time of the newest entry of that ref's own log,
 `git reflog show -1 --date=unix refs/remotes/<ref>`, else less the time `FETCH_HEAD` was
 written, else unknown. It reads
 `under a minute`, then whole minutes, hours or days, rounded down. Unknown reads
-`origin/main has no record of when it was last fetched, and drift does not fetch. Run git fetch, then purlin:drift again.`
+`origin/main: last fetch. None is on record, and drift does not fetch. Run git fetch, then purlin:drift.`
 
 **A number written twice.** The line whose text equals that id's text on the default branch
 keeps the number; the other moves to the next free number, one above the spec's
@@ -112,10 +112,10 @@ line after the entry's own: `login: PROOF-3 will name RULE-3.`
 
 | Case | Line |
 |------|------|
-| One line is on the default branch | `sample_age: PROOF-4 is written twice. The line on origin/main keeps PROOF-4; renumber the other to PROOF-7 and move its test comments with it: "<its text>".` |
-| Neither line is on the default branch | `sample_age: PROOF-7 is written twice, and neither line is on origin/main. The one that reaches origin/main first keeps PROOF-7; renumber the other to PROOF-8 and move its test comments with it.` |
-| The default branch writes it twice too | `sample_age: PROOF-4 is written twice on origin/main itself. Renumber the second to PROOF-7 and move its test comments with it: "<its text>".` |
-| No default branch | `sample_age: PROOF-4 is written twice, and this checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
+| One line is on the default branch | `sample_age PROOF-4: number written twice. The line on origin/main keeps it. Renumber the other to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
+| Neither line is on the default branch | `sample_age PROOF-7: number written twice. Neither line is on origin/main, and the one that reaches it first keeps the number. Renumber the other to PROOF-8 and move its test comments with it.` |
+| The default branch writes it twice too | `sample_age PROOF-4: number written twice. origin/main itself writes it twice. Renumber the second to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
+| No default branch | `sample_age PROOF-4: number written twice. This checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
 
 ### Test comments to correct
 
@@ -126,7 +126,7 @@ to the test's last line, or for any line of its file when the file is run whole.
 line not yet committed is never named, and the line clears once the test itself changes. The
 check is `scripts/mcp/purlin/wording.py`'s, the same the status and every test run make.
 
-The line ends `Its old wording is now PROOF-6: move the comment there.` in place of the build,
+The line ends `Move the comment to PROOF-6, which holds the old wording.` in place of the build,
 where a proof of the same spec now holds the old wording exactly.
 
 ## Anchors behind
@@ -141,10 +141,10 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | Condition | Line |
 |-----------|------|
 | The pin equals the source head | Nothing |
-| The pin is behind | `anchor <name>: the pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
-| A `> Source:` with no `> Pinned:` | `anchor <name>: names a source and no pin. Run purlin:anchor sync <name>.` |
-| The source cannot be read | `anchor <name>: the source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
-| The source names no repository: words, or a file on disk | `anchor <name>: its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
+| The pin is behind | `<name>: anchor pin behind. The pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
+| A `> Source:` with no `> Pinned:` | `<name>: anchor with no pin. It names a source and no pin. Run purlin:anchor sync <name>.` |
+| The source cannot be read | `<name>: anchor source not read. Its source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
+| The source names no repository: words, or a file on disk | `<name>: anchor source not a spec. Its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
 
 Drift never advances a pin on its own; only `purlin:anchor sync` pulls. A change that came from
 somewhere else gets read before it is adopted.

@@ -110,14 +110,16 @@ and `→ Run: purlin:init --update`. Print them
 as they are, or nothing when the tool returned nothing. Where a warning says a number is written
 twice, follow `Renumbering` in `skills/spec/SKILL.md`.
 
+Every line takes the shape `references/writing_style.md`, "A warning's shape", gives: what it
+is about, its kind, what is wrong, what to run.
+
 The last warning lists each test that still carries a marker from Purlin 0.9.5, one per line,
 with the feature and the rule the marker names:
 
 ```
-9 tests still carry a marker from Purlin 0.9.5, which is not read:
+9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
   packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4
   ...
-For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.
 ```
 
 The line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are
