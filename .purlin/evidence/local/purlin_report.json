@@ -2,30 +2,28 @@
   "audit": {
     "rules": {
       "RULE-10": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-10": {
             "after": "  return '<span class=\"mono\">' + (feature.rules || []).map(function (rule) { return rule.id; }).join(' ') + '</span>';",
             "aim": "past the test",
             "before": "  return '<span class=\"mono\">' + (feature.rules || []).length + '</span>';",
-            "bug_key": "8d2d941046c153ba3d16b45047c6c49f4312d0da8b15ff3e253aa37597559e0c",
+            "bug_key": "2c4b06595745098ccef1c123240b6e636aad6aab21e0c7f8d8ab195611c492ff",
             "case": "the board opened with the regulated sample, before any row is pressed; the proof says no rule id is on screen; the changed code shows `RULE-1 RULE-2 RULE-3 RULE-4` in the closed login row's Rules cell",
             "file": "scripts/report/purlin-report.html",
             "line": 237,
-            "result": "survived",
-            "test_key": "db8ed7028d7f74524f9abb95736e50091d21be4d5a03c80089afb638a480b58a",
+            "result": "caught",
             "why": ""
           },
           "PROOF-117": {
             "after": ".specs>.desc{display:none;margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}",
             "aim": "past the test",
             "before": ".specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}",
-            "bug_key": "1a171cbf1bcb479af5448cf0c8b77d7212a06a48345569736bb88824a90d263f",
+            "bug_key": "7e4afc00aacb89131ad2ed71e083ff0a7101ce0b132c27dcc6019c8ebb154571",
             "case": "the regulated sample with login opened; the proof says the line beneath its row reads `Signing in with an email address and a password, and locking an account after repeated failures.`; the changed code draws no line there, and `RULE-1` stands directly beneath the row",
             "file": "scripts/report/purlin-report.html",
             "line": 101,
-            "result": "survived",
-            "test_key": "604fcb7245e570cf29ccc466a58483431cab2da18b619a8bf51c4cc63b34740b",
+            "result": "caught",
             "why": ""
           },
           "PROOF-138": {
@@ -41,43 +39,29 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-10: the test compares the rule ids its helper collects before and after pressing login, and counts `STRONG` in each rule row's badges as 1, 1, 0, 0, so the listed ids and the two badges are checked.",
-          "PROOF-10: \"no rule id is on screen\" is read through a helper defined outside the test, so a rule id drawn outside a rule row may go unseen.",
-          "PROOF-117: the test compares the text content of the element after login's row with the proof's sentence, and the next element's rule id with `RULE-1`, so the words and their place are checked.",
-          "PROOF-117: text content is read whether or not the element is drawn, so a description that is hidden on screen still passes.",
-          "PROOF-138: the test confirms `RULE-1`'s heading, presses `Back to the board` by its exact words, then checks 5 spec names, no heading and no link left, which is the proof's case and result.",
-          "No proof of the rule names the row closing again on the next click, and no test counts the links on a rule's screen, so those two parts of the rule are unproved.",
-          "The spot tests found nothing, which fits: each test asserts literal values the proof names, with no mock and no swallowed error."
-        ],
-        "findings": [
-          "PROOF-10: the test still passes when scripts/report/purlin-report.html:237 reads \"return '<span class=\"mono\">' + (feature.rules || []).map(function (rule) { return rule.id; }).join(' ') + '</span>';\"",
-          "PROOF-10: the AI says this breaks: the board opened with the regulated sample, before any row is pressed; the proof says no rule id is on screen; the changed code shows `RULE-1 RULE-2 RULE-3 RULE-4` in the closed login row's Rules cell",
-          "PROOF-117: the test still passes when scripts/report/purlin-report.html:101 reads \".specs>.desc{display:none;margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}\"",
-          "PROOF-117: the AI says this breaks: the regulated sample with login opened; the proof says the line beneath its row reads `Signing in with an email address and a password, and locking an account after repeated failures.`; the changed code draws no line there, and `RULE-1` stands directly beneath the row"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "e6628b27a727e6f713e9fe3a1d59f1ff1c428451211c22c3725f57476d1c848d",
         "rule_hash": "a0afc89ef92f89712dbc6e68f68884def03e119e983db13f125cf5d48dca13bb",
-        "test_hash": "cfcb8269266ba46518fb04a780d20454ca638fb43724fc5304634498edefc2d4",
-        "verdict": "weak"
+        "test_hash": "f08df8392a20a328ab1f81e59c50bc025eb501a1f462816226b5669b653fc917",
+        "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-128": {
             "after": "[data-theme=\"light\"] .specs>.rule,[data-theme=\"light\"] .specs>.desc,[data-theme=\"light\"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}\n[data-theme=\"light\"] .tile{display:none}",
             "aim": "past the test",
             "before": "[data-theme=\"light\"] .specs>.rule,[data-theme=\"light\"] .specs>.desc,[data-theme=\"light\"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}",
-            "bug_key": "5fb7bfec530681c599335d3ff1a3efb0600d415d6107e73c2e44e6e4a27b8925",
+            "bug_key": "72b121df3230ee547c0aa7787bd92da23634f2a137c27bc73d24dfad3071a824",
             "case": "any of the three samples with the theme button pressed once; the proof says the step boxes are still drawn; the changed code hides every step box in the light theme while leaving them in the page",
             "file": "scripts/report/purlin-report.html",
             "line": 107,
-            "result": "survived",
-            "test_key": "8da842074ccf3758a1948691649cc9abc3d91dcfc7adc2d7ea8d112e095e04fd",
+            "result": "caught",
             "why": ""
           },
           "PROOF-182": {
@@ -104,31 +88,19 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-182: the test opens the regulated sample, reads the page's theme as dark and compares the button's glyph, hover and name with `\u25d0`, `Light theme` and `Light theme`, which is what the proof names.",
-          "PROOF-128: the test reads the theme as light and compares three values taken before and after the press only for being unequal, through a helper whose source is not shown, so what stands for the ground, the ink and the mark cannot be read here.",
-          "PROOF-128: the test counts the step boxes present in the page and does not observe whether they are visible, so boxes that are hidden in the light theme still pass.",
-          "PROOF-185: the test presses the button, reloads, reads the theme as light and compares the button with `\u25d1`, `Dark theme` and `Dark theme`, which is what the proof names.",
-          "No spot test fired, and none of the six applies: every test asserts, and each value its proof names in backticks appears in the test's file."
-        ],
-        "findings": [
-          "PROOF-128: the test still passes when scripts/report/purlin-report.html:107 reads \"[data-theme=\"light\"] .tile{display:none}\"",
-          "PROOF-128: the AI says this breaks: any of the three samples with the theme button pressed once; the proof says the step boxes are still drawn; the changed code hides every step box in the light theme while leaving them in the page"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-128 holds three cases, one for each of the three samples."
-        ],
         "proof_hash": "fbbbc632efed2d57d6c632ae977c020bd663bf4a2a6369683fb493c8a5bd111b",
         "rule_hash": "11eb3ed8fbd2e809fa181cb55edeb2dffa837a7c94a04e36a85778b07bf94dc3",
-        "test_hash": "c28d373140af559760694aa484531e18b8851b9fe8c83b9415468105c825e00b",
-        "verdict": "weak"
+        "test_hash": "a60bbff267cab2c0e97cd7df260eaec19891b9dd74d4b7ffaffeada4e6a8fa45",
+        "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-135": {
             "after": "    + (reasons && name !== 'passed' ? ' <span class=\"sec\">' + esc(reasons) + '</span>' : '')",
@@ -163,53 +135,29 @@
             "result": "caught",
             "why": ""
           },
-          "PROOF-244": {
-            "after": "  'waiting': 'neutral', 'checked at sign-off': 'idle',",
-            "aim": "plain",
-            "before": "  'waiting': 'neutral', 'checked at sign-off': 'neutral',",
-            "bug_key": "47fc822bd32d58ccd251e100d3220cf07da05b162d832cba77453e7d03b9d123",
-            "case": "invoice RULE-3, one @manual proof and no sign-off note; the proof says the passed row reads CHECKED AT SIGN-OFF in the neutral tone; the changed code draws it in the idle tone",
-            "file": "scripts/report/purlin-report.html",
-            "line": null,
-            "result": "not made",
-            "why": "the test does not pass in a copy of the project"
-          },
           "PROOF-64": {
             "after": "  return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word === 'no test' ? 'no tests' : cell.word)",
             "aim": "past the test",
             "before": "  return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)",
-            "bug_key": "3ecbfe760e4d20a2f6ae8d4a35955db6ea9df714b9ea887c2e8e01278447ba79",
+            "bug_key": "f9fab244f841b447a78f7244922d4f8ca2319ac6a808ddda3b3446a304f5a204",
             "case": "the solo sample's login RULE-3, which has no proof; the proof says its passed row reads NO TEST; the changed code gives a passed row reading NO TESTS",
             "file": "scripts/report/purlin-report.html",
             "line": 401,
-            "result": "survived",
-            "test_key": "5cf86ec06cc2d213171194524afc1c6dcd904832fd1174243ca304985b08232e",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-15: the test reads the heading, the rule text, the passed row's opening word and the strong row exactly, but looks for `PROOF-1` and the test's name anywhere on the screen, so it does not show the test standing under its proof.",
-          "PROOF-15: the words `PASSED` and `STRONG` are looked for anywhere on the screen as well as in their rows, so only the two row checks tie them to a cell.",
-          "PROOF-64: the test checks that the passed row opens with `NO TEST` and holds `no proof written`, so a row that reads on past `NO TEST` still passes; `No proof written.` is looked for anywhere on the screen.",
-          "PROOF-135: the test checks that the passed row opens with `OUT OF DATE` and holds `code changed since 9f8e7d6`, which is the case and the result the proof names.",
-          "PROOF-238: the test edits the sample's data to tag the proof slow and not run, then reads the passed row's word and reason, the proof panel's `PROOF-1` and `NOT RUN`, and the tag as exactly `@slow`.",
-          "PROOF-244: the test compares the passed row's whole text, the pill's word and its colour against the neutral token, and checks the board row for RULE-3 holds no `PASSED` badge while RULE-1 holds one."
-        ],
-        "findings": [
-          "PROOF-64: the test still passes when scripts/report/purlin-report.html:401 reads \"return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word === 'no test' ? 'no tests' : cell.word)\"",
-          "PROOF-64: the AI says this breaks: the solo sample's login RULE-3, which has no proof; the proof says its passed row reads NO TEST; the changed code gives a passed row reading NO TESTS"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was planted: the test of PROOF-244 does not pass in a copy of the project."
-        ],
+        "no_bug": [],
         "proof_hash": "f19da5da6044e6105ef0853058080362f7907707079072549a19ea8013208cb4",
         "rule_hash": "4a72938a1a3a6b06b4ab850c4861988e9c65dfae7e96ed8a493c9a9aac1d3e73",
-        "test_hash": "79fdc6f29dfb3f0cce653ae855200c97ae79ab48d90ac8db2424d48ee73b2b89",
-        "verdict": "weak"
+        "test_hash": "57a1c10af5b8c60f6f8a3cdafc37cec53c5c3430a4b2a086a022270eb0bb0794",
+        "verdict": "strong"
       },
       "RULE-17": {
         "at": "2026-10-06T15:44:24Z",
@@ -300,18 +248,17 @@
         "verdict": "strong"
       },
       "RULE-20": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-20": {
             "after": "    app.innerHTML = topBar(false) + '<div class=\"wrap\"><div class=\"notice\" style=\"display:none\">'",
             "aim": "past the test",
             "before": "    app.innerHTML = topBar(false) + '<div class=\"wrap\"><div class=\"notice\">'",
-            "bug_key": "5007950f7802a05a2c5872a8cd931ec188c1f83d88b378d8c5cc68e4f3e85fc7",
+            "bug_key": "1657f7f9095438ccfdc29d02b6b9b5ce7864cd175a95d7c9f0be08a31585a3bb",
             "case": "the board opened with the team sample's data marked as schema 3; the proof says exactly 1 notice is on screen; the changed code keeps the notice in the page but hides it, so 0 notices are on screen",
             "file": "scripts/report/purlin-report.html",
             "line": 1013,
-            "result": "survived",
-            "test_key": "6b159b0a8669530b573196843b9574295f725386ff6afdf18341e678035784ff",
+            "result": "caught",
             "why": ""
           },
           "PROOF-21": {
@@ -327,26 +274,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-20: the test opens the team sample marked as schema 3 and compares the list of notice texts with the one sentence the proof names, so a second notice or a changed word fails it.",
-          "PROOF-20: the test finds no count box, no top-bar box and no table in the page, which is the proof's \"no box and no table\".",
-          "PROOF-20: the test reads the notice's text from the page and does not show that it checks the notice is visible, so a notice present but hidden may still pass against the proof's \"on screen\".",
-          "PROOF-21: the test opens the page with no data file, waits for the empty screen to appear and compares its whole text with the sentence the proof names, so any change to the wording fails it.",
-          "PROOF-21: neither the proof nor its test looks for boxes or a table when there is no data file, so the rule's \"draws no boxes and no table\" is shown only for the other-schema case.",
-          "The spot tests found nothing, and both tests hold the values their proofs name."
-        ],
-        "findings": [
-          "PROOF-20: the test still passes when scripts/report/purlin-report.html:1013 reads \"app.innerHTML = topBar(false) + '<div class=\"wrap\"><div class=\"notice\" style=\"display:none\">'\"",
-          "PROOF-20: the AI says this breaks: the board opened with the team sample's data marked as schema 3; the proof says exactly 1 notice is on screen; the changed code keeps the notice in the page but hides it, so 0 notices are on screen"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "384b2a943c3826195d1b1010c67bce5a096c030a77b4fc4004ed4fc46bcebc54",
         "rule_hash": "b26d8161c58fced94d6047c172bdd10fcff53691b3772b50206fcd0157a7ba5b",
-        "test_hash": "7105c049a4749a6d219266e128203295fcb2f5c3416dcf2da927b5e898e450c5",
-        "verdict": "weak"
+        "test_hash": "00bfa087e322d2ed30f7fdceeba721299ec2f38b9741b94e7d4f0a2f46409a83",
+        "verdict": "strong"
       },
       "RULE-22": {
         "at": "2026-10-06T15:44:24Z",
@@ -422,75 +359,56 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-3": {
             "after": "function line(text) { return '<p class=\"sec\" style=\"color:#' + 'C0793F\">' + esc(text) + '</p>'; }",
             "aim": "past the test",
             "before": "function line(text) { return '<p class=\"sec\">' + esc(text) + '</p>'; }",
-            "bug_key": "8f81f9438acb8868caec40c76c80eb4926eea1fafaa2e27d1d44b9043c367137",
+            "bug_key": "347ccd20248afc38ac0138bf478d512f77c9e81a1f7d9953f2e40dcd8298d1f2",
             "case": "the built page read outside its token block; the proof says 0 colours written as hex values; the changed code writes the hex colour C0793F on every audit line, split across a string join",
             "file": "scripts/report/src/rule.js",
             "line": 141,
-            "result": "survived",
-            "test_key": "1e1cd77f7cd0f755f0539e79c8e7ed761868d504e4773653f800e0380b0c31f0",
+            "result": "caught",
             "why": ""
           },
           "PROOF-4": {
             "after": ".panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6);BOX-SHADOW:var(--elev-raised)}",
             "aim": "past the test",
             "before": ".panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}",
-            "bug_key": "eb1c92a07e3125cac0389ec19cfa3ab34b31327178b6527f2a8e63a2bfea6c04",
+            "bug_key": "6db494e885d91c066fc31fa97ed4456b06e23c1fe4560ceaa116b34b1844b84c",
             "case": "the built page read outside its token block; the proof says no box-shadow there; the changed code gives every panel a box-shadow declaration, written in capitals",
             "file": "scripts/report/src/styles.css",
             "line": 43,
-            "result": "survived",
-            "test_key": "e84443526532aab7f48a1e6a99720f4082936b58e51c98807c760050d75678ab",
+            "result": "caught",
             "why": ""
           },
           "PROOF-6": {
             "after": "  return '<button class=\"btn\" data-act=\"close\"><SVG width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><path d=\"M8 2L4 6l4 4\" fill=\"none\" stroke=\"currentColor\"/></SVG> Back to the board</button>';",
             "aim": "past the test",
             "before": "  return '<button class=\"btn\" data-act=\"close\">Back to the board</button>';",
-            "bug_key": "302021478c780e530883ea83f15221bd9b77dc660c4d70c7642ea4624e31b6e1",
+            "bug_key": "da8640878a0a544546ad20f5940c7baa8538cd066e673cb7afbb1649c366d3dc",
             "case": "the built page; the proof says 0 <svg elements; the changed code draws 1 svg element in the back button, its tag written in capitals",
             "file": "scripts/report/src/rule.js",
             "line": 270,
-            "result": "survived",
-            "test_key": "e08f805aa6cd2de248b44e99f9f7a438842ec0a81e8d05244847efad0bacc3c7",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-3: the test builds the page, finds a `--canvas` declaration inside the token block and searches the rest for `#` followed directly by 3 to 8 hex digits, so a hex colour whose `#` is joined on in script, or written as `%23` as the logo's colours are, is not seen.",
-          "PROOF-4: the test looks for the lower-case text `box-shadow` outside the token block and `gradient` in the whole page, so a declaration a browser reads the same in capitals, or a shadow set from script, still passes.",
-          "PROOF-6: the test asserts the four glyphs are present, that no glyph outside the allowed six is found, that the lower-case text `<svg` occurs 0 times and that `icon` is absent at any casing, so an svg element whose tag is written in capitals is not counted.",
-          "PROOF-6: which characters count as an arrow, shape, symbol or emoji is decided by a helper not shown in the request, so the reach of that check could not be read.",
-          "The spot tests found nothing, and each test does hold assertions on the values its proof names."
-        ],
-        "findings": [
-          "PROOF-3: the test still passes when scripts/report/src/rule.js:141 reads \"function line(text) { return '<p class=\"sec\" style=\"color:#' + 'C0793F\">' + esc(text) + '</p>'; }\"",
-          "PROOF-3: the AI says this breaks: the built page read outside its token block; the proof says 0 colours written as hex values; the changed code writes the hex colour C0793F on every audit line, split across a string join",
-          "PROOF-4: the test still passes when scripts/report/src/styles.css:43 reads \".panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6);BOX-SHADOW:var(--elev-raised)}\"",
-          "PROOF-4: the AI says this breaks: the built page read outside its token block; the proof says no box-shadow there; the changed code gives every panel a box-shadow declaration, written in capitals",
-          "PROOF-6: the test still passes when scripts/report/src/rule.js:270 reads \"return '<button class=\"btn\" data-act=\"close\"><SVG width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><path d=\"M8 2L4 6l4 4\" fill=\"none\" stroke=\"currentColor\"/></SVG> Back to the board</button>';\"",
-          "PROOF-6: the AI says this breaks: the built page; the proof says 0 <svg elements; the changed code draws 1 svg element in the back button, its tag written in capitals"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-3 names hex values only, so a colour written as `rgb(...)` or by name outside the token block breaks the rule and not the proof."
-        ],
         "proof_hash": "4383a49ef272f3aa09749b9a8edb483c472066b313e636a7caf2b25d66572630",
         "rule_hash": "162a575421a330b51ba8068321e71eb75a36c4489149ff5e5b80aa8374a81e2a",
-        "test_hash": "04da56c3fba2b94adf871cb37967bb85590f52a9a3f8d8b7ffa9cc5f6c9dc185",
-        "verdict": "weak"
+        "test_hash": "e795cef9e8837528c60b35a7b9128f1847d2c9b0f00a8aef1b06dacea7c53a4d",
+        "verdict": "strong"
       },
       "RULE-36": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-43": {
             "after": "    + (features.length === 0 ? ' spec' : ' specs') + '</span></span>'",
@@ -518,39 +436,28 @@
             "after": "    + (open || features.length === 1 ? features.map(function (feature) {",
             "aim": "past the test",
             "before": "    + (open ? features.map(function (feature) {",
-            "bug_key": "e5d5219e3e20a2702ffc531f8d38d639c6484efa10dce6e416ddb997fe6894ec",
+            "bug_key": "5628ee452879db4c661916086e594e065d0c68d3ece3355940871073cc1d44be",
             "case": "the regulated sample at 390 pixels wide, auth band focused and Enter pressed; the proof says the band reads as closed and login is hidden; the changed code gives a band that reads as closed with login still shown beneath it",
             "file": "scripts/report/purlin-report.html",
             "line": 329,
-            "result": "survived",
-            "test_key": "bdc7fb332b2efe8b705c08ca133aee759be005e2c834859237fd7b5e17ddc460",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-43: the test compares the whole text of both bands with the two strings the proof names, so a wrong name, spec count or rule count fails it, and a `\u00b7` in either band would too.",
-          "PROOF-94: the test checks that the sample holds 10 rules, that the anchors hold 2, and that the bands' totals plus those 2 make 10, which is the sum the proof names.",
-          "PROOF-94: the band totals and the anchors' count come from two helpers, BAND_COUNTS and anchor_rule_count, whose source is not shown, so what they read off the page cannot be judged here.",
-          "PROOF-96: the test reads the auth band's aria-expanded as `false` and the focused element's group as `auth`, which are the closed state and the kept focus the proof names.",
-          "PROOF-96: the test looks for `login` in the text of the first table on the page only, so if the anchors' table stands first, a login row still shown under the closed band would pass.",
-          "PROOF-96: the width of 390 pixels, the focus and the Enter key are all set in the helper _auth_band_closed_by_enter, whose source is not shown, so the test's own lines do not show that Enter was the key pressed."
-        ],
-        "findings": [
-          "PROOF-96: the test still passes when scripts/report/purlin-report.html:329 reads \"+ (open || features.length === 1 ? features.map(function (feature) {\"",
-          "PROOF-96: the AI says this breaks: the regulated sample at 390 pixels wide, auth band focused and Enter pressed; the proof says the band reads as closed and login is hidden; the changed code gives a band that reads as closed with login still shown beneath it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "4b950827f1367f7f6122f2f4430addc98b274a177a14d6789b8a814fa6a49667",
         "rule_hash": "84bc07bf384d334394971b4d2a4406f0d9b3b8c419c92f2ad380a0183e185081",
-        "test_hash": "1adfa6d99a8381e335017954da2562354b01a2bfcf3965cad2143fab3c5fe7b0",
-        "verdict": "weak"
+        "test_hash": "641613d76008c23fc8473f5ead4965d0567a1398aeb5abe81efb75c701618b52",
+        "verdict": "strong"
       },
       "RULE-37": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-189": {
             "after": "  if (!names.length) { return ['No run has covered a platform yet.']; }",
@@ -567,12 +474,11 @@
             "after": "      return [systemWords(os).word, found.source || 'local'].concat(",
             "aim": "past the test",
             "before": "      return [systemWords(os).word, found.source || 'local',\n        ageText(found.at).text].concat(",
-            "bug_key": "333faed03a3bd9e0d2e83fcc80e22f95ab79096ba4efa1d9a98a6263105cd9cc",
+            "bug_key": "02eed97f2d3bebd9960b5e00cfca39929ea3d2bd5974f2a4af0bf98be4d083e7",
             "case": "the regulated sample's board, login's `Tests` hover; the proof says `Windows \u00b7 ci \u00b7 <age> \u00b7 3 passed \u00b7 1 failed` then `Linux/Unix \u00b7 ci \u00b7 <age> \u00b7 4 passed`; the changed code gives `Windows \u00b7 ci \u00b7 3 passed \u00b7 1 failed` then `Linux/Unix \u00b7 ci \u00b7 4 passed`, with no age",
             "file": "scripts/report/purlin-report.html",
             "line": 737,
-            "result": "survived",
-            "test_key": "9b16b231ec0f82efdd8a35c7f618b8e981088f324896d29b770952884d7b57d6",
+            "result": "caught",
             "why": ""
           },
           "PROOF-97": {
@@ -588,29 +494,19 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-44: the test compares the `Spec` and `Proofs` hovers whole, and reads the two `Tests` lines and the one `Strong` line only by how they start and end.",
-          "PROOF-44: the prefix and suffix checks overlap on the middot, so a `Tests` line with no age between the source and the results still passes.",
-          "PROOF-44: the `Strong` line is checked only to open `audit \u00b7 ci \u00b7 `, so whatever follows, an age or not, passes.",
-          "PROOF-97: the test opens the team sample and compares invoice's `Proofs` hover whole with `no test \u00b7 PROOF-2`, which is what the proof names.",
-          "PROOF-189: the test empties the platforms of every rule of login, opens the board and compares the `Tests` hover whole with the proof's sentence.",
-          "No proof observes that the hover is a `title` attribute beyond what the shared helper reads, and the tests shown do not say how that helper reads the hovers."
-        ],
-        "findings": [
-          "PROOF-44: the test still passes when scripts/report/purlin-report.html:737 reads \"return [systemWords(os).word, found.source || 'local'].concat(\"",
-          "PROOF-44: the AI says this breaks: the regulated sample's board, login's `Tests` hover; the proof says `Windows \u00b7 ci \u00b7 <age> \u00b7 3 passed \u00b7 1 failed` then `Linux/Unix \u00b7 ci \u00b7 <age> \u00b7 4 passed`; the changed code gives `Windows \u00b7 ci \u00b7 3 passed \u00b7 1 failed` then `Linux/Unix \u00b7 ci \u00b7 4 passed`, with no age"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "55e203ade8e70920f121c656c878a3d44c1f0ce8486358adb3e582575f6e4f9c",
         "rule_hash": "408f7accdb7a50b825698da18918455033db9034c2132b17a3ac0c9d32abadef",
-        "test_hash": "fbcde92723332163403804176ee60644f8194505868ff959bd9927e7703ca935",
-        "verdict": "weak"
+        "test_hash": "fd48163d6ab626486d31c4a7f12fb27d3dc78a8376b1f751228ac42fec53082f",
+        "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-144": {
             "after": "var VERDICT_LINES = {'strong': 'Strong.', 'weak': 'Weak',",
@@ -638,52 +534,36 @@
             "after": "  var beside = name === 'passed' ? platformBoxes(cell) : esc(cell.word);",
             "aim": "past the test",
             "before": "  var beside = name === 'passed' ? platformBoxes(cell) : '';",
-            "bug_key": "5e18653337c92a89a16d0fee482fa09304abe7c5fbe63e5427e937c51a366af5",
+            "bug_key": "328d18cb64a7ece232c3ef6bf9a077198c4757c43ae65454c45aa964f70ddb30",
             "case": "export RULE-1 with the verdict spot-checked; the proof says the strong row reads `SPOT-CHECKED`; the changed code gives `SPOT-CHECKED spot-checked`, the word a second time beside the pill",
             "file": "scripts/report/purlin-report.html",
             "line": 400,
-            "result": "survived",
-            "test_key": "c8288270aca77e47681018865a3d8512c8c8e56c980cca670939df1c6bedee75",
+            "result": "caught",
             "why": ""
           },
           "PROOF-240": {
             "after": "    + (reasons ? ' <span class=\"sec\">' + esc(cell.word + ': ' + reasons) + '</span>' : '')",
             "aim": "past the test",
             "before": "    + (reasons ? ' <span class=\"sec\">' + esc(reasons) + '</span>' : '')",
-            "bug_key": "e2148b2cc67d58b1eb6f4ef77c7e1542abcb8b49c6a2796ff0c2124dbab95d13",
+            "bug_key": "8d1a2fe589d2b5dfc56f8ea30a6bce19893f8cdb38b481e26dae77b038461b2e",
             "case": "login RULE-1 out of date on code at a1b2c3d; the proof says the strong row reads `OUT OF DATE` with the two reasons; the changed code gives `OUT OF DATE out of date: ` before the reasons",
             "file": "scripts/report/purlin-report.html",
             "line": 403,
-            "result": "survived",
-            "test_key": "a44478ef7472777efa747663ea5741d87f17168a2f19c29d2ca28a47f35f53ab",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-144: the test gives invoice RULE-2 the finding and the explanation and compares the panel's first three lines with `Weak.`, the finding and the explanation, which is the order and the values the proof names.",
-          "PROOF-147: the test opens export RULE-2 with no audit entry and compares the panel's first line with the exact sentence the proof names.",
-          "PROOF-239: the test compares the panel's first two lines exactly, but reads the strong row only by its opening `SPOT-CHECKED`, so anything drawn after that word in the row still passes.",
-          "PROOF-240: the test reads the strong row by its opening `OUT OF DATE` and by each reason appearing somewhere in it, so extra words between the pill and the reasons still pass.",
-          "PROOF-240: the test compares the panel's second line exactly with `Strong. It found nothing.` and its first only by its opening `Out of date:`, which is all the proof names for that line.",
-          "The rule says the out-of-date panel opens with `Out of date:` and the cell's reasons, and no proof names the reasons in the panel, so a panel that drops them passes every test here.",
-          "The rule's plain `Strong. It found nothing.` panel, with no out-of-date line above it, has no proof of its own.",
-          "Findings: none, and the spot tests miss nothing they are built to see, since each test asserts a literal the proof names."
-        ],
-        "findings": [
-          "PROOF-239: the test still passes when scripts/report/purlin-report.html:400 reads \"var beside = name === 'passed' ? platformBoxes(cell) : esc(cell.word);\"",
-          "PROOF-239: the AI says this breaks: export RULE-1 with the verdict spot-checked; the proof says the strong row reads `SPOT-CHECKED`; the changed code gives `SPOT-CHECKED spot-checked`, the word a second time beside the pill",
-          "PROOF-240: the test still passes when scripts/report/purlin-report.html:403 reads \"+ (reasons ? ' <span class=\"sec\">' + esc(cell.word + ': ' + reasons) + '</span>' : '')\"",
-          "PROOF-240: the AI says this breaks: login RULE-1 out of date on code at a1b2c3d; the proof says the strong row reads `OUT OF DATE` with the two reasons; the changed code gives `OUT OF DATE out of date: ` before the reasons"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "50fec9392328816030eef399d048bc93a9a3647ae97dc2726745b1beaf58362c",
         "rule_hash": "bdea00769859367dc66ec0ce2ae36c33f95c8b40fce4ad6e9cf6abe4bfb70b80",
-        "test_hash": "1dacbfc85762bcf9a722466a96910827e0ac1127378b283f9f52a15b278aa696",
-        "verdict": "weak"
+        "test_hash": "a3ad520942996d302aa27b1bba7b66b9ca1952212606692d73e13220435ccc23",
+        "verdict": "strong"
       },
       "RULE-41": {
         "at": "2026-10-06T15:44:24Z",
@@ -858,18 +738,17 @@
         "verdict": "strong"
       },
       "RULE-47": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-107": {
             "after": "      + '<span class=\"rp\">' + esc(rule.text) + badges(rule) + '</span></div>';",
             "aim": "past the test",
             "before": "      + '<span class=\"rp\">' + badges(rule) + '</span></div>';",
-            "bug_key": "dad81e5dc02b92ce5e0750a942288e137d0acc716d62299db71ed43a6fdd2890",
+            "bug_key": "21fc376cc63595d5a7dd46adfd1e0bf00a9c1ea08a30f073c45b797611039a14",
             "case": "the team sample's board with every spec open; the proof says the anchor's rule text is on screen exactly once, under checkout_design; the changed code draws it twice in that row, once as the rule text and once beside the badges",
             "file": "scripts/report/purlin-report.html",
             "line": 305,
-            "result": "survived",
-            "test_key": "b89332161c024954555ae12acdfb59b13fe9d0d7c4f46a05905157083fa6865b",
+            "result": "caught",
             "why": ""
           },
           "PROOF-108": {
@@ -896,62 +775,43 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-107: the test opens every spec and compares receipt's rule ids with `RULE-1` alone, which matches the proof.",
-          "PROOF-107: the test counts the anchor's text only in the rule-text cells of the rule rows, so the same text drawn anywhere else on screen still passes against \"exactly once\".",
-          "PROOF-108: the test opens receipt `RULE-1`, compares the heading with `receipt` and `RULE-1`, and checks the screen holds receipt's text and not the anchor's, which is what the proof names.",
-          "PROOF-109: the test opens checkout_design `RULE-1`, compares the heading with `checkout_design` and `RULE-1`, and checks the screen holds the anchor's text and not receipt's, which is what the proof names.",
-          "No test of the rule reads a spec's `Rules` cell, so the rule's claim that the cell reads the count of the spec's own rules is observed by none of the three proofs.",
-          "The spot tests found nothing, and each test holds assertions that can fail on the values its proof names."
-        ],
-        "findings": [
-          "PROOF-107: the test still passes when scripts/report/purlin-report.html:305 reads \"+ '<span class=\"rp\">' + esc(rule.text) + badges(rule) + '</span></div>';\"",
-          "PROOF-107: the AI says this breaks: the team sample's board with every spec open; the proof says the anchor's rule text is on screen exactly once, under checkout_design; the changed code draws it twice in that row, once as the rule text and once beside the badges"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "2009718769caaf1b09af56deeafc7f1b67b343551ce567aa56b45452167ac66f",
         "rule_hash": "fa728a14fba8112c91c22eb12801db5b838d84f17095ee8aa4b5e2e4aa664a56",
-        "test_hash": "b3e796cf36c50792f0a4d0ba175d04e6e0ff08498133a6198fc5bf574b242a0c",
-        "verdict": "weak"
+        "test_hash": "554ce2b6b0a19efa374d9484727196e9ac4967684827c814541272b2d2e0b59e",
+        "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-5": {
             "after": "<div id=\"app\"></div><img src='https://example.com/p.gif' alt=''>",
             "aim": "past the test",
             "before": "<div id=\"app\"></div>",
-            "bug_key": "a04f8584ae742dca7bc8db91bcf1224fc690e20408f089ba5c381e774263b435",
+            "bug_key": "a688b324309343219e74819d38babca2daf9d6d2f20371d3fad3b0c04f827c60",
             "case": "the page after a build; the proof says no `src` address beginning `https:`; the changed page holds an img whose src is 'https://example.com/p.gif' in single quotes",
             "file": "scripts/report/src/page.html",
             "line": 15,
-            "result": "survived",
-            "test_key": "cbd481b3a685786b58ca208a23aca5d3218952c825976327803bef23861f0309",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-5: the test reads the page's text and asserts that `<link`, `@import` and `fetch(` are absent, which matches those three values of the proof as exact, case-sensitive substrings.",
-          "PROOF-5: the test's pattern for `src` and `href` matches only an address opened by a double quote, so an address in single quotes, an unquoted one, or one a script assigns to a `src` or `href` property still passes.",
-          "PROOF-5: the rule speaks of an address on another host, and the test and the proof look only for `http:` and `https:`, so a protocol-relative address such as `//host/file` is checked by neither.",
-          "PROOF-5: the spot tests found nothing, and they miss the quoting gap because every assertion in the test can fail."
-        ],
-        "findings": [
-          "PROOF-5: the test still passes when scripts/report/src/page.html:15 reads \"<div id=\"app\"></div><img src='https://example.com/p.gif' alt=''>\"",
-          "PROOF-5: the AI says this breaks: the page after a build; the proof says no `src` address beginning `https:`; the changed page holds an img whose src is 'https://example.com/p.gif' in single quotes"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "bd332ee7c534bdd9a0a1bb9fb1d8236937d98d73002d1ad2717c1175e0cc337c",
         "rule_hash": "7c7666e671e646cb22250b8b99bd1e0eb9919307547da0cf43fb3429a6859af8",
-        "test_hash": "1d6d1168a2b60e59024c6552ec80dbcfa29550548211375ee2f4524a746fb748",
-        "verdict": "weak"
+        "test_hash": "bcea26b3d0622eb8595c9257557c1f53569ca8aae333da3b2b98eb2804c72b90",
+        "verdict": "strong"
       },
       "RULE-55": {
         "at": "2026-10-06T15:44:24Z",
@@ -997,18 +857,17 @@
         "verdict": "strong"
       },
       "RULE-63": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-203": {
             "after": "  var open = feature.is_anchor || !!VIEW.features[feature.name];",
             "aim": "past the test",
             "before": "  var open = !!VIEW.features[feature.name];",
-            "bug_key": "488961b3a5846dc66a35732df2f98e803e0cf090a81164b568edfea8fe7731ae",
+            "bug_key": "fa6f50c3bacb473e411b7f30caf29a58fba38430af0abf4ab279ab59d957448f",
             "case": "the board opened with the regulated sample; the proof says the ANCHORS section holds two rows, checkout_design and security_baseline; the changed code draws each anchor's row already opened, so the section also holds a row for every rule of both anchors",
             "file": "scripts/report/purlin-report.html",
             "line": 285,
-            "result": "survived",
-            "test_key": "8341cba55825df33cb05706e429a3b0d70ce50448cca39c30d7986d2ac425fe8",
+            "result": "caught",
             "why": ""
           },
           "PROOF-204": {
@@ -1024,26 +883,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-203: the test opens the regulated sample and compares the section labels, the anchors' names, the five headings and the three spec names with the values the proof names, and checks the anchors' table starts below the lowest box.",
-          "PROOF-203: the names come from a helper in another file, so the test may count only named spec rows and miss any other row drawn inside the ANCHORS section.",
-          "PROOF-203: the test reads nothing about a band, the rows' hovers or their opening, and the proof names none of them, so those parts of the rule are unobserved here.",
-          "PROOF-204: the test confirms the solo payload has no anchor, opens the board and compares the section labels with the one label `SPECS`, which is the proof's case and its result.",
-          "No proof of the rule covers the case where the spec table stands first, so that clause is not shown by either test.",
-          "The spot tests found nothing, and both tests hold failable comparisons against literals the proofs name."
-        ],
-        "findings": [
-          "PROOF-203: the test still passes when scripts/report/purlin-report.html:285 reads \"var open = feature.is_anchor || !!VIEW.features[feature.name];\"",
-          "PROOF-203: the AI says this breaks: the board opened with the regulated sample; the proof says the ANCHORS section holds two rows, checkout_design and security_baseline; the changed code draws each anchor's row already opened, so the section also holds a row for every rule of both anchors"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "3e78511184628400ad816679c1e03dcb6c59d6b06e7edaa20bcefa145ef0a9f9",
         "rule_hash": "9eb3f1467479db4721a8e8ee651412cb98a98d5e38f499edfd1672bc2275f02c",
-        "test_hash": "e81c354be4c2c122f158dbadd2ee55a1bbea35abc20cd31006e4d01ff5421d17",
-        "verdict": "weak"
+        "test_hash": "9bc4f7876041796c70b36afb7737a2df288ac179247cd09c047be8a3f6b907e2",
+        "verdict": "strong"
       },
       "RULE-68": {
         "at": "2026-10-06T15:44:24Z",
@@ -1077,7 +926,7 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-223": {
             "after": "var MET = 'Met';",
@@ -1105,40 +954,25 @@
             "after": "    + ')\"><span class=\"fact-l\">' + esc(label) + '</span><b'\n    + (hue ? '' : ' style=\"color:var(--text-muted)\"') + '>' + esc(word)",
             "aim": "past the test",
             "before": "    + ')\"><span class=\"fact-l\">' + esc(label) + '</span><b>' + esc(word)",
-            "bug_key": "a931b29bec60404350c34d837886bdd007ac97bc51dd221e6015c609cb00e402",
+            "bug_key": "24df2ae169d9c6736b7e36fa224ecf020f1f7c1257d755287647663c12716eb8",
             "case": "the solo sample, unaudited and unsigned; the proof says the words of `Sign-off` are in the page's secondary text colour; the changed code draws `not signed` in the muted text colour while the box and border stay secondary",
             "file": "scripts/report/purlin-report.html",
             "line": 848,
-            "result": "survived",
-            "test_key": "18acb13b99c2c5210331e02bb732552cc88799c070ef3999c237acb47a145d6f",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-223: the test sets the payload to passing and signed, opens the regulated sample and compares the whole list of boxes with `Tests`/`met` and `Sign-off`/`signed 0.1.0 at a1b2c3d`, so a third box or a wrong word fails it.",
-          "PROOF-223: the test reads no colour, so the pass tone the rule gives the sign-off at the signed commit is not observed by it.",
-          "PROOF-225: the test first confirms the solo sample holds a failing rule and no signed version, then compares the whole list of boxes with `Tests`/`not met` and `Sign-off`/`not signed`.",
-          "PROOF-241: the test confirms no rule carries an audit entry, then compares the box labels, the `Sign-off` word, one colour of the box against its top border and the secondary text colour, that colour against the four tones, and the column headings.",
-          "PROOF-241: the test reads one colour for the `Sign-off` box through a helper not shown, so whether the word itself or only its box is measured cannot be told from the test's own lines.",
-          "The spot tests found nothing, and each test holds failable comparisons against the literals its proof names."
-        ],
-        "findings": [
-          "PROOF-241: the test still passes when scripts/report/purlin-report.html:848 reads \"+ ')\"><span class=\"fact-l\">' + esc(label) + '</span><b'\"",
-          "PROOF-241: the AI says this breaks: the solo sample, unaudited and unsigned; the proof says the words of `Sign-off` are in the page's secondary text colour; the changed code draws `not signed` in the muted text colour while the box and border stay secondary"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-241 holds a second observation, the column headings `Spec`, `Rules`, `Proofs`, `Tests`, which the rule does not speak of.",
-          "PROOF-223, PROOF-225 and PROOF-241 leave the `signed <version>, <n> commits since` wording and the pass and warn tones of the sign-off without a case."
-        ],
         "proof_hash": "874cee935fafe04828412e308594087de517d76f876886d06cb84652dce5a226",
         "rule_hash": "4d29a054af1bd6c167e1fa4571edc558fe66011defd1b71a2811f28ecc21ddce",
-        "test_hash": "187c35a26f7325f5712ec6fe508f70008159e5d5d34e4374a36a2a723a784734",
-        "verdict": "weak"
+        "test_hash": "63733e6e0546c8c91919e39d517bf9b5be8e4d52c065006ec1526e345ea32faa",
+        "verdict": "strong"
       },
       "RULE-71": {
         "at": "2026-10-06T15:44:24Z",
@@ -1230,18 +1064,17 @@
         "verdict": "strong"
       },
       "RULE-75": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-104": {
             "after": ".rule .rt{color:var(--text-secondary);opacity:.5}",
             "aim": "past the test",
             "before": ".rule .rt{color:var(--text-secondary)}",
-            "bug_key": "518c0fb6c0b1511d3701193e7125d235277eb27d97e999d6845e83e667591503",
+            "bug_key": "454449afa53de61c21456471d1787eed59d01a2e8ff3405a2aee8cc676ce7359",
             "case": "the light theme, a sample's board with its first spec open; the proof says every text drawn measures at least 7:1 against its ground; the changed code draws each rule's text at half opacity on the sunken tan ground, about 2.7:1",
             "file": "scripts/report/purlin-report.html",
             "line": 99,
-            "result": "survived",
-            "test_key": "034869ad9a872c3fd7a8fe43ffec7224803d7a08fc9ea776b05fcae96f4a1632",
+            "result": "caught",
             "why": ""
           },
           "PROOF-66": {
@@ -1268,30 +1101,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-75: the test opens the regulated sample at each width in `EVERY_WIDTH`, checks the dark theme, opens login, and collects sideways scroll and broken values on the board and on RULE-1's screen, failing if any is non-zero.",
-          "PROOF-75: the widths and what counts as a broken value come from `EVERY_WIDTH`, `SIDEWAYS` and `BROKEN_VALUES`, which are not shown, so whether all five widths and every count, label, box and rule id are covered cannot be read from the test's own lines.",
-          "PROOF-66: the test passes 4.5 for the fail and accent colours to `_every_text_in`, asserts no text is low, that more than 300 texts were checked and that every tone was measured.",
-          "PROOF-66: the 7:1 threshold, the samples and screens visited and how the ground is read through translucent layers all live in `_every_text_in`, which is not shown; the docstring says it reads each text node's computed colour, so a translucent text colour or an element's opacity may go unmeasured.",
-          "PROOF-104: the test calls the same helper for the light theme with no looser threshold and makes the same three assertions, so it observes what the proof names only as far as the helper measures what is drawn.",
-          "PROOF-104: the value `7:1` appears in neither test's own lines except the docstring of the dark one; the comparison is made inside the helper.",
-          "No spot test fired, and none of the six applies: each test asserts, none compares the code with itself, and neither proof marks a value in backticks other than PROOF-75's `RULE-1`, which its test names."
-        ],
-        "findings": [
-          "PROOF-104: the test still passes when scripts/report/purlin-report.html:99 reads \".rule .rt{color:var(--text-secondary);opacity:.5}\"",
-          "PROOF-104: the AI says this breaks: the light theme, a sample's board with its first spec open; the proof says every text drawn measures at least 7:1 against its ground; the changed code draws each rule's text at half opacity on the sunken tan ground, about 2.7:1"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-75 holds five widths and two screens in one line, which reads as several cases."
-        ],
         "proof_hash": "3e6580918e61db35fa2739b71d8eed56fc222fe37c4c08eaee87501911f171cc",
         "rule_hash": "4a48d856548d1d3d407033c0d7c9b53bb15e42fe58e9746b9ed559083f052f47",
-        "test_hash": "855c39e4e32d050a57ea71a38dc44da9e828c759f0007903eeda36582272250f",
-        "verdict": "weak"
+        "test_hash": "56ec488628c323b188abbcc1bb831496718a158e9c09fd07e13c6abf88579ecf",
+        "verdict": "strong"
       },
       "RULE-76": {
         "at": "2026-10-06T15:44:24Z",
@@ -1339,7 +1158,7 @@
         "verdict": "strong"
       },
       "RULE-77": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-232": {
             "after": "    full: local ? moment(at) + ' (' + at.slice(11, 19) + ' UTC)' : when(at)};",
@@ -1356,12 +1175,11 @@
             "after": "    return dict(data, information=information, warnings=warnings,\n                commit=str(data.get('commit') or '')[:7] + '0')",
             "aim": "past the test",
             "before": "    return dict(data, information=information, warnings=warnings)",
-            "bug_key": "f3f43310f9072b12c51dce351efbedb66171c40f77dad856649783cc9680e95a",
+            "bug_key": "893b117c0ab916373506113458b6b31ce17fc42f95ad042c884f44475bb80a6b",
             "case": "purlin:status run on the branch feature/login; the proof says the data file names as its commit the first 7 characters of HEAD; the changed code gives those 7 characters followed by `0`, 8 characters that name no commit",
             "file": "scripts/mcp/purlin/report_data.py",
             "line": 114,
-            "result": "survived",
-            "test_key": "74173d4014bb3d4c5dafdd8c450acd0d43937d2c024d35406c1994d4b4735403",
+            "result": "caught",
             "why": ""
           },
           "PROOF-237": {
@@ -1377,34 +1195,19 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-232: the test opens the board in America/New_York, compares the top bar line and its hover with the two strings the proof names, and compares both again after the page's clock runs on 2 hours, so it observes every result the proof names.",
-          "PROOF-232: the test also asserts that the sample's branch, commit and stamp are the ones the proof names, so the expected strings rest on the proof's own inputs.",
-          "PROOF-233: the test checks out `feature/login`, runs the status and compares the data file's branch with the literal `feature/login`, which is the value the proof names.",
-          "PROOF-233: the test compares only the first 7 characters of the data file's commit with git's HEAD, so a commit value that carries anything after those 7 characters still passes.",
-          "PROOF-233: the expected commit comes from git and not from the code under test, so that half of the check is independent as far as it goes.",
-          "PROOF-237: the test opens the board in a browser set to UTC and compares the top bar line with the exact string the proof names; it reads no hover, and the proof names none.",
-          "No proof of the rule covers a timezone the browser has no short name for, the `GMT+5:30` form the rule names, so that part of the rule is not observed by any test here.",
-          "The spot tests report no finding, and each test holds a failable assertion on a literal its proof names."
-        ],
-        "findings": [
-          "PROOF-233: the test still passes when scripts/mcp/purlin/report_data.py:114 reads \"return dict(data, information=information, warnings=warnings,\"",
-          "PROOF-233: the AI says this breaks: purlin:status run on the branch feature/login; the proof says the data file names as its commit the first 7 characters of HEAD; the changed code gives those 7 characters followed by `0`, 8 characters that name no commit"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-232 holds two actions, opening the board and then running the page's clock on 2 hours, each with its own result."
-        ],
         "proof_hash": "5487504f13c4744584351eec49ee90185f6d358cb114df5af913bf5a0dca62aa",
         "rule_hash": "500ebfe806d0fa10ade8ccacc790ee110e6b046f9fbc5d226f83c1a8029141ba",
-        "test_hash": "6b4af793ea1acc96001088bbd87a082f8cfb91c9cfaea77b8b0504f38da2368e",
-        "verdict": "weak"
+        "test_hash": "9ce795deb3e68f3640df67b10f678847073d907a4289de05d5c5270a223907f7",
+        "verdict": "strong"
       },
       "RULE-78": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-234": {
             "after": "  ((audit && audit.notes) || []).forEach(function (text) {",
@@ -1432,38 +1235,25 @@
             "after": "    lines.push(missedBugs(audit.bugs));\n    Object.keys(audit.bugs || {}).forEach(function (proof) {\n      if (audit.bugs[proof] && audit.bugs[proof].result === 'caught') {\n        lines.push(line(proof + ': its tests caught a bug at '\n          + audit.bugs[proof].file + ':' + audit.bugs[proof].line + '.'));\n      }\n    });",
             "aim": "past the test",
             "before": "    lines.push(missedBugs(audit.bugs));",
-            "bug_key": "c2d1be832a3591bb9c0e94b57fc0a25f94926f44c1055d83725afbc86c4e52cf",
+            "bug_key": "9678110c068a5c5a1e2840dd689c6a4751b7ea4758b92d2c684ada0a41fdbdae",
             "case": "invoice RULE-2 with the PROOF-2 bug recorded as caught; the proof says no line of the panel names a planted bug; the changed code adds the line `PROOF-2: its tests caught a bug at src/billing/invoice.py:12.`",
             "file": "scripts/report/purlin-report.html",
             "line": 439,
-            "result": "survived",
-            "test_key": "b284683bc336a499c0627b06a3012b5230747f5fde6e8b6077db1fc05765870a",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-234: the test gives login RULE-1 the one explanation sentence and compares the panel's first two lines with `Strong. It found nothing.` and that sentence, which is the result the proof names.",
-          "PROOF-234: the test reads nothing past the second line, so it does not observe whether anything stands between the explanation and the rest of the panel.",
-          "PROOF-235: the test opens invoice RULE-2 with the missed bug and compares the whole bug block with the sentence, `Before`, `return total`, `After` and `return 0`, so a wrong file, line, label or code line fails it.",
-          "PROOF-236: the test checks the first line reads `Weak.`, that the page holds no bug block and that no panel line holds the word `planted`.",
-          "PROOF-236: a line that names the caught bug in other words, outside a bug block, would pass, since the test looks only for the word `planted` and the bug block.",
-          "No proof of the rule shows an explanation of more than one sentence, so \"each sentence on its own line\" is proved for a single sentence only.",
-          "No proof shows the explanation for a rule the audit found weak or spot-checked, so \"whatever the audit found\" is proved for a strong rule only.",
-          "The spot tests found nothing; each test holds failable assertions and the literal values its proof names."
-        ],
-        "findings": [
-          "PROOF-236: the test still passes when scripts/report/purlin-report.html:439 reads \"Object.keys(audit.bugs || {}).forEach(function (proof) {\"",
-          "PROOF-236: the AI says this breaks: invoice RULE-2 with the PROOF-2 bug recorded as caught; the proof says no line of the panel names a planted bug; the changed code adds the line `PROOF-2: its tests caught a bug at src/billing/invoice.py:12.`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "153763ab86e868b9986640cce66f91acd4f1f8bc95f2a674edc7d0a09623143d",
         "rule_hash": "69157a26a3a9b31f92cb92f70b89f5f751c870f3aa870b60d687d4d050fb8b22",
-        "test_hash": "8e16880c801e3e0fd83808e0e25b4747fe6af2ebf459aa53d06a774fc2e88fb5",
-        "verdict": "weak"
+        "test_hash": "fbb6a8a4201daa49ef2847ab8cccc53a72d3fe371873a05d1f13325562160252",
+        "verdict": "strong"
       },
       "RULE-79": {
         "at": "2026-10-06T15:44:24Z",
@@ -1502,7 +1292,7 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-114": {
             "after": "    boxes.push(box(NO_PROOF, count, count > 1 ? 'warn' : 'pass',",
@@ -1519,12 +1309,11 @@
             "after": ".tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap;opacity:.5}",
             "aim": "past the test",
             "before": ".tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}",
-            "bug_key": "929af192aca0a29112b24af4746b45944ac8db28fc6b35e4bcbc64a7c0cd2085",
+            "bug_key": "d50d593e2d8de188b346d8cecb1a1564ecff513beb0e8669d0e5e0528ac41bea",
             "case": "the regulated sample's `Passing` box; the proof says `11 RULES TOTAL` is in the label's colour; the changed page draws that line at half opacity, so it shows paler than the label",
             "file": "scripts/report/purlin-report.html",
             "line": 70,
-            "result": "survived",
-            "test_key": "fa909dc7c20234e49e2cdde1f4188406858962097b5b779bd16ab7b26e03ae57",
+            "result": "caught",
             "why": ""
           },
           "PROOF-242": {
@@ -1586,44 +1375,28 @@
             "after": ".tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4);direction:rtl}",
             "aim": "past the test",
             "before": ".tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}",
-            "bug_key": "b57399b5483b966adb3318edbf2906c461b111c30c7f4fe2bfdff2a265c22602",
+            "bug_key": "a197b7321eb24428db287683ebb86c8f2224eec9ef82b9739460816833c0e968",
             "case": "the regulated sample's boxes; the proof says they read, left to right, `No proof`, `Passing`, `Strong`; the changed page lays them out right to left, so left to right they read `Strong`, `Passing`, `No proof`",
             "file": "scripts/report/purlin-report.html",
             "line": 66,
-            "result": "survived",
-            "test_key": "91920b045434f173f41cb20acb20930a2f803856f5f20f12c86ded76182ba3e5",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-242: the test first checks the sample holds the counts and date the proof names, then compares the `Strong` box's count, its colour against the warn token and all four hover lines exactly, so each value the proof names is observed.",
-          "PROOF-8: the test compares the three labels and counts in the order its helper returns them, the capitals on every label and the warn colour of `Passing` and `Strong`; if the helper reads document order rather than position on screen, a layout that reverses the boxes still passes.",
-          "PROOF-247: the test checks the payload reads 10 passing, 1 by hand and 11 rules, then compares the `Passing` count and its colour against the pass token, which is the proof's case and result.",
-          "PROOF-114: the test compares the three labels in order and the `No proof` box's count `1` and warn colour, which is the proof's case and result.",
-          "PROOF-170: the test compares every box's second line, so `11 RULES TOTAL` under `Passing` alone is observed, and compares the look of the total with the label through a helper not shown; if that helper reads only the computed face, size and colour, a line drawn paler by opacity still passes.",
-          "PROOF-254: the test compares the `Strong` count `5`, its colour against the pass token and the first two hover lines, which is the proof's case and result; it does not check the sample's counts before opening the board, so it relies on the helper that makes every feature rule strong.",
-          "PROOF-255: the test checks the payload's audit counts, then compares the `Strong` count `4` and its colour against the warn token, which is the proof's case and result.",
-          "PROOF-256: the test observes that the boxes hold `Passing` and no `Strong`, that the last heading of the `Anchors` table is `Strong`, and that checkout_design's cell reads `spot-checked`, all three results the proof names.",
-          "Each change is made to the built page, on the assumption that the tests open that file; a test that builds the page from the parts under `scripts/report/src/` would not see it."
-        ],
-        "findings": [
-          "PROOF-8: the test still passes when scripts/report/purlin-report.html:66 reads \".tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4);direction:rtl}\"",
-          "PROOF-8: the AI says this breaks: the regulated sample's boxes; the proof says they read, left to right, `No proof`, `Passing`, `Strong`; the changed page lays them out right to left, so left to right they read `Strong`, `Passing`, `No proof`",
-          "PROOF-170: the test still passes when scripts/report/purlin-report.html:70 reads \".tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap;opacity:.5}\"",
-          "PROOF-170: the AI says this breaks: the regulated sample's `Passing` box; the proof says `11 RULES TOTAL` is in the label's colour; the changed page draws that line at half opacity, so it shows paler than the label"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b64f6211ff82bc47ddb9fbb4894079e4344136dc15200f98fea507c0827ed63c",
         "rule_hash": "70283012e858e22ea032baf0046b7f46efc5207d1d54a876c6d570a98a2bde62",
-        "test_hash": "3f1a68c65aa11c9e472504514e6c57a19fd50f129754f7246d0f63de59855efe",
-        "verdict": "weak"
+        "test_hash": "05f61500901946912bdf6ca7e88aace9b6b09401e03f32d29a97004f0dfa4c6b",
+        "verdict": "strong"
       },
       "RULE-80": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-249": {
             "after": "  }) ? 'spot checked' : '';",
@@ -1673,37 +1446,25 @@
             "after": "      + when(newest.at)",
             "aim": "past the test",
             "before": "      + ageText(newest.at).text",
-            "bug_key": "4728e36e7f5246cee12ac0bce77580e533ed81a7baa1bebf3e981120e26c428a",
+            "bug_key": "6fd81403900124e0e6f34dfdad871294b8ab31ace513f91d197188030e684a77",
             "case": "the team sample, hovering checkout_design's Strong cell; the proof says the second line reads audit \u00b7 local \u00b7 <age>; the changed code gives audit \u00b7 local \u00b7 and the audit's date, such as 2026-10-01",
             "file": "scripts/report/purlin-report.html",
             "line": 754,
-            "result": "survived",
-            "test_key": "8be49bd9ec79b7fb1d866f350ffc84cf67bc870191e3a24df3bdfe21b9247731",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-249: the test opens the team sample and compares the text of checkout_design's `Strong` cell with `spot-checked` and receipt's with `1 of 1`, which are the two values the proof names.",
-          "PROOF-250: the test opens the regulated sample and compares the cell's text with `weak` and its computed colour with the page's resolved warn colour, so both the word and the tone are observed.",
-          "PROOF-250: the test also asserts that the sample's own data reads `weak` before the board is opened, which checks the sample and not the board.",
-          "PROOF-251: the test opens the team sample with the anchor's entry made out of date and compares the cell's text with `out of date`, the one value the proof names.",
-          "PROOF-252: the test compares the last heading with `Strong` and the cell text of both checkout_design and security_baseline with the empty string, as the proof names.",
-          "PROOF-253: the test checks that the hover has two lines, that the first equals the sentence and that receipt's hover does not hold it.",
-          "PROOF-253: the test checks only that the second line starts with `audit \u00b7 local \u00b7 `, so anything after it, an age or not, still passes."
-        ],
-        "findings": [
-          "PROOF-253: the test still passes when scripts/report/purlin-report.html:754 reads \"+ when(newest.at)\"",
-          "PROOF-253: the AI says this breaks: the team sample, hovering checkout_design's Strong cell; the proof says the second line reads audit \u00b7 local \u00b7 <age>; the changed code gives audit \u00b7 local \u00b7 and the audit's date, such as 2026-10-01"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "43028eb0c29a5c1f1008e532312edbe506234b6b9bda4ce96e6464d58d3a7ee5",
         "rule_hash": "96addf25880695a5f53cab934b11eb484a7dfac49d86c50d27d56ad02a18305f",
-        "test_hash": "402a06c0e152d6407bf0caaf1a1160a92ed20ef073d5fc2add8204f4aa3ca008",
-        "verdict": "weak"
+        "test_hash": "87c85674d91686ba88c74ee85778d0518bf4be5064a2a5965cd6b4fdfaf194b5",
+        "verdict": "strong"
       },
       "RULE-81": {
         "at": "2026-10-06T15:44:24Z",
@@ -1839,7 +1600,7 @@
         "verdict": "strong"
       },
       "RULE-83": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-263": {
             "after": "    }, 0), 'warn', failing.map(function (pair) {",
@@ -1856,12 +1617,11 @@
             "after": "var NO_PROOF = 'No proofs';",
             "aim": "past the test",
             "before": "var NO_PROOF = 'No proof';",
-            "bug_key": "183d7c3bed473d0a3d7eae0d71be421310e15d1a1d31d8e073802c58b9a6d4c1",
+            "bug_key": "031fd4c1bbff784d518715cfa486062da452d0c6da99dacad228e0be72573aab",
             "case": "the team sample with security_baseline RULE-1 given failed; the proof says the first box reads No proof, before Passing, Failing 3 and Strong; the changed code labels the first box No proofs",
             "file": "scripts/report/purlin-report.html",
             "line": 595,
-            "result": "survived",
-            "test_key": "386199a6d02eee42ed930ec7350e44883bd4689abb09058eb82765d645cd824e",
+            "result": "caught",
             "why": ""
           },
           "PROOF-265": {
@@ -1877,26 +1637,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-263: the test confirms invoice RULE-2 is the one failed rule, then compares the three box labels in order, the count `1`, the fail tone resolved from the page's own token, and the hover `invoice \u00b7 1`, so every value the proof names is observed.",
-          "PROOF-264: the test gives security_baseline RULE-1 `failed`, confirms the three failed rules, and compares Passing, `Failing` `3`, Strong and the two-line hover.",
-          "PROOF-264: the test drops the first box before comparing, so the `No proof` box the proof names is never read, and a wrong label there still passes.",
-          "PROOF-264: the Passing and Strong counts are taken from the payload rather than the page, so they are independent of the code under test; the proof names no number for them.",
-          "PROOF-265: the test confirms no rule reads `failed` and that login RULE-4 reads `partial`, then compares the box labels, the anchors, the bands and the specs to the literals the proof names, so a `Failing` box drawn for the partial rule would fail it.",
-          "The spot tests found nothing, and each test holds the values its proof marks in backticks."
-        ],
-        "findings": [
-          "PROOF-264: the test still passes when scripts/report/purlin-report.html:595 reads \"var NO_PROOF = 'No proofs';\"",
-          "PROOF-264: the AI says this breaks: the team sample with security_baseline RULE-1 given failed; the proof says the first box reads No proof, before Passing, Failing 3 and Strong; the changed code labels the first box No proofs"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "27914057b78c01fb038ad1ef210bf3bcfa85ed24c0f1cfdbb9da614b94e2fcda",
         "rule_hash": "659f0365f8f0cdee364386b65be44ce86f98ffd0ef21a83e719ce6acbf3f5f20",
-        "test_hash": "d474401167cf36f44fc65bd9c1f535138f7f8fc9adb9cab01d84e3ae60b480b2",
-        "verdict": "weak"
+        "test_hash": "d1c8d279c56985024b18942c0cd97c9aadb617e87f251c40fd49050b17ee0eb9",
+        "verdict": "strong"
       },
       "RULE-84": {
         "at": "2026-10-06T15:44:24Z",
@@ -2084,7 +1834,7 @@
         "verdict": "strong"
       },
       "RULE-86": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:31Z",
         "bugs": {
           "PROOF-283": {
             "after": "      + esc(String(carried[os]).slice(0, 8)) + '</span></span>';",
@@ -2101,12 +1851,11 @@
             "after": "  if (carried && !systems.length) { return ''; }",
             "aim": "past the test",
             "before": "  if (!systems.length) { return ''; }",
-            "bug_key": "b4cc79d1d2d3c0bd0bcd4778f1a643357f6e77c5848f4c7a0627a1941a9ec564",
+            "bug_key": "da7758ee6a2798ffdc320a62a2b076f1dea8f044a4f42b430e268be7ac50aecf",
             "case": "login RULE-1 whose proof's data names no carried results at all; the proof says no row labelled `Carried from`; the changed code draws an empty `Carried from` row",
             "file": "scripts/report/purlin-report.html",
             "line": 511,
-            "result": "survived",
-            "test_key": "660161e2432d01fcfa844ed1ae3301d5163086cbde3c1c89fb89bf1bfe45153a",
+            "result": "caught",
             "why": ""
           },
           "PROOF-285": {
@@ -2133,25 +1882,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-283: the test opens the rule at each of the five widths and compares the row's text with `Lin a1b2c3d Win 9b2e7c4`, its line counts with `[1, 1]` and its place straight after `Result`, which is what the proof names.",
-          "PROOF-284: the test passes an empty set of carried results and checks that the first proof has no `Carried from` row, so it observes the proof's case only in the form its helper writes it; a proof whose data holds no carried entry at all may not be exercised.",
-          "PROOF-285: the test opens the rule in both themes, requires all five named texts to be found and the lowest of their measures to be at least 7, which is what the proof names; where a text such as `Lin` is drawn twice on the screen it keeps only the last one measured.",
-          "PROOF-286: the test removes the proof lines from the solo sample, sets the rule's carried commit for macOS, and compares the row's text with `Mac a1b2c3d` and the last two rows with `Last run` and `Carried from`, which is what the proof names.",
-          "No spot test fired, and the tests each assert literal values taken from their proofs."
-        ],
-        "findings": [
-          "PROOF-284: the test still passes when scripts/report/purlin-report.html:511 reads \"if (carried && !systems.length) { return ''; }\"",
-          "PROOF-284: the AI says this breaks: login RULE-1 whose proof's data names no carried results at all; the proof says no row labelled `Carried from`; the changed code draws an empty `Carried from` row"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "75e6a86135559237d683f5d7bb487aecf946bc32f13ba0243beadaf4d681b29f",
         "rule_hash": "dd9485fd587bc179c068556043f6f8aa88ea9af6ba8692429350ea5314aa72b1",
-        "test_hash": "26cbf238b1e0f9a89ccd74610bcd7324855c7413b1992152181e3b1b2c9675d3",
-        "verdict": "weak"
+        "test_hash": "62ad0ac3cbf76ca5f9de9d7733c60e5062a710d16fc69601888c341c6c4b5668",
+        "verdict": "strong"
       },
       "RULE-9": {
         "at": "2026-10-06T15:44:24Z",
@@ -2264,14 +2004,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:56Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:54:26Z",
+      "commit": "834db52e402cc992e7050eed4f3ace1db430a9bb",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
         "spec": "be2c93c0b39bdd1e535610e045b419cabdbfa8cfae43c067fe05c417130a1116",
-        "tests": "fd70cb811ad12d3128742d657887a235453417d328adf16bbab700949db1e660"
+        "tests": "7965b3ebe9ba1e0b33838e4299bd6ca97035a35b739dea8bd731d38427b597fe"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -2545,7 +2285,7 @@
           "manual": false,
           "result": "pass",
           "rule": "RULE-15",
-          "test": "dev/test_purlin_report.py::test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off_as_passed"
+          "test": "dev/test_purlin_report.py::test_a_hand_check_no_sign_off_noted_is_passed_as_checked_at_sign_off"
         },
         {
           "env": null,
