@@ -130,40 +130,59 @@ The dashboard's data is schema 17.
     `purlin-package/4` through the rename, so an evidence file an unreleased build wrote reads
     as holding no planted bugs, with no warning.
 
-## The audit of Purlin itself, in batches
+## The audit of Purlin itself
 
-The owner's call of 2026-10-05: audit about 100 to 150 rules at a time and work each batch's
-findings before the next. Three batches are done, 402 rules. Every finding was worked by the
-build skill's steps: the value the proof names written into the test, the same bug planted
-again, and the test run deciding.
+The owner's call of 2026-10-05: audit in batches and work each batch's findings before the
+next; on 2026-10-06, "complete the audit". Every rule has been read. Every finding was worked
+by the build skill's steps: the value the proof names written into the test, the same bug
+planted again, and the test run deciding.
 
-| Batch | Specs | Rules | Weak at first | Bugs that got past | Ended |
-|---|---|---|---|---|---|
-| 1 | `signatures`, `package`, `evidence_writer`, `evidence` | 102 | 9 | 10 | 9 caught; 1 judged sound, then its proof sharpened and caught |
-| 2 | `ai_audit`, `run_script`, `planted_bug`, `reports` | 146 | 20 | 23 | 22 caught; 1 judged sound (`run_script` PROOF-221), a Windows proof added beside it |
-| 3 | `states`, `summary`, `server`, `drift`, `config_engine`, `purlin_agent`, `purlin_docs`, `purlin_output`, the ten skill specs | 154 | 29 | 37 | 37 caught |
+| Batch | Specs | Rules read | Weak at first | Bugs that got past |
+|---|---|---|---|---|
+| 1 | `signatures`, `package`, `evidence_writer`, `evidence` | 102 | 9 | 10 |
+| 2 | `ai_audit`, `run_script`, `planted_bug`, `reports` | 146 | 20 | 23 |
+| 3 | `states`, `summary`, `server`, `drift`, `config_engine`, `purlin_agent`, `purlin_docs`, `purlin_output`, the ten skill specs | 154 | 29 | 37 |
+| 4 | `update`, `scaffold`, `upstream`, `renumber`, `purlin_version`, `install`, `windows_run`, `collaboration`, `purlin_report`, `schema_spec_format` | 197 | 57 | 69, and 3 more on the last re-audit |
 
-The status ends `The audit found 414 of 569 rules strong (72%): 414 strong, 3 spot-checked,
-160 not audited.` No code under test, page, rule or proof was changed to clear a finding, and
-no strengthened test failed on the code as it stands. Three proofs changed by the owner's
-answers: `package` PROOF-15 names a package holding a carried result, `ai_audit` PROOF-185 says
-the request holds the changed file, and `run_script` gained PROOF-326, run on Windows alone.
+The status ends `The audit found 566 of 569 rules strong (99%): 566 strong, 3 spot-checked`,
+with the security anchor's 8 rules `spot-checked`, since no bug is planted for an anchor. Of
+about 142 bugs that got past a test, all but 5 were caught once the test held the value its
+proof names; 5 proofs were judged to assert it already and settled with their tests unchanged,
+of which 2 were then caught after their proof was sharpened. No code under test, page or rule
+was changed to clear a finding, and no strengthened test failed on the code as it stands.
 
-Not audited yet, 160 rules: `update`, `scaffold`, `upstream`, `renumber`, `purlin_version`,
-`install`, `windows_run`, `collaboration`, `purlin_report` and `plain_checks`' and `specs`'
-rules as they stand. The anchor `schema_spec_format` reads `spot-checked` by design.
+The three rules that read `spot-checked`:
+- `evidence` RULE-32: its one proof needs Windows, and no bug is planted here for it.
+- `planted_bug` RULE-8: the model found no change to the file that would break the proof.
+- `upstream` RULE-36: PROOF-60 was judged sound, and two bugs got past it.
 
-Left from the batches:
-- `purlin_output` RULE-1 and RULE-2 cannot be audited: their tests ask git for the file list,
-  and the audit's copy is a folder with no git. A fallback in the test's helper would fix it.
-- Three strengthened tests go a step past their proof's words: `drift` PROOF-40 (git's own
-  message as the reason), `purlin_docs` PROOF-24 (no negating word before "has"), `skill_init`
-  PROOF-24 (flags in a prose sentence that runs the script).
+The sign-off's list names 3 proofs settled with their tests unchanged: `run_script` PROOF-221,
+`update` PROOF-19 and `upstream` PROOF-60.
+
+Proofs changed by the owner's answers: `package` PROOF-15, `ai_audit` PROOF-185, `drift`
+PROOF-40, `purlin_docs` PROOF-24 and `skill_init` PROOF-24 say more; `run_script` gained
+PROOF-326, run on Windows alone.
+
+What the audit showed about Purlin itself, open for the owner:
+- **A test whose name begins with another test's whole name is left out with it.** The run
+  tells pytest which tests to leave out, and pytest matches those names by prefix
+  (`leave_out` in `scripts/mcp/purlin/frameworks.py`). One test was renamed around it.
+- **A settle does not read the spot tests again for a rule with no surviving bug**, though
+  the reference says it does; a spot-test finding is cleared by a plain audit alone.
+- **A settle never starts a slow proof's test**, so a finding on a slow proof waits for
+  `purlin:test --all` and then the settle.
+- **An audit result is kept while a test's own lines are unchanged**, so a test fixed
+  through its helper is not read again until its body changes.
+- **Any commit puts an anchor's audit results out of date**, as decision 100 says; the
+  anchor is audited last, after the last commit.
+- **`purlin_report` PROOF-233** says the dashboard's data names the first 7 characters of the
+  commit; it holds all 40 and the page shortens it. **`renumber` PROOF-18** names less than
+  its case shows: the plan line `login: > Highest-Proof: 10 becomes 11.`
 
 ## What is left
 
 1. The owner's review: the release notes, the README, the docs, the deck.
-2. More batches of the audit, if a higher share is wanted in the signed record.
+2. The owner's answers on what the audit showed about Purlin itself, above.
 3. `purlin:sign` on Purlin, the tag pushed, `main` pushed. Nothing refuses a sign-off as of the
    last run; any commit puts the refusal back and `purlin:test --all --commit` clears it.
 
