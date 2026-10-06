@@ -20,6 +20,6 @@
 - PROOF-17 (RULE-12): Each relative link on the Markdown pages under `docs/` is followed from the page's own folder; each names a file the repository holds, and each `#` part matches a heading of that file as the git host spells its anchor
 - PROOF-21 (RULE-15): The text of `docs/audit.md` cites Inozemtseva and Holmes, ICSE 2014; Just et al., FSE 2014; Petrović et al., TSE 2021; Foster et al., FSE 2025; and LLMorpheus, each as a link starting `https://`
 - PROOF-22 (RULE-15): Every link the text of `docs/audit.md` gives before its heading `Sources` appears again in the list under `Sources`
-- PROOF-24 (RULE-16): Exactly 1 paragraph of `docs/working-together.md` names a worktree; it says each checkout has its own results and its own dashboard, and names merging and `purlin:status`
+- PROOF-24 (RULE-16): Exactly 1 paragraph of `docs/working-together.md` names a worktree; one sentence of it opens `Each checkout` and says, with no word of denial before `has`, that it has its own results and its own dashboard, and the paragraph names merging and the whole command `purlin:status`
 - PROOF-25 (RULE-17): In `docs/audit.md` the heading `What to do with a finding` is the next heading after `How it works`; the part under it holds exactly 6 bullets and names `purlin:build`, `strong` and `spot-checked`
 - PROOF-26 (RULE-18): `docs/running-and-evidence.md` holds exactly 1 `git clone` of the purlin repository that names a branch, and the branch it names is `signed/` followed by the content of the `VERSION` file

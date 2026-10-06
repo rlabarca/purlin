@@ -71,7 +71,8 @@ def test_every_flag_handed_is_one_the_usage_lists():
     assert done.returncode == 0
     handed = set(handed_flags())
     assert '--project-root' in handed and len(handed) > 1
-    assert sorted(handed - set(FLAG.findall(done.stdout))) == []
+    listed = set(FLAG.findall(done.stdout))
+    assert sorted(handed - listed) == [], (handed, listed)
     # A line that tells the reader to run the script with flags it quotes,
     # as `--update --project-root . --yes`, hands them too: every flag in a
     # quoted span that opens with a flag is one the usage lists, each a

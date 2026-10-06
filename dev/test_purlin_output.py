@@ -71,8 +71,19 @@ def is_pictograph(character):
 def tracked_files(root, folders=FOLDERS):
     """Every file git tracks under `folders`, as paths relative to `root`."""
     listed = subprocess.run(['git', 'ls-files', '-z', '--', *folders],
-                            cwd=root, capture_output=True, check=True)
-    return [rel for rel in listed.stdout.decode('utf-8').split('\0') if rel]
+                            cwd=root, capture_output=True)
+    if listed.returncode == 0:
+        return [rel for rel in listed.stdout.decode('utf-8').split('\0')
+                if rel]
+    # A copy of the project with no git in it: every file under the folders.
+    found = []
+    for folder in folders:
+        for where, names, files in os.walk(os.path.join(root, folder)):
+            names[:] = [name for name in names if name != '__pycache__']
+            found += [os.path.relpath(os.path.join(where, name),
+                                      root).replace(os.sep, '/')
+                      for name in files]
+    return sorted(found)
 
 
 def pictographs(root, rels):

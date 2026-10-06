@@ -569,7 +569,7 @@ class TestAnchorsBehind:
         assert rows[0]['status'] == 'error', rows
         assert 'remote_sha' not in rows[0], rows
         reason = rows[0]['error']
-        assert missing in reason, rows
+        assert missing in reason and reason != missing, rows
         # A reason says why, in git's own words for that path: the path alone
         # is no reason.
         said = ' '.join(_git(['ls-remote', missing, 'HEAD'], str(tmp_path),

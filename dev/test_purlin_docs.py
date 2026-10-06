@@ -233,7 +233,7 @@ def test_one_paragraph_of_working_together_names_a_worktree():
               if 'worktree' in paragraph.lower()]
     assert len(naming) == 1, naming
     paragraph = naming[0]
-    assert 'Each checkout' in paragraph
+    assert paragraph.count('Each checkout') == 1, paragraph
     assert 'its own results' in paragraph
     assert 'its own dashboard' in paragraph
     # It says each checkout has them, in one sentence: the words between
