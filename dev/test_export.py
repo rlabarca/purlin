@@ -44,13 +44,14 @@ import sign as sign_module  # noqa: E402
 from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
-from sign_project import (CRITERIA, MODEL, SPEC, TEST_FILE,  # noqa: E402
-                          TEST_NAMES, Project, _Out, git, name_the_model,
-                          write)
+from sign_project import (CRITERIA, MODEL, REPORT_BYTES,  # noqa: E402
+                          REPORT_FROM, SPEC, TEST_FILE, TEST_NAMES, Project,
+                          _Out, git, name_a_report, name_the_model,
+                          report_sha, reported_for, write)
 
 TOP_LEVEL = ['schema', 'met', 'rules', 'steps', 'audit', 'left',
              'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',
-             'features', 'hand_checks', 'warnings', 'fingerprint']
+             'features', 'hand_checks', 'outputs', 'warnings', 'fingerprint']
 
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
@@ -1244,5 +1245,150 @@ class TestTheCoAuthors:
                 'written_by': PAT, 'commit': pats, 'co_authors': [CLAUDE]}
             assert rule_of(package, 'RULE-1')['authors']['rule'][
                 'co_authors'] == []
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# What the test tool reported, and the reports kept with the package
+# ---------------------------------------------------------------------------
+
+KEPT = '.purlin/evidence/package/2.1.0.outputs/reports/%s.xml' % report_sha()
+
+
+def reported_project(keep=True):
+    """Both rules pass on Dana's laptop, each result naming one report, the
+    report's bytes on this machine where `keep`; `VERSION` reads 2.1.0."""
+    made = Project()
+    write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+    commit_all(made, 'chore: version')
+    passing(made)
+    name_a_report(made, keep=keep)
+    commit_all(made)
+    key(made.root)
+    return made
+
+
+class TestWhatTheTestToolReported:
+
+    # purlin: package PROOF-89
+    def test_each_result_lists_its_tests_with_what_the_report_held(self):
+        made = reported_project()
+        try:
+            package = signed_package(made)
+            [result] = rule_of(package, 'RULE-2')['results']
+            assert result['tests'] == [{
+                'proof': 'PROOF-2',
+                'test': 'tests/test_login.py::test_a_bad_password_is_denied',
+                'result': 'pass',
+                'reported': {
+                    'cases': [{'name': 'test_a_bad_password_is_denied',
+                               'class': 'tests.test_login',
+                               'outcome': 'pass', 'duration': 0.25}],
+                    'report': {'file': REPORT_FROM,
+                               'sha256': report_sha()}}}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-90
+    def test_a_result_the_evidence_keeps_no_report_for_reads_null(self,
+                                                                  signed):
+        [result] = rule_of(signed.package, 'RULE-1')['results']
+        assert result['tests'] == [{
+            'proof': 'PROOF-1',
+            'test': 'tests/test_login.py::test_valid_credentials_return_200',
+            'result': 'pass', 'reported': None}]
+        assert signed.package['outputs'] == []
+
+    # purlin: package PROOF-91
+    def test_outputs_lists_each_report_the_results_name(self):
+        made = reported_project()
+        try:
+            package = signed_package(made)
+            assert package['outputs'] == [{
+                'kind': 'report', 'file': KEPT, 'sha256': report_sha(),
+                'from': REPORT_FROM, 'tests': 2}]
+            assert list(package).index('outputs') == list(package).index(
+                'hand_checks') + 1
+        finally:
+            made.close()
+
+    # purlin: package PROOF-92
+    def test_a_clone_with_no_report_builds_the_same_bytes(self):
+        made = reported_project()
+        parent, clones = two_clones(made)
+        try:
+            # The first clone holds the report its results name; the second
+            # holds none.
+            kept = os.path.join(clones[0].root, '.purlin', 'runtime', 'kept',
+                                report_sha() + '.xml')
+            os.makedirs(os.path.dirname(kept))
+            with open(kept, 'wb') as handle:
+                handle.write(REPORT_BYTES)
+            written, changed = [], []
+            for clone in clones:
+                assert sign(clone)[0] == 0
+                written.append(git_bytes(clone.root, 'show', 'HEAD:' + PACKAGE))
+                changed.append(KEPT in changed_in_head(clone.root))
+            assert written[0] == written[1]
+            assert changed == [True, False]
+        finally:
+            shutil.rmtree(parent, ignore_errors=True)
+            made.close()
+
+
+class TestCheckingTheKeptReports:
+
+    @staticmethod
+    def _signed():
+        made = reported_project()
+        code, lines = sign(made)
+        assert code == 0, lines
+        return made
+
+    # purlin: package PROOF-93
+    def test_check_counts_the_reports_that_match(self, capsys):
+        made = self._signed()
+        try:
+            path = os.path.join(made.root, *PACKAGE.split('/'))
+            assert check(path, capsys) == (0, [
+                'The package matches its fingerprint.',
+                'Reports beside the package that match their sha256: 1 of '
+                '1.'])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-94
+    def test_check_names_a_report_changed_after(self, capsys):
+        made = self._signed()
+        try:
+            with open(os.path.join(made.root, *KEPT.split('/')), 'ab') as kept:
+                kept.write(b'<!-- edited -->')
+            gives = hashlib.sha256(REPORT_BYTES
+                                   + b'<!-- edited -->').hexdigest()
+            path = os.path.join(made.root, *PACKAGE.split('/'))
+            assert check(path, capsys) == (1, [
+                'The package matches its fingerprint.',
+                'Reports beside the package that match their sha256: 0 of '
+                '1.',
+                'A report beside the package does not match it: %s gives the '
+                'sha256 %s, and the package records %s.'
+                % (KEPT, gives, report_sha())])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-95
+    def test_check_passes_a_package_whose_report_is_not_beside_it(self,
+                                                                  capsys,
+                                                                  tmp_path):
+        made = self._signed()
+        try:
+            # The package alone, copied to a folder that holds nothing else.
+            alone = str(tmp_path / '2.1.0.json')
+            shutil.copy(os.path.join(made.root, *PACKAGE.split('/')), alone)
+            assert check(alone, capsys) == (0, [
+                'The package matches its fingerprint.',
+                'Reports beside the package that match their sha256: 0 of '
+                '1.'])
         finally:
             made.close()

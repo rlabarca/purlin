@@ -204,9 +204,20 @@ entitled.
 
 **The evidence package** is one data file, `.purlin/evidence/package/<version>.json`
 (`references/formats/package_format.md`), which `purlin:sign` builds from the committed evidence:
-every rule's words, proofs, tests and results, what the audit found, who ran the tests and where,
-who wrote and last changed each rule, proof and test, the hand checks, and a fingerprint of its
+every rule's words, proofs, tests and results, what the test tool reported for each test, what
+the audit found, who ran the tests and where, who wrote and last changed each rule, proof and
+test, with the co-authors git names on those commits, the hand checks, and a fingerprint of its
 own bytes. `purlin:sign --check <file>` checks a package against its fingerprint.
+
+**What the test tool reported** is kept beside each result: each test's name as the tool gives
+it, whether it passed, failed, stopped on an error or was skipped, how long it took and, where it
+did not pass, the whole text the tool reported (`references/formats/evidence_format.md`, "What
+the report held"). The run keeps each report file it read on the machine that ran it. The first
+sign-off of a version commits those files with the package, under
+`.purlin/evidence/package/<version>.outputs/`, and the package lists each with its sha256. A
+report taken on another machine, or removed since, is not there to commit: the package still
+names it, the sign-off's overview says how many are kept, and no sign-off is refused for one.
+To keep every report of a release, sign on the machine that ran `purlin:test --clean --commit`.
 
 **The version** is read from the `VERSION` file at the project root, then the `version` of
 `package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then
@@ -267,7 +278,8 @@ sign-off from its files and names `git fetch --tags`.
 
 Otherwise it names who ran the tests, where and when, and shows an overview, which ends on
 how many rules, proofs and tests were last changed in a commit that names a co-author, as a
-commit made with an AI's help usually does. Where a rule reads weak, or a proof was settled with its test unchanged, it offers the audit's findings as a list, the settled proofs after the weak rules' findings. It stops only at hand checks, where the signer
+commit made with an AI's help usually does, and on how many test reports are kept with the
+package. Where a rule reads weak, or a proof was settled with its test unchanged, it offers the audit's findings as a list, the settled proofs after the weak rules' findings. It stops only at hand checks, where the signer
 may type what they saw; an empty answer is recorded as `no note`. What the audit found never
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.

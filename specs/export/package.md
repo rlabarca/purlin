@@ -4,21 +4,21 @@
 >   holding every rule's words, proofs, tests, results, audit and statuses, for a reviewer who
 >   cannot open the repository. It is built from the evidence committed at the commit being
 >   signed, says first whether every rule's tests pass, carries the total, the count that pass,
->   who ran the tests, where and when, what the audit found, what is left to do, every hand
+>   who ran the tests, where and when, what the test tool reported for each test, what the audit found, what is left to do, every hand
 >   check, who wrote and last changed each rule, proof and test and the co-authors git names on
 >   those commits, gives the same bytes for the
 >   same commit, and carries a fingerprint of itself. It is evidence handed to a regulated
 >   system of record; Purlin makes no claim of compliance.
-> Scope: scripts/export/package.py
+> Scope: scripts/export/package.py, scripts/mcp/purlin/outputs.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 39
-> Highest-Proof: 88
+> Highest-Rule: 42
+> Highest-Proof: 95
 
 ## Rules
 
 - RULE-1: The package for a version is written to `.purlin/evidence/package/<version>.json`, and building it leaves no second checkout behind
 - RULE-2: `purlin:sign --version <name>` names the version, the file and the tag the package names, in place of the version the project states or where it states none
-- RULE-3: The package's top-level keys are, in this order, `schema` (`purlin-package/4`), `met`, `rules`, `steps`, `audit`, `left`, `purlin_version`, `project`, `version`, `tag`, `commit`, `runs`, `features`, `hand_checks`, `warnings` and `fingerprint`, and `commit` is the commit the evidence was taken at: `HEAD`, stepping back over any commit that changed nothing but files under `.purlin/evidence/package/`
+- RULE-3: The package's top-level keys are, in this order, `schema` (`purlin-package/4`), `met`, `rules`, `steps`, `audit`, `left`, `purlin_version`, `project`, `version`, `tag`, `commit`, `runs`, `features`, `hand_checks`, `outputs`, `warnings` and `fingerprint`, and `commit` is the commit the evidence was taken at: `HEAD`, stepping back over any commit that changed nothing but files under `.purlin/evidence/package/`
 - RULE-4: `rules`, `steps` and `left` say what `purlin:status` says of that commit: the total of rules, the count whose tests pass, and each line of `Left to do` with its kind, count, words and command
 - RULE-5: `met` is true when no line of `left` is of a kind that stops the tests being met, so a rule left only to strengthen, because the audit found it weak, leaves it true; `left` is empty when nothing is left to do
 - RULE-6: Each rule carries its words exactly as the spec has them, the one kind of work it waits for or null, its proofs and its tests
@@ -41,13 +41,16 @@
 - RULE-36: Each result carries `nothing_to_check`, one entry per proof whose every tied test skipped with a reason beginning `nothing to check:`, naming the proof and the reason
 - RULE-37: Each rule carries `authors`, read from git: who first wrote the rule's wording and in which commit, followed through a renumber; for each proof who first wrote it and who last changed it, with commits; and for each tied test who last changed it, with the commit
 - RULE-39: Beside each commit `authors` names, the package carries the values of that commit's `Co-Authored-By` trailers as git gives them, whatever the case of the key's letters, in the order the commit holds them, and `[]` where it holds none: `co_authors` for a rule, `written_co_authors` and `changed_co_authors` for a proof, `changed_co_authors` for a test
+- RULE-40: Each result carries `tests`, one entry per test its section lists for the rule, in the section's order, naming the `proof`, the `test`, its `result` and `reported`, what the suite's report holds for the test exactly as the evidence keeps it, and null where the evidence keeps none
+- RULE-41: The package carries `outputs`, one entry per report file its results name, by `file`: `kind` `report`, `file` `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the `sha256` the evidence records, `from`, the path the run read the report from, and `tests`, how many test results name it; `[]` where no result names one; and it lists the same outputs whether or not the machine that builds it keeps the files
+- RULE-42: `purlin:sign --check` on a package that matches its fingerprint and lists outputs prints `Reports beside the package that match their sha256: <k> of <n>.`, looking under the folder the package file is in; a report that is not there fails nothing, and one whose bytes give another sha256 prints `A report beside the package does not match it: <file> gives the sha256 <computed>, and the package records <recorded>.` and exits 1
 
 ## Proof
 
 - PROOF-1 (RULE-1): In a project whose `VERSION` file reads `2.1.0` and whose two rules pass, the first sign-off of `2.1.0` is answered yes; its signed commit carries `.purlin/evidence/package/2.1.0.json`, and `git worktree list` shows one worktree
 - PROOF-2 (RULE-2): In a project whose `VERSION` file reads `2.1.0`, `purlin:sign --version beta` is answered yes; the signed commit carries `.purlin/evidence/package/beta.json`, which reads `version` `beta` and `tag` `signed/beta`, and no `.purlin/evidence/package/2.1.0.json` is written
 - PROOF-22 (RULE-2): In a project with no `VERSION` file and nothing else stating a version, `purlin:sign --version beta` is answered yes; the signed commit carries `.purlin/evidence/package/beta.json`, which reads `version` `beta` and `tag` `signed/beta`
-- PROOF-3 (RULE-3): A project whose two rules pass is signed for `2.1.0`; its package's top-level keys are exactly the sixteen the rule names, in order, `schema` reads `purlin-package/4`, `purlin_version` the installed Purlin's version, and `commit` the full sha of `HEAD` as it stood before the sign-off's own commit, the commit that holds the evidence
+- PROOF-3 (RULE-3): A project whose two rules pass is signed for `2.1.0`; its package's top-level keys are exactly the seventeen the rule names, in order, `schema` reads `purlin-package/4`, `purlin_version` the installed Purlin's version, and `commit` the full sha of `HEAD` as it stood before the sign-off's own commit, the commit that holds the evidence
 - PROOF-30 (RULE-3): With `2.1.0` signed in a commit `<s>` over the code at `<c>`, `2.2.0` is signed with nothing else changed; the `2.2.0` package's `commit` reads the full sha of `<c>`, not of `<s>`
 - PROOF-5 (RULE-4): A project has a third rule, `A locked account returns 423 (URS-042)`, with no proof and one passing test marked with the rule's own id, and is signed; that rule carries those words exactly, no proofs, one result reading `passed` and `left` `no_proof`, and the package's first line left reads `1 rule to write a proof for` with `purlin:spec`
 - PROOF-8 (RULE-5): A project whose two rules pass is signed; its package reads `met` `true`, `rules` 2, `steps` `{"passed": 2}` and `left` empty
@@ -94,3 +97,10 @@
 - PROOF-86 (RULE-39): `dana.dev@labconnect.example` rewords `PROOF-1` of `login` in a commit whose message ends on the lines `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and `co-authored-by: Quinn <quinn.qa@labconnect.example>`, the proof first written in a commit with no such line; in the signed package that proof reads `changed_co_authors` `["Claude Opus 5.5 <noreply@anthropic.com>", "Quinn <quinn.qa@labconnect.example>"]` and `written_co_authors` `[]`
 - PROOF-87 (RULE-39): The commit that last changed `test_valid_credentials_return_200` ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, and the commit that last changed `test_a_bad_password_is_denied` holds no such line; in the signed package the first test's `changed_co_authors` reads `["Claude Opus 5.5 <noreply@anthropic.com>"]` and the second's `[]`
 - PROOF-88 (RULE-39): `pat.product@labconnect.example` writes `RULE-3` of `login` in a commit that ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; the package built over it reads `RULE-3`'s `authors.rule` as exactly `written_by` Pat's address, `commit` the full sha of Pat's commit and `co_authors` `["Claude Opus 5.5 <noreply@anthropic.com>"]`, and `RULE-1`'s `co_authors` as `[]`
+- PROOF-89 (RULE-40): Each result of `login`'s committed evidence holds `reported`: one case named for its test, of `tests.test_login`, `pass` in 0.25 seconds, read from `.purlin/runtime/reports/pytest.xml` under one sha256; in the signed package `RULE-2`'s one result reads `tests` as exactly one entry, `proof` `PROOF-2`, `test` `tests/test_login.py::test_a_bad_password_is_denied`, `result` `pass` and `reported` those same cases and that same report
+- PROOF-90 (RULE-40): In the package of a signed project whose evidence holds no `reported`, `RULE-1`'s one result reads `tests` as exactly one entry, `proof` `PROOF-1`, `test` `tests/test_login.py::test_valid_credentials_return_200`, `result` `pass` and `reported` null, and the package's `outputs` reads `[]`
+- PROOF-91 (RULE-41): Both results of `login` name one report, read from `.purlin/runtime/reports/pytest.xml`; the signed package's `outputs` reads exactly one entry, `kind` `report`, `file` `.purlin/evidence/package/2.1.0.outputs/reports/<sha256>.xml`, that `sha256`, `from` `.purlin/runtime/reports/pytest.xml` and `tests` `2`, and `outputs` is the top-level key after `hand_checks`
+- PROOF-92 (RULE-41): Two clones of one repository whose results name one report each sign `2.1.0`, the first keeping the report's file under `.purlin/runtime/kept/` and the second keeping none; the two committed packages are the same byte for byte, the first's signed commit carries the report beside the package and the second's does not
+- PROOF-93 (RULE-42): A project whose results name one report the signing machine keeps is signed, and its committed package checked with `purlin:sign --check`; it exits 0 and prints exactly `The package matches its fingerprint.` and `Reports beside the package that match their sha256: 1 of 1.`
+- PROOF-94 (RULE-42): In that signed project the bytes `<!-- edited -->` are added to the end of the committed report and the package checked; it exits 1 and prints exactly `The package matches its fingerprint.`, `Reports beside the package that match their sha256: 0 of 1.` and `A report beside the package does not match it: <file> gives the sha256 <of the edited bytes>, and the package records <the sha256 the package lists>.`
+- PROOF-95 (RULE-42): That signed package is copied alone into an empty folder and checked there; it exits 0 and prints exactly `The package matches its fingerprint.` and `Reports beside the package that match their sha256: 0 of 1.`

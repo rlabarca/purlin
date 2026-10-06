@@ -51,6 +51,7 @@ Signing 0.1.0 at 1cf829e.
   19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
   The audit: 17 strong, 1 weak.
   A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
+  Test reports kept with the package: 1 of 1.
 The audit's findings: 1 weak.
 ```
 
@@ -59,7 +60,11 @@ There is one `Tests run by` line per run the results come from, this machine's f
 by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.` The audit's
 line shows only where the audit read a rule. The co-author line counts the last changes whose
 commit carries a `Co-Authored-By` line, as a commit made with an AI's help usually does; it
-records what git holds and judges nothing.
+records what git holds and judges nothing. The last line counts the test reports the package
+lists that are committed with it. Where this machine does not hold one, it ends ` 1 is not on
+this machine, so it is not kept.`: the report was taken on another machine or removed since, and
+the sign-off goes on without it. Where no result names a report it reads `  No test report is
+kept: no result names one.`
 
 ## Step 2: the refusals
 
@@ -189,9 +194,10 @@ A person at a terminal may instead run `sign.py` with no option and answer each 
 ## Step 6: the sign-off and the tag
 
 Where the person typed their address the script makes one signed commit, `sign(<version>): <email>`. For the first sign-off of
-a version it carries the package, `.purlin/evidence/package/<version>.json`, and the sign-off,
-`.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and the script writes
-`signed/<version>` on it:
+a version it carries the package, `.purlin/evidence/package/<version>.json`, the sign-off,
+`.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and under
+`.purlin/evidence/package/<version>.outputs/` each test report the package lists that this
+machine keeps, and the script writes `signed/<version>` on it:
 
 ```
 Signed 0.1.0 as quinn.qa@labconnect.example with the key ending ...4f2a.
@@ -219,6 +225,9 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 
 It reads the file, writes nothing and needs no key. It prints `The package matches its
 fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>.` and exits 1.
+Where the package lists test reports it then prints `Reports beside the package that match their
+sha256: <k> of <n>.` A report that is not beside the package fails nothing. One that is there and
+was changed prints `A report beside the package does not match it: ...` and the command exits 1.
 
 ## Step 7: name the next step
 

@@ -14,7 +14,9 @@ every proof is `@manual` has no test, so each of its results reads
 `checked at sign-off`. Above them it carries whether the tests are met, the
 total, the count that pass, what the audit found over the rules that pass
 their tests and have a tested proof, what is left to do, the runs the
-results came from and every hand check. It is written to
+results came from, every hand check and every test report its results name.
+Each result lists its tests with what the suite's report held for each. It is
+written to
 
     .purlin/evidence/package/<version>.json
 
@@ -67,6 +69,7 @@ from purlin import (PURLIN_VERSION,                            # noqa: E402
                     evidence as evidence_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
+                    outputs as outputs_module,
                     payload as payload_module,
                     project as project_module,
                     signatures as signatures_module,
@@ -85,7 +88,7 @@ CONFIG_PATH = '.purlin/config.json'
 # are met is what a reader sees first after the schema.
 TOP_LEVEL = ('schema', 'met', 'rules', 'steps', 'audit', 'left',
              'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',
-             'features', 'hand_checks', 'warnings', 'fingerprint')
+             'features', 'hand_checks', 'outputs', 'warnings', 'fingerprint')
 
 CELLS = ('passed', 'strong')
 
@@ -384,6 +387,7 @@ def build(project_root, version):
         'runs': runs_of(seen),
         'features': entries,
         'hand_checks': _hand_checks(entries),
+        'outputs': _outputs(entries, version),
         'warnings': warnings,
         'fingerprint': '',
     }
@@ -601,8 +605,63 @@ def _results(rule_id, proofs, sections, same):
                     'out_of_date': sorted(entry['out_of_date']),
                     'same_code': bool(same.get(section.get('commit') or '')),
                     'carried': _carried(section, ids),
-                    'nothing_to_check': _nothing_to_check(section, ids)})
+                    'nothing_to_check': _nothing_to_check(section, ids),
+                    'tests': _result_tests(section, ids)})
     out.sort(key=lambda item: (item['os'], item['source']))
+    return out
+
+
+def _result_tests(section, ids):
+    """`[{proof, test, result, reported}]`: each test the section lists for
+    the rule, in the section's order, with what the suite's report holds
+    for it as the evidence keeps it, None where the evidence keeps none. A
+    proof no test is tied to has no entry."""
+    out = []
+    for entry in (section or {}).get('proofs') or ():
+        if not isinstance(entry, dict) or entry.get('id') not in ids \
+                or not entry.get('test'):
+            continue
+        reported = entry.get('reported')
+        out.append({'proof': entry.get('id'), 'test': entry.get('test'),
+                    'result': entry.get('result'),
+                    'reported': (json.loads(json.dumps(reported))
+                                 if isinstance(reported, dict) else None)})
+    return out
+
+
+def _outputs(entries, version):
+    """`outputs[]`: one entry per report file the package's results name,
+    by file.
+
+    Each is `{kind, file, sha256, from, tests}`: `report`, where the file
+    is committed beside the package when the machine that signs first keeps
+    it, the sha256 of its bytes, the path the run read it from, and how
+    many test results name it. It is read from the evidence alone, so the
+    same commit lists the same outputs on every machine.
+    """
+    found = {}
+    for feature in entries:
+        for rule in feature['rules']:
+            for result in rule['results']:
+                for test in result['tests']:
+                    report = (test.get('reported') or {}).get('report') or {}
+                    sha = str(report.get('sha256') or '')
+                    if not re.match(r'^[0-9a-f]{64}$', sha):
+                        continue
+                    source = str(report.get('file') or '')
+                    known = found.setdefault(sha, {'from': source,
+                                                   'tests': set()})
+                    known['tests'].add((feature['name'], result['os'],
+                                        result['source'], test['proof'],
+                                        test['test']))
+    out = [{'kind': outputs_module.REPORT,
+            'file': outputs_module.output_rel(
+                version, outputs_module.REPORT, sha,
+                outputs_module.extension_of(known['from'])),
+            'sha256': sha, 'from': known['from'],
+            'tests': len(known['tests'])}
+           for sha, known in found.items()]
+    out.sort(key=lambda item: item['file'])
     return out
 
 
@@ -1077,6 +1136,31 @@ def check_file(path):
     except (IOError, OSError) as error:
         return 'the file could not be read: %s' % error
     return check_bytes(data)
+
+
+def check_outputs(path):
+    """`(listed, kept, differing)` for the outputs a package file lists,
+    read beside it: how many it lists, how many are there and give the
+    sha256 it records, and `[(file, sha256 its bytes give)]` for each that
+    is there and gives another. `path` is a package that matches its
+    fingerprint; an output is looked for under the package's own folder,
+    wherever that folder is.
+    """
+    with open(path, 'rb') as handle:
+        listed = json.loads(handle.read().decode('utf-8')).get('outputs') or []
+    folder = os.path.dirname(os.path.abspath(path))
+
+    def read(rel):
+        if not rel.startswith(PACKAGE_DIR + '/'):
+            return None
+        try:
+            with open(os.path.join(folder, *rel[len(PACKAGE_DIR) + 1:]
+                                   .split('/')), 'rb') as handle:
+                return handle.read()
+        except (IOError, OSError):
+            return None
+    kept, differing = outputs_module.check(listed, read)
+    return len(listed), kept, differing
 
 
 # ---------------------------------------------------------------------------

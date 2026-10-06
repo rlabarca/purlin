@@ -10,7 +10,9 @@ Any project may run it whenever it chooses. It reads the evidence committed
 at HEAD, builds the evidence package for the version and walks it with a
 person: who ran the tests, where and when, and which results an earlier run
 took and a later one carried forward; an overview counting per system
-the rules that pass their tests and the hand checks, and what the audit found; the
+the rules that pass their tests and the hand checks, what the audit found,
+how many last changes name a co-author and how many test reports are kept
+with the package; the
 audit's findings as a list the signer may open, each proof settled with its
 test unchanged listed after them; then one stop per hand check,
 which shows the rule's last note where a sign-off holds one, and where the
@@ -20,7 +22,9 @@ the last question it writes one file in one signed commit:
     .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
 
 The first sign-off of a version commits the package with it,
-`.purlin/evidence/package/<version>.json`, and writes the signed tag
+`.purlin/evidence/package/<version>.json`, and under
+`.purlin/evidence/package/<version>.outputs/` each test report the package
+lists that this machine keeps, and writes the signed tag
 `signed/<version>` on that commit; a later sign-off adds its own file alone
 and the tag does not move. Where git could not write the tag, the next run
 writes it on that commit, and a signer who already signed gets the tag alone.
@@ -49,7 +53,8 @@ tag is written, and one line names both keys.
 no key. `--answers FILE` walks with the answers a JSON file gives, for an
 agent whose shell has no terminal to ask in; it signs only where the file's
 `sign` holds the signer's email address. `--check FILE` checks a package
-against its fingerprint. `--version <version>` names the version in place of
+against its fingerprint, then the test reports beside it against the sha256
+the package lists for each. `--version <version>` names the version in place of
 the one the project states.
 
 Exit codes: 0 signed, shown, checked and matching, stopped, or declined; 1
@@ -78,6 +83,7 @@ import package as package_module                               # noqa: E402
 from purlin import report_data                                 # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     evidence as evidence_module,
+                    outputs as outputs_module,
                     payload as payload_module,
                     signatures as signatures_module,
                     states as states_module,
@@ -157,6 +163,11 @@ OVERVIEW_AUDIT = '  The audit: %s.'             # summary.audit_words
 # tests whose last change the package's `authors` give a co-author for.
 OVERVIEW_CO_AUTHORS = ('  A co-author is named on the last change of %s, %s '
                        'and %s.')
+# The test reports the package lists, and how many are committed with it.
+OVERVIEW_REPORTS = '  Test reports kept with the package: %d of %d.'
+# After it, where the first sign-off finds some missing: `1 is` or `<n> are`.
+REPORTS_NOT_HERE = ' %s not on this machine, so %s not kept.'
+OVERVIEW_NO_REPORTS = '  No test report is kept: no result names one.'
 AUDIT_ASK = "The audit's findings: %s. list / go on: "
 AUDIT_SHOWN = "The audit's findings: %s."
 AUDIT_LIST = '  %s %s   %s'
@@ -191,6 +202,11 @@ SIGNED_PUSH = 'Push the branch and the tag: git push origin %s'
 TAG_STAYS = '%s stays at %s; this sign-off is added after it. Push it: git push origin%s'
 SHOW_NEXT = 'Answer each stop, then run purlin:sign --answers <file>.'
 MATCHES = 'The package matches its fingerprint.'
+# What `--check` says of the reports the package lists: how many are beside
+# it with the sha256 it records, of how many it lists.
+REPORTS_MATCH = 'Reports beside the package that match their sha256: %d of %d.'
+REPORT_DIFFERS = ('A report beside the package does not match it: %s gives the '
+                  'sha256 %s, and the package records %s.')
 NO_MATCH = 'The package does not match its fingerprint: %s.'
 
 # A stop.
@@ -527,8 +543,10 @@ def refusal(project_root, name=None):
     reads: `version`, `tag`, `first` (no tag is written yet), `package`,
     `written` (the package is to be written with the sign-off), `head`,
     `email`, `tag_at` (the commit a tag git could not write belongs on, or
-    None) and `tag_only` (the signer already signed, and only the tag is
-    left to write).
+    None), `tag_only` (the signer already signed, and only the tag is
+    left to write) and `kept`, how many of the reports the package lists
+    are kept with it: on this machine where the package is to be written,
+    in HEAD's tree where it is committed.
     """
     changed = uncommitted_work(project_root)
     if changed:
@@ -607,7 +625,23 @@ def refusal(project_root, name=None):
     return [], EXIT_OK, {'version': version, 'tag': tag, 'first': first,
                          'package': package, 'written': written,
                          'head': head, 'email': email, 'tag_at': tag_at,
-                         'tag_only': bool(signed and tag_at)}
+                         'tag_only': bool(signed and tag_at),
+                         'kept': kept_reports(project_root, package, written)}
+
+
+def kept_reports(project_root, package, written):
+    """How many of the reports a package lists are kept with it.
+
+    For a package this sign-off is to write, the ones this machine keeps,
+    which the sign-off commits; for a committed one, the ones HEAD's tree
+    holds at the paths it lists.
+    """
+    listed = package.get('outputs') or ()
+    if written:
+        return outputs_module.on_this_machine(project_root, listed)
+    return sum(1 for item in listed
+               if _git(project_root, 'cat-file', '-e', 'HEAD:%s'
+                       % item.get('file')).returncode == 0)
 
 
 def _held_signoff(project_root, rel):
@@ -721,12 +755,13 @@ def last_notes(project_root):
     return signatures_module.hand_notes(project_root)
 
 
-def plan(package, notes=None):
+def plan(package, notes=None, kept=0):
     """What the walk shows: the overview's numbers, the weak rules, the
     proofs settled with their test unchanged and the stops.
 
     `notes` is what `last_notes` gives; each stop carries its rule's lines
-    as `last_notes` and what was reworded since them as `changed`."""
+    as `last_notes` and what was reworded since them as `changed`. `kept`
+    is `kept_reports`' answer."""
     notes = notes or {}
     rules = package_rules(package)
     per_system = {}
@@ -759,7 +794,9 @@ def plan(package, notes=None):
                     for name in _systems(per_system)],
         'audit': ({key: audit.get(key) or 0 for key in keys}
                   if audited else None),
-        'co_authors': co_author_counts(rules)}
+        'co_authors': co_author_counts(rules),
+        'reports': {'named': len(package.get('outputs') or ()),
+                    'kept': kept}}
     return {'overview': overview, 'weak': weak, 'judged': judged,
             'stops': stops}
 
@@ -807,7 +844,23 @@ def overview_lines(info, shown):
         _count('1 rule', '%d rules', named['rules']),
         _count('1 proof', '%d proofs', named['proofs']),
         _count('1 test', '%d tests', named['tests'])))
+    lines.append(reports_line(shown['overview']['reports'], info['written']))
     return lines
+
+
+def reports_line(reports, written):
+    """The overview's line on the test reports: how many of the ones the
+    package lists are kept with it, and, where this sign-off writes the
+    package, how many this machine does not hold."""
+    named, kept = reports['named'], reports['kept']
+    if not named:
+        return OVERVIEW_NO_REPORTS
+    line = OVERVIEW_REPORTS % (kept, named)
+    if written and kept < named:
+        line += REPORTS_NOT_HERE % (
+            ('1 is', 'it is') if named - kept == 1
+            else ('%d are' % (named - kept), 'they are'))
+    return line
 
 
 def audit_list_lines(weak, judged=()):
@@ -940,7 +993,7 @@ def show(project_root, name=None, out=None):
         print(TAG_NOT_WRITTEN % (info['tag'], info['email'], info['version'],
                                  info['tag_at'][:7]), file=out)
         return EXIT_OK
-    shown = plan(info['package'], last_notes(project_root))
+    shown = plan(info['package'], last_notes(project_root), info['kept'])
     _say(overview_lines(info, shown), out)
     if shown['weak'] or shown['judged']:
         print(AUDIT_SHOWN % _findings_words(shown), file=out)
@@ -990,7 +1043,7 @@ def _walk(project_root, info, ask, out, answers_path=None):
     """The walk once nothing refuses. `answers_path` is the answers file an
     agent's walk reads: the last question then asks for the signer's
     address, and `ask` answers yes only where the file holds it."""
-    shown = plan(info['package'], last_notes(project_root))
+    shown = plan(info['package'], last_notes(project_root), info['kept'])
     _say(overview_lines(info, shown), out)
     list_opened = False
     if shown['weak'] or shown['judged']:
@@ -1089,6 +1142,8 @@ def _take_back(project_root, kept):
         if earlier is None:
             try:
                 os.remove(path)
+                # A folder this left empty goes with it.
+                os.removedirs(os.path.dirname(path))
             except OSError:
                 pass
         else:
@@ -1118,7 +1173,21 @@ def _sign(project_root, info, record, notes, out):
             kept[rel] = _read_bytes(os.path.join(project_root, *rel.split('/')))
             package_module.write(project_root, package)
             rels.append(rel)
+            # The reports the package lists that this machine keeps go into
+            # the same commit, beside the package.
+            before = {item['file']: _read_bytes(os.path.join(
+                project_root, *item['file'].split('/')))
+                for item in package.get('outputs') or ()}
+            attributes = '%s/%s' % (outputs_module.outputs_dir(version),
+                                    outputs_module.ATTRIBUTES)
+            before[attributes] = _read_bytes(os.path.join(
+                project_root, *attributes.split('/')))
+            for kept_rel in outputs_module.copy_kept(
+                    project_root, version, package.get('outputs')):
+                kept[kept_rel] = before.get(kept_rel)
+                rels.append(kept_rel)
     except (package_module.PackageError, IOError, OSError) as error:
+        _take_back(project_root, kept)
         print(NOT_WRITTEN % str(error).rstrip('.'), file=out)
         return EXIT_NOTHING
     rel = signoff_rel(project_root, version, email)
@@ -1285,7 +1354,17 @@ def check(path, out=None):
         print(NO_MATCH % why, file=out)
         return EXIT_NOTHING
     print(MATCHES, file=out)
-    return EXIT_OK
+    listed, kept, differing = package_module.check_outputs(path)
+    if listed:
+        print(REPORTS_MATCH % (kept, listed), file=out)
+    recorded = {}
+    if differing:
+        with open(path, 'rb') as handle:
+            recorded = {item.get('file'): item.get('sha256') for item in
+                        json.loads(handle.read().decode('utf-8'))['outputs']}
+    for rel, gives in differing:
+        print(REPORT_DIFFERS % (rel, gives, recorded.get(rel)), file=out)
+    return EXIT_NOTHING if differing else EXIT_OK
 
 
 # ---------------------------------------------------------------------------
