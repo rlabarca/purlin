@@ -85,8 +85,9 @@ one exception, a file list too long for a command line.
 Where the `tests` setting changed since the evidence was taken, the run first prints
 `The tests setting changed, so every result is out of date.` The status prints it too.
 
-`purlin:test` skips every slow test. Only `--all` and `--clean` start the test of a proof
-tagged `@slow`. Every other run lists it under `Left to do`, as
+`purlin:test` skips every slow test. `--all` and `--clean` start the test of a proof tagged
+`@slow`, and `purlin:audit <feature> RULE-N --settle` starts the slow tests of the rule it
+names. Every other run lists it under `Left to do`, as
 [Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
 A plain run keeps an earlier slow result while nothing its spec covers changed, marked

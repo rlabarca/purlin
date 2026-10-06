@@ -42,7 +42,8 @@ Add `--arm-timeout <seconds>` when the person gave it. Add `--all` for `purlin:a
 `--feature <name>` for each feature named; with neither, the run covers the features `purlin:test`
 would select. For `purlin:audit <feature> RULE-N --settle`, add the one `--feature <name>` and
 `--settle RULE-N`, once per rule; `purlin:build` runs it on a weak rule once the test is
-stronger. Add `--sound PROOF-N`, once per proof, only where the person or `purlin:build` gave
+stronger. A settle starts the tests of the slow proofs of the rules it names and leaves every
+other slow test out. Add `--sound PROOF-N`, once per proof, only where the person or `purlin:build` gave
 it: it says that proof's test was read against the proof and left as it was. It runs the tests, then reads each rule whose tests pass, that has a proof with a
 test, and whose text, proofs, tests or covered code changed since its last audit. It takes three
 steps for each rule:

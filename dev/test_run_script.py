@@ -2080,6 +2080,92 @@ class TestSlowProofs:
         assert not any(line.startswith('Left out') for line in lines), output
 
 
+# `feat` of three rules. The test of PROOF-2, tagged `@slow`, writes the file
+# `started` and checks nothing; the test of PROOF-3, tagged `@slow` too,
+# writes `started-other`.
+SETTLE_BODY = ('from src.feat import VALUE\n\n'
+               '# purlin: feat PROOF-1\n'
+               'def test_ok():\n'
+               '    assert VALUE\n\n'
+               '# purlin: feat PROOF-2\n'
+               'def test_slow():\n'
+               "    open('started', 'a').close()\n\n"
+               '# purlin: feat PROOF-3\n'
+               'def test_other_slow():\n'
+               "    open('started-other', 'a').close()\n"
+               '    assert VALUE\n')
+CHECKS_NOTHING = "    open('started', 'a').close()\n\n"
+CHECKS_THE_VALUE = ("    open('started', 'a').close()\n"
+                    '    assert VALUE == 1\n\n')
+
+
+@pytest.fixture
+def slow_rule_settled(tmp_path, claude):
+    """A git checkout of `feat` after `--all --audit` kept a bug as
+    `survived` for the slow PROOF-2, its test was changed to check the value
+    and `--audit --feature feat --settle RULE-2` ran.
+    `(root, the settle's exit code, its output)`."""
+    install, _directory = claude
+    root = _pytest_project(tmp_path, body=SETTLE_BODY)
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+    _spec(root, 'feat', rules=3, proofs=(('PROOF-1', 'RULE-1', ''),
+                                         ('PROOF-2', 'RULE-2', ' @slow'),
+                                         ('PROOF-3', 'RULE-3', ' @slow')))
+    (root / '.gitignore').write_text(
+        '.purlin/runtime/\n__pycache__/\n.pytest_cache/\nstarted*\n',
+        encoding='utf-8')
+    _git_repo(root)
+    install(answers=[{'PROOF-2': fake_claude.change(
+        'src/feat.py', 'VALUE = 1', 'VALUE = 2',
+        case='the value is read; the proof says 1; the changed code gives 2',
+        aim='past the test')}])
+    code, output = _run(root, '--all', '--audit')
+    assert code == 0, output
+    kept = json.loads((root / '.purlin' / 'evidence' / 'local' / 'feat.json')
+                      .read_text(encoding='utf-8'))['audit']['rules']
+    assert kept['RULE-2']['bugs']['PROOF-2']['result'] == 'survived', kept
+    for name in ('started', 'started-other'):
+        (root / name).unlink()
+    path = root / 'tests' / 'test_feat.py'
+    path.write_text(path.read_text(encoding='utf-8').replace(
+        CHECKS_NOTHING, CHECKS_THE_VALUE), encoding='utf-8')
+    install()
+    code, output = _run(root, '--audit', '--feature', 'feat', '--settle',
+                        'RULE-2')
+    return root, code, output
+
+
+class TestASettleStartsTheSlowTestOfItsRule:
+
+    # purlin: run_script PROOF-330
+    def test_the_slow_test_of_the_rule_named_is_started(
+            self, slow_rule_settled):
+        root, code, output = slow_rule_settled
+        assert code == 0, output
+        assert (root / 'started').exists(), output
+        assert _proof(root, 'PROOF-2') == ('pass',
+                                           'tests/test_feat.py::test_slow')
+
+    # purlin: run_script PROOF-331
+    def test_the_slow_test_of_another_rule_stays_left_out(
+            self, slow_rule_settled):
+        root, _code, output = slow_rule_settled
+        assert ('Left out 1 slow proof: feat PROOF-3. purlin:test --all runs '
+                'it when it is due.') in output.splitlines(), output
+        assert not (root / 'started-other').exists(), output
+
+    # purlin: run_script PROOF-332
+    def test_the_one_command_settles_the_rule(self, slow_rule_settled):
+        _root, _code, output = slow_rule_settled
+        lines = output.splitlines()
+        assert 'feat RULE-2   strong' in lines, output
+        under = lines[lines.index('feat RULE-2   strong') + 1:][:2]
+        assert ('  PROOF-2: the test now catches the bug it missed at '
+                'src/feat.py:1.') in under, output
+        assert not any('nothing to settle' in line for line in lines), output
+
+
 class TestNothingToRunOverAFailure:
 
     # purlin: run_script PROOF-282

@@ -282,6 +282,9 @@ The script takes `--sound PROOF-N` the same way, once per proof.
   `<feature> RULE-N is not a rule any spec has. Run purlin:status <feature> to see its rules.`
 - The feature's tests run first, as on any audit. A rule whose tests do not pass is not
   settled, and the run names it as failing.
+- The test of a proof tagged `@slow` is started with them where its rule is named, so one
+  command settles a rule with a slow proof. The slow tests of every other rule are left out,
+  and the run names them.
 - Only the rules named are read.
 
 **A test that has not changed.** While the recorded bug still gets past the test, a finding is

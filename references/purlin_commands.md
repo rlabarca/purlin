@@ -28,7 +28,8 @@ the `git push origin` command, and pushing is your act.
   `references/supported_frameworks.md` says how each test tool leaves a test out.
 
 `purlin:audit` runs the tests the same way and adds what the audit found, a tool nothing waits
-on.
+on. `purlin:audit <feature> RULE-N --settle` also starts the tests of the slow proofs of the
+rules it names, and leaves every other slow test out.
 
 The hand-off is `purlin:test --all --commit`, and the project's own run for the proofs tagged
 for another system (`references/evidence_and_signoff.md`, "A run on another system"). That run

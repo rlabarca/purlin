@@ -179,6 +179,8 @@ the same bug again (`references/review_criteria.md`, "The planted bug"). For eac
    whose test is as it was when the bug got past it; `--sound` is the recorded judgment that
    the test was sound already, and the evidence then says the test was not changed. Never
    pass it for a test you did not read against its proof, and never to get past a refusal.
+   The settle starts the test of a slow proof of the rule it names, so a rule with a proof
+   tagged `@slow` needs no `purlin:test --all` first.
 5. Report what the settle printed for each proof, and the word the rule then reads:
    - The test now catches the bug: the finding was right, and the bug reads `caught`.
    - The bug did not break what the proof says, and a new bug was planted: the finding was
