@@ -578,6 +578,13 @@ class TestAnchorsBehind:
         assert reason != missing, rows
         assert said.startswith(reason), (reason, said)
         assert reason.startswith(said[:said.index(missing)]), (reason, said)
+        # The reason is git's message as git gave it here, whole up to its
+        # first 200 characters, and after the path it goes on in words: it
+        # says more than the path.
+        assert reason == said[:200], (reason, said)
+        assert reason.count(missing) == 1, reason
+        more = reason.split(missing)[1].strip('\'" :')
+        assert len(re.findall(r'[A-Za-z]{2,}', more)) >= 2, (more, reason)
         assert rows == [{'anchor': 'policy', 'source': missing,
                          'pinned': 'abc1234', 'status': 'error',
                          'error': reason}], rows
