@@ -262,7 +262,7 @@ how each test tool skips one test, and the few cases where a slow test runs all 
 
 On another machine the passed cell reads `not run`, with the reason `Windows: no run yet`,
 and your project's own run on that system proves it.
-[running-and-evidence.md](running-and-evidence.md#testing-on-another-system) says how that run
+[running-and-evidence.md](running-and-evidence.md#your-project-runs-the-tests-on-another-system) says how that run
 is made.
 
 ## Ids across branches
