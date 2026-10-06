@@ -58,6 +58,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
   sharper proof.
 - Never change a sound test or narrow a rule to clear a finding.
 
+A spot test's finding is settled too. `purlin:build` fixes the test and settles the rule: the
+spot tests read the test again, no AI is asked, and the finding is gone at once.
+
 Auditing again does not clear a finding. If the code changes and the test does not,
 `purlin:audit` plants the same bug again first. The test still passes: the rule stays `weak`.
 

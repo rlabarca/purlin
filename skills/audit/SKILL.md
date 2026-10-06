@@ -24,7 +24,7 @@ purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Cover every feature as purlin:test --all does, and read every passing rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
-purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+purlin:audit <feature> RULE-N --settle  Run the spot tests over the rule's tests again, plant each bug that survived again, and run its proof's test
 purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 ```
 
@@ -92,7 +92,14 @@ login RULE-3   spot-checked
 The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
 ```
 
-- A line `<file>::<test>: ...` is a spot test's finding: fix the test.
+- A line `<file>::<test>: ...` is a spot test's finding: fix the test. `purlin:build <feature>`
+  does, then settles the rule.
+- A line `<file>::<test>: the spot tests now find nothing.` is printed by a settle: the rule's
+  entry held a finding of the spot tests for that test, and they no longer make it. No model
+  was asked.
+- A line `PROOF-N: no bug is on record for its test as it stands. Run purlin:audit <feature> to
+  plant one.` is printed by a settle for a proof whose last result was taken on another test or
+  code. A settle asks the model for no such bug: `purlin:audit <feature>` does.
 - A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug the
   test did not catch: `purlin:build <feature>` settles it.
 - A line `PROOF-N: the AI says this breaks: ...` is the model's claim about which case the bug
@@ -133,7 +140,8 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   test fires or a bug still survives, else `strong` where any of its proofs has a caught bug,
   else `spot-checked`.
 - `<feature> RULE-N has no planted bug that survived: nothing to settle.` means the rule named
-  with `--settle` is left as it is.
+  with `--settle` keeps no bug as `survived` and holds no finding of the spot tests: it is left
+  as it is.
 - A line `No bug was planted: <why>.` is not a finding and does not make the rule weak. A rule
   with no finding and no caught bug reads `spot-checked`.
 - `<check> is not read in <language> tests.` says a spot test does not read that language.

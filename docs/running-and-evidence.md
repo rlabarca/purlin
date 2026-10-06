@@ -358,7 +358,7 @@ purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Cover every feature as purlin:test --all does, and read every rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
-purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+purlin:audit <feature> RULE-N --settle  Run the spot tests over the rule's tests again, plant each bug that survived again, and run its proof's test
 purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 ```
 
@@ -441,13 +441,16 @@ Left to do:
 ```
 
 `purlin:build` does the work for a weak rule. It fixes a test a spot test flagged. For a bug
-that survived, it writes the check the proof names, runs `purlin:test`, then settles the rule:
+that survived, it writes the check the proof names. Either way it runs `purlin:test`, then
+settles the rule:
 
 ```
 purlin:audit login RULE-2 --settle
 ```
 
-The settle plants the bug the test missed again and runs the proof's test as it stands now.
+The settle runs the spot tests over the rule's tests again, with no AI asked, so a fixed test
+clears its finding at once. It plants the bug the test missed again and runs the proof's test
+as it stands now.
 
 - The test fails: the finding was right, and the bug reads `caught`.
 - The test still passes: the bug did not break what the proof says. It is dropped, and one new

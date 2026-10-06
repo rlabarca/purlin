@@ -144,7 +144,7 @@ Purlin
   purlin:audit --all              The same, reading every passing rule again
   purlin:audit --commit           The same, then commit the work and the evidence
   purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's test run, longer
-  purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+  purlin:audit <feature> RULE-N --settle  Run the spot tests over the rule's tests again, plant each bug that survived again, and run its proof's test
   purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 
   Signing

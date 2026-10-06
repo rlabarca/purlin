@@ -151,7 +151,10 @@ and `purlin:sign` the evidence package and a sign-off.
 A rule the audit found `weak` is left to do as a rule to strengthen. The status carries each
 finding as a reason of the rule's `strong` cell.
 
-A line `<file>::<test>: ...` is a spot test's finding: fix the test as the finding says.
+A line `<file>::<test>: ...` is a spot test's finding: fix the test as the finding says, then
+run `purlin:audit <feature> RULE-N --settle`. The settle runs the spot tests over the rule's
+tests again and asks no model, so a finding they no longer make is gone at once, and the
+settle prints `<file>::<test>: the spot tests now find nothing.`
 
 A line `PROOF-N: the test still passes when <file>:<line> reads "<line>"` is a planted bug that
 survived. Auditing again does not clear it: while its test is as it was, `purlin:audit` plants

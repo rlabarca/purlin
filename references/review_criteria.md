@@ -269,7 +269,8 @@ and how a finding that still holds is cleared.
 
 ## Settling a finding
 
-A planted bug that survived is settled by a test run. `purlin:build` strengthens the test, then
+A planted bug that survived is settled by a test run, and a finding of the spot tests by
+reading the test again. `purlin:build` strengthens the test, then
 runs `purlin:audit <feature> RULE-N --settle`, which is
 `scripts/run/purlin_run.py --audit --feature <feature> --settle RULE-N`. `--settle` is given once
 per rule, beside `--audit` and exactly one `--feature`, and `--commit` works as on any audit.
@@ -343,7 +344,9 @@ and whose test changed since or which `--sound` names:
 
 A proof of the rule with no `survived` entry keeps what it has where its test and code are
 unchanged since that result. A result taken on another test or code is left out of the entry,
-and the next audit without `--settle` plants a bug for that proof.
+and the next audit without `--settle` plants a bug for that proof. The audit prints, under the
+rule,
+`  PROOF-2: no bug is on record for its test as it stands. Run purlin:audit <feature> to plant one.`
 
 The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
 any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
@@ -352,14 +355,24 @@ holds no caught bug, and the rule still reads `strong` where another of its proo
 rule with two bugs that survived, one proof's test changed and the other's not, has the first
 settled and the second refused, and reads `weak` while the second survives.
 
-A rule named with `--settle` that keeps no bug as `survived` prints
+**A finding of the spot tests.** A rule named with `--settle` whose entry holds a finding of
+the spot tests is read, whether or not it keeps a bug as `survived`. The spot tests run over
+its tests as they stand, and no model is asked for a rule that needs no new bug, so a fixed
+test clears its finding at once. For each test they no longer find anything in, the audit
+prints, under the rule and before any other line,
+`  tests/test_age.py::test_age: the spot tests now find nothing.`
+A finding that still holds is printed again, and the rule reads `weak`.
+
+A rule named with `--settle` that keeps no bug as `survived`, and whose entry holds no finding
+of the spot tests, prints
 `<feature> RULE-N has no planted bug that survived: nothing to settle.` and is left as it is.
 A rule whose every surviving bug is refused is read and asks no model.
 
 A dropped bug is kept nowhere: not under `bugs`, not among the `findings`, not in the evidence
 package. The `not made` entry of step 3 holds the state, so no audit plants a bug for that proof
-until its test or code changes. The lines of steps 2 and 3 and the line that refuses a settle
-are printed and not stored. One run
+until its test or code changes. The lines of steps 2 and 3, the line that refuses a settle,
+the line for a test the spot tests now find nothing in and the line for a proof with no bug on
+record are printed and not stored. One run
 drops a bug, plants one more and ends: nothing counts the bugs between runs.
 
 Where a settled rule needs no new bug, no model is asked. Its entry keeps the `model` and the
