@@ -356,12 +356,11 @@ def read_report(fmt, project_root, report, stdout=''):
     for source, full in files:
         text = (stdout or '') if full is None else _read(full)
         if text is None:
-            return [], 'wrote a report at %s that could not be read' % report
+            return [], 'Its report at %s could not be read.' % report
         try:
             found = reader(text.lstrip('\ufeff'))
-        except (ElementTree.ParseError, ValueError) as error:
-            return [], 'wrote a report at %s that is not %s: %s' % (
-                report, fmt, error)
+        except (ElementTree.ParseError, ValueError):
+            return [], 'Its report at %s is not %s.' % (report, fmt)
         for case in found:
             case.source = source
         cases.extend(found)
@@ -382,11 +381,11 @@ def _report_files(fmt, project_root, report):
                  for name in sorted(os.listdir(full))
                  if name.lower().endswith(_DIRECTORY_EXTENSIONS[fmt])]
         if not files:
-            return [], 'wrote no report in %s' % report
+            return [], 'It wrote no report in %s.' % report
         return files, None
     if os.path.isfile(full):
         return [(report, full)], None
-    return [], 'wrote no report at %s' % report
+    return [], 'It wrote no report at %s.' % report
 
 
 # The extension a kept copy of the command's standard output is given.

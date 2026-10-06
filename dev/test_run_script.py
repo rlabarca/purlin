@@ -283,7 +283,7 @@ class TestTheTestArmRunsEachSuite:
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
-        assert 'Evidence is missing' not in output, output
+        assert 'evidence missing' not in output, output
         assert output.strip().splitlines()[-1] == (
             '  1 rule to fix: purlin:build'), output
         assert _proofs(root, 'feat')[0]['result'] == 'fail'
@@ -303,7 +303,7 @@ class TestAProjectWithNoMarker:
         # Nothing was marked, so nothing went missing: the status table is
         # what says the rule has no test.
         assert '1 · 1 no test' in output, output
-        assert 'Evidence is missing' not in output, output
+        assert 'evidence missing' not in output, output
         # The rule has no test, so the summary says it does not pass and
         # what to do; no test failed, so the run exits 0.
         assert output.strip().splitlines()[-3:] == [
@@ -327,9 +327,9 @@ class TestLoudFailureB:
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test')
         assert code == 1, output
-        assert ('Evidence is missing: 1 marker has no passing or failing '
-                'result: feat PROOF-1 at tests/test_feat.py:3. Check that its '
-                'test ran and was not skipped, then run purlin:test.'
+        assert ('feat PROOF-1 (RULE-1): evidence missing. The test at '
+                'tests/test_feat.py:3 has no result. Check that it ran and '
+                'was not skipped, then run purlin:test.'
                 in output.splitlines()), output
 
     # purlin: run_script PROOF-9
@@ -345,7 +345,7 @@ class TestLoudFailureB:
             '    assert True\n', encoding='utf-8')
         code, output = _run(root, '--feature', 'feat', '--test')
         assert 'other PROOF-1' not in output
-        assert 'Evidence is missing' not in output, output
+        assert 'evidence missing' not in output, output
         # `other` was not run, so the summary leaves it to test; nothing
         # about it was reported as missing, and the test the run did run
         # passed, so it exits 0.
@@ -369,8 +369,8 @@ class TestLoudFailureB:
             'title\n\n## Proof\n\n- PROOF-1 (RULE-1): each screen in the '
             'project shows a title\n', encoding='utf-8')
         code, output = _run(root, '--all', '--test')
-        assert 'Evidence is missing' not in output, output
-        assert 'has no passing or failing result' not in output, output
+        assert 'evidence missing' not in output, output
+        assert 'has no result' not in output, output
         assert code == 0, output
 
 
@@ -435,12 +435,13 @@ class TestEnvScopedProofs:
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
         code, output = _run(root, '--all', '--test')
-        assert ('1 proof needs %s; this machine is %s. Run purlin:test on '
-                '%s.' % (purlin_evidence.os_word(other),
-                         purlin_evidence.os_word(here),
-                         purlin_evidence.os_word(other))
+        assert ('%s: proofs not run here. 1 proof needs it, and this machine '
+                'is %s. Run purlin:test on %s.'
+                % (purlin_evidence.os_word(other),
+                   purlin_evidence.os_word(here),
+                   purlin_evidence.os_word(other))
                 in output.splitlines()), output
-        assert 'Evidence is missing' not in output, output
+        assert 'evidence missing' not in output, output
         assert [(entry['id'], entry['result'])
                 for entry in _proofs(root, 'feat')] == [
             ('PROOF-1', 'pass'), ('PROOF-2', 'not run')], output
@@ -879,8 +880,8 @@ class TestAFailingSuiteStatesItsReason:
         _spec(root, 'feat')
         code, output = _run(root, '--all', '--test', '--arm-timeout', '1')
         assert code == 1, output
-        assert ('Evidence is missing: the pytest suite timed out after 1 s. '
-                'Run purlin:test --arm-timeout <seconds> to give it longer.'
+        assert ('pytest suite: evidence missing. It timed out after 1 s. Run '
+                'purlin:test --arm-timeout <seconds> to give it longer.'
                 in output.splitlines()), output
 
     # purlin: run_script PROOF-171
@@ -1660,8 +1661,8 @@ class TestEachRuleThatFailsOrHasNoTest:
             '    assert 1 == 2\n'))
         _spec(root, 'feat')
         _code, output = _run(root, '--all', '--test')
-        line = ('feat RULE-1 fails: tests/test_feat.py::test_no. Run '
-                'purlin:build feat.')
+        line = ('feat RULE-1: rule to fix. tests/test_feat.py::test_no '
+                'fails. Run purlin:build feat.')
         lines = output.splitlines()
         assert line in lines, output
         assert lines.index(line) < lines.index(
@@ -1674,11 +1675,37 @@ class TestEachRuleThatFailsOrHasNoTest:
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
                                     ('PROOF-2', 'RULE-1', '')))
         _code, output = _run(root, '--all', '--test')
-        line = 'feat RULE-1 has no test for PROOF-2. Run purlin:build feat.'
+        line = ('feat RULE-1: rule to write a test for. PROOF-2 has no '
+                'test. Run purlin:build feat.')
         lines = output.splitlines()
         assert line in lines, output
         assert lines.index(line) < lines.index(
             next(text for text in lines if text.startswith('Purlin status:')))
+
+    # purlin: run_script PROOF-343
+    def test_a_rule_with_no_proof_and_no_test_is_named_by_its_kind_alone(
+            self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat', rules=2)
+        _code, output = _run(root, '--all', '--test')
+        assert ('feat RULE-2: rule to write a test for. Run purlin:build '
+                'feat.') in output.splitlines(), output
+
+    # purlin: run_script PROOF-344
+    def test_a_rule_two_tests_fail_names_the_first_and_counts_the_other(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            '# purlin: feat PROOF-1\n'
+            'def test_a():\n'
+            '    assert 1 == 2\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_b():\n'
+            '    assert 1 == 3\n'))
+        _spec(root, 'feat')
+        _code, output = _run(root, '--all', '--test')
+        assert ('feat RULE-1: rule to fix. tests/test_feat.py::test_a and 1 '
+                'more fail. Run purlin:build feat.') in output.splitlines(), \
+            output
 
 
 class TestTheTwoCommits:
@@ -1816,7 +1843,7 @@ class TestSlowProofs:
         assert code == 0, output
         assert ('Left out 1 slow proof: feat PROOF-2. purlin:test --all runs '
                 'it when it is due.') in output.splitlines(), output
-        assert 'Evidence is missing' not in output, output
+        assert 'evidence missing' not in output, output
         assert not (root / 'started').exists()
         assert _proof(root, 'PROOF-2') == (
             'not run', 'tests/test_feat.py::test_slow')
@@ -2375,16 +2402,15 @@ class TestATestTheReportNamesDifferently:
     def test_both_names_are_shown(self, renamed_run):
         code, output = renamed_run
         assert code == 1, output
-        assert ('Evidence is missing: feat PROOF-1 at tests/feat.test.ts:1: '
-                'its test ran, and the report names it differently. The '
-                'title reads "adds two numbers" and the report reads "adds  '
-                'two numbers". Write the title as the report reads, then '
-                'run purlin:test.') in output.splitlines(), output
+        assert ('feat PROOF-1 (RULE-1): evidence missing. The report names '
+                'the test at tests/feat.test.ts:1 "adds  two numbers". Write '
+                'that as its title, then run purlin:test.'
+                ) in output.splitlines(), output
 
     # purlin: run_script PROOF-293
     def test_the_skipped_sentence_is_not_printed(self, renamed_run):
         _code, output = renamed_run
-        assert 'Check that its test ran and was not skipped' not in output
+        assert 'Check that it ran and was not skipped' not in output
 
 
 # ---------------------------------------------------------------------------

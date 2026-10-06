@@ -217,10 +217,12 @@ A run that stops before running anything writes nothing and names the command th
 
 A run names each rule where it reports the problem:
 
-- `<feature> <RULE-N> fails: <file>::<test>. Run purlin:build <feature>.`
-- `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`,
+- `<feature> <RULE-N>: rule to fix. <file>::<test> fails. Run purlin:build <feature>.`, or
+  `<file>::<test> and <n> more fail.` where more than one of its tests fails.
+- `<feature> <RULE-N>: rule to write a test for. <PROOF-N>[, <PROOF-M>...] has no test. Run purlin:build <feature>.`,
   where some of the rule's proofs have no test.
-- `<feature> <RULE-N> has no test. Run purlin:build <feature>.`, where none of them has one.
+- `<feature> <RULE-N>: rule to write a test for. Run purlin:build <feature>.`, where the rule
+  has no proof and no test.
 - `<feature> <ID>: test comment to correct. <file>:<line> names it, and no spec has it. Run purlin:build.`
 
 `scripts/review/ai_audit.py --rule` names a rule no spec has:

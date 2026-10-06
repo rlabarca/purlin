@@ -261,8 +261,8 @@ spec does not have. A run with either of the two that fail it exits 1, whatever
 its tests did.
 
 A run also prints `Markers: <n> tied to a test, <k> not tied.`, and ends with
-`Evidence is missing: ...` and exit code 1 when a suite left no report to
-read, or when a marker of a feature it covers has no `pass` or `fail`.
+a line of the kind `evidence missing` and exit code 1 when a suite left no
+report to read, or when a marker of a feature it covers has no `pass` or `fail`.
 
 ## Comments that are nearly a marker
 

@@ -80,7 +80,8 @@ the code and writes the specs that code already implies.
   `purlin:test --commit` it reads `not met`, because the results are not in git yet.
 - **`Sign-off: not signed`** means nobody has signed this code. Signing is optional.
 - **A failing test names its rule.** The run prints
-  `cart RULE-2 fails: tests/test_cart.py::test_sum. Run purlin:build cart.` and exits 1.
+  `cart RULE-2: rule to fix. tests/test_cart.py::test_sum fails. Run purlin:build cart.` and
+  exits 1.
 - **`Left to do` names the next command.** Its first line is the next step, such as
   `1 rule to fix: purlin:build`.
 - **A change puts a result out of date.** Change `src/cart.py` and the rules of `cart` are out

@@ -88,13 +88,18 @@ class TestTheShape:
     def test_every_kind_has_its_own_few_words(self):
         words = [text for _key, text in notices.KINDS]
         assert len(words) == len(notices.KINDS) > 0
-        assert all(2 <= len(text.split()) <= 5 for text in words), words
         assert len(set(words)) == len(words), words
         left = {kind: one for kind, one, _many, _command in summary.KINDS}
-        assert notices.WORDS['to_correct'] == left['to_correct'] == (
-            'test comment to correct')
-        assert notices.WORDS['to_repair'] == left['to_repair'] == (
-            'spec to repair')
+        shared = sorted(set(left) & set(notices.WORDS))
+        assert shared == ['no_test', 'to_correct', 'to_fix', 'to_repair']
+        assert {kind: notices.WORDS[kind] for kind in shared} == {
+            'no_test': left['no_test'], 'to_correct': left['to_correct'],
+            'to_fix': left['to_fix'], 'to_repair': left['to_repair']}
+        assert [notices.WORDS[kind] for kind in shared] == [
+            'rule to write a test for', 'test comment to correct',
+            'rule to fix', 'spec to repair']
+        assert all(2 <= len(text.split()) <= 5
+                   for kind, text in notices.KINDS if kind not in left), words
 
     # purlin: notices PROOF-4
     def test_a_proof_no_spec_gives_a_rule_is_named_without_one(self):

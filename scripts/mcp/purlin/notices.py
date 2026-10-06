@@ -9,8 +9,9 @@ What it is about comes first, as a person looks it up: `<spec> PROOF-N
 or an anchor, and the thing itself, a tag or a file, where the line is about
 no one spec. The kind is the same few words every time, and `KINDS` is the
 one list of them; where the status names that work under `Left to do`, the
-kind is that name. What is wrong is short, and the line ends on the command
-to run, or, where nothing is to be run, on what to do. A line is one line.
+kind is that name. What is wrong is short, and left out where the kind says
+it; the line ends on the command to run, or, where nothing is to be run, on
+what to do. A line is one line.
 
 `line` builds a line, as a `Notice`: the text, which every surface prints as
 it is, with what it is about, its kind and the spec, rule and proof it names
@@ -51,7 +52,13 @@ KINDS = (
     ('source_not_spec', 'anchor source not a spec'),
     ('spec_uncommitted', 'spec change not committed'),
     ('tree_dirty', 'changes not committed'),
-    # What a test run adds.
+    # What a test run adds: each rule of the features it ran that is left to
+    # do, under the name `Left to do` counts it by; each piece of evidence
+    # it could not take; and the proofs tagged for another system.
+    ('to_fix', 'rule to fix'),
+    ('no_test', 'rule to write a test for'),
+    ('evidence_missing', 'evidence missing'),
+    ('other_system', 'proofs not run here'),
     ('untied', 'test comment with no test'),
     ('title_unread', 'test title not read'),
     ('ambiguous', 'test name not unique'),
@@ -99,11 +106,13 @@ class Notice(str):
 def line(kind, about, wrong, do=None, feature=None, rule=None, proof=None):
     """`<about>: <kind>. <wrong> <do>` as a `Notice`.
 
-    `wrong` and `do` are whole sentences; `do` is left out where the line
-    says what to do nowhere else."""
-    text = '%s: %s. %s' % (about, WORDS[kind], wrong)
-    if do:
-        text += ' ' + do
+    `wrong` and `do` are whole sentences. `wrong` is left out where the
+    kind already says it, and `do` where the line says what to do nowhere
+    else."""
+    text = '%s: %s.' % (about, WORDS[kind])
+    for sentence in (wrong, do):
+        if sentence:
+            text += ' ' + sentence
     made = Notice(text)
     made.about = about
     made.kind = kind

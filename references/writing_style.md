@@ -71,7 +71,8 @@ package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" 
   proof, `<spec> RULE-N` for a rule, `<spec>` for a spec or an anchor, and the thing itself, a
   tag or a file, where the line is about no one spec.
 - **The kind** is 2 to 5 words, the same every time. Where the status names that work under
-  `Left to do`, the kind is that name: `test comment to correct`, `spec to repair`.
+  `Left to do`, the kind is that name: `test comment to correct`, `spec to repair`, `rule to fix`,
+  `rule to write a test for`.
 - **What is wrong** is short. A reworded proof shows the words that changed alone, each side
   cut to 8 words with ` ...`, or `was reworded` where the two wordings share too little. A rule
   or a proof is never printed whole.

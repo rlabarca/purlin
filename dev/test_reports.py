@@ -696,7 +696,7 @@ class TestThroughARun:
     def test_an_exit_suite_gives_each_file_its_exit_code(self, exit_run):
         root, code, out = exit_run
         assert code == 1
-        assert 'Evidence is missing' not in out, out
+        assert 'evidence missing' not in out, out
         assert _results(_evidence(root)) == {
             ('PROOF-1', 'tests/good.sh::good.sh'): 'pass',
             ('PROOF-2', 'tests/good.sh::good.sh'): 'pass',
@@ -782,8 +782,10 @@ class TestThroughARun:
         root = _silent_project(tmp_path, '.purlin/runtime/reports/pytest.xml')
         code, out = _run(root, '--all', '--test')
         assert code == 1
-        assert ('Evidence is missing: the pytest suite wrote no report at '
-                '.purlin/runtime/reports/pytest.xml.') in out
+        assert ('pytest suite: evidence missing. It wrote no report at '
+                '.purlin/runtime/reports/pytest.xml. Check the suite in '
+                '.purlin/config.json, then run purlin:test.'
+                ) in out.splitlines(), out
 
     @staticmethod
     def _names_nothing(tmp_path, marker):
@@ -864,9 +866,10 @@ class TestThroughARun:
         code, out = self._report_written(
             tmp_path, "mkdir -p .purlin/runtime/reports && "
                       "printf 'not xml' > {report}")
-        assert ('Evidence is missing: the pytest suite wrote a report at '
-                '.purlin/runtime/reports/pytest.xml that is not junit: '
-                'syntax error: line 1, column 0') in out, out
+        assert ('pytest suite: evidence missing. Its report at '
+                '.purlin/runtime/reports/pytest.xml is not junit. Check the '
+                'suite in .purlin/config.json, then run purlin:test.'
+                ) in out.splitlines(), out
         assert code == 1, out
 
 

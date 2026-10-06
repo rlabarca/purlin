@@ -12,7 +12,7 @@
 ## Rules
 
 - RULE-1: A warning, and a line of information, is one line reading `<what it is about>: <kind>. <what is wrong> <what to do>`, where what to do is `Run <command>.` wherever a command clears it
-- RULE-2: Every kind has 2 to 5 words of its own, the same in every line of that kind, and the kinds the status counts under `Left to do` use the words it uses there: `test comment to correct` and `spec to repair`
+- RULE-2: Every kind has words of its own, the same in every line of that kind: a kind the status counts under `Left to do` uses the words it uses there, `test comment to correct`, `spec to repair`, `rule to fix` and `rule to write a test for`, and every other kind has 2 to 5 words
 - RULE-3: A line about a proof names it `<spec> PROOF-N (RULE-N)`, with the rule the spec gives the proof, and `<spec> PROOF-N` where no spec gives it one
 - RULE-4: A test comment whose proof was reworded is named by the words that changed alone, `"<old words>" became "<new words>"`, the shortest run of words that differs, followed by the test's file and line and the commit that last changed the test; neither wording is printed whole
 - RULE-5: A word added or taken out is shown with the word on each side of it; a side of more than 8 words is cut to its first 8, followed by ` ...`; and where the two wordings share no word at either end, or the words that differ are more than 8 on both sides, the line says `was reworded` and quotes neither
@@ -22,7 +22,7 @@
 
 - PROOF-1 (RULE-1): A spec `login` carries `> Requires: api` and writes `RULE-2` twice; the status prints `login RULE-2: spec to repair. It is written twice, and the second is read. Run purlin:spec login.` and `login: line not read. Every anchor covers the whole project, so > Requires: is not read. Run purlin:spec login.`, each on a line of its own
 - PROOF-2 (RULE-1): A spec `login` whose scope names `src/gone.py`, a file git does not have, gives one line of information, `login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.`
-- PROOF-3 (RULE-2): Each kind's words hold 2 to 5 words and no two kinds share their words; the kind `to_correct` prints `test comment to correct` and `to_repair` prints `spec to repair`, the words `Left to do` prints for one of each
+- PROOF-3 (RULE-2): No two kinds share their words; the kinds `to_correct`, `to_repair`, `to_fix` and `no_test` print `test comment to correct`, `spec to repair`, `rule to fix` and `rule to write a test for`, the words `Left to do` prints for one of each, and every other kind's words hold 2 to 5 words
 - PROOF-4 (RULE-3): A test comment at `tests/test_login.py:1` names `login PROOF-9`, which the spec `login` does not have; the one comment named as naming nothing reads `login PROOF-9: test comment to correct. tests/test_login.py:1 names it, and no spec has it. Run purlin:build.`
 - PROOF-5 (RULE-4): In a git project, `login`'s `PROOF-1 (RULE-1)` reads `The package holds exactly the sixteen keys the rule names` when the test under the comment at `tests/test_login.py:1` is committed, and a later commit changes `sixteen` to `seventeen`; the command that lists the test comments to correct prints `login PROOF-1 (RULE-1): test comment to correct. "sixteen" became "seventeen" after tests/test_login.py:1 last changed (<sha7>). Run purlin:build login.`, `<sha7>` the test's commit, then `1 test comment to correct.`
 - PROOF-6 (RULE-4): In that project the line holds neither `The package holds` nor `keys the rule names`, and holds no line break
