@@ -1,6 +1,6 @@
 # Purlin documentation
 
-Ten guides, and the references behind them.
+Eleven guides, and the references behind them.
 
 Purlin shows, rule by rule, that your software does what you said it must. It keeps two
 things: the evidence of what your tests saw, and a person's sign-off over it. It shows them as
@@ -21,6 +21,7 @@ two facts:
 | [The sign-off](sign-off.md) | whoever signs | A person signs the evidence once, with `purlin:sign` |
 | [Regulated work](regulated.md) | QA and anyone who must show evidence | What the evidence holds, and where Purlin stops |
 | [The audit](audit.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |
+| [The research behind the audit](audit-research.md) | a reader who wants the evidence | The papers, the quotes and a trial behind the audit's design |
 | [The dashboard](dashboard.md) | everyone | The page that shows where every rule stands |
 | [Upgrading](upgrading.md) | a project set up with Purlin 0.9.5 | `purlin:init --update` and what it changes |
 
