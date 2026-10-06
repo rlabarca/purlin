@@ -300,7 +300,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-06T15:07:56Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -311,6 +311,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -319,6 +325,12 @@
           "test": "dev/test_purlin_version.py::test_the_version_file_holds_one_version"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-14",
           "manual": false,
@@ -327,6 +339,12 @@
           "test": "dev/test_purlin_version.py::test_a_letter_before_the_numbers_fails"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -335,6 +353,12 @@
           "test": "dev/test_purlin_version.py::test_a_copied_package_reports_the_version_file_beside_it"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -343,6 +367,12 @@
           "test": "dev/test_purlin_version.py::test_the_copied_server_names_that_version_on_the_handshake"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -351,6 +381,12 @@
           "test": "dev/test_purlin_version.py::test_a_project_init_sets_up_is_stamped_with_the_version_file"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -359,6 +395,12 @@
           "test": "dev/test_purlin_version.py::test_the_plugin_manifest_carries_the_version_file"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -367,6 +409,12 @@
           "test": "dev/test_purlin_version.py::test_this_repositorys_settings_carry_the_version_file"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -375,6 +423,12 @@
           "test": "dev/test_purlin_version.py::test_the_bump_writes_the_version_file_and_both_json_files"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
@@ -383,6 +437,12 @@
           "test": "dev/test_purlin_version.py::test_the_bump_moves_the_docs_examples_tag_and_the_check_names_its_drift"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -391,6 +451,12 @@
           "test": "dev/test_purlin_version.py::test_the_check_names_the_location_that_drifted"
         },
         {
+          "carried": {
+            "at": "2026-10-06T15:07:56Z",
+            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
