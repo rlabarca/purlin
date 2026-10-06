@@ -19,6 +19,7 @@ two facts:
 | [Running the tests](running-and-evidence.md) | a developer | `purlin:test` and the evidence it writes, `purlin:audit`, which results count for a sign-off, and testing on another system |
 | [Working together](working-together.md) | a team | What product, QA and developers each run and read, drift, what can collide, and more than one checkout |
 | [The sign-off](sign-off.md) | whoever signs | QA's path from criteria to a signature, the walk of `purlin:sign`, what the package and the sign-off record, and where Purlin's part ends beside a regulated system |
+| [Regulated work](regulated.md) | QA and anyone who must show evidence | Why the software ends up more tested, what the evidence holds, what a validation reader looks for, and where Purlin stops |
 | [The audit](audit.md) | anyone who asks whether the tests are sound | The heuristic spot tests, one planted bug per proof, a target such as 80% strong, and the research behind the approach |
 | [The dashboard](dashboard.md) | everyone | The page that opens from disk: the two facts, the board, one rule, both themes |
 | [Upgrading](upgrading.md) | a project set up with Purlin 0.9.5, or one missing a file setup writes | `purlin:init --update`, what each migration changes, and what it restores |
