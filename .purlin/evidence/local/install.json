@@ -36,38 +36,36 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T16:42:21Z",
         "bugs": {
           "PROOF-2": {
             "after": "claude plugin install purlin@purlin --scope user",
             "aim": "past the test",
             "before": "claude plugin install purlin@purlin --scope project",
-            "bug_key": "0bb7aaafa660897b80c440171ac23968c5c3c3fa889fd631bd841a5c66979fd9",
-            "case": "the pages' commands run in an empty project with the address swapped for this checkout; the proof says `purlin@purlin` is installed and enabled for that project; the changed getting-started page installs it at user scope, not for the project",
+            "bug_key": "694e51e73d042e6e75f3d36ee151566da716a093cda67de78ced9cfef4b4e753",
+            "case": "the install commands of docs/getting-started.md run in an empty project with the address swapped for this checkout; the proof says `purlin@purlin` is installed and enabled for that project; the changed code installs it at user scope, not for that project",
             "file": "docs/getting-started.md",
             "line": 40,
-            "result": "not run",
-            "why": "the test ended in an error, not a failure"
+            "result": "caught",
+            "why": ""
           }
         },
         "code_hash": "b4d3cf1798f313770e54dba3fc608cd30659f5a10bece7ac67b13df729a4ae38",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-2: the test reads purlin's entry and asserts it is enabled, its scope is `project` and its project path is the test's own project, then asserts `claude plugin list` prints `purlin@purlin` and `enabled`, which is what the proof names.",
-          "PROOF-2: the commands are run by the `installed` fixture, whose source is not shown, so the test's own lines do not show whether the commands of both pages are run or those of one page only.",
-          "PROOF-2: the check `'enabled' in shown.stdout` would also hold for another plugin's line, but the entry's assertions above it tie the enabled state to purlin.",
-          "Findings: none, and the test's body holds failable assertions on the values the proof names."
+          "PROOF-2: the test takes the install from a fixture, reads purlin's row and asserts it is enabled, that its scope is `project` and that its project path is the test's own project, then asserts `claude plugin list` prints `purlin@purlin` and `enabled`, which is what the proof names.",
+          "PROOF-2: the fixture's source is not shown, so the test's own lines do not say which pages' commands it runs; a page the fixture does not read could change its commands and the test would still pass.",
+          "PROOF-2: the check of `enabled` in the list's output is on the whole output and not on purlin's line, so another plugin's `enabled` would satisfy it; the row assertions above it cover purlin itself.",
+          "Findings: none, and the test asserts literal values on the result of a real install, so no spot test applies."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "A bug was planted for PROOF-2 and its test ended in an error, not a failure."
-        ],
+        "no_bug": [],
         "proof_hash": "e57d528e8f0555cdb911b8d10cb736c6d5cf37931ff4c1048222928e4d15b80c",
         "rule_hash": "8cdcdddd3cfa2b78b53478e6693b67ccaf1f794b4e271bea6df37cebe9c72367",
-        "test_hash": "077cfe794b77847e5fa8a167a471958b766c1f56526599f004eb87da80af08e7",
-        "verdict": "spot-checked"
+        "test_hash": "9c8561d6dbd5a2527ea0fc65a9239cd9d409038477f81342335b565b4ed04241",
+        "verdict": "strong"
       },
       "RULE-3": {
         "at": "2026-10-06T16:36:21Z",
@@ -130,39 +128,40 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T16:42:21Z",
         "bugs": {
           "PROOF-5": {
             "after": "claude plugin install purlin@purlin --scope user",
             "aim": "plain",
             "before": "claude plugin install purlin@purlin --scope project",
-            "bug_key": "ee18856d385b476940142fc2542cbcdb3ebe853fb292258d8446061d945f18bd",
-            "case": "the install of PROOF-2 run as the README gives it; the proof says the person's own list of installed plugins reads the same before and after; the changed command installs at user scope, so the person's own list gains purlin@purlin",
+            "bug_key": "83063c37cedae5abea8f732842626aa38213d372e52e566b6b4f154e1c054702",
+            "case": "the person's own installed plugins read before and after the install the pages give; the proof says the list is the same; the changed install line adds purlin at user scope, so the list after holds one more plugin",
             "file": "README.md",
             "line": 43,
-            "result": "not run",
-            "why": "the test ended in an error, not a failure"
+            "result": "caught",
+            "why": ""
           }
         },
         "code_hash": "b4d3cf1798f313770e54dba3fc608cd30659f5a10bece7ac67b13df729a4ae38",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-5: the test reads the person's own plugins and marketplaces after the install and compares each with the reading taken before it, so a plugin or marketplace added outside the project fails it, provided the install it runs is the one the README gives.",
-          "PROOF-5: the test deletes the project's base folder itself and then asserts the project folder is gone, so that assertion observes the test's own cleanup and nothing the install does.",
-          "PROOF-5: the rule also names the person's own Claude Code settings, and the test compares only the plugin and marketplace lists, so a change to another setting would pass.",
-          "PROOF-5: the proof names \"PROOF-2's install\" and \"the test's project folder\", which describe the test's arrangement and not what a person installing would see, and it names no literal value.",
-          "Findings: the spot tests found nothing, and the test's assertions are all failable comparisons against values taken before the install."
+          "PROOF-5: the test reads the person's own plugins and marketplaces after the install and compares each with the reading taken before it, which is the result the proof names.",
+          "PROOF-5: the test deletes the project's base folder itself and then asserts the project folder is gone, so that assertion holds whatever the install did and shows nothing about the software.",
+          "PROOF-5: the rule also names the person's own Claude Code settings, and neither the proof nor the test reads them, so a change to those settings alone would pass.",
+          "PROOF-5: the before reading and the install come from a fixture not shown, so whether the install runs exactly as the pages give it, and whether the reading is of the person's real Claude Code or a stand-in, cannot be judged from the test's own lines.",
+          "PROOF-5: the spot tests found nothing, which fits: the test asserts, its expected values come from an earlier reading and not from the same call, and the proof names no value in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "A bug was planted for PROOF-5 and its test ended in an error, not a failure."
+        "no_bug": [],
+        "notes": [
+          "PROOF-5 names \"the test's project folder\" and its deletion, which is the test's own cleanup and not something a user of the install would see."
         ],
         "proof_hash": "d2364744199fa7e2b8edd053f9d17e8380e3d8de5f83060f0ff8fd01edf7c113",
         "rule_hash": "27cea34e37f3b83147d38850d3c570dad136449fdf79fd4f16bad01dabfb23f1",
-        "test_hash": "8c0428a10606a2496991d6fd75890a844dbf2649b665cff279f9fd77d4178587",
-        "verdict": "spot-checked"
+        "test_hash": "64cf251a2e0f619d238a4b2f20dc49c96eeed358dda94625b7e4387d2dbf1dbd",
+        "verdict": "strong"
       }
     }
   },

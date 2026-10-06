@@ -138,7 +138,7 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T16:42:21Z",
         "bugs": {
           "PROOF-22": {
             "after": "    target = os.path.join(project_root, os.pardir, RUNTIME_DIR,\n                          _checkout_name(url) + '.src')",
@@ -163,36 +163,34 @@
             "why": ""
           },
           "PROOF-65": {
-            "after": "    return os.path.join(project_root, ANCHOR_DIR, name.replace('-', '_') + '.md')",
+            "after": "    _write(anchor_path(project_root, name.replace('-', '_')),\n           compose_copy(content, source_line, head))",
             "aim": "plain",
-            "before": "    return os.path.join(project_root, ANCHOR_DIR, name + '.md')",
-            "bug_key": "1554ee59979e3c738dcd76e55ed14e33a929bbfde61487e820eaac782d35780b",
-            "case": "the published anchor is added with `--name sample-age`; the proof says exit 0 and `specs/_anchors/sample-age.md` holds its rules; the changed code exits 0 and writes `specs/_anchors/sample_age.md`, so `sample-age.md` does not exist",
+            "before": "    _write(anchor_path(project_root, name),\n           compose_copy(content, source_line, head))",
+            "bug_key": "b513ce4648d9a7b2ab77e8d8dc999737ab2c9f503634b083d139d6c4750acc5d",
+            "case": "the published anchor added with --name sample-age; the proof says exit 0 and specs/_anchors/sample-age.md holds its rules; the changed code exits 0 and writes specs/_anchors/sample_age.md, so sample-age.md does not exist",
             "file": "scripts/anchor/upstream.py",
-            "line": 189,
+            "line": 348,
             "result": "caught",
             "why": ""
           }
         },
         "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-22: the test adds, publishes a new version and syncs, then compares the sorted listing of the folder around the project with the four names the proof gives, so any new entry there fails it.",
-          "PROOF-22: the test lists only the top level of that folder, so a file written inside `policies_work` or somewhere else on the machine would not be seen; the proof names the same narrow observation.",
-          "PROOF-61: the test compares the exit code `2`, the status `error` and the whole refusal message, checks that the anchor folder is empty and walks the folder around the project for `outside.md`, which is every result the proof names.",
-          "PROOF-65: the test compares the exit code `0`, the anchor folder's listing with `sample-age.md` and the presence of the line `- RULE-1: No eval() in source files` in that file, so a copy that lost any later rule would still pass.",
-          "The finding on PROOF-65 holds only in the letter: the test passes `'--name'` and `'sample-age'` as separate arguments and checks the file `sample-age.md`, so the joined text `--name sample-age` is absent from the file while the value is exercised and checked."
+          "PROOF-22: the test adds, advances the source and syncs, then compares the sorted listing of the folder around the project with the four entries the proof names, so a file written beside the project fails it; a file written deeper inside `policies_work` or another of those four folders would not be seen.",
+          "PROOF-61: the test reads the exit code `2`, the status `error` and the exact refusal message, checks that the anchor folder is empty and walks the folder around the project for any `outside.md`, which is everything the proof names.",
+          "PROOF-65: the test reads exit `0`, the name and path in the answer, the anchor folder holding only `sample-age.md`, and the file's two rule lines against literals, so it observes both results the proof names and leaves no way past it for a change to where or what `add` writes.",
+          "PROOF-65: the proof says the file \"holds its rules\" without naming them; the test supplies the two rule texts as literals of its own rather than taking them from the code.",
+          "Findings: none were reported, and nothing in the three tests matches a spot test's pattern."
         ],
-        "findings": [
-          "dev/test_upstream.py::test_a_name_holding_a_hyphen_is_added: the proof expects --name sample-age and the test never checks it."
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "121dce1658bdfd0d9ece340d0c0d5eb1d17a943b7e3e26f9fd04747037dd65de",
         "rule_hash": "e2564e80d4b0048daa40bf2f1662be2c06b4c69ae3b664b83775433782b8d41a",
-        "test_hash": "bc355261a2d87dc2d79f78834962eeaa52eccaae7d1973bde87f23c5bb644e08",
-        "verdict": "weak"
+        "test_hash": "8db3ac65dabdb4ee57be8005e90106f4bc75bc341465e4d8a6b86837c12ba651",
+        "verdict": "strong"
       },
       "RULE-23": {
         "at": "2026-10-06T15:44:24Z",
@@ -725,8 +723,8 @@
   "feature": "upstream",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:55:15Z",
-      "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+      "at": "2026-10-06T16:41:09Z",
+      "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -737,12 +735,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -751,12 +743,6 @@
           "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-46",
           "manual": false,
@@ -765,12 +751,6 @@
           "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -779,12 +759,6 @@
           "test": "dev/test_upstream.py::test_the_pin_is_the_full_head_sha_and_names_no_branch"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -793,12 +767,6 @@
           "test": "dev/test_upstream.py::test_with_no_name_the_anchor_is_named_after_its_file"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -807,12 +775,6 @@
           "test": "dev/test_upstream.py::test_tracking_lines_the_source_carried_give_way_to_this_projects"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -821,12 +783,6 @@
           "test": "dev/test_upstream.py::test_add_with_no_path_names_the_flag_and_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -835,12 +791,6 @@
           "test": "dev/test_upstream.py::test_a_path_the_source_does_not_hold_writes_no_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -849,12 +799,6 @@
           "test": "dev/test_upstream.py::test_add_refuses_a_repository_file_that_holds_no_rule"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -863,12 +807,6 @@
           "test": "dev/test_upstream.py::test_a_source_beginning_with_a_dash_is_refused_and_starts_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -877,12 +815,6 @@
           "test": "dev/test_upstream.py::test_an_ext_transport_source_is_refused_and_starts_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -891,12 +823,6 @@
           "test": "dev/test_upstream.py::test_a_repository_source_starts_git_and_writes_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -905,12 +831,6 @@
           "test": "dev/test_upstream.py::test_nothing_is_written_outside_the_project_root"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -919,12 +839,6 @@
           "test": "dev/test_upstream.py::test_a_name_that_leads_out_of_the_anchor_folder_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -933,12 +847,6 @@
           "test": "dev/test_upstream.py::test_a_name_holding_a_hyphen_is_added"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -947,12 +855,6 @@
           "test": "dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-48",
           "manual": false,
@@ -961,12 +863,6 @@
           "test": "dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -975,12 +871,6 @@
           "test": "dev/test_upstream.py::test_check_exits_0_when_the_pin_is_current"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-30",
           "manual": false,
@@ -989,12 +879,6 @@
           "test": "dev/test_upstream.py::test_check_exits_1_to_the_shell_when_a_pin_is_behind"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -1003,12 +887,6 @@
           "test": "dev/test_upstream.py::test_check_exits_2_when_the_source_is_gone"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-34",
           "manual": false,
@@ -1017,12 +895,6 @@
           "test": "dev/test_upstream.py::test_text_when_behind_names_the_sync_that_fixes_it"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -1031,12 +903,6 @@
           "test": "dev/test_upstream.py::test_check_names_an_anchor_with_a_source_and_no_pin"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -1045,12 +911,6 @@
           "test": "dev/test_upstream.py::test_check_names_the_source_that_could_not_be_read_and_the_fix"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -1059,12 +919,6 @@
           "test": "dev/test_upstream.py::test_json_when_behind_carries_both_shas"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-11",
           "manual": false,
@@ -1073,12 +927,6 @@
           "test": "dev/test_upstream.py::test_sync_advances_the_pin_and_names_the_rule_delta"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -1087,12 +935,6 @@
           "test": "dev/test_upstream.py::test_sync_says_so_when_only_the_prose_moved"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-50",
           "manual": false,
@@ -1101,12 +943,6 @@
           "test": "dev/test_upstream.py::test_sync_advances_the_pin_and_names_the_rule_delta"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-23",
           "manual": false,
@@ -1115,12 +951,6 @@
           "test": "dev/test_upstream_notes.py::test_a_sync_after_a_new_version_keeps_both_notes_once_and_in_order"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -1129,12 +959,6 @@
           "test": "dev/test_upstream.py::test_sync_makes_no_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -1143,12 +967,6 @@
           "test": "dev/test_upstream.py::test_check_reports_an_anchor_from_a_text_file_as_error"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -1157,12 +975,6 @@
           "test": "dev/test_upstream.py::test_sync_all_reports_the_text_file_anchor_and_syncs_the_others"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -1171,12 +983,6 @@
           "test": "dev/test_upstream.py::test_the_status_names_a_pin_behind_its_source_and_leaves_the_copy_as_it_was"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -1185,12 +991,6 @@
           "test": "dev/test_upstream.py::test_a_name_an_anchor_already_holds_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -1199,12 +999,6 @@
           "test": "dev/test_upstream.py::test_a_path_that_leads_out_of_the_source_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:55:15Z",
-            "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
