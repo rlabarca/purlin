@@ -1,4 +1,4 @@
-> Format-Version: 16
+> Format-Version: 17
 
 # Package format
 
@@ -10,8 +10,9 @@ for a reviewer who cannot open the repository. It holds, in this order:
 - what the audit found, and what is left to do;
 - who ran the tests, where and when;
 - every rule: its words, its proofs and its tests, each result on each
-  operating system, what the audit found, and who wrote and last changed the
-  rule, each proof and each test;
+  operating system, what the audit found, who wrote and last changed the
+  rule, each proof and each test, and the co-authors git names on those
+  commits;
 - every hand check.
 
 ```
@@ -166,7 +167,7 @@ A feature entry holds exactly these five fields.
 | `results` | array | one entry per evidence section that holds a result for the rule, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit last found for the rule, which may be out of date. Null where no audit has read it |
 | `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `passed` reads `checked at sign-off` for a rule whose every proof is `@manual`, until a sign-off that counts has noted it on its wording as it stands, and then `passed`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
-| `authors` | object | who wrote and last changed the rule, its proofs and its tests. See "Authors" |
+| `authors` | object | who wrote and last changed the rule, its proofs and its tests, and the co-authors those commits name. See "Authors" |
 
 Each `results` entry:
 
@@ -210,9 +211,24 @@ null.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `rule` | object | `{written_by, commit}`: the oldest commit whose diff adds the rule's words, whatever id they stood under, so a renumber does not move it |
-| `proofs` | array | `{id, written_by, written_commit, changed_by, changed_commit}` per proof: the commit that first wrote the proof's line, followed through each later edit of it, and the commit that last changed it |
-| `tests` | array | `{file, name, changed_by, changed_commit}` per test in `tests`: the newest commit that changed the lines from the test's comment to its last line, or any line of a file run whole |
+| `rule` | object | `{written_by, commit, co_authors}`: the oldest commit whose diff adds the rule's words, whatever id they stood under, so a renumber does not move it |
+| `proofs` | array | `{id, written_by, written_commit, written_co_authors, changed_by, changed_commit, changed_co_authors}` per proof: the commit that first wrote the proof's line, followed through each later edit of it, and the commit that last changed it |
+| `tests` | array | `{file, name, changed_by, changed_commit, changed_co_authors}` per test in `tests`: the newest commit that changed the lines from the test's comment to its last line, or any line of a file run whole |
+
+**Co-authors.** `co_authors`, `written_co_authors` and `changed_co_authors`
+are arrays of strings: the value of each `Co-Authored-By` trailer of the
+commit named beside it, as `git log --format='%(trailers:key=Co-authored-by,valueonly)'`
+gives it, whatever the case of the key's letters, in the order the commit
+holds them. A commit made with an AI's help usually ends on such a line:
+
+```
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+and its array reads `["Claude Opus 5.5 <noreply@anthropic.com>"]`. A commit
+with no such line, and a commit git cannot give, read `[]`. The package
+records what the commit holds. It does not say which co-author is an AI,
+and a commit an AI helped with that carries no such line reads `[]`.
 
 ### Hand checks
 

@@ -50,13 +50,16 @@ Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC 
 Signing 0.1.0 at 1cf829e.
   19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
   The audit: 17 strong, 1 weak.
+  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
 The audit's findings: 1 weak.
 ```
 
 There is one `Tests run by` line per run the results come from, this machine's first. Results
 `purlin:test --all` carried forward have a line of their own, `Carried forward from earlier runs
 by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.` The audit's
-line shows only where the audit read a rule.
+line shows only where the audit read a rule. The co-author line counts the last changes whose
+commit carries a `Co-Authored-By` line, as a commit made with an AI's help usually does; it
+records what git holds and judges nothing.
 
 ## Step 2: the refusals
 

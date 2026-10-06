@@ -34,10 +34,12 @@ import pytest
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 for _path in (os.path.join(ROOT, 'scripts', 'mcp'),
-              os.path.join(ROOT, 'scripts', 'review'), DEV):
+              os.path.join(ROOT, 'scripts', 'review'),
+              os.path.join(ROOT, 'scripts', 'export'), DEV):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+import package as purlin_package  # noqa: E402
 import sign as sign_module  # noqa: E402
 from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
@@ -1154,6 +1156,93 @@ class TestTheAuthors:
             commit_all(made)
             key(made.root)
             assert rule_of(signed_package(made), 'RULE-6')['authors'][
-                'rule'] == {'written_by': PAT, 'commit': pats}
+                'rule'] == {'written_by': PAT, 'commit': pats,
+                            'co_authors': []}
+        finally:
+            made.close()
+
+
+# What a commit made with an AI's help ends on, and one a person is named in,
+# its key in lower case.
+CLAUDE = 'Claude Opus 5.5 <noreply@anthropic.com>'
+QUINN_NAMED = 'Quinn <%s>' % QUINN
+
+
+def commit_with(made, subject, trailers, author=None):
+    """Commit everything under `subject`, the message ending on `trailers`."""
+    git(made.root, 'add', '-A')
+    args = ['-c', 'user.email=%s' % author] if author else []
+    done = git(made.root, *(args + ['commit', '-q', '-m', subject, '-m',
+                                    '\n'.join(trailers)]))
+    assert done.returncode == 0, done.stderr
+
+
+class TestTheCoAuthors:
+
+    # purlin: package PROOF-86
+    def test_a_proofs_last_change_names_its_commits_co_authors(self):
+        made = Project(spec=SPEC_WITHOUT_PROOF_1)
+        try:
+            made.spec(SPEC)
+            commit_all(made, 'spec(login): PROOF-1', author=QUINN)
+            made.spec(SPEC.replace('verify 200 and a token',
+                                   'verify 200 and a session token'))
+            commit_with(made, 'spec(login): reword PROOF-1',
+                        ['Co-Authored-By: %s' % CLAUDE,
+                         'co-authored-by: %s' % QUINN_NAMED], author=DANA)
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            passing(made)
+            commit_all(made)
+            key(made.root)
+            [proof] = rule_of(signed_package(made), 'RULE-1')['authors'][
+                'proofs']
+            assert proof['changed_by'] == DANA
+            assert proof['changed_co_authors'] == [CLAUDE, QUINN_NAMED]
+            assert proof['written_co_authors'] == []
+        finally:
+            made.close()
+
+    # purlin: package PROOF-87
+    def test_a_tests_last_change_names_its_commits_co_authors(self):
+        made = Project()
+        try:
+            write(os.path.join(made.root, 'tests', 'test_login.py'),
+                  TEST_FILE.replace('== 200', '== 200  # the token'))
+            commit_with(made, 'test(login): the token',
+                        ['Co-Authored-By: %s' % CLAUDE], author=DANA)
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            passing(made)
+            commit_all(made)
+            key(made.root)
+            package = signed_package(made)
+            found = {test['name']: test['changed_co_authors']
+                     for rule in ('RULE-1', 'RULE-2')
+                     for test in rule_of(package, rule)['authors']['tests']}
+            assert found == {'test_valid_credentials_return_200': [CLAUDE],
+                             'test_a_bad_password_is_denied': []}
+        finally:
+            made.close()
+
+    # purlin: package PROOF-88
+    def test_a_rule_names_the_co_authors_of_the_commit_that_wrote_it(self):
+        made = Project()
+        try:
+            made.spec(SPEC.replace(
+                '\n\n## Proof',
+                '\n- RULE-3: A locked account returns 423\n\n## Proof'))
+            commit_with(made, 'spec(login): RULE-3',
+                        ['Co-Authored-By: %s' % CLAUDE], author=PAT)
+            pats = made.head()
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            passing(made)
+            commit_all(made)
+            package = purlin_package.build(made.root, '2.1.0')
+            assert rule_of(package, 'RULE-3')['authors']['rule'] == {
+                'written_by': PAT, 'commit': pats, 'co_authors': [CLAUDE]}
+            assert rule_of(package, 'RULE-1')['authors']['rule'][
+                'co_authors'] == []
         finally:
             made.close()

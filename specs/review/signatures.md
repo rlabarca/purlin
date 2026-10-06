@@ -9,8 +9,8 @@
 >   package with it and writes the tag `signed/<version>`; later ones are added beside it.
 > Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py, scripts/mcp/purlin/facts.py
 > Stack: python/stdlib (json, subprocess), git signed commits, SSH keys
-> Highest-Rule: 142
-> Highest-Proof: 293
+> Highest-Rule: 143
+> Highest-Proof: 294
 
 ## Rules
 
@@ -51,6 +51,7 @@
 - RULE-140: The sign-off records whether the list holding those lines was opened as `audit_list_opened`, and the package holds each such sentence under its rule's audit `no_bug`
 - RULE-141: For results a run carried forward, the walk's opening line reads `Carried forward from earlier runs by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.`, naming who took them, on which machine, and the time and commit of the newest run among them
 - RULE-142: At a hand check's stop, a system's result line ends `; <PROOF-N> carried forward from <sha7>` for the proofs whose result a run carried forward, the proofs of one commit together, joined by `, `
+- RULE-143: The overview ends on one line counting the rules, the proofs and the tests whose last change, as the package's `authors` give it, names a co-author, `  A co-author is named on the last change of <n> rules, <n> proofs and <n> tests.`, a count of one reading `1 rule`, `1 proof` or `1 test` and a test tied to several proofs counted once, and the sign-off file records the three counts as `shown.overview.co_authors`
 
 ## Proof
 
@@ -148,3 +149,4 @@
 - PROOF-289 (RULE-140): With `login RULE-1` settled with its test unchanged, the walk answered `list`, `go on` and `y` signs; the sign-off records `audit_list_opened` true, and in the committed package `login RULE-1` reads `strong` and its `no_bug` is exactly `PROOF-1 was settled with its test unchanged: it was judged to assert what the proof names.`
 - PROOF-290 (RULE-141): Two rules' results were taken by `pat.product@labconnect.example` on `pat-laptop` at 08:05 UTC on 2026-09-30 at the commit `<c>`, and a later run carried them forward onto the commit being signed; the walk's first line reads `Carried forward from earlier runs by pat.product@labconnect.example on pat-laptop, the newest at 2026-09-30 08:05 UTC on <sha7 of c>: 2 rules on Linux/Unix.`, and its second `Signing <version> at <sha7>.`
 - PROOF-291 (RULE-142): `login RULE-2`, a hand check, has `PROOF-3`, whose result a run on `dana-laptop` carried forward from the commit `<c>`; the first line under `Results` at its stop reads `  Linux/Unix: passed on dana-laptop; PROOF-3 carried forward from <sha7 of c>`
+- PROOF-294 (RULE-143): The commit that last changed `test_valid_credentials_return_200` ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and no other commit of the project names a co-author; the walk, answered yes, prints `  A co-author is named on the last change of 0 rules, 0 proofs and 1 test.` within the four lines after `Signing 2.1.0 at <sha7>.`, and the sign-off file's `shown.overview.co_authors` reads `{"rules": 0, "proofs": 0, "tests": 1}`

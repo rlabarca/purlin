@@ -265,7 +265,9 @@ sign-off from its files and names `git fetch --tags`.
 - the version's tag is on other code;
 - the branch's copy on the host holds commits the checkout lacks.
 
-Otherwise it names who ran the tests, where and when, and shows an overview. Where a rule reads weak, or a proof was settled with its test unchanged, it offers the audit's findings as a list, the settled proofs after the weak rules' findings. It stops only at hand checks, where the signer
+Otherwise it names who ran the tests, where and when, and shows an overview, which ends on
+how many rules, proofs and tests were last changed in a commit that names a co-author, as a
+commit made with an AI's help usually does. Where a rule reads weak, or a proof was settled with its test unchanged, it offers the audit's findings as a list, the settled proofs after the weak rules' findings. It stops only at hand checks, where the signer
 may type what they saw; an empty answer is recorded as `no note`. What the audit found never
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.

@@ -5,13 +5,14 @@
 >   cannot open the repository. It is built from the evidence committed at the commit being
 >   signed, says first whether every rule's tests pass, carries the total, the count that pass,
 >   who ran the tests, where and when, what the audit found, what is left to do, every hand
->   check and who wrote and last changed each rule, proof and test, gives the same bytes for the
+>   check, who wrote and last changed each rule, proof and test and the co-authors git names on
+>   those commits, gives the same bytes for the
 >   same commit, and carries a fingerprint of itself. It is evidence handed to a regulated
 >   system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 38
-> Highest-Proof: 85
+> Highest-Rule: 39
+> Highest-Proof: 88
 
 ## Rules
 
@@ -39,6 +40,7 @@
 - RULE-35: The version is read from the `VERSION` file, `package.json`, `pyproject.toml` or the first `*.csproj` at the project's root, in that order
 - RULE-36: Each result carries `nothing_to_check`, one entry per proof whose every tied test skipped with a reason beginning `nothing to check:`, naming the proof and the reason
 - RULE-37: Each rule carries `authors`, read from git: who first wrote the rule's wording and in which commit, followed through a renumber; for each proof who first wrote it and who last changed it, with commits; and for each tied test who last changed it, with the commit
+- RULE-39: Beside each commit `authors` names, the package carries the values of that commit's `Co-Authored-By` trailers as git gives them, whatever the case of the key's letters, in the order the commit holds them, and `[]` where it holds none: `co_authors` for a rule, `written_co_authors` and `changed_co_authors` for a proof, `changed_co_authors` for a test
 
 ## Proof
 
@@ -89,3 +91,6 @@
 - PROOF-80 (RULE-22): A signed package is rewritten with every `\n` as `\r\n` and checked with `purlin:sign --check`; it exits 1 and prints only `The package does not match its fingerprint: the fingerprint matches the content, but the bytes are not in the canonical form.`
 - PROOF-82 (RULE-29): 3 rules pass their tests, 2 found `strong` by the audit and 1 never read, and a fourth rule's one proof is `@manual`; the package's `audit` reads `{"strong": 2, "weak": 0, "spot_checked": 0, "out_of_date": 0, "not_audited": 1}`
 - PROOF-83 (RULE-11): `login RULE-2`'s one proof is `@manual`, and its feature's committed section reads `RULE-2` `passed`; in the package each result of `RULE-2` reads `checked at sign-off`
+- PROOF-86 (RULE-39): `dana.dev@labconnect.example` rewords `PROOF-1` of `login` in a commit whose message ends on the lines `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and `co-authored-by: Quinn <quinn.qa@labconnect.example>`, the proof first written in a commit with no such line; in the signed package that proof reads `changed_co_authors` `["Claude Opus 5.5 <noreply@anthropic.com>", "Quinn <quinn.qa@labconnect.example>"]` and `written_co_authors` `[]`
+- PROOF-87 (RULE-39): The commit that last changed `test_valid_credentials_return_200` ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, and the commit that last changed `test_a_bad_password_is_denied` holds no such line; in the signed package the first test's `changed_co_authors` reads `["Claude Opus 5.5 <noreply@anthropic.com>"]` and the second's `[]`
+- PROOF-88 (RULE-39): `pat.product@labconnect.example` writes `RULE-3` of `login` in a commit that ends on `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; the package built over it reads `RULE-3`'s `authors.rule` as exactly `written_by` Pat's address, `commit` the full sha of Pat's commit and `co_authors` `["Claude Opus 5.5 <noreply@anthropic.com>"]`, and `RULE-1`'s `co_authors` as `[]`

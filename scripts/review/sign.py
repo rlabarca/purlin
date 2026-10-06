@@ -153,6 +153,10 @@ SIGNING_SETUP = (
 OVERVIEW = 'Signing %s at %s.'
 OVERVIEW_RULES = '  %s on %s: %s, %s.'
 OVERVIEW_AUDIT = '  The audit: %s.'             # summary.audit_words
+# What git holds of a co-author, such as an AI: the rules, the proofs and the
+# tests whose last change the package's `authors` give a co-author for.
+OVERVIEW_CO_AUTHORS = ('  A co-author is named on the last change of %s, %s '
+                       'and %s.')
 AUDIT_ASK = "The audit's findings: %s. list / go on: "
 AUDIT_SHOWN = "The audit's findings: %s."
 AUDIT_LIST = '  %s %s   %s'
@@ -754,13 +758,34 @@ def plan(package, notes=None):
         'systems': [dict(per_system[name], os=name)
                     for name in _systems(per_system)],
         'audit': ({key: audit.get(key) or 0 for key in keys}
-                  if audited else None)}
+                  if audited else None),
+        'co_authors': co_author_counts(rules)}
     return {'overview': overview, 'weak': weak, 'judged': judged,
             'stops': stops}
 
 
+def co_author_counts(rules):
+    """`{rules, proofs, tests}`: how many of each the package's `authors`
+    give a co-author for on the last change, a test counted once however
+    many proofs it is tied to. `rules` is `package_rules`' answer."""
+    counts = {'rules': 0, 'proofs': 0, 'tests': 0}
+    tests = set()
+    for _feature, rule in rules:
+        authors = rule.get('authors') or {}
+        if (authors.get('rule') or {}).get('co_authors'):
+            counts['rules'] += 1
+        counts['proofs'] += sum(1 for proof in authors.get('proofs') or ()
+                                if proof.get('changed_co_authors'))
+        tests.update((test.get('file'), test.get('name'))
+                     for test in authors.get('tests') or ()
+                     if test.get('changed_co_authors'))
+    counts['tests'] = len(tests)
+    return counts
+
+
 def overview_lines(info, shown):
-    """The run lines, then what is signed, the rules per system and the audit."""
+    """The run lines, then what is signed, the rules per system, the audit
+    and the last changes that name a co-author."""
     package = info['package']
     lines = package_module.run_lines(package)
     lines.append(OVERVIEW % (info['version'],
@@ -777,6 +802,11 @@ def overview_lines(info, shown):
     audit = shown['overview']['audit']
     if audit:
         lines.append(OVERVIEW_AUDIT % summary_module.audit_words(audit))
+    named = shown['overview']['co_authors']
+    lines.append(OVERVIEW_CO_AUTHORS % (
+        _count('1 rule', '%d rules', named['rules']),
+        _count('1 proof', '%d proofs', named['proofs']),
+        _count('1 test', '%d tests', named['tests'])))
     return lines
 
 

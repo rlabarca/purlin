@@ -1976,3 +1976,39 @@ class TestTheAgent:
         assert code == 1
         assert len(lines) == 1
         assert lines[0].startswith('The package does not match its fingerprint: ')
+
+
+# ---------------------------------------------------------------------------
+# What git holds of an AI's help
+# ---------------------------------------------------------------------------
+
+CLAUDE = 'Claude Opus 5.5 <noreply@anthropic.com>'
+
+
+class TestTheCoAuthors:
+
+    # purlin: signatures PROOF-294
+    def test_the_overview_counts_the_last_changes_that_name_a_co_author(self):
+        made = Project()
+        try:
+            write(os.path.join(made.root, 'tests', 'test_login.py'),
+                  TEST_FILE.replace('== 200', '== 200  # the token'))
+            git(made.root, 'add', '-A')
+            done = git(made.root, 'commit', '-q', '-m', 'test(login): the token',
+                       '-m', 'Co-Authored-By: %s' % CLAUDE)
+            assert done.returncode == 0, done.stderr
+            write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+            commit_all(made, 'chore: version')
+            passing(made)
+            commit_all(made)
+            key(made.root)
+            code, lines, _asked = walked(made, ['y'])
+            assert code == 0, lines
+            at = next(i for i, line in enumerate(lines)
+                      if line.startswith('Signing 2.1.0 at '))
+            assert ('  A co-author is named on the last change of 0 rules, '
+                    '0 proofs and 1 test.') in lines[at + 1:at + 5], lines
+            assert signed_off(made)['shown']['overview']['co_authors'] == {
+                'rules': 0, 'proofs': 0, 'tests': 1}
+        finally:
+            made.close()
