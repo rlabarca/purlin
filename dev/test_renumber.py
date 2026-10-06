@@ -439,8 +439,9 @@ class TestConflicts:
             'higher of 9 and 10.',
             'login: > Highest-Proof: 10 becomes 11.'], lines
         after = _read(root, SPEC).decode('utf-8').splitlines()
-        assert len([line for line in after
-                    if line.startswith('> Highest-Proof:')]) == 1, after
+        assert [line for line in after
+                if line.startswith('> Highest-Proof:')] == [
+            '> Highest-Proof: 11'], after
         # The one line left, at the place the conflict opened, line 6.
         assert [(number, line) for number, line in enumerate(after, 1)
                 if line.startswith('> Highest-Proof:')] == [

@@ -146,9 +146,10 @@ planted again, and the test run deciding.
 
 The status ends `The audit found 566 of 569 rules strong (99%): 566 strong, 3 spot-checked`,
 with the security anchor's 8 rules `spot-checked`, since no bug is planted for an anchor. Of
-about 142 bugs that got past a test, all but 5 were caught once the test held the value its
-proof names; 5 proofs were judged to assert it already and settled with their tests unchanged,
-of which 2 were then caught after their proof was sharpened. No code under test, page or rule
+140 planted bugs that got past a test, 136 were caught once the test held the value its proof
+names; 4 proofs were judged to assert it already and settled with their tests unchanged, of
+which 1 was then caught after its proof was sharpened. The spot tests flagged 2 more tests,
+both fixed. No code under test, page or rule
 was changed to clear a finding, and no strengthened test failed on the code as it stands.
 
 The three rules that read `spot-checked`:

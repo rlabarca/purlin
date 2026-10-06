@@ -302,21 +302,30 @@ one that raises the most flags on sound tests.
 
 ### On Purlin's own tests
 
-Purlin audited ten of its own specs.
+Purlin audited every one of its own specs: 577 rules, of which 569 can read `strong`.
 
-- **The first audit found 28 rules weak, with 35 surviving bugs.**
-- **33 findings held.** Each bug was put in by hand and its test read against the proof. Each
-  of the 33 tests was strengthened until it failed with its bug in place.
-- **2 findings were wrong.** For one, the AI named a wrong result for the changed code: the
-  code still gave what the proof says. For the other, the bug sat on a path no run
-  reaches.
-- **12 proofs were too loose.** Each named too little for a test to be held to it, and each
-  got a sharper sentence.
-- **A second audit aimed new bugs past the stronger tests and found 14 rules weak.**
+- **The first read found 115 rules weak, about 1 in 5.** 137 planted bugs got past a test, and
+  the spot tests flagged 2 more tests.
+- **136 of 140 findings held.** Each test was given the value its proof names, the same bug was
+  planted again, and the test failed on it. 3 of the 140 came from a later read, aimed past
+  tests already made stronger.
+- **4 tests already checked what their proof names.** Each was left as it was, with that
+  judgment recorded. A second bug got past each of them too, so those proofs hold no caught
+  bug.
+- **5 proofs were sharpened** to say exactly what their tests check. A new bug then got past 3
+  of them, and each of those tests was strengthened again.
+- **No strengthened test failed on the code as it stood.** Every finding was a gap in a test.
+  None was a defect in the code.
+- **It ended at `566 of 569 rules strong (99%)`.** The other 3 read `spot-checked`: one proof
+  needs Windows, one has no change that would break it, and one is among the 4 above.
 
-A new bug aimed past each stronger test finds a new gap, so auditing again does not end at zero
-in one pass. So a finding is settled against the bug the test missed, and a wrong finding is
-replaced once.
+The tests that hold pages and printed lines were the weakest: a test that looks for a word
+passes when the sentence says the opposite, and a test that reads part of a line passes when
+the line is printed twice.
+
+A new bug aimed past each stronger test can find a new gap, so auditing again does not end at
+zero in one pass. So a finding is settled against the bug the test missed, and a wrong finding
+is replaced once. Each of these tests was strengthened after its bug was seen.
 
 ### Why plant a bug at all
 
