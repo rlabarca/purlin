@@ -44,9 +44,9 @@ work.
 | The requirement | the rule in its own words, with your requirement number if you wrote one into it |
 | The test case | each proof, with its expected result |
 | The test | its file and name |
-| The execution | pass or fail, the commit, the time, the machine, the operating system, who ran it |
+| The execution | pass or fail, the commit, the time, the machine, the operating system, who ran it, and what the test tool reported |
 | The strength of the test | what the audit found, and the bug a test missed |
-| The authors | who wrote and last changed each rule, proof and test, read from git |
+| The authors | who wrote and last changed each rule, proof and test, and any co-author git names on those commits, such as an AI |
 | The sign-off | who signed, when, with which key, what they were shown, every note they typed |
 
 The package carries a fingerprint, so anyone can check a copy is unchanged:
@@ -118,8 +118,10 @@ records that your own process can use.
   with its rules.
 - **The run you release on.** A full run carries forward results for code that did not
   change. For a version meant for release, run every test: `purlin:test --clean --commit`.
-- **What was observed.** A result is pass or fail. Where you need the value a test saw, keep
-  the test's own log with the package.
+- **What was observed.** The evidence keeps what the test tool reported for each test: its
+  outcome, how long it took, and the whole failure text where it failed. For a signed version
+  the tool's report file is committed with the package. Sign on the machine that ran the
+  release run, since the report is kept there.
 
 ## The workflow, step by step
 

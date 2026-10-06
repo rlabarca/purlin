@@ -63,6 +63,8 @@ Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC 
 Signing 0.1.0 at 1cf829e.
   19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
   The audit: 17 strong, 1 weak.
+  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
+  Test reports kept with the package: 1 of 1.
 The audit's findings: 1 weak. list / go on: 
 login RULE-2   hand check
 Rule
@@ -145,6 +147,10 @@ The package matches its fingerprint.
 
 For a file changed after it was written, it prints
 `The package does not match its fingerprint: <why>.` and exits 1.
+
+The first sign-off also commits the test tool's reports this machine still holds, beside the
+package. The check says how many are there and unchanged:
+`Reports beside the package that match their sha256: 1 of 1.`
 
 A sign-off file is not checkable alone. The signed commit that added it binds the sign-off,
 the package and the code.

@@ -131,8 +131,8 @@ other page points here rather than defining it again.
   a spec reads `failed` with the reason, and a sign-off is refused until it is fixed.
 - **evidence package**: one data file describing one version of the code,
   `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results and what
-  the audit found, who ran the tests, who wrote and last changed each rule, proof and test, the
-  hand checks, the counts, what is left, and a fingerprint of its own bytes. `purlin:sign` builds
+  the audit found, who ran the tests, what the test tool reported for each test, who wrote and last changed
+  each rule, proof and test with the co-authors git names, the hand checks, the counts, what is left, and a fingerprint of its own bytes. `purlin:sign` builds
   it from the committed evidence and commits it with the first sign-off. It is what a person
   hands to a regulated document and sign-off system.
 - **sign-off**: one person's signature over an evidence package, a file in a signed commit; the

@@ -115,6 +115,10 @@ found.
 **What a result records.** Each section names the commit of the code it describes, the time,
 who ran it and the machine. It holds each rule's word, and each proof's result with its test:
 `pass`, `fail`, `missing`, `not run` or `nothing to check`.
+
+It also keeps what the test tool reported for each test: its outcome, how long it took and,
+where it did not pass, the whole failure text. The tool's report file stays on the machine
+that ran it, so a sign-off can commit it.
 [evidence_format.md](../references/formats/evidence_format.md) holds every field.
 
 **A run writes the evidence, and `--commit` commits it.** It makes two commits under your own
