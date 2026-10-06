@@ -522,8 +522,9 @@ def _run_tests(copy, feature, proof_id, tests, timeout):
 def _others_left_out(suite, files, scan, feature, proof_id):
     """The option that leaves out of one suite's run every marked test of
     `files` that is not the proof's own, or '' where the suite's tool cannot
-    leave a test out by name: the whole file then runs, and only the proof's
-    own tests are read (planted_bug RULE-26)."""
+    leave a test out by name: the whole file then runs. A test the tool
+    cannot leave out without one of the proof's own going with it is
+    started. Only the proof's own tests are read (planted_bug RULE-26)."""
     from purlin import frameworks as frameworks_module
     own, others = [], []
     for path in files:

@@ -209,9 +209,9 @@ setting, after the files it names, or at its end where it names none.
 
 | Framework | How the test is left out |
 |-----------|--------------------------|
-| pytest | `--deselect <file>::<test>`, one per slow test |
+| pytest | `--deselect <file>::<test>`, one per slow test. pytest reads it as the start of a name, so a slow test whose name is the start of another test's name in the same file, as `test_login` is of `test_login_locked`, is started |
 | vitest, jest | `--testNamePattern`, with a pattern every title but the slow tests' matches. Both match a title in every file, so a slow test that shares its full title with a test that is not slow is started |
-| dotnet | `--filter`, with `FullyQualifiedName!=<namespace>.<class>.<method>` for each slow test, joined by `&`. A test NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`, cannot be named by one filter, so it is started |
+| dotnet | `--filter`, with `FullyQualifiedName!=<namespace>.<class>.<method>` for each slow test, joined by `&`. A test NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`, cannot be named by one filter, so it is started. The filter compares names without regard to case, so a slow test named as another test but for case, as `ChecksOut` and `checksout`, is started |
 | go | `-skip`, with the slow tests' names; needs Go 1.20. It matches a name in every package, so a slow test that shares its name with a test that is not slow in another package is started |
 | sql, shell, any `exit` suite | the file is the test, and a slow file is not run |
 
@@ -221,7 +221,7 @@ In five cases a slow test is started all the same:
 - the test is one NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`;
 - the command already carries that option;
 - the command names no `{files}` and pipes, chains or redirects;
-- the slow test shares its title or name with another test, as the table says.
+- the tool's option would leave another test out with the slow one, as the table says.
 
 The run says so in one line, as in
 `Started 1 slow test in the e2e suite: its command gives Purlin no way to leave one test out.`

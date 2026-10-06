@@ -325,6 +325,12 @@ def tool_of(suite):
     return None
 
 
+def _pytest_id(path, test):
+    """A Python test's id as pytest names it: its file, its classes and its
+    name, joined by `::`."""
+    return '%s::%s' % (path, test.qualified('::'))
+
+
 def _js_title(test):
     """A JavaScript test's full title as jest and vitest match it: the
     `describe` titles and its own, joined by one space."""
@@ -362,6 +368,14 @@ def leave_out(suite, slow, others=()):
     not one of `_TOOLS`, the command already carries the option or cannot
     take one at its end, the option would leave out a test of `others` as
     well, or the test is one NUnit names row by row.
+
+    Each tool matches the name it is handed in its own way, and a test is
+    held only where that match reaches no test of `others`: pytest reads
+    `--deselect` as the start of an id, so a test whose id starts another's
+    is started; jest and vitest match a pattern against the full title in
+    every file; `go test -skip` matches a name in every package; `dotnet
+    test --filter` with `!=` matches the whole name without regard to case,
+    so a test named as another but for case is started.
     """
     slow = list(slow)
     if not slow:
@@ -378,10 +392,18 @@ def leave_out(suite, slow, others=()):
         return '', [], slow
     import shlex
     if tool == 'pytest':
-        held = slow
-        option = ' '.join('--deselect %s' % shlex.quote(
-            '%s::%s' % (path, test.qualified('::'))) for path, test in held)
-        return option, held, []
+        # `--deselect` leaves out every test whose id starts with the one it
+        # is given, so a test whose id starts another test's would take that
+        # one out with it.
+        taken = [_pytest_id(path, test) for path, test in others]
+        held, started = [], []
+        for path, test in slow:
+            name = _pytest_id(path, test)
+            shared = any(other.startswith(name) for other in taken)
+            (started if shared else held).append((path, test))
+        option = ' '.join('--deselect %s' % shlex.quote(_pytest_id(path, test))
+                          for path, test in held)
+        return option, held, started
     if tool in ('vitest', 'jest'):
         # Both match a pattern against the full title, whatever the file,
         # so a test of the same title elsewhere would be left out with it.
@@ -401,8 +423,13 @@ def leave_out(suite, slow, others=()):
     if tool == 'dotnet':
         # NUnit names a `[TestCase]` test once per row, with the row's
         # arguments after the method's name, so no one name leaves it out.
-        held = [(path, test) for path, test in slow if not test.rows]
-        started = [(path, test) for path, test in slow if test.rows]
+        # `--filter` compares a name without regard to case, in every test
+        # project, so a test named as another but for case goes with it.
+        taken = {_dotnet_name(test).lower() for _path, test in others}
+        held, started = [], []
+        for path, test in slow:
+            shared = _dotnet_name(test).lower() in taken
+            (started if shared or test.rows else held).append((path, test))
         if not held:
             return '', [], started
         names = sorted({_dotnet_value(_dotnet_name(test))

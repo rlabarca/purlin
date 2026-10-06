@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 119
-> Highest-Proof: 326
+> Highest-Proof: 329
 
 ## Rules
 
@@ -149,6 +149,9 @@
 - PROOF-277 (RULE-105): With one slow test in each, the commands a plain run starts carry pytest's `--deselect tests/test_cart.py::TestCart::test_checkout`, vitest's and jest's `--testNamePattern '^(?!(?:.* )?(?:cart checks out)$)'`, dotnet's `--filter 'FullyQualifiedName!=Shop.Tests.CartTests.ChecksOut'` and go's `-skip '^(?:TestCheckout)$'`, and a shell suite's slow file is not among the files it runs
 - PROOF-278 (RULE-105): The suite `runner` runs `python3 run.py {files} --junitxml={report}`, a script that calls the test tool; `--feature feat --test` writes the slow test's file `started`, prints `Started 1 slow test in the runner suite: its command gives Purlin no way to leave one test out.`, and the evidence lists PROOF-2 as `pass`
 - PROOF-285 (RULE-105): A slow test declared under `[TestCase(1)]` in a dotnet suite is started: the command the run starts for that suite carries no `--filter`, and the run prints `Started 1 slow test in the dotnet suite: its command gives Purlin no way to leave one test out.` and no `Left out` line
+- PROOF-327 (RULE-105): `feat`'s slow PROOF-2 has the pytest test `test_slow`, and the test of PROOF-1 beside it is named `test_slow_start`; `--feature feat --test` exits 0, lists PROOF-1 as `pass` under `tests/test_feat.py::test_slow_start`, writes the slow test's file `started`, and prints `Started 1 slow test in the pytest suite: its command gives Purlin no way to leave one test out.`
+- PROOF-328 (RULE-105): `feat`'s slow PROOF-2 has the pytest test `test_ok_slow`, and the test of PROOF-1 beside it is named `test_ok`; `--feature feat --test` starts pytest with `--deselect tests/test_feat.py::test_ok_slow`, writes no `started` file, and the evidence lists PROOF-1 as `pass` under `tests/test_feat.py::test_ok` and PROOF-2 as `not run`
+- PROOF-329 (RULE-105): A dotnet suite's class `CartTests` holds the slow test `ChecksOut` and the test `checksout` of a proof that is not slow; the command a plain run starts for that suite carries no `--filter`, and the run prints `Started 1 slow test in the dotnet suite: its command gives Purlin no way to leave one test out.` and no `Left out` line
 - PROOF-279 (RULE-106): In a git checkout, after `--all --test` passes `feat`'s slow PROOF-2, `--feature feat --test` with nothing changed writes no `started` file again, the evidence still lists PROOF-2 as `pass`, and RULE-2's passed cell reads `passed`
 - PROOF-280 (RULE-106): In that checkout, after `src/feat.py` is then changed, `--test` with no feature named selects `feat`, the evidence lists PROOF-2 as `not run`, and the run ends on `  1 slow proof to run: purlin:test --all`
 - PROOF-281 (RULE-106): In a git checkout, `--all --test --commit` passes `feat`'s slow `PROOF-2` at the commit `<c>`; `README.md`, which no scope names, is changed and committed; `--feature feat --test --commit` runs; the evidence lists `PROOF-2` as `pass` with `carried` naming the commit `<c>`, and the section's own `commit` is the new one

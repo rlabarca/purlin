@@ -1862,6 +1862,47 @@ class TestSlowProofs:
         assert (root / 'ran.txt').read_text(encoding='utf-8').split() == [
             'fast'], output
 
+    @staticmethod
+    def _two_names(tmp_path, slow, ordinary):
+        """The slow project with its two tests named `slow`, the test of the
+        slow PROOF-2, and `ordinary`, the test of PROOF-1."""
+        root = _slow_project(tmp_path)
+        (root / 'tests' / 'test_feat.py').write_text(
+            SLOW_BODY.replace('def test_slow():', 'def %s():' % slow)
+            .replace('def test_ok():', 'def %s():' % ordinary),
+            encoding='utf-8')
+        return root
+
+    # purlin: run_script PROOF-327
+    def test_a_slow_test_whose_name_starts_another_tests_name_is_started(
+            self, tmp_path):
+        root = self._two_names(tmp_path, 'test_slow', 'test_slow_start')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert _proof(root, 'PROOF-1') == (
+            'pass', 'tests/test_feat.py::test_slow_start')
+        assert (root / 'started').exists()
+        lines = output.splitlines()
+        assert ('Started 1 slow test in the pytest suite: its command gives '
+                'Purlin no way to leave one test out.') in lines, output
+        assert not any(line.startswith('Left out') for line in lines), output
+        assert '--deselect' not in output, output
+
+    # purlin: run_script PROOF-328
+    def test_a_slow_test_whose_name_another_tests_name_starts_is_left_out(
+            self, tmp_path):
+        root = self._two_names(tmp_path, 'test_ok_slow', 'test_ok')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        (running,) = [line for line in output.splitlines()
+                      if line.startswith('Running pytest: ')]
+        assert ' --deselect tests/test_feat.py::test_ok_slow ' in running
+        assert not (root / 'started').exists()
+        assert _proof(root, 'PROOF-1') == ('pass',
+                                           'tests/test_feat.py::test_ok')
+        assert _proof(root, 'PROOF-2') == (
+            'not run', 'tests/test_feat.py::test_ok_slow')
+
     # purlin: run_script PROOF-278
     def test_a_command_that_cannot_leave_a_test_out_starts_it_and_says_so(
             self, tmp_path):
@@ -1999,6 +2040,40 @@ class TestSlowProofs:
         assert started[:3] == ['test', '--logger', 'trx'], output
         assert '--filter' not in started, started
         assert not any('FullyQualifiedName' in word for word in started)
+        lines = output.splitlines()
+        assert ('Started 1 slow test in the dotnet suite: its command gives '
+                'Purlin no way to leave one test out.') in lines, output
+        assert not any(line.startswith('Left out') for line in lines), output
+
+
+    # purlin: run_script PROOF-329
+    def test_a_slow_dotnet_test_named_as_another_but_for_case_is_started(
+            self, tmp_path):
+        dotnet = dict(frameworks.entry_for('dotnet'),
+                      run='bash ./dotnet test --logger trx '
+                          '--results-directory {report}')
+        root = _project(tmp_path, tests=[dotnet])
+        # A stand-in for the tool, which writes down how it was started.
+        _script(root / 'dotnet', 'printf \'%s\\n\' "$@" > started-with.txt\n')
+        (root / 'Shop.Tests').mkdir()
+        (root / 'Shop.Tests' / 'CartTests.cs').write_text(
+            'using Xunit;\n\n'
+            'namespace Shop.Tests\n{\n'
+            '    public class CartTests\n    {\n'
+            '        // purlin: feat PROOF-1\n'
+            '        [Fact]\n'
+            '        public void checksout() { }\n\n'
+            '        // purlin: feat PROOF-2\n'
+            '        [Fact]\n'
+            '        public void ChecksOut() { }\n'
+            '    }\n}\n', encoding='utf-8')
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', ' @slow')))
+        _code, output = _run(root, '--feature', 'feat', '--test')
+        started = (root / 'started-with.txt').read_text(
+            encoding='utf-8').split()
+        assert started[:3] == ['test', '--logger', 'trx'], output
+        assert '--filter' not in started, started
         lines = output.splitlines()
         assert ('Started 1 slow test in the dotnet suite: its command gives '
                 'Purlin no way to leave one test out.') in lines, output
