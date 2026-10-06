@@ -81,7 +81,7 @@
         "verdict": "strong"
       },
       "RULE-21": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T16:33:30Z",
         "bugs": {
           "PROOF-22": {
             "after": "    config = {'version': _read(PLUGIN_ROOT, 'VERSION').strip(),\n              'plugin': PLUGIN_ROOT,",
@@ -98,40 +98,27 @@
             "after": "# Purlin runtime: the test reports and the run log of pytest -cdev/pytest.ini, never committed",
             "aim": "past the test",
             "before": "# Purlin runtime: the test reports and the run log, never committed",
-            "bug_key": "03523cdfc806481c3217908f74005c3af6a323eb6bcf5d5b3bdbdad1663bbda5",
+            "bug_key": "e3362497afd78016decf317b67c2ec4decd6c94f2d2c519cb25ecfe24eaae5d5",
             "case": "init sets up a pytest project; the proof says no file holds a relative path starting `dev/`; the changed code writes `.gitignore` holding `-cdev/pytest.ini`, the relative path `dev/pytest.ini` attached to a `-c` option",
             "file": "templates/gitignore.purlin",
             "line": 1,
-            "result": "survived",
-            "test_key": "2887300c08c8cc1ebcbd9c8a13af9a0b7fdf0c25331b6e9a53f9844eaece46f7",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "909c0a8a208db212f34d0f1e7326cec84defde0f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-22: the test sets one pytest project up from the copy and one from the checkout, drops `.purlin/report-data.js` from both, and compares the two trees and the two masked outputs for equality, which is what the proof names.",
-          "PROOF-22: the expected tree and output come from the checkout's own run, as the proof asks, so a mistake both runs share is not seen by this test.",
-          "PROOF-22: how much of each file `tree` compares, and what `masked` hides, are in helpers not shown, so whether a difference in file contents or in a printed plugin path fails the test cannot be read from here.",
-          "PROOF-23: the test sets a project up, checks that some readable file exists, and checks every such file for `/dev/` once `/dev/null` is removed and for `dev/` or `dev\\` by a pattern.",
-          "PROOF-23: the pattern does not match a `dev/` that directly follows a letter, a digit, `_`, `.`, `/`, `\\` or `-`, so a relative path attached to a short option, such as `-cdev/pytest.ini`, passes.",
-          "PROOF-23: removing every `/dev/null` before the search also removes it from a longer path such as `/dev/nullable/x`, which then passes the first check.",
-          "PROOF-132: the test checks each readable file for the copy's path spelled both ways, as the proof names, but never checks that any file was read, so an empty project would pass.",
-          "Findings: the spot tests found nothing, and each of the three tests holds an assertion that can fail."
-        ],
-        "findings": [
-          "PROOF-23: the test still passes when templates/gitignore.purlin:1 reads \"# Purlin runtime: the test reports and the run log of pytest -cdev/pytest.ini, never committed\"",
-          "PROOF-23: the AI says this breaks: init sets up a pytest project; the proof says no file holds a relative path starting `dev/`; the changed code writes `.gitignore` holding `-cdev/pytest.ini`, the relative path `dev/pytest.ini` attached to a `-c` option"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-132 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "e65658008ef555a244405fc3f9f46a9cafe5016dcc51a876db85c93f298d32e4",
         "rule_hash": "dd720ef58678d01376d4a92b666261edb14e16148b86476c73bf9b2d9e717e87",
-        "test_hash": "02b8f209c3e25746b48527369495a177d7fa243c9ca9edb4ef4b7468ef822b29",
-        "verdict": "weak"
+        "test_hash": "0fa023165976ee714284099f2b6ae9a88b2589fa342463a9ab59eec00967714a",
+        "verdict": "strong"
       },
       "RULE-24": {
         "at": "2026-10-06T15:44:24Z",
@@ -703,8 +690,8 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:51:45Z",
-      "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+      "at": "2026-10-06T16:33:21Z",
+      "commit": "909c0a8a208db212f34d0f1e7326cec84defde0f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -715,12 +702,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -729,12 +710,6 @@
           "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_nothing_is_written_into_a_pytest_suite"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -743,12 +718,6 @@
           "test": "dev/test_init_scaffold.py::TestNothingInTheTests::test_a_runner_config_the_project_wrote_is_left_alone"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-108",
           "manual": false,
@@ -757,12 +726,6 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_what_appears_is_exactly_what_the_summary_wrote"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -771,12 +734,6 @@
           "test": "dev/test_init_scaffold.py::TestWhatInitWrites::test_a_second_run_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -785,12 +742,6 @@
           "test": "dev/test_init_scaffold.py::TestTheSettings::test_a_tests_setting_the_project_carries_is_kept"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
@@ -799,12 +750,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -813,12 +758,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_the_copy_sets_a_project_up_the_same_way"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-23",
           "manual": false,
@@ -827,12 +766,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_no_project_file_names_a_development_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-132",
           "manual": false,
@@ -841,12 +774,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -855,12 +782,6 @@
           "test": "dev/test_init_scaffold.py::TestNoHookIsInstalled::test_no_git_hook_is_written_at_all"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-112",
           "manual": false,
@@ -869,12 +790,6 @@
           "test": "dev/test_init_scaffold.py::TestNoHookIsInstalled::test_a_hook_someone_else_wrote_is_left_alone"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -883,12 +798,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_the_project_to_the_upgrade"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-177",
           "manual": false,
@@ -897,12 +806,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_update_hands_over_the_migrations_named_and_a_test_command"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-36",
           "manual": false,
@@ -911,12 +814,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_test_run_commits_the_work_then_its_evidence"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-119",
           "manual": false,
@@ -925,12 +822,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_sign_off_makes_a_signed_commit_naming_the_signer"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-93",
           "manual": false,
@@ -939,12 +830,6 @@
           "test": "dev/test_init_scaffold.py::TestRunCommitAndSignOff::test_the_first_sign_off_writes_the_signed_tag"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-37",
           "manual": false,
@@ -953,12 +838,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_python_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-94",
           "manual": false,
@@ -967,12 +846,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_typescript_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "macos",
           "id": "PROOF-95",
           "manual": false,
@@ -981,12 +854,6 @@
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_csharp_project_runs_its_marked_test"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -995,12 +862,6 @@
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_the_first_run_writes_the_readme"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-136",
           "manual": false,
@@ -1009,12 +870,6 @@
           "test": "dev/test_init_scaffold.py::TestTheEvidenceFolder::test_on_windows_the_readme_is_the_bytes_purlin_ships"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-153",
           "manual": false,
@@ -1023,12 +878,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_dashboard_page"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-154",
           "manual": false,
@@ -1037,12 +886,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_runtime_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-176",
           "manual": false,
@@ -1051,12 +894,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_the_gitignore_names_the_bytecode_cache"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-157",
           "manual": false,
@@ -1065,12 +902,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_with_no_answer_nothing_is_committed"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-158",
           "manual": false,
@@ -1079,12 +910,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_yes_commits_the_files_and_names_them"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-160",
           "manual": false,
@@ -1093,12 +918,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_project_with_no_commit_gets_setup_s_as_its_first"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-159",
           "manual": false,
@@ -1107,12 +926,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_file_already_staged_stays_out_of_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-174",
           "manual": false,
@@ -1121,12 +934,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_second_run_with_yes_commits_what_the_first_wrote"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-175",
           "manual": false,
@@ -1135,12 +942,6 @@
           "test": "dev/test_init_scaffold.py::TestTheCommit::test_a_tracked_gitignore_is_committed_by_the_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-31",
           "manual": false,
@@ -1149,12 +950,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_outside_a_repository_setup_refuses"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-128",
           "manual": false,
@@ -1163,12 +958,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_a_settings_file_that_cannot_be_read_stops_setup"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-161",
           "manual": false,
@@ -1177,12 +966,6 @@
           "test": "dev/test_init_scaffold.py::TestTheRefusals::test_git_refusing_leaves_the_files_staged_and_says_so"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-171",
           "manual": false,
@@ -1191,12 +974,6 @@
           "test": "dev/test_init_scaffold.py::TestTheQuestion::test_a_foreign_proof_adds_no_question_to_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-172",
           "manual": false,
@@ -1205,12 +982,6 @@
           "test": "dev/test_init_scaffold.py::TestTheSettings::test_the_settings_hold_version_and_an_empty_tests"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
@@ -1219,12 +990,6 @@
           "test": "dev/test_init_scaffold.py::TestTheQuestion::test_an_empty_project_is_asked_only_whether_to_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:51:45Z",
-            "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-178",
           "manual": false,
