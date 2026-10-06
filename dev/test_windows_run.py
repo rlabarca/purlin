@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import types
 
 import pytest
 
@@ -23,6 +24,9 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 
 import windows_run  # noqa: E402
+
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+from purlin import status as purlin_status  # noqa: E402
 
 WORKFLOW = os.path.join(ROOT, '.github', 'workflows', 'windows.yml')
 SHA = '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
@@ -37,6 +41,9 @@ NOT_COMMITTED = ('This checkout has changes that are not committed, so a run '
                  'would prove something other than what is here. Commit them, '
                  'then run python3 dev/windows_run.py again.')
 RUN_LIST = '[{"databaseId": 987}]'
+# One spec, so that the status of a test's project is a table with a row.
+LOGIN = ('# Feature: login\n\n## Rules\n\n- RULE-1: Signs a person in\n\n'
+         '## Proof\n\n- PROOF-1 (RULE-1): A right password signs in\n')
 
 
 # ---------------------------------------------------------------------------
@@ -126,19 +133,34 @@ class FakeProcesses(object):
 def test_a_green_run_pushes_watches_pulls_and_deletes(tmp_path, monkeypatch,
                                                       capsys):
     project = str(tmp_path / 'project')
-    os.makedirs(project)
+    os.makedirs(os.path.join(project, 'specs', 'app'))
+    with open(os.path.join(project, 'specs', 'app', 'login.md'), 'w',
+              encoding='utf-8') as handle:
+        handle.write(LOGIN)
     _gh_on_the_path(tmp_path, monkeypatch)
     fake = FakeProcesses()
-    monkeypatch.setattr(windows_run.subprocess, 'run', fake)
-    monkeypatch.setattr(windows_run, '_table',
-                        lambda project_root: 'the status table')
+    # The script's own processes are answered by the stand-in. The status it
+    # prints is the real one, read with the real `subprocess`.
+    monkeypatch.setattr(windows_run, 'subprocess', types.SimpleNamespace(
+        run=fake, DEVNULL=subprocess.DEVNULL,
+        SubprocessError=subprocess.SubprocessError))
 
     assert windows_run.windows_run(project) == 0
     assert fake.started == [PUSH, WATCH, PULL, DELETE]
     assert fake.cwds == [project] * 4
     printed = capsys.readouterr().out
     assert FAILED_ON_GITHUB not in printed
-    assert printed.rstrip().endswith('the status table')
+    # The output ends with the status table of this project: its first line,
+    # the row of its one spec, and every line of it down to the last.
+    table = purlin_status.sync_status(project).splitlines()
+    assert table[0].startswith('Purlin status: '), table
+    assert [line.split()[:2] for line in table
+            if line.startswith('login ')] == [['login', '1']], table
+    lines = printed.splitlines()
+    assert lines[-len(table):] == table, printed
+    assert lines[:-len(table)] == [
+        'Pushing feature-x as %s.' % RUN_BRANCH,
+        'Waiting for the windows.yml workflow on %s.' % RUN_BRANCH], printed
 
 
 # purlin: windows_run PROOF-2
@@ -155,11 +177,16 @@ def test_a_red_run_says_so_still_pulls_and_deletes_and_exits_1(
     project = make_repo(tmp_path / 'project')
     git(project, 'remote', 'add', 'origin', bare)
     git(project, 'checkout', '--quiet', '-b', 'feature-x')
+    # One spec, committed, so the status the script prints holds a row.
+    os.makedirs(os.path.join(project, 'specs', 'app'))
+    with open(os.path.join(project, 'specs', 'app', 'login.md'), 'w',
+              encoding='utf-8') as handle:
+        handle.write(LOGIN)
+    git(project, 'add', '-A')
+    git(project, 'commit', '--quiet', '-m', 'spec(login): one rule')
     head = git(project, 'rev-parse', 'HEAD').stdout.strip()
     run_branch = 'run/feature-x-%s' % head[:7]
     _gh_on_the_path(tmp_path, monkeypatch)
-    monkeypatch.setattr(windows_run, '_table',
-                        lambda project_root: 'the status table')
     monkeypatch.setattr(windows_run.time, 'sleep', lambda seconds: None)
     started = []
     real = subprocess.run
@@ -200,7 +227,19 @@ def test_a_red_run_says_so_still_pulls_and_deletes_and_exits_1(
         ['git', 'push', 'origin', '--delete', run_branch]], started
     printed = capsys.readouterr().out
     assert FAILED_ON_GITHUB in printed.splitlines()
-    assert printed.rstrip().endswith('the status table')
+    # The output ends with the real status table of this project, every line
+    # of it, and the failure line is the one line above it.
+    monkeypatch.setattr(windows_run.subprocess, 'run', real)
+    table = purlin_status.sync_status(project).splitlines()
+    assert table[0].startswith('Purlin status: '), table
+    assert [line.split()[:2] for line in table
+            if line.startswith('login ')] == [['login', '1']], table
+    lines = printed.splitlines()
+    assert lines[-len(table):] == table, printed
+    assert lines[:-len(table)] == [
+        'Pushing feature-x as %s.' % run_branch,
+        'Waiting for the windows.yml workflow on %s.' % run_branch,
+        FAILED_ON_GITHUB], printed
     # The pull and the delete did what they were started for.
     assert git(project, 'log', '-1', '--format=%s').stdout.strip() == (
         'purlin: evidence at %s' % head[:7])
@@ -235,13 +274,38 @@ def test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push(
     started = []
 
     def record(root, argv, **_kwargs):
+        # A push that got this far fails, so the run ends here and not after
+        # a minute of asking GitHub for a run.
         started.append(list(argv))
-        return 0
+        return 1
     monkeypatch.setattr(windows_run, '_run', record)
 
     assert windows_run.windows_run(project) == 1
     assert capsys.readouterr().out.splitlines() == [NOT_COMMITTED]
     assert started == [], 'a tree with uncommitted changes started %r' % started
+
+    # The one file is refused whichever way it is not committed: new and
+    # staged with `git add`, and a committed file changed on disk.
+    staged = make_repo(tmp_path / 'staged')
+    git(staged, 'remote', 'add', 'origin', str(tmp_path / 'github.git'))
+    with open(os.path.join(staged, 'staged.txt'), 'w',
+              encoding='utf-8') as handle:
+        handle.write('x\n')
+    git(staged, 'add', 'staged.txt')
+    assert git(staged, 'status', '--porcelain').stdout == 'A  staged.txt\n'
+    assert windows_run.windows_run(staged) == 1
+    assert capsys.readouterr().out.splitlines() == [NOT_COMMITTED]
+    assert started == [], 'a tree with a staged file started %r' % started
+
+    changed = make_repo(tmp_path / 'changed')
+    git(changed, 'remote', 'add', 'origin', str(tmp_path / 'github.git'))
+    with open(os.path.join(changed, 'README.md'), 'w',
+              encoding='utf-8') as handle:
+        handle.write('the project, changed\n')
+    assert git(changed, 'status', '--porcelain').stdout == ' M README.md\n'
+    assert windows_run.windows_run(changed) == 1
+    assert capsys.readouterr().out.splitlines() == [NOT_COMMITTED]
+    assert started == [], 'a tree with a changed file started %r' % started
 
 
 def test_any_argument_is_refused_with_one_line_and_nothing_starts(
@@ -310,6 +374,17 @@ def test_the_workflow_starts_on_a_run_branch_runs_on_windows_and_pushes_back():
             if any(re.search(r'scripts/run/purlin_run\.py"? --ci --commit$',
                              line) for line in step)]
     assert len(runs) == 1, steps
+    # The step runs the script: the line is a command of the step's `run:`,
+    # python started on the script and nothing before it, and no other line
+    # of the workflow names the script.
+    step = steps[runs[0]]
+    commands = step[step.index('run: |') + 1:]
+    command = re.compile(r'(?:python3?|py) "?(?:[^\s"]+/)?scripts/run/'
+                         r'purlin_run\.py"? --ci --commit')
+    ran = [line for line in commands if command.fullmatch(line)]
+    assert len(ran) == 1, commands
+    assert [line.strip() for line in lines if 'purlin_run.py' in line] == ran, \
+        lines
     after = steps[runs[0] + 1:]
     pushes = [step for step in after if 'if: always()' in step]
     assert len(pushes) == 1, after
