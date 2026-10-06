@@ -138,7 +138,7 @@ read what the person wants and run the command that serves it.
 | QA | "add a case for the empty basket", "this test does not prove it" | `purlin:spec` |
 | QA | "sign it off" | `purlin:sign` |
 | QA | "what changed that I need to check?" | `purlin:drift` |
-| QA | "what do we hand to the system of record?" | the evidence package `purlin:sign` committed; `purlin:sign --check <file>` checks it |
+| QA | "what do we file in the document control system?" | the evidence package `purlin:sign` committed; `purlin:sign --check <file>` checks it |
 
 A request that names no command still routes: "make sure nobody logs in with a blank
 password" is a rule, so it reaches `purlin:spec`, and the spec skill ends by offering the

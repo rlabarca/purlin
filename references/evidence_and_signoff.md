@@ -199,7 +199,7 @@ results come back with `git pull`, and count on the same terms as any other resu
 
 **Signing is logged, not policed.** Purlin keeps a record you can prove and trace: where the
 tests ran, what the signer was shown, and who signed the package. It does not decide who may
-sign; any role may, and several people may sign one version. The system of record decides who was
+sign; any role may, and several people may sign one version. The document control system decides who was
 entitled.
 
 **The evidence package** is one data file, `.purlin/evidence/package/<version>.json`
