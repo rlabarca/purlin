@@ -20,9 +20,10 @@ the `git push origin` command, and pushing is your act.
   proof already has while that result still counts.
 - `purlin:test --all` covers every feature: it starts every test, slow ones included, of each
   feature that changed or does not pass and of every anchor, and carries every other feature's
-  results forward.
+  results forward. Where an anchor's rule holds an audit entry, the spot tests then read it
+  again, with no model asked.
 - `purlin:test --clean` starts every test of every feature, slow ones included, and carries no
-  result forward.
+  result forward. It reads an audited anchor's rules again as `--all` does.
 - A test that also carries the comment of a proof that is not slow is started all the same. So
   is a slow test a suite's command cannot leave out, which the run names;
   `references/supported_frameworks.md` says how each test tool leaves a test out.

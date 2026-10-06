@@ -469,6 +469,14 @@ An anchor's rule covers the whole project. Its test is strong only when it check
 the project the rule speaks of, not a sample of them and not one feature's files. No bug is
 planted for an anchor, so its rule reads `spot-checked` where the spot tests find nothing.
 
+Any change to the project ends an anchor's audit result. `purlin:test --all` and
+`purlin:test --clean` keep it current: once the anchors' tests have run, the spot tests read
+again each rule of an anchor that passes its tests and holds an audit entry. No model is asked.
+The entry is written as the audit writes it, `spot-checked` with its reason or `weak` with the
+spot tests' findings, and the run prints
+`Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`
+An anchor's rule with no audit entry is left as it is: the audit is a person's to start.
+
 A rule no proof line names has no proof to read its test against, and the audit does not read
 it. Whether a proof line is there is all the status reads; what a proof is worth is the audit's
 question.

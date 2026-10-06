@@ -82,6 +82,8 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
   bug was caught is the test's own pass or fail.
 - **A result goes out of date.** When a rule, its proof, its test or the code it covers changes,
   the rule reads `out of date`, with its last result and date, until the audit reads it again.
+  An anchor covers the whole project, so any change ends its result. `purlin:test --all` runs
+  the spot tests over an audited anchor's tests again, so its result stays current.
 - **The AI is given no tools.** It is started with no tools, no plugins and none of your
   settings, in an empty folder. It can read and change nothing.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.

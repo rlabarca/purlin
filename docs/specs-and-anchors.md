@@ -327,6 +327,9 @@ settings file counts as it does for a feature: changing a test command in `.purl
 ends the results, and changing `version` alone does not.
 
 The audit plants no bug for an anchor's proof. The heuristic spot tests alone judge its tests.
+Once `purlin:audit` has read an anchor, `purlin:test --all` keeps that result current: after
+the anchor's tests it runs the spot tests over them again, with no AI asked, and prints
+`Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`
 
 A rule that cannot be checked across the whole project is not an anchor's. Write it in the spec
 of each feature that needs it, in that feature's words.

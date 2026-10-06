@@ -146,6 +146,12 @@ NO_SURVIVOR = '%s %s has no planted bug that survived: nothing to settle.'
 STILL_PASSES = ('%s: its test is as it was and still passes with the bug it '
                 'missed. Strengthen it with purlin:build.')
 
+# What a test run over every feature says once it has read the audited rules
+# of the anchors again with the spot tests alone: how many rules, then how
+# many of them read each word.
+ANCHORS_READ = ('Anchors: the spot tests read %s again. %d spot-checked, '
+                '%d weak.')
+
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
     (('.sh', '.bash', '.bats'), 'shell'), (('.sql',), 'SQL'),
@@ -843,6 +849,62 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
 
     say(share_line(project_root, payload, selected))
     return 0
+
+
+def read_anchors_again(project_root, features, selected):
+    """`ANCHORS_READ` filled, once the spot tests have read again each rule
+    of an anchor in `selected` that passes its tests and holds an audit
+    entry; None where there is no such rule.
+
+    What `purlin:test --all` and `--clean` call after the anchors' tests
+    ran. Any change to the project ends an anchor's audit entry, and no bug
+    is planted for an anchor's rule, so its audit is the spot tests alone:
+    no model is asked. Each entry is written as the audit writes an
+    anchor's, `spot-checked` with `ANCHOR` as its reason or `weak` with the
+    spot tests' findings. It keeps the `model` and the `criteria` of the
+    entry it replaces, and that entry's `explanation` and `notes` where the
+    rule, its proofs and its tests are as that entry read them. An anchor's
+    rule with no entry is left as it is: the audit is a person's to start.
+    """
+    anchors = {name for name in selected
+               if (features.get(name) or {}).get('is_anchor')}
+    if not anchors:
+        return None
+    payload = payload_module.build_payload(project_root, generated_by='run')
+    commit = head_commit(project_root)
+    cache, by_feature, words = {}, {}, []
+    for feature, rule in counted_rules(payload, anchors):
+        code = _code_part(project_root, features, feature, cache)
+        last = audit_entry(project_root, feature, rule, code)
+        if not last:
+            continue
+        reading = ai_audit.reading_for(project_root, payload, feature,
+                                       rule['id'])
+        spot = spot_tests(project_root, reading, set())
+        plan = bug_plan(reading, last, code)
+        bugs, survived, no_bug = planted_bugs(
+            project_root, reading, plan, [], last, {'parts': {}})
+        same = not {'rule', 'proof', 'test'} & set(
+            last.get('out_of_date') or ())
+        verdict = verdict_of(spot, survived, bugs)
+        words.append(verdict)
+        by_feature.setdefault(feature, {})[rule['id']] = \
+            evidence_writer.audit_entry(rule, {
+                'code_hash': code, 'verdict': verdict, 'findings': spot,
+                'no_bug': no_bug, 'bugs': bugs,
+                'explanation': last.get('explanation') if same else [],
+                'notes': last.get('notes') if same else [],
+                'model': last.get('model'),
+                'criteria': last.get('criteria')}, commit)
+    for feature, entries in sorted(by_feature.items()):
+        evidence_writer.write_audit(project_root, 'local', feature,
+                                    features.get(feature) or {}, entries)
+    if not words:
+        return None
+    return ANCHORS_READ % (
+        '1 audited rule' if len(words) == 1
+        else '%d audited rules' % len(words),
+        words.count('spot-checked'), words.count('weak'))
 
 
 def rule_lines(verdict, findings, no_bug):

@@ -15,8 +15,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 120
-> Highest-Proof: 332
+> Highest-Rule: 122
+> Highest-Proof: 338
 
 ## Rules
 
@@ -26,6 +26,8 @@
 - RULE-107: After a suggested `tests` setting the run asks `Write this tests setting to .purlin/config.json and commit that file? [y/N] `: `y`, `yes` or `--write-tests` writes the suggested entries as the `tests` setting, prints `Wrote the tests setting to .purlin/config.json.` and runs the tests; any other answer, an empty one or the end of input writes nothing
 - RULE-119: Where a `--test` or `--audit` run writes the suggested `tests` setting inside a git checkout, it commits `.purlin/config.json` alone, under the subject `purlin: specs, tests and settings`, before any test starts, and prints `Committed <sha7>, the work these results describe:` and `  .purlin/config.json`; the results it then writes name that commit, so committing them with `purlin:test --commit` leaves them recorded on this version of the code. Outside a git checkout it commits nothing and the run goes on
 - RULE-120: An `--audit` run with `--settle` starts the test of each slow proof of the rules it names with the feature's other tests and records its result as any result is recorded, so the rule is settled by that one run; the test of a slow proof of any other rule is left out and named as in any run
+- RULE-121: `--test` with `--all` or `--clean`, once the anchors' tests have run, reads again with the spot tests alone each rule of an anchor that passes its tests and holds an audit entry: no model is asked, the entry is written `spot-checked` with `No bug was planted: no bug is planted for an anchor's rule.` or `weak` with the spot tests' findings, and the run prints `Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w> weak.`, or `1 audited rule` for one
+- RULE-122: An anchor's rule that holds no audit entry is left with none by every test run, and a `--test` run without `--all` or `--clean` reads no anchor's rule again
 - RULE-63: The entries suggested are those of every tool found, in the order pytest, vitest, jest, dotnet, go, sql and shell: each the tool's own command with the flag that writes the report Purlin reads, the report's path under `.purlin/runtime/reports/`, its format and the globs its test files live under; on Windows the pytest command starts `py -3 -m pytest` in place of `python3 -m pytest`; the supported-frameworks page shows the same seven entries
 - RULE-88: A project whose `tests/` folder at the root holds, at any depth, a file named `test_*.py` is suggested pytest
 - RULE-83: The jest entry the run suggests names the test files a run hands it before its `--reporters` options, so jest reads each as a test file and none as a reporter
@@ -160,6 +162,12 @@
 - PROOF-330 (RULE-120): `feat`'s `RULE-2` keeps a bug as `survived` for its slow PROOF-2, whose test writes the file `started`; the test is changed to check the value `1`, the file is removed, and `--audit --feature feat --settle RULE-2` runs; it exits 0, the file `started` is written again, and the evidence lists PROOF-2 as `pass` under `tests/test_feat.py::test_slow`
 - PROOF-331 (RULE-120): `feat` has the slow PROOF-2 of `RULE-2` and the slow PROOF-3 of `RULE-3`, whose test writes the file `started-other`; `--audit --feature feat --settle RULE-2` prints `Left out 1 slow proof: feat PROOF-3. purlin:test --all runs it when it is due.` and writes no `started-other` file
 - PROOF-332 (RULE-120): The bug `VALUE = 2` kept for the slow PROOF-2 reads `survived`; its test is changed to check the value `1`, and `--audit --feature feat --settle RULE-2` runs; it prints `feat RULE-2   strong`, within the two lines under it `  PROOF-2: the test now catches the bug it missed at src/feat.py:1.`, and no `nothing to settle`
+- PROOF-333 (RULE-121): The anchor `shared` has two rules the audit read as `spot-checked`; `README.md` is changed and committed, and `--all --test` runs; it prints `Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`, starts `claude` `0` times, and both rules' strong cells read `spot-checked`
+- PROOF-334 (RULE-121): The test of `PROOF-2` of the audited anchor `shared` is changed to hold only `assert True`, and `--all --test` runs; it prints `Anchors: the spot tests read 2 audited rules again. 1 spot-checked, 1 weak.`, and the entry of `RULE-2` reads `weak` with the one finding `tests/test_shared.py::test_the_readme_holds_a_line: the check cannot fail: assert True.`
+- PROOF-337 (RULE-121): The anchor `shared` was audited, and `README.md` was then changed and committed; `--clean --test --commit` prints `Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`, leaves nothing uncommitted, and both rules' strong cells read `spot-checked`
+- PROOF-338 (RULE-121): The test of `PROOF-2` of the audited anchor `shared` is changed so that it fails, and `--all --test` runs; it exits 1, prints `Anchors: the spot tests read 1 audited rule again. 1 spot-checked, 0 weak.`, and the entry of `RULE-2` is as it was
+- PROOF-335 (RULE-122): The anchor `shared` has two passing rules and was never audited; `--all --test` exits 0, prints no line beginning `Anchors: `, and the evidence of `shared` holds no audit entry
+- PROOF-336 (RULE-122): The anchor `shared` was audited, and `README.md` was then changed and committed; `--feature shared --test` exits 0, prints no line beginning `Anchors: `, and both rules' strong cells read `out of date`
 - PROOF-98 (RULE-59): In a git checkout of `login` and `export` with committed evidence and nothing changed, `--clean --test` exits 0, prints no `Selected` line and no `Nothing to run` line, prints a line that begins `Running pytest: `, and the suite's report holds both tests, `test_export` and `test_login`
 - PROOF-308 (RULE-114): In a git checkout of `login` and `export`, each scoping one source file, whose evidence `--test --commit` committed, `src/login.py` is changed and committed; `--all --test --commit` exits 0, and the suite's report holds `test_login` alone
 - PROOF-309 (RULE-114): In that checkout `export`'s test is changed to fail and `--all --test --commit` exits 1; run again with nothing changed, it exits 1 and the suite's report holds `test_export` alone

@@ -93,6 +93,14 @@ the run names up to ten and says to commit them and run again
 (`uncommitted_lines`). A section's `commit` is the first of those
 commits where `--commit` made one, else `HEAD` when the run started.
 
+`--test` with `--all` or `--clean` also keeps an audited anchor current. Any
+change to the project ends an anchor's audit results, and no bug is planted
+for an anchor's rule, so once the anchors' tests have run the spot tests read
+again each rule of an anchor that passes and holds an audit entry, with no
+model asked (`audit_run.read_anchors_again`), and the run prints
+`Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w>
+weak.` An anchor never audited is left as it is.
+
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
 the audit (`scripts/review/audit_run.py`): the spot tests, the planted bugs
 and the model's reading, written into the same evidence file under `audit`,
@@ -1751,6 +1759,13 @@ def main(argv=None):
         # A run that carried every feature and found each section already
         # recorded on this commit wrote no file.
         print(evidence_writer.written_line(written))
+    if args.action == 'test' and args.all:
+        # A run over every feature has just run every anchor's tests: the
+        # spot tests read again each rule of an anchor audited before.
+        import audit_run
+        again = audit_run.read_anchors_again(project_root, features, selected)
+        if again:
+            print(again)
     if args.action == 'audit':
         # The tests ran on the selection; the audit reads every feature's
         # rules unless features were named.

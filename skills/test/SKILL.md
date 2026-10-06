@@ -81,6 +81,12 @@ slow proofs`, naming each; `references/purlin_commands.md` says what each run st
 status then lists `<n> slow proofs to run: purlin:test --all`. A plain run keeps an earlier slow
 result while nothing its spec covers changed, marked `carried`, and it counts like any other.
 
+With `--all` or `--clean`, once the anchors' tests have run, the spot tests read again each
+rule of an anchor that passes and holds an audit entry, with no model asked, and the run prints
+`Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w> weak.` A rule that
+reads `weak` there is listed under `Left to do` as a rule to strengthen. An anchor never
+audited is left as it is.
+
 The exit codes are in `references/purlin_commands.md`, "Exit codes". A test comment to correct
 changes no exit code; it makes the tests read `not met`.
 

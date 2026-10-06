@@ -106,6 +106,10 @@ on this commit, each marked `carried` with the commit, the time, the machine and
 the run that took it. A result from another system, such as Windows, is carried the same way,
 from whichever machine took it. So is a slow proof's result.
 
+Any change to the project ends an anchor's audit result. Where an anchor was audited before,
+the run reads its rules again with the spot tests once its tests have run, with no AI asked,
+and prints `Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`
+
 The run says how many it ran and how many it carried:
 
 ```

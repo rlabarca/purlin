@@ -2166,6 +2166,149 @@ class TestASettleStartsTheSlowTestOfItsRule:
         assert not any('nothing to settle' in line for line in lines), output
 
 
+# ---------------------------------------------------------------------------
+# A run over every feature reads an audited anchor again
+# ---------------------------------------------------------------------------
+
+ANCHOR_TESTS = ('import os\n\n'
+                '# purlin: shared PROOF-1\n'
+                'def test_the_readme_is_there():\n'
+                "    assert os.path.isfile('README.md')\n\n"
+                '# purlin: shared PROOF-2\n'
+                'def test_the_readme_holds_a_line():\n'
+                "    assert open('README.md').read().strip()\n")
+HOLDS_A_LINE = "    assert open('README.md').read().strip()\n"
+ANCHORS_READ = ('Anchors: the spot tests read 2 audited rules again. '
+                '%d spot-checked, %d weak.')
+NO_BUG_FOR_AN_ANCHOR = ("No bug was planted: no bug is planted for an "
+                        "anchor's rule.")
+
+
+def _anchor_project(tmp_path):
+    """A git checkout of `feat` and the anchor `shared`, whose two rules
+    each have one passing test."""
+    root = _pytest_project(tmp_path)
+    _spec(root, 'feat')
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+    (root / 'README.md').write_text('one\n', encoding='utf-8')
+    anchors = root / 'specs' / '_anchors'
+    anchors.mkdir()
+    (anchors / 'shared.md').write_text(
+        '# Anchor: shared\n\n## Rules\n\n'
+        '- RULE-1: The project has a readme\n'
+        '- RULE-2: The readme holds a line\n\n## Proof\n\n'
+        '- PROOF-1 (RULE-1): The file README.md is there\n'
+        '- PROOF-2 (RULE-2): The file README.md holds a line\n',
+        encoding='utf-8')
+    (root / 'tests' / 'test_shared.py').write_text(ANCHOR_TESTS,
+                                                   encoding='utf-8')
+    (root / '.gitignore').write_text(
+        '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n'
+        '.pytest_cache/\n', encoding='utf-8')
+    _git_repo(root)
+    return root
+
+
+def _audited_anchor(tmp_path):
+    """The anchor project after `--all --audit --commit` read both rules of
+    `shared`, and `README.md` was then changed and committed."""
+    root = _anchor_project(tmp_path)
+    code, output = _run(root, '--all', '--audit', '--commit')
+    assert code == 0, output
+    assert _strong_words(root) == ['spot-checked', 'spot-checked'], output
+    _readme_commit(root)
+    return root
+
+
+def _strong_words(root, feature='shared'):
+    """The word each rule's strong cell reads, in rule order."""
+    return [_rule(root, feature, rule_id)['cells']['strong']['word']
+            for rule_id in ('RULE-1', 'RULE-2')]
+
+
+def _audit_rules(root, feature='shared'):
+    return (_evidence(root, feature).get('audit') or {}).get('rules') or {}
+
+
+class TestAFullRunReadsAnAuditedAnchorAgain:
+
+    # purlin: run_script PROOF-333
+    def test_a_full_run_brings_an_audited_anchor_up_to_date(
+            self, tmp_path, claude):
+        _install, directory = claude
+        root = _audited_anchor(tmp_path)
+        asked = len(fake_claude.calls(directory))
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert ANCHORS_READ % (2, 0) in output.splitlines(), output
+        assert _strong_words(root) == ['spot-checked', 'spot-checked']
+        assert len(fake_claude.calls(directory)) == asked
+        entry = _audit_rules(root)['RULE-1']
+        assert (entry['verdict'], entry['findings'], entry['no_bug']) == (
+            'spot-checked', [], [NO_BUG_FOR_AN_ANCHOR]), entry
+
+    # purlin: run_script PROOF-334
+    def test_a_test_that_can_no_longer_fail_reads_weak(self, tmp_path,
+                                                       claude):
+        root = _audited_anchor(tmp_path)
+        path = root / 'tests' / 'test_shared.py'
+        path.write_text(path.read_text(encoding='utf-8').replace(
+            HOLDS_A_LINE, '    assert True\n'), encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert ANCHORS_READ % (1, 1) in output.splitlines(), output
+        entry = _audit_rules(root)['RULE-2']
+        assert entry['verdict'] == 'weak', entry
+        assert entry['findings'] == [
+            'tests/test_shared.py::test_the_readme_holds_a_line: the check '
+            'cannot fail: assert True.'], entry
+
+    # purlin: run_script PROOF-338
+    def test_a_rule_whose_test_fails_is_not_read_again(self, tmp_path,
+                                                       claude):
+        root = _audited_anchor(tmp_path)
+        before = _audit_rules(root)['RULE-2']
+        path = root / 'tests' / 'test_shared.py'
+        path.write_text(path.read_text(encoding='utf-8').replace(
+            HOLDS_A_LINE, '    assert not open(\'README.md\').read()\n'),
+            encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert ('Anchors: the spot tests read 1 audited rule again. '
+                '1 spot-checked, 0 weak.') in output.splitlines(), output
+        assert _audit_rules(root)['RULE-2'] == before
+
+    # purlin: run_script PROOF-335
+    def test_an_anchor_never_audited_is_left_as_it_is(self, tmp_path):
+        root = _anchor_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert not [line for line in output.splitlines()
+                    if line.startswith('Anchors: ')], output
+        assert _audit_rules(root) == {}
+
+    # purlin: run_script PROOF-336
+    def test_a_run_of_the_anchor_alone_reads_nothing_again(self, tmp_path,
+                                                           claude):
+        root = _audited_anchor(tmp_path)
+        code, output = _run(root, '--feature', 'shared', '--test')
+        assert code == 0, output
+        assert not [line for line in output.splitlines()
+                    if line.startswith('Anchors: ')], output
+        assert _strong_words(root) == ['out of date', 'out of date']
+
+    # purlin: run_script PROOF-337
+    def test_a_clean_run_reads_the_anchor_again_and_commits_it(
+            self, tmp_path, claude):
+        root = _audited_anchor(tmp_path)
+        code, output = _run(root, '--clean', '--test', '--commit')
+        assert code == 0, output
+        assert ANCHORS_READ % (2, 0) in output.splitlines(), output
+        assert _git(root, 'status', '--porcelain').strip() == '', output
+        assert _strong_words(root) == ['spot-checked', 'spot-checked']
+
+
 class TestNothingToRunOverAFailure:
 
     # purlin: run_script PROOF-282
