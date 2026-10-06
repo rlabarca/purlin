@@ -1467,7 +1467,7 @@
         "verdict": "strong"
       },
       "RULE-81": {
-        "at": "2026-10-06T16:42:21Z",
+        "at": "2026-10-06T17:27:08Z",
         "bugs": {
           "PROOF-257": {
             "after": "      : names[0] + ', ' + names[1] + ', and ' + (names.length - 1) + ' more')",
@@ -1484,12 +1484,11 @@
             "after": "    + 'style=\"color:var(--state-' + hue + ')\"></span><span class=\"notice-text\"' + hover([line]) + '>'",
             "aim": "past the test",
             "before": "    + 'style=\"color:var(--state-' + hue + ')\"></span><span class=\"notice-text\">'",
-            "bug_key": "2aac2d676040e483e22cf5dd349dbbe77a258ee480311e7a173a64e95dc28e87",
+            "bug_key": "e58426ac66c896587a481294e61cd53f110775ddb6dde906f3ec877c1c6ab30b",
             "case": "5 warnings, an unreadable proof line in login and one in invoice, then three signed/<version> lines; the proof says 5 notices, each whole, none with a hover; the changed code gives the text of each of the 5 notices a hover holding its own line",
             "file": "scripts/report/purlin-report.html",
             "line": 905,
-            "result": "survived",
-            "test_key": "d7f57f8c8ace292f31f905dc6f1d42c19c22270649853c87b95307541ae25591",
+            "result": "caught",
             "why": ""
           },
           "PROOF-259": {
@@ -1527,32 +1526,16 @@
           }
         },
         "code_hash": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
-        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
+        "commit": "c89b46730f3694409a3dc733c58abf951dd8ae33",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-257: the test builds the 34 warnings, opens the board at 1500 by 900 and compares the two notice texts, the hover of 33 names one to a line, and the bottom edge of the first row of each table against 900, which is what the proof names.",
-          "PROOF-258: the test compares the five notice texts with the five warnings in order, checks that the last three open with the `signed/<version> is not in this checkout` words, and compares the notices' hovers with five empty values.",
-          "PROOF-258: the hovers come from a helper whose source is not shown, so a hover placed on a part inside a notice rather than on the notice itself may go unread.",
-          "PROOF-259: the test gives the six warnings in the proof's order and compares the notice texts with the grouped sentence followed by the reworded proof's warning, so both the count of specs and the place of the grouped notice are observed.",
-          "PROOF-260: the test opens the board twice, once with three lines of login and once with the third line invoice's, and compares the one notice's text with the exact sentence the proof names each time.",
-          "PROOF-261: the test gives four lines of information and no warning, and compares the one notice's text, its hover of four names and the dot's style, which it expects to be the neutral tone.",
-          "The spot tests found nothing, and each test shown holds a comparison against literal values its proof names."
-        ],
-        "findings": [
-          "PROOF-258: the test still passes when scripts/report/purlin-report.html:905 reads \"+ 'style=\"color:var(--state-' + hue + ')\"></span><span class=\"notice-text\"' + hover([line]) + '>'\"",
-          "PROOF-258: the AI says this breaks: 5 warnings, an unreadable proof line in login and one in invoice, then three signed/<version> lines; the proof says 5 notices, each whole, none with a hover; the changed code gives the text of each of the 5 notices a hover holding its own line"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-257 is longer than 60 words and also checks where the two tables' first rows end, beside the notices.",
-          "PROOF-260 holds two cases, three lines of one spec and then the third line moved to a second spec.",
-          "PROOF-261 is longer than 60 words."
-        ],
         "proof_hash": "b1f6db0d7d88e1f9d8019bbb777beb652b27043c5709c636b22a3efd0e29e32e",
         "rule_hash": "bbfff8c7fe4dd0de5d3f908109b86986bc7138fe580920f356628186b7c23ccf",
-        "test_hash": "d08dac000cf266a800e2a3f65ba000347f31963f49dc368d45593d115b5eb6f2",
-        "verdict": "weak"
+        "test_hash": "357504f1881922170987386bc37d63b575156f00141e4ccd70ce521ac7257ca3",
+        "verdict": "strong"
       },
       "RULE-82": {
         "at": "2026-10-06T15:44:24Z",
