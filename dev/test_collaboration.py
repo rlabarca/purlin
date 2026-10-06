@@ -720,6 +720,53 @@ def test_three_people_reach_a_signed_version(tmp_path):
                           'stability RULE-2', 'stability RULE-3',
                           'stability RULE-4']
 
+    #     The package describes the code under the tag: each rule with its
+    #     words, each proof under the number the renumbering left it, and
+    #     each test by the file and the name it has at the tag, where that
+    #     file holds the test under the comment naming that proof.
+    described = {}
+    for feature in package['features']:
+        for rule in feature['rules']:
+            described['%s %s' % (feature['name'], rule['id'])] = (
+                rule['text'], [proof['id'] for proof in rule['proofs']],
+                [(test['proof'], test['file'], test['name'])
+                 for test in rule['tests']])
+    age_file, end_file = 'tests/test_sample_age.py', 'tests/test_year_end.py'
+    days_file = 'tests/test_stability.py'
+    assert described == {
+        'sample_age RULE-1': (
+            AGE_RULES[0].split(': ', 1)[1], ['PROOF-1', 'PROOF-4', 'PROOF-5'],
+            [('PROOF-1', age_file, 'test_three_days'),
+             ('PROOF-4', age_file, 'test_the_same_day_is_zero'),
+             ('PROOF-5', end_file, 'test_across_a_year_end')]),
+        'sample_age RULE-2': (
+            AGE_RULES[1].split(': ', 1)[1], ['PROOF-2'],
+            [('PROOF-2', age_file, 'test_a_future_collection_is_refused')]),
+        'sample_age RULE-3': (
+            AGE_RULES[2].split(': ', 1)[1], ['PROOF-3'], []),
+        'stability RULE-1': (
+            STABILITY_RULES[0].split(': ', 1)[1], ['PROOF-1'],
+            [('PROOF-1', days_file, 'test_frozen')]),
+        'stability RULE-2': (
+            STABILITY_RULES[1].split(': ', 1)[1], ['PROOF-2', 'PROOF-3'],
+            [('PROOF-2', days_file, 'test_room'),
+             ('PROOF-3', days_file, 'test_room_in_capitals')]),
+        'stability RULE-3': (
+            CHILLED_RULE, ['PROOF-4'],
+            [('PROOF-4', days_file, 'test_refrigerated')]),
+        'stability RULE-4': (
+            UNKNOWN_RULE, ['PROOF-5'],
+            [('PROOF-5', days_file, 'test_an_unknown_storage_is_refused')]),
+    }, described
+    pointed = 0
+    for name, (_text, _proofs, tests) in sorted(described.items()):
+        for proof, rel, test in tests:
+            under_tag = check.git('show', '%s:%s' % (TAG, rel))
+            assert '# purlin: %s %s\ndef %s():' % (
+                name.split()[0], proof, test) in under_tag, (name, rel, test)
+            pointed += 1
+    assert pointed == sum(comments.values()) == 9
+
     #     No command failed but the ones planned, each named here: the first
     #     test run with no test command set, the two sign-offs asked for with
     #     no key, and Pat's before the pull.
