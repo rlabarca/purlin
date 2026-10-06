@@ -270,7 +270,13 @@ def test_the_pin_is_the_full_head_sha_and_names_no_branch(workspace):
     head = _git(['rev-parse', 'HEAD'], workspace.anchor_work)
     assert result['pinned'] == head
     assert len(result['pinned']) == 40
-    assert 'main' not in _copy_text(workspace).split('## Rules')[0]
+    # The pin the copy itself carries, not the answer alone: one `> Pinned:`
+    # line, holding all 40 characters of the head commit.
+    assert len(head) == 40
+    above = _copy_text(workspace).split('## Rules')[0]
+    assert [line for line in above.splitlines()
+            if line.startswith('> Pinned:')] == ['> Pinned: %s' % head]
+    assert 'main' not in above
 
 
 # purlin: upstream PROOF-3
@@ -397,13 +403,19 @@ def test_check_exits_2_when_the_source_is_gone(workspace):
 def test_check_names_the_source_that_could_not_be_read_and_the_fix(workspace):
     _add(workspace)
     _rmtree(workspace.anchor_repo)
-    _head, error = upstream.remote_head(workspace.root, workspace.anchor_repo)
-    assert error
+    # Git's message, from git itself and not from the code under test: what
+    # `git ls-remote` writes of a repository that is gone, on one line. The
+    # printed line carries its first 200 characters.
+    asked = subprocess.run(['git', 'ls-remote', workspace.anchor_repo, 'HEAD'],
+                           capture_output=True, text=True, cwd=workspace.root)
+    assert asked.returncode != 0
+    message = ' '.join(asked.stderr.split())
+    assert message.startswith('fatal: ') and workspace.anchor_repo in message
     code, out = _cli(workspace, ['sync', '--check'])
     assert code == 2
     assert out.splitlines() == [
         'no_eval: the source could not be read (%s). Check its > Source: '
-        'line, then run purlin:anchor sync no_eval.' % error]
+        'line, then run purlin:anchor sync no_eval.' % message[:200]]
 
 
 # purlin: upstream PROOF-33
@@ -414,6 +426,8 @@ def test_json_when_behind_carries_both_shas(workspace):
     assert code == 1
     payload = json.loads(out)
     assert payload['checked'] is True
+    # The number 1, not a `true` that compares equal to it.
+    assert type(payload['behind']) is int
     assert payload['behind'] == 1
     assert len(payload['anchors']) == 1
     assert payload['anchors'][0]['pinned'] == workspace.first_sha
@@ -522,15 +536,24 @@ def test_a_name_that_leads_out_of_the_anchor_folder_is_refused(workspace):
 
 # purlin: upstream PROOF-65
 def test_a_name_holding_a_hyphen_is_added(workspace):
+    named = '--name sample-age'
     code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',
-                                 'specs/no_eval.md', '--name', 'sample-age',
-                                 '--json'])
+                                 'specs/no_eval.md'] + named.split()
+                     + ['--json'])
     assert code == 0, out
+    # The answer names the anchor as `--name sample-age` gave it, hyphen kept.
+    answer = json.loads(out)
+    assert '--name %s' % answer['anchor'] == named, out
+    assert answer['spec_path'] == 'specs/_anchors/sample-age.md', out
     assert _anchors_held(workspace) == ['sample-age.md'], out
     with open(os.path.join(workspace.root, 'specs', '_anchors',
                            'sample-age.md'), encoding='utf-8') as handle:
         held = handle.read()
-    assert '- RULE-1: No eval() in source files' in held.splitlines(), held
+    # Its rules: both of them, in the order the source gives them.
+    assert [line for line in held.splitlines()
+            if line.startswith('- RULE-')] == [
+        '- RULE-1: No eval() in source files',
+        '- RULE-2: No exec() in source files'], held
 
 
 OWN_ANCHOR = """# Anchor: no_eval
@@ -653,8 +676,32 @@ def test_sync_all_reports_the_text_file_anchor_and_syncs_the_others(
                  path='specs/no_secrets.md')
     _write(os.path.join(workspace.root, 'policy.txt'), POLICY)
     held = _hand_anchor(workspace, 'policy.txt')
-    _advance(workspace)
+    new_sha = _advance(workspace)
+    remote = {}
+    for name in ('no_eval', 'no_secrets'):
+        with open(upstream.anchor_path(workspace.root, name), 'rb') as handle:
+            remote[name] = handle.read()
     del started[:]
+    # `sync` with no name as a person reads it: one line per anchor, the two
+    # remote anchors synced and `refunds` the error, never a pin read current.
+    code, out = _cli(workspace, ['sync'])
+    assert code == 2
+    first, new = workspace.first_sha[:7], new_sha[:7]
+    assert out.splitlines() == [
+        'no_eval: RULE-2 changed, RULE-3 added. Pin advanced from %s to %s. '
+        'Commit it as anchor(no_eval): sync (%s), then run purlin:test.'
+        % (first, new, new),
+        'no_secrets: no rule changes. Pin advanced from %s to %s. Commit it '
+        'as anchor(no_secrets): sync (%s), then run purlin:test.'
+        % (first, new, new),
+        _not_a_spec('policy.txt')]
+    with open(upstream.anchor_path(workspace.root, 'refunds'), 'rb') as handle:
+        assert handle.read() == held
+    # The same sync again, read as JSON: the two copies are put back as they
+    # were before it, so each is behind its source once more.
+    for name, text in remote.items():
+        with open(upstream.anchor_path(workspace.root, name), 'wb') as handle:
+            handle.write(text)
     code, out = _cli(workspace, ['sync', '--json'])
     assert code == 2
     rows = {row['anchor']: row['status']
