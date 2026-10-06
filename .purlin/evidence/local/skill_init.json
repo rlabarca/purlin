@@ -2,7 +2,7 @@
   "audit": {
     "rules": {
       "RULE-87": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:53:00Z",
         "bugs": {
           "PROOF-2": {
             "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"",
@@ -19,12 +19,11 @@
             "after": "   `purlin:init --update --project-root . --force`.",
             "aim": "past the test",
             "before": "   `--update --project-root . --yes`.",
-            "bug_key": "509d232dfe04c93689db487d5f676c212c5628f78753f5b69150728c90e9a1fc",
+            "bug_key": "5a087ec6b999a6aeeff7fadabcd7521ae34906f2be0fdaabba7ca4c4ecc7ad93",
             "case": "the skill's restore step hands the reader a quoted run of flags for the setup script; the proof says every flag handed is one the usage lists; the changed skill hands `--force`, which the usage does not list",
             "file": "skills/init/SKILL.md",
             "line": 161,
-            "result": "survived",
-            "test_key": "e73d0c20c7c568e4fd73f21d61c7797b5cc5309b25423cbf81e2d8a97fe3bb16",
+            "result": "caught",
             "why": ""
           },
           "PROOF-42": {
@@ -40,25 +39,16 @@
           }
         },
         "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "3bce95710201086414502bd88d399e91ce53e258",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-2: the test counts the lines that run the script, requires each to open with the lookup and the script and pass `--project-root`, and matches the one setup line whole, so it observes what the proof names.",
-          "PROOF-24: the test runs the script with `--help`, checks exit 0, and compares the flags from the run lines, the flag tables and the quoted spans that open with a flag against the usage and against a fixed list of five.",
-          "PROOF-24: a quoted span that opens with a word other than a flag, such as `purlin:init --update`, is not read by the quoted-span check, so a flag handed inside such a span may go uncompared with the usage.",
-          "PROOF-42: the test looks for each of the five names in the skill's text and again as its own backticked name, which is what the proof names.",
-          "Findings: the spot tests found nothing, and each test holds assertions that can fail and the values its proof names."
-        ],
-        "findings": [
-          "PROOF-24: the test still passes when skills/init/SKILL.md:161 reads \"`purlin:init --update --project-root . --force`.\"",
-          "PROOF-24: the AI says this breaks: the skill's restore step hands the reader a quoted run of flags for the setup script; the proof says every flag handed is one the usage lists; the changed skill hands `--force`, which the usage does not list"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "8513c458f541ef5011878f9ea3af9f90a91ecef9182b9c0f36d25478098e2c76",
         "rule_hash": "52d955a1e4d4f98549109474c930d3066157e3ad24621fae0e80e661c824b50d",
-        "test_hash": "5be1b913d8662bc47ca8dc06e145dc55b53d2d67b6d93275c8a5822af29e89a2",
-        "verdict": "weak"
+        "test_hash": "f1ebe6bed4f139ab2a3cdb62ca0219af8b8fd6df64f60e6a1d7ec8081e4b4801",
+        "verdict": "strong"
       },
       "RULE-88": {
         "at": "2026-10-05T18:48:23Z",
@@ -141,14 +131,14 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:03:20Z",
-      "commit": "f82d7db248cb1a072623f09d6fce026591958bf3",
+      "at": "2026-10-06T15:52:52Z",
+      "commit": "3bce95710201086414502bd88d399e91ce53e258",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
         "spec": "4802f176cfbc77837fa9add63c24fd90c761fd50cd6ebb45ad22455bd176d17f",
-        "tests": "283ddfe81cbc1ce98aada28efe04abc0e89b08c6bf4537e66589b609db182e36"
+        "tests": "3ea73784279985f0de66520e3d7e0164fe226bda9aff673ec1d1832b3bf4b8f7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

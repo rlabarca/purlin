@@ -84,6 +84,29 @@ def test_every_flag_handed_is_one_the_usage_lists():
     assert sorted(set(quoted) - listed) == []
     assert sorted(set(handed) | set(quoted)) == [
         '--apply', '--project-root', '--test-command', '--update', '--yes']
+    # A quoted run of flags is one wherever it stands in its span: after
+    # the command's own name, as `purlin:init --update --project-root .`,
+    # as much as at its start. So every quoted span of the skill's
+    # sentences that holds a flag is read, a flag being two dashes and what
+    # follows them in either case. The one span set aside is the one that
+    # names another command, whose flags are that command's.
+    anywhere = re.compile(r'(?<![\w-])--[A-Za-z0-9][\w-]*')
+    usage = sorted(set(anywhere.findall(done.stdout + done.stderr)))
+    assert usage == ['--apply', '--help', '--project-root', '--test-command',
+                     '--update', '--yes'], done.stdout
+    sentences = re.sub(r'```.*?```', '', read(SKILL), flags=re.S)
+    assert sentences.count('`') % 2 == 0
+    runs = [span for span in re.findall(r'`([^`]*)`', sentences)
+            if anywhere.search(span)]
+    others = [span for span in runs if re.search(r'purlin:(?!init\b)', span)]
+    assert others == ['→ Run: purlin:test --all --commit'], others
+    in_sentences = [(flag, span) for span in runs if span not in others
+                    for flag in anywhere.findall(span)]
+    assert len(in_sentences) >= len(quoted)
+    assert [(flag, span) for flag, span in in_sentences
+            if flag not in usage] == []
+    assert sorted(set(flag for flag, _span in in_sentences)) == [
+        '--apply', '--project-root', '--test-command', '--update', '--yes']
 
 
 # purlin: skill_init PROOF-42

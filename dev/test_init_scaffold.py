@@ -252,9 +252,12 @@ class TestTheQuestion:
             tag_foreign(made)
             code, out, err = made.child()
             assert code == 0, out + err
-            assert out.count('[y/N]') == 1, out
+            # Its output is both streams: a second question on standard
+            # error is a second question.
+            assert (out + err).count('[y/N]') == 1, out + err
+            assert '[y/N]' not in err, err
             (asked,) = [line for line in out.splitlines() if '[y/N]' in line]
-            assert asked == COMMIT, out
+            assert asked == 'Commit the files setup wrote? [y/N] ', out
         finally:
             made.close()
 
@@ -268,6 +271,10 @@ class TestTheQuestion:
                     if line.endswith(' [y/N] ')] == [
                         'Commit the files setup wrote?'], out
             assert out.count('?') == 1, out
+            # The one question is the one question on either stream: setup
+            # writes nothing at all to standard error here.
+            assert (out + err).count('?') == 1, out + err
+            assert err == '', err
             assert made.config()['tests'] == []
         finally:
             made.close()
@@ -468,8 +475,15 @@ class TestTheCommit:
 
     # purlin: scaffold PROOF-158
     def test_yes_commits_the_files_and_names_them(self, project):
-        output = project.run()
-        assert '[y/N]' not in output, output
+        code, output, err = project.child('--yes')
+        assert code == 0, output + err
+        # No commit question on either stream: not its words, not its
+        # `[y/N]`, and no question mark before the commit is named.
+        shown = output + err
+        assert 'Commit the files setup wrote' not in shown, shown
+        assert '[y/N]' not in shown, shown
+        assert '?' not in output.split('Committed ', 1)[0], output
+        assert err == '', err
         assert git(project.root, 'log', '-1', '--format=%s').stdout.strip() \
             == 'chore(init): set up Purlin'
         lines = output.splitlines()
@@ -554,11 +568,14 @@ class TestTheFlags:
 
     # purlin: scaffold PROOF-178
     def test_the_usage_lists_setup_s_flags_and_no_other(self, project):
-        code, out, _err = project.child('--help')
+        code, out, err = project.child('--help')
         assert code == 0
-        assert sorted(set(re.findall(r'(?<![\w-])--[a-z][a-z-]*', out))) == [
+        # Every word of the usage that opens with two dashes, in any case
+        # and with any character a flag can hold, on either stream.
+        assert sorted(set(re.findall(r'(?<![\w-])--[^\s,\[\]()=|]+',
+                                     out + err))) == [
             '--apply', '--help', '--project-root', '--test-command',
-            '--update', '--yes'], out
+            '--update', '--yes'], out + err
         before = tree(project.root)
         code, _out, err = project.child('--colour')
         assert code == 2
@@ -722,9 +739,12 @@ class TestTheMarketplacePath:
             files = readable(made.root)
             assert files
             for rel, text in files.items():
-                assert '/dev/' not in text.replace('/dev/null', ''), rel
-                # Nor a relative path into it, such as `dev/test_x.py`.
-                assert not re.search(r'(?<![\w./\\-])dev[/\\]', text), rel
+                kept = text.replace('/dev/null', '')
+                assert '/dev/' not in kept, rel
+                # Nor a relative path into it, such as `dev/test_x.py`,
+                # whatever it is attached to: `-cdev/pytest.ini` holds one.
+                # So no `dev/` or `dev\` is left anywhere in the file.
+                assert re.findall(r'\S*dev[/\\]\S*', kept) == [], rel
         finally:
             made.close()
 
@@ -1057,7 +1077,9 @@ class TestEachLanguageIsSetUp:
         walk = python_walk
         assert walk.code['init'] == 0, walk.out['init']
         assert walk.facts['tests after init'] == []
-        assert 'conftest.py' not in walk.facts['files after init']
+        # No `conftest.py` in any folder of the project, `tests/` included.
+        assert [path for path in walk.facts['files after init']
+                if path.rsplit('/', 1)[-1].lower() == 'conftest.py'] == []
         assert suggested_name(walk) == 'pytest', walk.out['first test run']
         lines = walk.lines('test run')
         assert 'Markers: 1 tied to a test, 0 not tied.' in lines, (
@@ -1070,7 +1092,11 @@ class TestEachLanguageIsSetUp:
         walk = typescript_project
         assert walk.code['init'] == 0, walk.out['init']
         assert walk.facts['tests after init'] == []
-        assert 'vitest.config.ts' not in walk.facts['files after init']
+        # No `vitest.config.ts` in any folder of the project outside the
+        # packages npm installed.
+        assert [path for path in walk.facts['files after init']
+                if path.rsplit('/', 1)[-1].lower() == 'vitest.config.ts'
+                and not path.startswith('node_modules/')] == []
         assert suggested_name(walk) == 'vitest', walk.out['first test run']
         assert '1 rule. 1 passes its tests.' in walk.lines('test run'), (
             walk.out['test run'])

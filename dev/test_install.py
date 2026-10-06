@@ -231,7 +231,10 @@ def skill_folders():
 
 
 # purlin: install PROOF-2
-def test_the_pages_commands_leave_purlin_installed_and_enabled(installed):
+def test_the_pages_commands_leave_purlin_installed_and_enabled(request):
+    # The install is asked for here, in the test: where the pages' commands
+    # do not install the plugin, this test fails.
+    installed = request.getfixturevalue('installed')
     row = purlin_entry(installed)
     assert row['enabled'] is True
     assert row['scope'] == 'project'
@@ -244,9 +247,24 @@ def test_the_pages_commands_leave_purlin_installed_and_enabled(installed):
 
 # purlin: install PROOF-3
 def test_every_skill_of_this_checkout_landed_byte_for_byte(installed):
-    folder = os.path.join(purlin_entry(installed)['installPath'], 'skills')
+    home = purlin_entry(installed)['installPath']
+    # The folder the installed plugin reads its skills from is the one its
+    # own manifest names, and `skills` where the manifest names none. It is
+    # one folder, inside the installed plugin.
+    manifest = json.loads(read(os.path.join(home, '.claude-plugin',
+                                            'plugin.json')))
+    assert manifest['name'] == 'purlin', manifest
+    named = manifest.get('skills', './skills')
+    assert isinstance(named, str), named
+    folder = os.path.realpath(os.path.join(home, named))
+    assert folder.startswith(os.path.realpath(home) + os.sep), named
+    assert os.path.isdir(folder), folder
     names = skill_folders()
     assert len(names) >= 9, names
+    # It holds those skills and no other.
+    assert sorted(
+        name for name in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, name, 'SKILL.md'))) == names
     for name in names:
         landed = os.path.join(folder, name, 'SKILL.md')
         assert os.path.isfile(landed), landed
@@ -320,7 +338,10 @@ def test_claude_code_offers_every_purlin_skill_to_the_model(installed):
 
 
 # purlin: install PROOF-5
-def test_the_persons_own_claude_code_reads_the_same_afterwards(installed):
+def test_the_persons_own_claude_code_reads_the_same_afterwards(request):
+    # The install is asked for here, in the test: where it cannot be made
+    # as the pages give it, this test fails.
+    installed = request.getfixturevalue('installed')
     after = the_persons_own(installed['claude'], installed['fake'])
     assert after['plugins'] == installed['before']['plugins']
     assert after['marketplaces'] == installed['before']['marketplaces']
