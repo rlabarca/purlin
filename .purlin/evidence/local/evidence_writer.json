@@ -972,646 +972,1116 @@
   "feature": "evidence_writer",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T14:36:44Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:37Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "spec": "c51c5e3ea370b3309a537c4a7541e2f3b80f294ce03cf5ccc67ec5ffb101ea1b",
-        "tests": "4824a3d74feae68ac42770691aa65c5f9e34baa52f0c7e104d766a06d5999e91"
+        "code": "b4f261850e95da3ae1cdab5b3ba60775283fd51e4e6686d9396bd526f95720a2",
+        "spec": "6c89029eec7ae2e4910ae1dbab7d86196617a5647fa5f2d56db4906b1db6b74a",
+        "tests": "e1cdc3407eb41a0c271877add3ca3e95804eb1d59f77d7508e05d84989f05b1a"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.78,
+                "name": "test_a_test_run_writes_the_feature_file_with_one_section",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_evidence_writer.py::test_a_test_run_writes_the_feature_file_with_one_section"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.835,
+                "name": "test_the_section_names_the_commit_time_runner_and_fingerprint",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_evidence_writer.py::test_the_section_names_the_commit_time_runner_and_fingerprint"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.718,
+                "name": "test_a_changed_tree_is_dirty",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_evidence_writer.py::test_a_changed_tree_is_dirty"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-90",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.944,
+                "name": "test_a_local_section_names_the_git_email",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-27",
           "test": "dev/test_evidence_writer.py::test_a_local_section_names_the_git_email"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-41",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.31,
+                "name": "test_a_run_names_the_machine_its_tests_ran_on",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_evidence_writer.py::test_a_run_names_the_machine_its_tests_ran_on"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-78",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.883,
+                "name": "test_a_ci_section_holds_the_fields_a_local_one_does",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-16",
           "test": "dev/test_evidence_writer.py::test_a_ci_section_holds_the_fields_a_local_one_does"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_with_a_failing_proof_reads_failed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_a_failing_proof_reads_failed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-77",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_with_one_proof_tested_and_one_not_reads_no_test",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_one_proof_tested_and_one_not_reads_no_test"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-25",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_with_a_skipped_test_beside_a_passing_one_reads_not_run",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_a_skipped_test_beside_a_passing_one_reads_not_run"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_whose_one_proof_is_manual_reads_checked_at_sign_off",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_evidence_writer.py::test_a_rule_whose_one_proof_is_manual_reads_checked_at_sign_off"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_manual_proof_does_not_hide_a_failure",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-30",
           "test": "dev/test_evidence_writer.py::test_a_manual_proof_does_not_hide_a_failure"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_with_no_proof_and_a_passing_marked_test_reads_passed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_a_passing_marked_test_reads_passed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-72",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_rule_with_no_proof_and_no_marked_test_reads_no_test",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-15",
           "test": "dev/test_evidence_writer.py::test_a_rule_with_no_proof_and_no_marked_test_reads_no_test"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_one_proof_entry_per_proof_and_test",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_evidence_writer.py::test_one_proof_entry_per_proof_and_test"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_proof_with_no_test_is_listed_missing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_evidence_writer.py::test_a_proof_with_no_test_is_listed_missing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_skipped_test_of_a_proof_owed_by_another_system_is_not_run",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-3",
           "test": "dev/test_evidence_writer.py::test_a_skipped_test_of_a_proof_owed_by_another_system_is_not_run"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-93",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.068,
+                "name": "test_an_anchor_with_nothing_to_check_reads_passed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_evidence_writer.py::test_an_anchor_with_nothing_to_check_reads_passed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-94",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.77,
+                "name": "test_a_feature_with_nothing_to_check_keeps_the_reason_and_reads_not_run",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-29",
           "test": "dev/test_evidence_writer.py::test_a_feature_with_nothing_to_check_keeps_the_reason_and_reads_not_run"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.021,
+                "name": "test_a_run_replaces_its_own_section_and_no_other",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-4",
           "test": "dev/test_evidence_writer.py::test_a_run_replaces_its_own_section_and_no_other"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_a_section_write_drops_the_rules_the_spec_dropped",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_evidence_writer.py::test_a_section_write_drops_the_rules_the_spec_dropped"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.743,
+                "name": "test_a_run_deletes_both_files_of_gone_writes_feat_and_names_each",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_evidence_writer.py::test_a_run_deletes_both_files_of_gone_writes_feat_and_names_each"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-91",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.724,
+                "name": "test_a_second_run_on_the_evidence_commit_leaves_the_file_as_committed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_evidence_writer.py::test_a_second_run_on_the_evidence_commit_leaves_the_file_as_committed"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-92",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 2.749,
+                "name": "test_a_run_after_a_commit_outside_the_records_writes_the_new_head",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_evidence_writer.py::test_a_run_after_a_commit_outside_the_records_writes_the_new_head"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_a_section_that_saw_a_failure_replaces_the_one_on_disk",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_evidence_writer.py::test_a_section_that_saw_a_failure_replaces_the_one_on_disk"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-97",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.729,
+                "name": "test_a_run_over_a_tree_no_longer_changed_writes_dirty_false",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_evidence_writer.py::test_a_run_over_a_tree_no_longer_changed_writes_dirty_false"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_a_section_from_another_machine_replaces_the_one_on_disk",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-17",
           "test": "dev/test_evidence_writer.py::test_a_section_from_another_machine_replaces_the_one_on_disk"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-85",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.992,
+                "name": "test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_evidence_writer.py::test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 2.272,
+                "name": "test_a_run_over_a_conflicted_file_keeps_the_audit_that_still_matches",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-26",
           "test": "dev/test_evidence_writer.py::test_a_run_over_a_conflicted_file_keeps_the_audit_that_still_matches"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-89",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 2.988,
+                "name": "test_a_run_over_a_conflicted_file_drops_an_audit_of_older_text",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-26",
           "test": "dev/test_evidence_writer.py::test_a_run_over_a_conflicted_file_drops_an_audit_of_older_text"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.944,
+                "name": "test_a_run_writes_and_does_not_commit",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_evidence_writer.py::test_a_run_writes_and_does_not_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.948,
+                "name": "test_a_commit_run_makes_the_two_commits",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_evidence_writer.py::test_a_commit_run_makes_the_two_commits"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.188,
+                "name": "test_committed_work_makes_no_commit_and_the_results_name_head",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_evidence_writer.py::test_committed_work_makes_no_commit_and_the_results_name_head"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-98",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.021,
+                "name": "test_a_commit_run_leaves_other_work_uncommitted_and_reads_dirty",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_evidence_writer.py::test_a_commit_run_leaves_other_work_uncommitted_and_reads_dirty"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-99",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.669,
+                "name": "test_over_five_features_the_subject_counts_them",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_evidence_writer.py::test_over_five_features_the_subject_counts_them"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.271,
+                "name": "test_commit_commits_exactly_the_evidence_file_once",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-32",
           "test": "dev/test_evidence_writer.py::test_commit_commits_exactly_the_evidence_file_once"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.053,
+                "name": "test_commit_carries_the_removal_and_pushes_nothing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-32",
           "test": "dev/test_evidence_writer.py::test_commit_carries_the_removal_and_pushes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 2.155,
+                "name": "test_a_second_commit_run_with_nothing_new_commits_nothing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-32",
           "test": "dev/test_evidence_writer.py::test_a_second_commit_run_with_nothing_new_commits_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.334,
+                "name": "test_git_ignores_the_run_log_and_not_the_evidence_after_init",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-13",
           "test": "dev/test_evidence_writer.py::test_git_ignores_the_run_log_and_not_the_evidence_after_init"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.769,
+                "name": "test_an_audit_run_writes_the_entry_for_the_rule_it_read",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_evidence_writer.py::test_an_audit_run_writes_the_entry_for_the_rule_it_read"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.002,
+                "name": "test_an_audit_adds_the_entry_it_read_and_keeps_the_others",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-12",
           "test": "dev/test_evidence_writer.py::test_an_audit_adds_the_entry_it_read_and_keeps_the_others"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-14",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_a_repeated_entry_keeps_its_time_and_commit",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_evidence_writer.py::test_a_repeated_entry_keeps_its_time_and_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_an_entry_from_another_model_replaces_it",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_evidence_writer.py::test_an_entry_from_another_model_replaces_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.001,
+                "name": "test_an_entry_with_another_rule_hash_replaces_it",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-14",
           "test": "dev/test_evidence_writer.py::test_an_entry_with_another_rule_hash_replaces_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-95",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.773,
+                "name": "test_a_ci_commit_run_commits_exactly_its_ci_file",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_evidence_writer.py::test_a_ci_commit_run_commits_exactly_its_ci_file"
         },
         {
-          "carried": {
-            "at": "2026-10-05T14:36:44Z",
-            "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-96",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 1.479,
+                "name": "test_a_second_ci_commit_run_commits_nothing_and_pushes_nothing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_evidence_writer.py::test_a_second_ci_commit_run_commits_nothing_and_pushes_nothing"
+        },
+        {
+          "env": null,
+          "id": "PROOF-100",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.004,
+                "name": "test_an_entry_holds_what_the_report_holds_for_its_test",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_evidence_writer.py::test_an_entry_holds_what_the_report_holds_for_its_test"
+        },
+        {
+          "env": null,
+          "id": "PROOF-101",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_test_left_out_or_tied_to_another_systems_proof_holds_none",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_evidence_writer.py::test_a_test_left_out_or_tied_to_another_systems_proof_holds_none"
+        },
+        {
+          "env": null,
+          "id": "PROOF-102",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_a_section_carried_forward_keeps_what_each_report_held",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_evidence_writer.py::test_a_section_carried_forward_keeps_what_each_report_held"
+        },
+        {
+          "env": null,
+          "id": "PROOF-103",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.0,
+                "name": "test_another_duration_and_another_report_file_leave_the_section",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_evidence_writer.py::test_another_duration_and_another_report_file_leave_the_section"
+        },
+        {
+          "env": null,
+          "id": "PROOF-104",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_evidence_writer",
+                "duration": 0.006,
+                "name": "test_another_failure_text_replaces_the_section",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-35",
+          "test": "dev/test_evidence_writer.py::test_another_failure_text_replaces_the_section"
         }
       ],
       "rules": {
@@ -1633,6 +2103,8 @@
         "RULE-31": "passed",
         "RULE-32": "passed",
         "RULE-33": "passed",
+        "RULE-34": "passed",
+        "RULE-35": "passed",
         "RULE-4": "passed",
         "RULE-5": "passed",
         "RULE-6": "passed",

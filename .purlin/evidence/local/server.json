@@ -868,66 +868,84 @@
   "feature": "server",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T19:29:21Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:38Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "8274adab4710293049c52b4f7d8cec3421845e1f928760ef69ef5ea0f0a4df1c",
-        "spec": "97c665b761aa2eafb7efe9ae9cd4b46b3b575e0cd56c1ed53bd5dd7b7dc778b9",
-        "tests": "1431158b1c670e821c0cef0762096da14bb55e774c4755502a2c7003721d8bec"
+        "code": "6ee179144bb7f38eb69bdfedbd3948e62021f0e2b1a017d23e7580610fd9413d",
+        "spec": "e7c221b90313b616b3e893b2b7d555ba603b0e4bc5b47f9b078f13df9317059a",
+        "tests": "c90ca693486840f9a6dd39fe4247b6daedc8ef49a118915978a1cdf8a6a8e902"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.126,
+                "name": "test_initialize_names_the_protocol_the_server_and_the_version",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-1",
           "test": "dev/test_mcp_server.py::TestTransport::test_initialize_names_the_protocol_the_server_and_the_version"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.071,
+                "name": "test_tools_list_names_the_three_tools_each_taking_an_optional_root",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-2",
           "test": "dev/test_mcp_server.py::TestTransport::test_tools_list_names_the_three_tools_each_taking_an_optional_root"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-138",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.409,
+                "name": "test_stdout_holds_one_answer_per_tool_call_and_nothing_else",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-5",
           "test": "dev/test_mcp_server.py::TestTransport::test_stdout_holds_one_answer_per_tool_call_and_nothing_else"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-159",
           "manual": false,
@@ -936,26 +954,28 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-129",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestWhichProjectRoot",
+                "duration": 0.255,
+                "name": "test_a_workspace_named_from_the_home_folder_is_found",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-6",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_workspace_named_from_the_home_folder_is_found"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": "windows",
           "id": "PROOF-160",
           "manual": false,
@@ -964,536 +984,906 @@
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_on_windows_a_workspace_named_from_the_home_folder_is_found"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-168",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestWhichProjectRoot",
+                "duration": 0.073,
+                "name": "test_a_status_naming_an_empty_folder_says_no_project_is_there",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_status_naming_an_empty_folder_says_no_project_is_there"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-169",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestWhichProjectRoot",
+                "duration": 0.079,
+                "name": "test_a_config_write_naming_an_empty_folder_writes_nothing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_config_write_naming_an_empty_folder_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-141",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAnUnreadableSettingsFile",
+                "duration": 0.092,
+                "name": "test_the_configuration_tool_answers_the_sentence_and_writes_nothing",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-7",
           "test": "dev/test_mcp_server.py::TestAnUnreadableSettingsFile::test_the_configuration_tool_answers_the_sentence_and_writes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-133",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAToolThatFails",
+                "duration": 0.298,
+                "name": "test_the_session_answers_the_call_after_a_failure",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-8",
           "test": "dev/test_mcp_server.py::TestAToolThatFails::test_the_session_answers_the_call_after_a_failure"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheConfigurationTool",
+                "duration": 0.075,
+                "name": "test_a_read_of_tests_answers_that_key",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_tests_answers_that_key"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-134",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheConfigurationTool",
+                "duration": 0.074,
+                "name": "test_a_write_of_tests_sets_it_and_keeps_the_version",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_write_of_tests_sets_it_and_keeps_the_version"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-142",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheConfigurationTool",
+                "duration": 0.088,
+                "name": "test_a_read_of_an_absent_tests_answers_it_as_null",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_mcp_server.py::TestTheConfigurationTool::test_a_read_of_an_absent_tests_answers_it_as_null"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-137",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestThePluginManifest",
+                "duration": 0.177,
+                "name": "test_the_manifest_command_starts_a_server_that_answers",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_manifest_command_starts_a_server_that_answers"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-158",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestThePluginManifest",
+                "duration": 0.0,
+                "name": "test_the_plugin_entry_asks_the_resolver_for_a_soft_exit",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_mcp_server.py::TestThePluginManifest::test_the_plugin_entry_asks_the_resolver_for_a_soft_exit"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-156",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheInterpreterResolver",
+                "duration": 0.006,
+                "name": "test_no_python_fails_loudly",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_mcp_server.py::TestTheInterpreterResolver::test_no_python_fails_loudly"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-157",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheInterpreterResolver",
+                "duration": 0.005,
+                "name": "test_no_python_with_the_soft_variable_exits_0",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-31",
           "test": "dev/test_mcp_server.py::TestTheInterpreterResolver::test_no_python_with_the_soft_variable_exits_0"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.071,
+                "name": "test_the_initialized_notification_gets_no_response",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_mcp_server.py::TestTransport::test_the_initialized_notification_gets_no_response"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-125",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.11,
+                "name": "test_a_line_that_is_not_json_gets_a_parse_error",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_mcp_server.py::TestTransport::test_a_line_that_is_not_json_gets_a_parse_error"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-127",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTransport",
+                "duration": 0.073,
+                "name": "test_an_unknown_method_is_an_error",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_mcp_server.py::TestTransport::test_an_unknown_method_is_an_error"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-155",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAWriteTheToolRefuses",
+                "duration": 0.085,
+                "name": "test_a_write_of_the_version_is_refused",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-36",
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_the_version_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-151",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAWriteTheToolRefuses",
+                "duration": 0.085,
+                "name": "test_tests_given_as_text_is_refused",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-36",
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_tests_given_as_text_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-164",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAWriteTheToolRefuses",
+                "duration": 0.083,
+                "name": "test_a_write_of_gate_is_refused",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-36",
           "test": "dev/test_mcp_server.py::TestAWriteTheToolRefuses::test_a_write_of_gate_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-166",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestWhichProjectRoot",
+                "duration": 0.076,
+                "name": "test_a_call_naming_no_root_is_refused_in_one_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-37",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_call_naming_no_root_is_refused_in_one_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestWhichProjectRoot",
+                "duration": 0.359,
+                "name": "test_a_root_named_by_an_earlier_call_is_not_used_by_the_next",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-37",
           "test": "dev/test_mcp_server.py::TestWhichProjectRoot::test_a_root_named_by_an_earlier_call_is_not_used_by_the_next"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-170",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestPurlinsOwnFolder",
+                "duration": 0.308,
+                "name": "test_the_copy_named_from_another_workspace_is_refused",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-38",
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_the_copy_named_from_another_workspace_is_refused"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-171",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestPurlinsOwnFolder",
+                "duration": 0.552,
+                "name": "test_a_server_started_in_the_copy_answers_for_it",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-38",
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_the_copy_answers_for_it"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-172",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestPurlinsOwnFolder",
+                "duration": 0.639,
+                "name": "test_a_server_started_in_a_second_checkout_answers_for_the_copy",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-38",
           "test": "dev/test_mcp_server.py::TestPurlinsOwnFolder::test_a_server_started_in_a_second_checkout_answers_for_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-173",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheStatusScript",
+                "duration": 0.701,
+                "name": "test_it_prints_what_the_tool_answers",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_it_prints_what_the_tool_answers"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-174",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheStatusScript",
+                "duration": 0.041,
+                "name": "test_an_empty_folder_is_refused_in_one_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-39",
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_an_empty_folder_is_refused_in_one_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-177",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheDriftScript",
+                "duration": 0.449,
+                "name": "test_it_prints_the_view_one_line_per_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-40",
           "test": "dev/test_mcp_server.py::TestTheDriftScript::test_it_prints_the_view_one_line_per_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-175",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheStatusScript",
+                "duration": 0.264,
+                "name": "test_a_spec_with_a_mistake_prints_its_warning_first",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-41",
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_a_mistake_prints_its_warning_first"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-176",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheStatusScript",
+                "duration": 0.243,
+                "name": "test_a_spec_with_no_mistake_opens_on_its_view",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-41",
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_spec_with_no_mistake_opens_on_its_view"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-178",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestTheStatusScript",
+                "duration": 0.108,
+                "name": "test_a_name_no_spec_has_is_said_so",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-41",
           "test": "dev/test_mcp_server.py::TestTheStatusScript::test_a_name_no_spec_has_is_said_so"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-179",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.444,
+                "name": "test_it_opens_on_the_path_then_one_line_per_rule",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-42",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_it_opens_on_the_path_then_one_line_per_rule"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-180",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.287,
+                "name": "test_an_anchor_is_shown_as_a_feature_is",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-42",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_an_anchor_is_shown_as_a_feature_is"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-181",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.444,
+                "name": "test_a_cell_that_needs_work_gives_its_reasons_and_no_other_does",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-43",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_cell_that_needs_work_gives_its_reasons_and_no_other_does"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-182",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.749,
+                "name": "test_a_strong_rule_shows_no_reason",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-43",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_strong_rule_shows_no_reason"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-183",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.478,
+                "name": "test_each_rule_ends_on_its_proof_lines",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-44",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_each_rule_ends_on_its_proof_lines"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-184",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.657,
+                "name": "test_a_proof_of_two_tests_sets_the_second_under_the_first",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-44",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_proof_of_two_tests_sets_the_second_under_the_first"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-185",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestOneSpecsView",
+                "duration": 0.517,
+                "name": "test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-44",
           "test": "dev/test_mcp_server.py::TestOneSpecsView::test_a_rule_with_no_proof_lists_the_tests_marked_with_its_id"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-186",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestACarriedResultInTheView",
+                "duration": 0.475,
+                "name": "test_a_carried_proof_names_the_commit_and_the_system",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-45",
           "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_carried_proof_names_the_commit_and_the_system"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-187",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestACarriedResultInTheView",
+                "duration": 0.426,
+                "name": "test_a_result_the_run_took_has_no_such_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-45",
           "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_result_the_run_took_has_no_such_line"
         },
         {
-          "carried": {
-            "at": "2026-10-05T19:29:21Z",
-            "commit": "6c01462bb73f4fe65c5238b3a380862ac974fd09",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-188",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestACarriedResultInTheView",
+                "duration": 0.737,
+                "name": "test_a_carried_test_of_a_rule_with_no_proof_is_named_too",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-45",
           "test": "dev/test_mcp_server.py::TestACarriedResultInTheView::test_a_carried_test_of_a_rule_with_no_proof_is_named_too"
+        },
+        {
+          "env": null,
+          "id": "PROOF-189",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAFailingTestsTextInTheView",
+                "duration": 1.368,
+                "name": "test_a_failing_test_gives_the_first_line_its_tool_reported",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_mcp_server.py::TestAFailingTestsTextInTheView::test_a_failing_test_gives_the_first_line_its_tool_reported"
+        },
+        {
+          "env": null,
+          "id": "PROOF-190",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAFailingTestsTextInTheView",
+                "duration": 0.495,
+                "name": "test_a_long_first_line_is_cut_at_200_characters",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_mcp_server.py::TestAFailingTestsTextInTheView::test_a_long_first_line_is_cut_at_200_characters"
+        },
+        {
+          "env": null,
+          "id": "PROOF-191",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_mcp_server.TestAFailingTestsTextInTheView",
+                "duration": 0.566,
+                "name": "test_a_failing_test_with_no_text_kept_has_no_such_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-46",
+          "test": "dev/test_mcp_server.py::TestAFailingTestsTextInTheView::test_a_failing_test_with_no_text_kept_has_no_such_line"
         }
       ],
       "rules": {
@@ -1512,6 +1902,7 @@
         "RULE-43": "passed",
         "RULE-44": "passed",
         "RULE-45": "passed",
+        "RULE-46": "passed",
         "RULE-5": "not run",
         "RULE-6": "not run",
         "RULE-7": "passed",

@@ -72,41 +72,57 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:38Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "8707183d934f16f45e09a13658906527b7334e097d7e8842fbeb1967215f10d3",
+        "code": "25d359b9c89a297769de865afa0a82de7d013c73aa8f785b03f8ace5595a6ab5",
         "spec": "c440190c2a94f01cfc06c3941b46882979a38b18a5fe8d7557dbae6b7a1a344b",
         "tests": "f75cd8ff805bc4dbeacc16c07d8b05fdf990f8fb860b11aef9ba849fb3af91e1"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:16:21Z",
-            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_build",
+                "duration": 0.001,
+                "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_skill_build.py::test_the_build_skill_holds_each_command_and_file_the_settle_included"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:16:21Z",
-            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_build",
+                "duration": 0.0,
+                "name": "test_the_build_skill_says_how_a_test_left_alone_is_settled",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_skill_build.py::test_the_build_skill_says_how_a_test_left_alone_is_settled"

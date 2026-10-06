@@ -259,8 +259,8 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:57Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:38Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -271,169 +271,265 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestOldTagsAndFields",
+                "duration": 0.099,
+                "name": "test_a_stamped_manual_still_reads_manual_and_is_listed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_stamped_manual_still_reads_manual_and_is_listed"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-25",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestOldTagsAndFields",
+                "duration": 0.099,
+                "name": "test_a_visual_reference_field_is_ignored_and_listed",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_reference_field_is_ignored_and_listed"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestTheWarning",
+                "duration": 0.227,
+                "name": "test_one_warning_names_both_files",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_specs_reader.py::TestTheWarning::test_one_warning_names_both_files"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestSource",
+                "duration": 0.092,
+                "name": "test_a_git_url_and_a_path_are_read_apart",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_specs_reader.py::TestSource::test_a_git_url_and_a_path_are_read_apart"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-31",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestSource",
+                "duration": 0.091,
+                "name": "test_an_option_shaped_source_is_not_split",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-9",
           "test": "dev/test_specs_reader.py::TestSource::test_an_option_shaped_source_is_not_split"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-11",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestSource",
+                "duration": 0.09,
+                "name": "test_a_path_field_supplies_the_path_for_a_bare_url",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-10",
           "test": "dev/test_specs_reader.py::TestSource::test_a_path_field_supplies_the_path_for_a_bare_url"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestAnchors",
+                "duration": 0.088,
+                "name": "test_an_anchor_carries_its_source_and_its_pin",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_specs_reader.py::TestAnchors::test_an_anchor_carries_its_source_and_its_pin"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestAnchors",
+                "duration": 0.08,
+                "name": "test_the_anchors_folder_alone_makes_an_anchor",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchors_folder_alone_makes_an_anchor"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-34",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestAnchors",
+                "duration": 0.088,
+                "name": "test_the_anchor_heading_alone_makes_an_anchor",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-11",
           "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchor_heading_alone_makes_an_anchor"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestRuleText",
+                "duration": 0.0,
+                "name": "test_a_line_break_in_a_rule_keeps_its_hash",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-17",
           "test": "dev/test_specs_reader.py::TestRuleText::test_a_line_break_in_a_rule_keeps_its_hash"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestRuleText",
+                "duration": 0.0,
+                "name": "test_a_changed_word_changes_a_rules_hash",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-17",
           "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_rules_hash"
         },
         {
-          "carried": {
-            "at": "2026-10-06T15:07:57Z",
-            "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_specs_reader.TestTheScan",
+                "duration": 0.084,
+                "name": "test_a_spec_that_cannot_be_decoded_is_skipped",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_specs_reader.py::TestTheScan::test_a_spec_that_cannot_be_decoded_is_skipped"

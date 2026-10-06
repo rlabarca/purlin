@@ -271,125 +271,189 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:46:59Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:37Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "557a839c33becdd3bc1bdd2cc841c8e9692377fdbcfce10588a45e03c8b768f7",
+        "code": "983d1c486aabf5af0f4ba794d6b3585b320a110776b2ae349111e7cb9686352c",
         "spec": "0b8fba4f8586fb33fc871ef7bf2126eb5851f9f0d6d32ada3d9ce66610d38b3b",
         "tests": "83a8527165d178e959786b7a9c5db8fb38deb6926a1f050f8ce39f82e770666c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.004,
+                "name": "test_the_agent_definition_holds_each_command_and_file",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-18",
           "test": "dev/test_purlin_agent.py::test_the_agent_definition_holds_each_command_and_file"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.003,
+                "name": "test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-19",
           "test": "dev/test_purlin_agent.py::test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.018,
+                "name": "test_every_path_a_skill_or_the_agent_definition_names_exists",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-20",
           "test": "dev/test_purlin_agent.py::test_every_path_a_skill_or_the_agent_definition_names_exists"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.548,
+                "name": "test_every_flag_a_skill_passes_is_one_its_script_takes",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-21",
           "test": "dev/test_purlin_agent.py::test_every_flag_a_skill_passes_is_one_its_script_takes"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 2.805,
+                "name": "test_the_answers_file_the_sign_skill_shows_is_walked",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-22",
           "test": "dev/test_purlin_agent.py::test_the_answers_file_the_sign_skill_shows_is_walked"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.005,
+                "name": "test_no_skill_agent_definition_or_reference_names_a_path_under_dev",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-23",
           "test": "dev/test_purlin_agent.py::test_no_skill_agent_definition_or_reference_names_a_path_under_dev"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.002,
+                "name": "test_every_skill_naming_the_status_names_the_tool_and_the_script",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_purlin_agent.py::test_every_skill_naming_the_status_names_the_tool_and_the_script"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:46:59Z",
-            "commit": "a31f9a826c80c728f90b7c9efa51700c030569c3",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_purlin_agent",
+                "duration": 0.001,
+                "name": "test_the_command_reference_and_the_glossary_name_the_settle_command",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_purlin_agent.py::test_the_command_reference_and_the_glossary_name_the_settle_command"

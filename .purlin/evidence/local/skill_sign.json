@@ -50,41 +50,57 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:38Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "a149110bb70eadf37aba0c08a8976a986acd8c319367a6aa4b266b999fc8844d",
+        "code": "de1f3966eaf87afafce413ebe171ef445b94b3e7359c72cd3544419b20d2b393",
         "spec": "048da7008597567dacdf30381598a8730e7da3836df6d0ff5b04eb311f911639",
         "tests": "93ee5419deca1fcb2b2057af765c741035cb1a2d5a42befacf48f340e9240f85"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:16:21Z",
-            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_sign",
+                "duration": 0.001,
+                "name": "test_the_sign_skill_holds_each_of_its_seven_commands",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_of_its_seven_commands"
         },
         {
-          "carried": {
-            "at": "2026-10-05T18:16:21Z",
-            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_sign",
+                "duration": 0.001,
+                "name": "test_the_sign_skill_holds_each_path_it_must_name",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_path_it_must_name"

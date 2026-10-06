@@ -37,8 +37,8 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-10-05T18:16:21Z",
-      "commit": "7d9bc955163e634f290e88c17d3334476e7bd3d3",
+      "at": "2026-10-06T21:01:38Z",
+      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -49,15 +49,23 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-05T18:16:21Z",
-            "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_spec_from_code",
+                "duration": 0.001,
+                "name": "test_the_spec_from_code_skill_holds_each_command_and_file",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+            }
+          },
           "result": "pass",
           "rule": "RULE-53",
           "test": "dev/test_skill_spec_from_code.py::test_the_spec_from_code_skill_holds_each_command_and_file"
