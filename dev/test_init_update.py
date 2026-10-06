@@ -354,10 +354,22 @@ def test_every_backup_keeps_its_file_s_path_under_one_folder(tmp_path,
         assert rel in before, rel
     earlier = _git(root, 'rev-parse', '--short', 'HEAD~1').stdout.strip()
     assert BACKUPS_LINE % earlier in printed, printed
-    deleted = [rel for rel in before if rel.endswith('.receipt.json')][0]
-    assert not os.path.exists(os.path.join(root, deleted))
-    assert deleted not in backups
-    assert _git(root, 'show', '%s:%s' % (earlier, deleted)).returncode == 0
+    # Every run file 0.9.5 committed beside a spec: the update deletes each.
+    deleted = sorted(rel for rel in before if rel.endswith(
+        '.receipt.json') or fnmatch.fnmatch(rel, '*.proofs-*.json'))
+    assert len(deleted) == 15, deleted
+    assert len([rel for rel in deleted
+                if rel.endswith('.receipt.json')]) == 5, deleted
+    for rel in deleted:
+        assert not os.path.exists(os.path.join(root, rel)), rel
+        assert rel not in backups, rel
+        shown = subprocess.run(
+            ['git', 'show', '%s:%s' % (earlier, rel)], cwd=root,
+            capture_output=True)
+        assert shown.returncode == 0, rel
+        assert shown.stdout == before[rel], rel
+    assert [rel for rel in backups if rel.endswith('.json')] == [
+        '.purlin/config.json'], sorted(backups)
     assert not _walk(root, ('*.bak',), skip_backups=False)
 
 
@@ -420,12 +432,15 @@ def test_a_lint_staged_hook_beside_the_old_pre_push_is_left_alone(tmp_path):
 def test_one_commit_carries_every_migration_id(tmp_path):
     root = _project(tmp_path, V095)
     assert len(_git(root, 'log', '--format=%s').stdout.splitlines()) == 1
-    applied = _ids(root)
     _apply(root)
     log = _git(root, 'log', '--format=%s').stdout.splitlines()
     assert len(log) == 2, log
-    assert log[0] == 'chore(update): migrate to %s (%s)' % (
-        VERSION, ', '.join(applied))
+    release = _read(ROOT, 'VERSION').strip()
+    assert log[0] == (
+        'chore(update): migrate to %s (design-refs, anchor-lines, os-tags, '
+        'kind-tags, untracked-files, config, evidence, workflows, plugins)'
+        % release), log[0]
+    assert log[1] == 'init', log
 
 
 # purlin: update PROOF-89
@@ -775,6 +790,15 @@ def test_a_root_without_purlin_exits_2(tmp_path):
     assert done.stderr.splitlines() == [
         'There is no .purlin/ under %s, so there is nothing to update. Run '
         'purlin:init first.' % os.path.abspath(empty)], done.stderr
+    # Named by a relative path, the folder is still printed in full.
+    here = os.path.realpath(str(tmp_path))
+    named = subprocess.run([sys.executable, UPDATE, '--project-root', 'empty'],
+                           capture_output=True, text=True, cwd=here)
+    assert named.returncode == 2
+    assert named.stdout == ''
+    assert named.stderr.splitlines() == [
+        'There is no .purlin/ under %s, so there is nothing to update. Run '
+        'purlin:init first.' % os.path.join(here, 'empty')], named.stderr
 
 
 # purlin: update PROOF-116
@@ -820,6 +844,14 @@ def test_a_commit_git_refuses_leaves_the_changes_staged(tmp_path, capsys):
             in printed), printed
     assert _git(root, 'rev-parse', 'HEAD').stdout == head
     assert _git(root, 'diff', '--cached', '--quiet').returncode == 1
+    # Every change is staged: no path holds a change the index lacks, and
+    # no file is untracked.
+    changes = _git(root, 'status', '--porcelain',
+                   '--untracked-files=all').stdout.splitlines()
+    assert len(changes) == 30, changes
+    assert [line for line in changes if line[1] != ' '] == [], changes
+    assert _git(root, 'diff', '--quiet').returncode == 0
+    assert 'M  specs/_anchors/checkout_design.md' in changes, changes
 
 
 # --- the lines 0.9.5 wrote into a spec -----------------------------------------
@@ -1013,6 +1045,13 @@ def test_a_workflow_is_removed_only_on_a_yes_for_that_file(tmp_path, capsys,
     assert _read_bytes(root, OWN_WORKFLOW) == OWN_WORKFLOW_TEXT
     assert WORKFLOW_REMOVED in printed
     assert PROOF_WORKFLOW not in _tracked(root)
+    # `ci.yml` is as it was in git too: tracked, with the bytes committed.
+    assert '.github/workflows/ci.yml' in _tracked(root)
+    assert _git(root, 'status', '--porcelain', '--untracked-files=all',
+                '--', '.github/workflows').stdout == ''
+    assert subprocess.run(
+        ['git', 'show', 'HEAD:.github/workflows/ci.yml'], cwd=root,
+        capture_output=True).stdout == OWN_WORKFLOW_TEXT
 
 
 # purlin: update PROOF-166
@@ -1040,6 +1079,11 @@ def test_a_workflow_answered_no_is_kept_and_named(tmp_path, capsys,
     assert _read_bytes(root, PROOF_WORKFLOW) == PROOF_WORKFLOW_TEXT
     assert WORKFLOW_KEPT in printed, printed
     assert not [line for line in printed if 'removed 1 workflow' in line]
+    # No `removed` line for a workflow, whatever its count.
+    assert [line for line in printed
+            if 'removed' in line and 'workflow' in line] == [], printed
+    assert [line for line in printed
+            if 'that committed proof files' in line] == [], printed
 
 
 # purlin: update PROOF-81
@@ -1432,7 +1476,9 @@ def test_the_owner_is_shown_where_each_command_runs_and_may_type_another(
 
 # --- what the update prints -----------------------------------------------------
 
-def _three_marked_files(tmp_path, capsys, more=()):
+def _three_marked(tmp_path, more=()):
+    """The sample 0.9.5 project with three pytest files holding 2, 1 and 1
+    marks of 0.9.5, and `more`, committed and not yet updated."""
     root = _project(tmp_path, V095)
     for rel, text in (('tests/test_login.py', OLD_PYTEST),
                       ('tests/test_keys.py', KEYS_PY_OLD.replace(
@@ -1442,16 +1488,28 @@ def _three_marked_files(tmp_path, capsys, more=()):
         _write_bytes(root, rel, text.encode('utf-8'))
     _git(root, 'add', '-A')
     _git(root, 'commit', '-qm', 'the tests 0.9.5 marked')
+    return root
+
+
+def _three_marked_files(tmp_path, capsys, more=()):
+    root = _three_marked(tmp_path, more)
     _apply(root)
     return root, capsys.readouterr().out.splitlines()
 
 
 # purlin: update PROOF-184
 def test_each_migration_prints_one_line_of_totals(tmp_path, capsys):
-    root, printed = _three_marked_files(tmp_path, capsys)
-    assert '  markers: rewrote 4 markers in 3 files' in printed, printed
-    assert not [line for line in printed if 'as comments' in line]
-    assert not [line for line in printed if 'kept the previous bytes' in line]
+    root = _three_marked(tmp_path)
+    assert _apply(root) == 0
+    output = capsys.readouterr()
+    printed = output.out.splitlines()
+    assert printed.count('  markers: rewrote 4 markers in 3 files') == 1, \
+        printed
+    # Neither stream of the output holds a file's own line.
+    for line in printed + output.err.splitlines():
+        assert not line.endswith('as comments'), line
+        assert 'as comments' not in line, line
+        assert 'kept the previous bytes' not in line, line
     log = _log(root)
     assert 'rewrote 2 markers in tests/test_login.py as comments' in log
     assert 'rewrote 1 marker in tests/test_keys.py as comments' in log
@@ -1500,8 +1558,9 @@ def test_each_question_is_on_its_own_line_with_the_answer_taken(tmp_path):
     for line in asked:
         assert line.count('[y/N]') == 1, line
         assert line.startswith('Apply '), line
-    assert asked[0].startswith('Apply design-refs,') and asked[0].endswith(
-        '[y/N] y'), asked[0]
+    assert asked[0].startswith('Apply design-refs, ') and asked[0].endswith(
+        '? [y/N] y'), asked[0]
+    assert asked[0].count('?') == 1, asked[0]
     for line in asked[1:]:
         assert line.endswith('[y/N] n'), line
     assert _ids(root) == NINE[1:]
@@ -1539,9 +1598,12 @@ def test_an_id_that_is_no_migration_is_refused(tmp_path):
     head = _git(root, 'rev-parse', 'HEAD').stdout
     done = _piped(root, '', '--apply', 'config,everything')
     assert done.returncode == 2
+    assert done.stdout == ''
     assert done.stderr.splitlines() == [
-        'everything is not a migration. The migrations are: %s.'
-        % ', '.join(m[0] for m in update.MIGRATIONS)], done.stderr
+        'everything is not a migration. The migrations are: design-refs, '
+        'anchor-lines, os-tags, kind-tags, untracked-files, hooks, config, '
+        'evidence, dashboard, workflows, lettered-proofs, markers, '
+        'plugins.'], done.stderr
     assert _git(root, 'rev-parse', 'HEAD').stdout == head
     assert _git(root, 'status', '--porcelain').stdout == ''
 
@@ -1798,11 +1860,17 @@ def test_a_run_that_applied_nothing_ends_on_the_update_and_how_to_say_yes(
     assert printed[0].startswith('9 migrations pending in '), printed[0]
     assert ('      pytest: python3 -m pytest {files} --junitxml={report}'
             in printed), printed
-    assert printed[-2:] == [UPDATE_LINE, HOW_TO_APPLY], printed[-2:]
+    assert printed[-2:] == [
+        '→ Run: purlin:init --update',
+        'Nothing was applied. Add --yes to apply every migration and use '
+        'each proposed test command, or --apply <id>[,<id>...] to apply the '
+        'migrations named.'], printed[-2:]
     assert 'Left to do:' not in printed
-    assert not [line for line in printed if 'pass their tests' in line]
-    assert not [line for line in printed if 'purlin:build' in line]
-    assert not [line for line in printed if 'purlin:test' in line]
+    for line in printed + done.stderr.splitlines():
+        assert 'Left to do:' not in line, line
+        assert 'pass their tests' not in line, line
+        assert 'purlin:build' not in line, line
+        assert 'purlin:test' not in line, line
 
 
 RUN_TESTS = ['→ Run: purlin:test --all --commit',
@@ -1816,10 +1884,17 @@ RUN_TESTS = ['→ Run: purlin:test --all --commit',
 def test_a_run_that_applied_everything_ends_on_the_test_run(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
-    printed = capsys.readouterr().out.splitlines()
-    assert printed[-3:] == RUN_TESTS, printed[-3:]
-    assert 'Left to do:' not in printed
-    assert not [line for line in printed if 'pass their tests' in line]
+    output = capsys.readouterr()
+    printed = output.out.splitlines()
+    assert printed[-3:] == [
+        '→ Run: purlin:test --all --commit',
+        'Run it before anything else: every rule reads not run until it has.',
+        'A test that fails in that run and passes when its feature is run '
+        "alone is the project's own: purlin:test <feature>."], printed[-3:]
+    assert 'Left to do:' not in output.out, printed
+    assert 'Left to do:' not in output.err, output.err
+    assert not [line for line in printed + output.err.splitlines()
+                if 'pass their tests' in line]
 
 
 # purlin: update PROOF-203
@@ -1827,14 +1902,16 @@ def test_a_run_that_left_a_migration_pending_ends_on_the_update(tmp_path,
                                                                 capsys):
     root = _project(tmp_path, V095)
     _apply(root, argv=('--apply', 'evidence'))
-    printed = capsys.readouterr().out.splitlines()
+    output = capsys.readouterr()
+    printed = output.out.splitlines()
     assert printed[-2:] == [
-        UPDATE_LINE,
-        '8 migrations are still pending: %s. A test run stops until nothing '
-        'is pending.' % ', '.join(n for n in NINE
-                                  if n != 'evidence')
-    ], printed[-2:]
+        '→ Run: purlin:init --update',
+        '8 migrations are still pending: design-refs, anchor-lines, os-tags, '
+        'kind-tags, untracked-files, config, workflows, plugins. A test run '
+        'stops until nothing is pending.'], printed[-2:]
     assert RUN_TESTS[0] not in printed
+    assert '→ Run: purlin:test --all --commit' not in output.out, printed
+    assert '→ Run: purlin:test --all --commit' not in output.err, output.err
 
 
 # --- the files that instruct an agent come first ---------------------------------
@@ -1986,6 +2063,15 @@ def test_a_docstring_the_update_cannot_take_stays(tmp_path, capsys):
         '# purlin: piano PROOF-2')
     assert '  %s: 4 lines' % KEPT_PY in printed, printed
     assert not [line for line in printed if 'held only a 0.9.5 tag' in line]
+    # Listed under the heading: the heading stands once, above the file's
+    # line, with nothing but other files' lines between the two.
+    assert printed.count('Purlin left these for you:') == 1, printed
+    heading = printed.index('Purlin left these for you:')
+    at = printed.index('  tests/test_kept.py: 4 lines')
+    assert printed[heading - 1] == '', printed
+    assert heading < at, printed
+    for line in printed[heading + 1:at]:
+        assert re.match(r'^  \S+: \d+ lines?$', line), line
 
 
 # --- the script the proposal cites ---------------------------------------------------
@@ -2061,10 +2147,23 @@ def test_a_run_with_yes_prints_one_line_in_place_of_the_pending_list(
     assert printed[0] == 'Applying 9 migrations: %s.' % ', '.join(NINE)
     assert printed[1].startswith('.github/workflows/') and \
         ' names a proof file: ' in printed[1], printed[1]
+    assert printed[1] == (".github/workflows/windows-proofs.yml:11 names a "
+                          "proof file: - '**/*.proofs-windows.json'"), \
+        printed[1]
     assert printed[2].startswith('  design-refs: '), printed[2]
+    # The line of totals: the sample holds two specs with a design reference.
+    assert printed[2] == ('  design-refs: removed the design reference from '
+                          '2 specs'), printed[2]
+    assert printed[3].startswith('  anchor-lines: '), printed[3]
     assert not [line for line in printed if 'pending in' in line]
     assert not [line for line in printed
                 if line.startswith('      specs/')]
+    # The lines of the migrations end at the commit; none names a spec.
+    committed = [index for index, line in enumerate(printed)
+                 if line.startswith('  committed ')]
+    assert len(committed) == 1, printed
+    assert [line for line in printed[1:committed[0]]
+            if 'specs/' in line] == [], printed[:committed[0]]
 
 
 # purlin: update PROOF-214
@@ -2217,6 +2316,13 @@ def test_agents_md_and_the_claude_folder_lose_the_lines_too(tmp_path, capsys):
     assert _read(root, '.claude/hooks/check.sh') == CHECK_SH
     printed = capsys.readouterr().out.splitlines()
     assert '  .claude/hooks/check.sh: 1 line' + CHANGE_FIRST in printed
+    # Listed under the heading, which stands once, right above its line:
+    # a file under `.claude/` stands first among what is left.
+    assert printed.count('Purlin left these for you:') == 1, printed
+    heading = printed.index('Purlin left these for you:')
+    assert printed[heading - 1] == '', printed
+    assert printed[heading + 1].startswith(
+        '  .claude/hooks/check.sh: 1 line. '), printed[heading + 1]
 
 
 # purlin: update PROOF-219
@@ -2335,9 +2441,20 @@ def test_a_restoring_run_says_nothing_of_0_9_5_and_keeps_no_copy(tmp_path,
                                                                capsys):
     root = _fresh(tmp_path)
     _apply(root)
-    printed = capsys.readouterr().out
+    output = capsys.readouterr()
+    # Both streams: a sentence on the error stream is output of the run too.
+    printed = output.out + output.err
+    assert output.out.strip(), 'the run printed nothing'
+    for word in ('0.9.5', 'migrat', 'not run', 'verify:', 'update-backup',
+                 'Run it before anything else', 'beside the specs',
+                 'untracked', 'Applying', 'Purlin left these for you:',
+                 'These need you:'):
+        assert word not in output.out, (word, output.out)
+        assert word not in output.err, (word, output.err)
     assert [word for word in OF_095 if word in printed] == [], printed
     assert not os.path.exists(os.path.join(root, BACKUPS))
+    assert not os.path.exists(
+        os.path.join(root, '.purlin', 'runtime', 'update-backup'))
 
 
 # purlin: update PROOF-224

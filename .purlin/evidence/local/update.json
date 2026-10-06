@@ -2,18 +2,17 @@
   "audit": {
     "rules": {
       "RULE-18": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-18": {
             "after": "        if files and name != 'evidence':\n            found.append({'id': name, 'description': description,",
             "aim": "past the test",
             "before": "        if files:\n            found.append({'id': name, 'description': description,",
-            "bug_key": "0ac3cbc16d4e44452f413afa3275662444f4be7ec197d6ee1f4c17c18cfad950",
+            "bug_key": "cbe4eefcc05a3a1759c5f841d04fd2fcaed91f83eec74c0261e8265e228d3b89",
             "case": "the update with --yes on the sample v0.9.5 project, which has no evidence README; the proof says the subject names every pending migration, evidence included; the changed code never lists or applies evidence, so the subject omits it",
             "file": "scripts/init/update.py",
             "line": 2395,
-            "result": "survived",
-            "test_key": "12ecce73e1f1fa92cebfe008652e7de958030999328e74aaf627fe632a231e6a",
+            "result": "caught",
             "why": ""
           },
           "PROOF-89": {
@@ -40,42 +39,31 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-18: the test counts one commit before and two after, and compares the newer subject with a string built from VERSION and the ids a helper reads before the run.",
-          "PROOF-18: if that helper takes the ids from the update's own pending list, a migration the code wrongly leaves out is missing from both sides and the test still passes.",
-          "PROOF-18: the test source does not show whether VERSION is read from the `VERSION` file or from the update's code.",
-          "PROOF-89: the test checks that the backup folder holds something and that `git status --porcelain --untracked-files=all` prints nothing, which are the two results the proof names.",
-          "PROOF-89: the test does not show what the backup helper counts, so a folder holding only the log may satisfy \"holds files\".",
-          "PROOF-90: the test records HEAD, answers `n` to every question, runs the update without `--yes` and compares HEAD with the recorded one, which is the proof's case and result.",
-          "The spot tests found nothing, and each test holds a failable comparison against a value its proof names."
-        ],
-        "findings": [
-          "PROOF-18: the test still passes when scripts/init/update.py:2395 reads \"if files and name != 'evidence':\"",
-          "PROOF-18: the AI says this breaks: the update with --yes on the sample v0.9.5 project, which has no evidence README; the proof says the subject names every pending migration, evidence included; the changed code never lists or applies evidence, so the subject omits it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "d87c7fcc6d445bc435a5693c25ba86daa01506bccd3d44b0827d0d4443e02126",
         "rule_hash": "d5ec5176921e90163c68114af01e60cdfd2d92be1c1585fee823754d3fa00d11",
-        "test_hash": "d257d8473d829644aae164925418d969a125887d7d836cf911e7cc9d525b390e",
-        "verdict": "weak"
+        "test_hash": "edc6598e2349fcbd188404ba34675723ae6e9a6c900cd8a4fbbfb96c021cfeec",
+        "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-19": {
-            "after": "    return [] if [item['id'] for item in found] != [WORKFLOWS] else found",
+            "after": null,
             "aim": "plain",
-            "before": "    return [] if [item['id'] for item in found] == [WORKFLOWS] else found",
+            "before": null,
             "bug_key": "f158befc993d42c788c99ef21729372b09180ecaf043c7cdc5f999900339a1c5",
-            "case": "sync_status on the sample v0.9.5 project before any update; the proof says the output carries the line `\u2192 Run: purlin:init --update`; the changed code reports nothing pending, so the line is not printed",
-            "file": "scripts/init/update.py",
-            "line": 2382,
-            "result": "survived",
-            "test_key": "169b717c37545899b9a07c628327c7369b11c05322fa14f6297bf4dad03de272",
-            "why": ""
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "test_unchanged": true,
+            "why": "two planted bugs left the proof's check passing"
           },
           "PROOF-91": {
             "after": "    _write(os.path.join(root, EVIDENCE_DIR, 'README.txt'),",
@@ -90,26 +78,26 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-19: the test builds the sample v0.9.5 project, calls sync_status and requires the update line to be one whole line of the output, which is the case and the result the proof names.",
-          "PROOF-19: the expected line is held in UPDATE_LINE, defined outside the test shown, so whether it is a literal or is taken from the code cannot be seen here.",
-          "PROOF-91: the test builds the same project, applies the update, calls sync_status and requires that `Run: purlin:init --update` appears nowhere in the output, which is the case and the result the proof names.",
-          "PROOF-91: the test does not check that the update applied anything, so it relies on PROOF-19 to show the line was there beforehand.",
-          "PROOF-19 and PROOF-91: both proofs name the function `sync_status` rather than what a person running the status would see.",
-          "The spot tests found nothing, and both tests hold a failable assertion on the value their proof names."
+          "PROOF-19: the test builds the sample v0.9.5 project and asserts that UPDATE_LINE is a whole line of what sync_status prints, which is the case and the result the proof names.",
+          "PROOF-19: UPDATE_LINE is defined outside the lines shown, so if it is taken from the code and not written as the literal `\u2192 Run: purlin:init --update`, a change to the wording of the line would still pass.",
+          "PROOF-19: the planted bug assumes sync_status takes what is pending from `pending()`, as the file's docstring says; the status module was not shown.",
+          "PROOF-91: the test applies the update to the sample v0.9.5 project and asserts that `Run: purlin:init --update` appears nowhere in what sync_status prints, which is what the proof names.",
+          "PROOF-91: the absence check alone would pass if sync_status printed nothing at all; PROOF-19's test is what shows the line is printed before the update.",
+          "The spot tests found nothing, and both tests hold an assertion that can fail on the value their proof names."
         ],
-        "findings": [
-          "PROOF-19: the test still passes when scripts/init/update.py:2382 reads \"return [] if [item['id'] for item in found] != [WORKFLOWS] else found\"",
-          "PROOF-19: the AI says this breaks: sync_status on the sample v0.9.5 project before any update; the proof says the output carries the line `\u2192 Run: purlin:init --update`; the changed code reports nothing pending, so the line is not printed"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [],
+        "no_bug": [
+          "No bug was caught for PROOF-19: two planted bugs left the proof's check passing.",
+          "PROOF-19 was settled with its test unchanged: it was judged to assert what the proof names."
+        ],
         "proof_hash": "3ac42b626e331ecb397cb9af0b302981543be894a52cf9040e48defe1b845117",
         "rule_hash": "74b21e789dc52664bf5ac08f21e7d08afd6950207223a369b87b42d04709c2bd",
         "test_hash": "cb9faae80c54c84c608f8eeff6fc2e44118e30addd88ad2e57c3025ccf1b2fca",
-        "verdict": "weak"
+        "verdict": "strong"
       },
       "RULE-2": {
         "at": "2026-10-06T15:44:24Z",
@@ -440,7 +428,7 @@
         "verdict": "strong"
       },
       "RULE-51": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-116": {
             "after": "    if problem:\n        print(problem, file=sys.stderr)\n        return EXIT_BAD_INVOCATION",
@@ -457,50 +445,36 @@
             "after": "    print('The changes are staged and not committed: %s' % out)\n    _git(root, 'reset', '-q', '--', paths[0])\n    return None",
             "aim": "past the test",
             "before": "    print('The changes are staged and not committed: %s' % out)\n    return None",
-            "bug_key": "d489eef7deeb7e575bb7908789658bb78b95fcf14dc6b2c189a6f6ca4ac1eebe",
+            "bug_key": "752dc33cffae81456f4dec459e908cfe344173823b8cce52ea88229fa7f69f23",
             "case": "the sample 0.9.5 project updated with `--yes` under a pre-commit hook that refuses; the proof says the changes are left staged; the changed code unstages the first changed file and leaves only the rest staged",
             "file": "scripts/init/update.py",
             "line": 2492,
-            "result": "survived",
-            "test_key": "386fd293493659eaec9c77618c1c12453faa6112f69603b34ebfae3afeeb2e60",
+            "result": "caught",
             "why": ""
           },
           "PROOF-4": {
             "after": "        print('There is no .purlin/ under %s, so there is nothing to update. '\n              'Run purlin:init first.' % args.project_root, file=sys.stderr)",
             "aim": "past the test",
             "before": "        print('There is no .purlin/ under %s, so there is nothing to update. '\n              'Run purlin:init first.' % root, file=sys.stderr)",
-            "bug_key": "dbeb93a2c008a31fc70d04e583b6c0d7abf83a197891f01ccf10d6c983ac523c",
+            "bug_key": "646c5e3fd32036acd73e52dc9f25e87f94af3446705eea4900eb7091b5f29c99",
             "case": "the update run against an empty folder named by a relative path; the proof says the message names the folder's full path; the changed code prints the relative path as it was given",
             "file": "scripts/init/update.py",
             "line": 2573,
-            "result": "survived",
-            "test_key": "1e53ac13d3f6d9b4e25878dbceffd4ae3fee4851ff011bbbc68bcc536928e3aa",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-4: the test runs the update on an empty folder, compares the exit code with 2 and the whole of the error output with the proof's sentence, but it passes an absolute path, so a message that repeats the path as given would still pass.",
-          "PROOF-116: the test breaks the settings file with a trailing comma, compares the exit code with 1, the printed line with the proof's words and the reader's own message and line number, and `git status` and the latest commit with what they were before.",
-          "PROOF-116: the reader's message and line are taken from the same JSON reader the test calls itself, not from a literal, so the test follows whatever that reader says.",
-          "PROOF-151: the test installs a refusing hook, finds the line `The changes are staged and not committed: blocked by policy` in the output and compares the latest commit with the one before.",
-          "PROOF-151: the test only checks that something is staged, not that every change the update made is staged, so a partly unstaged result still passes.",
-          "PROOF-151: the test discards the exit code, which neither the proof nor the rule names for this refusal."
-        ],
-        "findings": [
-          "PROOF-4: the test still passes when scripts/init/update.py:2573 reads \"'Run purlin:init first.' % args.project_root, file=sys.stderr)\"",
-          "PROOF-4: the AI says this breaks: the update run against an empty folder named by a relative path; the proof says the message names the folder's full path; the changed code prints the relative path as it was given",
-          "PROOF-151: the test still passes when scripts/init/update.py:2492 reads \"_git(root, 'reset', '-q', '--', paths[0])\"",
-          "PROOF-151: the AI says this breaks: the sample 0.9.5 project updated with `--yes` under a pre-commit hook that refuses; the proof says the changes are left staged; the changed code unstages the first changed file and leaves only the rest staged"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "0630362fe91e5f5745a451cd44007dda3ce1bb3852dc0f3a2495bed76af06ec6",
         "rule_hash": "4716842c22673275c6a440a34de1c58b364b12957c4bc7d0bc28ef1a8597067c",
-        "test_hash": "9b53c4bd1d59d134406ed1d6a4942a85dbdc39e81b35a754105f8a614e1ee6a8",
-        "verdict": "weak"
+        "test_hash": "913e9066eec15a33f8bd04a9c2bd38c25d48a8d6fd27dd948edd0674f6e6593a",
+        "verdict": "strong"
       },
       "RULE-52": {
         "at": "2026-10-06T15:44:24Z",
@@ -681,18 +655,17 @@
         "verdict": "strong"
       },
       "RULE-55": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-164": {
             "after": "        out.keep(root, rel)\n        _untrack(root, WORKFLOW_DIR)\n        os.remove(os.path.join(root, rel))",
             "aim": "past the test",
             "before": "        out.keep(root, rel)\n        _untrack(root, rel)\n        os.remove(os.path.join(root, rel))",
-            "bug_key": "f0ee34be5cbbaf811101f0cd7d40ae4b54c3a8a5566d33a06521ba48dd2781e0",
+            "bug_key": "25a79106d56b4594d3311f7dc4e46e2db36eb42e8aca462f60ae705b822b9b2a",
             "case": "the 0.9.5 sample with every question answered y; the proof says ci.yml is as it was; the changed code takes ci.yml out of git along with purlin-proofs.yml, leaving it on disk untracked",
             "file": "scripts/init/update.py",
             "line": 1052,
-            "result": "survived",
-            "test_key": "9589054046f79dae88e3b54dccba4e634321fdf478f84fa9540a4c8853a10d74",
+            "result": "caught",
             "why": ""
           },
           "PROOF-166": {
@@ -710,38 +683,25 @@
             "after": "    if files:\n        out.say('removed %d workflow%s that committed proof files'",
             "aim": "past the test",
             "before": "    if removed:\n        out.say('removed %d workflow%s that committed proof files'",
-            "bug_key": "562a12c6c8d60622d7f827c22dc7515ac46722b42f8a5d5ed429a5241239f798",
+            "bug_key": "8f50f537638c15ad5c63380a232a29f14433eca403f9b7c0de2687ec5e20ae91",
             "case": "the question for purlin-proofs.yml answered n and every other y; the proof says no removed line is printed; the changed code prints `removed 0 workflows that committed proof files`",
             "file": "scripts/init/update.py",
             "line": 1056,
-            "result": "survived",
-            "test_key": "60c64f89950cc1fa0dde5860b6c0cbd2c1edfc2612a47907598364c79b4c5b44",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-164: the test compares the printed line, the question asked, the files left in the workflow folder, the backup's bytes, the bytes of `ci.yml`, the removed line and that `purlin-proofs.yml` is no longer tracked, which is each result the proof names.",
-          "PROOF-164: the test reads the bytes of `ci.yml` and not whether git still tracks it, so an update that untracks `ci.yml` and leaves it on disk would still pass.",
-          "PROOF-166: the test compares the empty list of questions, the bytes of `purlin-proofs.yml`, that it is still tracked, the kept line and the empty pending list, which is each result the proof names.",
-          "PROOF-167: the test answers `n` to the one question, then compares the bytes of `purlin-proofs.yml` and the kept line, as the proof names.",
-          "PROOF-167: the test looks for a removed line only as the text `removed 1 workflow`, so a removed line with another count would still pass.",
-          "The spot tests found nothing; the test source shown gives no reason to doubt that, though the constants and helpers the tests use are defined outside it."
-        ],
-        "findings": [
-          "PROOF-164: the test still passes when scripts/init/update.py:1052 reads \"_untrack(root, WORKFLOW_DIR)\"",
-          "PROOF-164: the AI says this breaks: the 0.9.5 sample with every question answered y; the proof says ci.yml is as it was; the changed code takes ci.yml out of git along with purlin-proofs.yml, leaving it on disk untracked",
-          "PROOF-167: the test still passes when scripts/init/update.py:1056 reads \"if files:\"",
-          "PROOF-167: the AI says this breaks: the question for purlin-proofs.yml answered n and every other y; the proof says no removed line is printed; the changed code prints `removed 0 workflows that committed proof files`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a31617a1bf1a4d444370d502df41fa849677e315e20ce9fbfe15dd3852234ce9",
         "rule_hash": "51c49c6a23613f2079a75acec490393f2038c6d00d0e32e4a47e9f956fe5610e",
-        "test_hash": "686129516be6cf1810ae6b14b8d69b55c253be915ea1b7c5b364ecc9e3de5c78",
-        "verdict": "weak"
+        "test_hash": "137f68d5ac3c984aa3443aac075d320a0f37780e3221d2c2fb3f482808512bce",
+        "verdict": "strong"
       },
       "RULE-56": {
         "at": "2026-10-06T15:44:24Z",
@@ -1084,18 +1044,17 @@
         "verdict": "strong"
       },
       "RULE-61": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-184": {
             "after": "    def note(self, line):\n        print('    ' + line, file=sys.stderr)\n        self.log.append('    ' + line)",
             "aim": "past the test",
             "before": "    def note(self, line):\n        self.log.append('    ' + line)",
-            "bug_key": "20917119af08648f3bf5955c3984d46975710f94895bde532ef2a39ffdf5c2a2",
+            "bug_key": "4453d6fdab4953ddee1949a1b2107142b032ac3711700c7f0899cf18afe0cac9",
             "case": "three files holding 2, 1 and 1 marks updated with --yes; the proof says the output holds no line ending `as comments` or holding `kept the previous bytes`; the changed code prints each file's own line, both kinds, on the error stream of the output",
             "file": "scripts/init/update.py",
             "line": 2443,
-            "result": "survived",
-            "test_key": "0a1f911b535da849d44be7815ca41bd180d81088fc2adc045e7db5dd64f7ed51",
+            "result": "caught",
             "why": ""
           },
           "PROOF-185": {
@@ -1111,41 +1070,29 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-184: the test looks for the totals line `  markers: rewrote 4 markers in 3 files` in the printed lines, refuses any printed line holding `as comments` or `kept the previous bytes`, and reads the log for the `tests/test_login.py` rewrite line and its backup line, which are the values the proof names.",
-          "PROOF-184: the printed lines come from a helper whose source is not shown, so if it reads standard output alone, a per-file line printed on the error stream would pass unseen.",
-          "PROOF-184: the test also checks a log line for `tests/test_keys.py`, which the proof does not name.",
-          "PROOF-185: the test finds `These need you:` in the printed lines and checks that the first line starting `  committed ` and the totals line stand before it and the left line stands after it, which is the order the proof names.",
-          "PROOF-185: the left line is compared through a constant defined outside the test, so the test's own lines do not show that it reads `tests/test_module.py:3` with the proof's wording.",
-          "PROOF-185: the test also checks that the left line is in the log, which the proof does not name.",
-          "No spot test fired, and the tests shown give no cause for one: each asserts on literal values or a named constant and none mocks, swallows or self-compares."
-        ],
-        "findings": [
-          "PROOF-184: the test still passes when scripts/init/update.py:2443 reads \"print('    ' + line, file=sys.stderr)\"",
-          "PROOF-184: the AI says this breaks: three files holding 2, 1 and 1 marks updated with --yes; the proof says the output holds no line ending `as comments` or holding `kept the previous bytes`; the changed code prints each file's own line, both kinds, on the error stream of the output"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b8e0a565a557f3b74c188423a6a3853398e58af216ce87fbf3d240365c3a23be",
         "rule_hash": "1eaf9a715b28c1fb0c38c4944c8cb29b0f05ffac28e00b00f8e13f8fcf5ce2e6",
-        "test_hash": "43d9603442ad6f1b81c8e77c1feae82dd5b8f125fd05f3aa5a187fce45f548bf",
-        "verdict": "weak"
+        "test_hash": "80ddb5563b6555c8f1e2b48a8a8cd111b06fa2b337f3706d53791eb1adbdb3db",
+        "verdict": "strong"
       },
       "RULE-62": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-186": {
             "after": "            wanted = _confirm('Apply %s, which will %s'",
             "aim": "past the test",
             "before": "            wanted = _confirm('Apply %s, which will %s?'",
-            "bug_key": "5fe64661b08ad68d314372cce7d07d81d0890b1baf526aefe2aca733105d8cfe",
+            "bug_key": "96e700db28208c85f09151d31086c8e14204c9b8aad59dbec92527faa8cce34d",
             "case": "the sample 0.9.5 project updated with `y` and `n` on its input; the proof says the first question reads `Apply design-refs, ...? [y/N] y`; the changed code prints it with no `?` before `[y/N] y`",
             "file": "scripts/init/update.py",
             "line": 2639,
-            "result": "survived",
-            "test_key": "db5222d0fd0e26935b27707777f32b1852a23413644896760c0f6e1d9b2b33cb",
+            "result": "caught",
             "why": ""
           },
           "PROOF-187": {
@@ -1174,36 +1121,25 @@
             "after": "    ('hook', 'remove the git hooks an older release installed',",
             "aim": "past the test",
             "before": "    ('hooks', 'remove the git hooks an older release installed',",
-            "bug_key": "0a38e0e171355d75d0bc89d809402c44f2a69dbf71af0120a8b807d1aa7035b1",
+            "bug_key": "1cf17fa316ec7629c9bedf555a7030f3b99a898df4aed7ba6ce7a039de5e8820",
             "case": "the update run with `--apply config,everything`; the proof says the error lists every migration id, `hooks` among them; the changed code lists `hook` in its place, an id no migration had",
             "file": "scripts/init/update.py",
             "line": 2317,
-            "result": "survived",
-            "test_key": "c00ffe24d3a17903ff51fd675a8d244e17ffa2a4b879ee7202ea0c787ad6d2a5",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-186: the test counts the nine `[y/N]` lines, checks each holds it once, the first line's opening `Apply design-refs,` and its ending `[y/N] y`, the other eight endings and the ids still pending, but it never reads the `?` the proof shows before `[y/N]`.",
-          "PROOF-187: the test reads the output for `[y/N]`, compares the pending ids with the nine less `config` and `evidence`, and compares the whole commit subject, so it observes each result the proof names.",
-          "PROOF-188: the test compares the written pytest command with the one given and looks for the exact output line, so it observes both results the proof names.",
-          "PROOF-189: the test checks exit 2, the whole error output, the latest commit and an empty `git status`, but it builds the expected list of ids from the code's own table of migrations, so a wrong or missing id in that table still passes."
-        ],
-        "findings": [
-          "PROOF-186: the test still passes when scripts/init/update.py:2639 reads \"wanted = _confirm('Apply %s, which will %s'\"",
-          "PROOF-186: the AI says this breaks: the sample 0.9.5 project updated with `y` and `n` on its input; the proof says the first question reads `Apply design-refs, ...? [y/N] y`; the changed code prints it with no `?` before `[y/N] y`",
-          "PROOF-189: the test still passes when scripts/init/update.py:2317 reads \"('hook', 'remove the git hooks an older release installed',\"",
-          "PROOF-189: the AI says this breaks: the update run with `--apply config,everything`; the proof says the error lists every migration id, `hooks` among them; the changed code lists `hook` in its place, an id no migration had"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "d8f025691fff67574f111ef96a3970c52073b6a4ef13f197c09720155c279a24",
         "rule_hash": "c10cfbbe8f96a1940627333d458532b1b0f75546787fe81b156ffd33fa59bd45",
-        "test_hash": "99f68149377c4dc82b6b58acfd32e7959f07fe4b928c8ddf0d143e940e0081c5",
-        "verdict": "weak"
+        "test_hash": "50d943db30213fb82b3437751fddeea4f3f3e9be55933d093636424638a7c46b",
+        "verdict": "strong"
       },
       "RULE-63": {
         "at": "2026-10-06T15:44:24Z",
@@ -1406,97 +1342,69 @@
         "verdict": "strong"
       },
       "RULE-66": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-201": {
             "after": "        print('  Left to do:')\n        print(RUN_UPDATE)\n        print(NOTHING_RESTORED if restoring else HOW_TO_APPLY)",
             "aim": "past the test",
             "before": "        print('')\n        print(RUN_UPDATE)\n        print(NOTHING_RESTORED if restoring else HOW_TO_APPLY)",
-            "bug_key": "a7a3ddd21b1d75faecfc7473f8668457cd188f874f4fcc58c1fcc7c222c8417e",
+            "bug_key": "3d72ad0a02a69c57af0b8386906c67936cfcda41c535b3bec86424f8a84789c2",
             "case": "the update of the sample 0.9.5 project with a conftest.py and empty input; the proof says no line holds `Left to do:`; the changed code prints the line `  Left to do:` above the last two lines",
             "file": "scripts/init/update.py",
             "line": 2678,
-            "result": "survived",
-            "test_key": "8b312427e5d27b0af0647c482e5c7891fbac94a76bc41cc546895f39ec4c2083",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-201: the test runs the update with empty input and compares the exit code, the start of the first line, the whole `pytest:` line and the last two lines, each of which the proof names.",
-          "PROOF-201: the test looks for `Left to do:` as a whole line of the output, so a line that holds it with an indent or other words beside it still passes, where the proof says no line holds it.",
-          "PROOF-201: the test looks for `pass their tests`, `purlin:build` and `purlin:test` inside each line, as the proof says.",
-          "PROOF-201: the last two lines are compared with `UPDATE_LINE` and `HOW_TO_APPLY`, names whose values are not in the test shown, so whether they are written in the test file or taken from the code cannot be read here."
-        ],
-        "findings": [
-          "PROOF-201: the test still passes when scripts/init/update.py:2678 reads \"print('  Left to do:')\"",
-          "PROOF-201: the AI says this breaks: the update of the sample 0.9.5 project with a conftest.py and empty input; the proof says no line holds `Left to do:`; the changed code prints the line `  Left to do:` above the last two lines"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-201 is longer than 60 words."
-        ],
         "proof_hash": "12747543c69450fd4806a86e3047529c0ba4f7bb008625a535925d3b6415932a",
         "rule_hash": "2022a968d476b637e36a0bb9c69c9567664f6a0a5d03cab43d90652731b78d4d",
-        "test_hash": "58d97428c6c3351e51b37eaa6f4650eac69c124359c88dad4913a82cfe5dba01",
-        "verdict": "weak"
+        "test_hash": "a03a9aaddd439270d41c24e695248588eca4897ec98228a2972d4ba5137e5f9d",
+        "verdict": "strong"
       },
       "RULE-67": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-202": {
             "after": "    else:\n        print('Left to do: run the tests')\n        print(RUN_TESTS)",
             "aim": "past the test",
             "before": "    else:\n        print(RUN_TESTS)",
-            "bug_key": "75a205cc05ec9293cefa3b7f304f9838af145e74f974de0a88c8fb853a7c9a22",
+            "bug_key": "cce5f8c53b2a73e945fa8d911dff3274b1d4532ccdbc96c3caafd5d85d228577",
             "case": "the update with --yes on the sample 0.9.5 project; the proof says the output holds no `Left to do:`; the changed code prints the line `Left to do: run the tests` above the three closing lines",
             "file": "scripts/init/update.py",
             "line": 2718,
-            "result": "survived",
-            "test_key": "d830b7f5d8079eebf525d139aaef45978f5c9533ac51947e7aeb522d03d003cb",
+            "result": "caught",
             "why": ""
           },
           "PROOF-203": {
             "after": "    if left_pending:\n        print('  ' + RUN_TESTS)\n        print(RUN_UPDATE)",
             "aim": "past the test",
             "before": "    if left_pending:\n        print(RUN_UPDATE)",
-            "bug_key": "8c5952a54bddb33df23e6ffcbe1f9329d6063577e71f4106fe2e20b932b21f69",
+            "bug_key": "12919f209a0cda8e188c4a3208892adbbedf403efab71d3f4e0c9e59a51d2282",
             "case": "the update with --apply evidence on the sample 0.9.5 project; the proof says the output holds no `\u2192 Run: purlin:test --all --commit`; the changed code prints that text, indented by two spaces, above the update line",
             "file": "scripts/init/update.py",
             "line": 2714,
-            "result": "survived",
-            "test_key": "de97b778a6adcdb834d46101304b6b7f5df43e62b7c2b6693b5370cba0e85041",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-202: the test compares the last three printed lines with its RUN_TESTS list, which matches the three lines the proof names only if that list holds them as literals; the list's definition is not shown.",
-          "PROOF-202: the test looks for `Left to do:` only as a whole line, so a line that holds those words with anything beside them still passes, while `pass their tests` is searched for inside every line.",
-          "PROOF-203: the test compares the last two printed lines with the update line and the sentence naming the eight pending migrations in order, so a wrong count, name or order in that ending fails it.",
-          "PROOF-203: the test looks for `\u2192 Run: purlin:test --all --commit` only as a whole line, so the same text indented or with words after it still passes.",
-          "The spot tests found nothing, and both tests assert on printed output after a real run of the update on the sample project."
-        ],
-        "findings": [
-          "PROOF-202: the test still passes when scripts/init/update.py:2718 reads \"print('Left to do: run the tests')\"",
-          "PROOF-202: the AI says this breaks: the update with --yes on the sample 0.9.5 project; the proof says the output holds no `Left to do:`; the changed code prints the line `Left to do: run the tests` above the three closing lines",
-          "PROOF-203: the test still passes when scripts/init/update.py:2714 reads \"print('  ' + RUN_TESTS)\"",
-          "PROOF-203: the AI says this breaks: the update with --apply evidence on the sample 0.9.5 project; the proof says the output holds no `\u2192 Run: purlin:test --all --commit`; the changed code prints that text, indented by two spaces, above the update line"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-202 is longer than 60 words."
-        ],
         "proof_hash": "0f452f163a7dd637e03a318d31ea7e7624486bae2925d41704a2cc81586c52bd",
         "rule_hash": "b23b5e356f7e3b8e8d930c0e40ce3a99d350f6174cdf85f620b6237cfbdee7d6",
-        "test_hash": "fd660192608784778acd827c0ef318a9ba7cd3d06699480aba513d6188bbcfe3",
-        "verdict": "weak"
+        "test_hash": "1ed33c55d53bc9ce84c69797bb8c2fd2d9bd413b85509039bab917b71c6013d2",
+        "verdict": "strong"
       },
       "RULE-68": {
         "at": "2026-10-06T15:44:24Z",
@@ -1548,7 +1456,7 @@
         "verdict": "strong"
       },
       "RULE-69": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-208": {
             "after": "TAG_LINES_WENT = 'dropped %d docstring line%s that held only a 0.9.5 tag'",
@@ -1576,39 +1484,25 @@
             "after": "    lines = []",
             "aim": "past the test",
             "before": "    lines = [LEFT_HEADING]",
-            "bug_key": "ad65d9544d2e00c1ae3070efd861cd6c74f90d7b3d99211619b0f672ba2164f6",
+            "bug_key": "d6926628794a4f2b1be1c60f086ba13627b0cf1a68ca6538ebb6bed4f61af53f",
             "case": "a file with three docstrings the update cannot take, updated with --yes; the proof says the file is listed under `Purlin left these for you:` with `4 lines`; the changed code prints the `4 lines` line with no heading above it",
             "file": "scripts/init/update.py",
             "line": 2527,
-            "result": "survived",
-            "test_key": "0dca5ec57fc30af06b3c1b4623ae581301885de6480d5653dad85e9cd3c8c3a0",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-208: the test compares the whole file with a fixed expected text, compiles it, and checks that the line right after `  markers: rewrote 3 markers in 1 file` equals `TAG_LINES_WENT % (3, 's')`; if that name comes from the code under test, a change to the sentence's wording still passes.",
-          "PROOF-208: the expected file is compared as one constant, so the test source shown does not itself show that the first test has no docstring or how the second and third now read.",
-          "PROOF-209: the test compares the file with the old text with only its marker rewritten, checks that `1 line` for the file comes after `LEFT_HEADING`, and checks that no line holds `held only a 0.9.5 tag`; if `LEFT_HEADING` comes from the code under test, a change to the heading's words still passes.",
-          "PROOF-215: the test compares the file with the old text with only one marker rewritten and checks that no line holds `held only a 0.9.5 tag`, so the three docstrings staying is observed.",
-          "PROOF-215: the test checks only that the `4 lines` line is somewhere in the output and never reads the heading, so a missing or reworded `Purlin left these for you:` still passes."
-        ],
-        "findings": [
-          "PROOF-215: the test still passes when scripts/init/update.py:2527 reads \"lines = []\"",
-          "PROOF-215: the AI says this breaks: a file with three docstrings the update cannot take, updated with --yes; the proof says the file is listed under `Purlin left these for you:` with `4 lines`; the changed code prints the `4 lines` line with no heading above it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-208 is longer than 60 words and holds three cases: a docstring that is the tag alone, one that opens with a tag, and one that ends with a tag.",
-          "PROOF-215 holds three cases: a test whose body is a tag docstring alone, a test marked for a proof no spec has, and a test with no marker."
-        ],
         "proof_hash": "56055648a66535188def826ec97006915e914ace9c9d778b4afe9a4a18f105fd",
         "rule_hash": "96d7f12040aaabff99dae1d8ad1d1e32043801871a359f4efa80f792279f034b",
-        "test_hash": "c1241373a8f5bcd5b2a627300b5cd0e75ea506390401b083dc235e9bb9d77d46",
-        "verdict": "weak"
+        "test_hash": "f8c16bfb621cfdbb97bac92e162ad356436c03cf9c7f0d156afed6344f2fc9e3",
+        "verdict": "strong"
       },
       "RULE-7": {
         "at": "2026-10-06T15:44:24Z",
@@ -1731,18 +1625,17 @@
         "verdict": "strong"
       },
       "RULE-71": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-213": {
             "after": "        out.say('removed the design reference from %s: %s'\n                % (rel, ', '.join('> ' + name for name in removed)))",
             "aim": "past the test",
             "before": "        out.note('removed the design reference from %s: %s'\n                 % (rel, ', '.join('> ' + name for name in removed)))",
-            "bug_key": "cf7f04f296a84eaf8a3dd8fd579ad1ca55c2c9cc69a22a3be324322432243cce",
+            "bug_key": "6e6d99458b3bc20ab77e380621c36019033df64dc01e76489b69d1d846d0fb9a",
             "case": "the update with --yes on the sample 0.9.5 project; the proof says the third line is the line of totals for design-refs and no line names a spec under a migration; the changed code gives a third line for one spec, naming that spec under design-refs, with the totals below it",
             "file": "scripts/init/update.py",
             "line": 443,
-            "result": "survived",
-            "test_key": "b5dd4f9d079025efc9cf908cafde9f7729a015d228e55fb32989f4661649e4a8",
+            "result": "caught",
             "why": ""
           },
           "PROOF-214": {
@@ -1758,34 +1651,19 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-213: the test compares the first line with the full sentence built from the nine ids, so a wrong count, id or order in that line fails it.",
-          "PROOF-213: the test reads the second line only for its opening `.github/workflows/` and the words ` names a proof file: `, so the line number and the text shown after them are not compared.",
-          "PROOF-213: the test reads the third line only for its opening `  design-refs: `, so any line that opens that way passes, whether or not it is the line of totals.",
-          "PROOF-213: the test looks for a spec only in lines that open with six spaces and `specs/`, the shape of the pending list, so a spec named in any other shape of line under a migration passes.",
-          "PROOF-213: the test checks that no line holds `pending in`, as the proof names.",
-          "PROOF-214: the test compares the first line with `Applying 1 migration: evidence.` exactly and checks that no line holds `pending in`, which are both results the proof names.",
-          "PROOF-214: the test also checks for a line opening `  evidence: `, which the proof does not name.",
-          "Findings: the spot tests found nothing, and both tests hold the values their proofs name in backticks."
-        ],
-        "findings": [
-          "PROOF-213: the test still passes when scripts/init/update.py:443 reads \"out.say('removed the design reference from %s: %s'\"",
-          "PROOF-213: the AI says this breaks: the update with --yes on the sample 0.9.5 project; the proof says the third line is the line of totals for design-refs and no line names a spec under a migration; the changed code gives a third line for one spec, naming that spec under design-refs, with the totals below it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-213 is longer than 60 words, at about 61, though it holds one case."
-        ],
         "proof_hash": "0f25239feac5a379f0d8d71f2258c09e3a84ab62ae6531838b3fde03673ffa4b",
         "rule_hash": "7587e148e058315aba49a402e4f7c0b60516d62bafd706b5011055e90f1e81d5",
-        "test_hash": "15bf5a3a57d0711333ab9b449d3d1c53bed73fe0771237ac70ca8f00b735d571",
-        "verdict": "weak"
+        "test_hash": "82f1c202c1196b899dea47ef94ca7278f822e0a60b75ae771ee948940ed33a75",
+        "verdict": "strong"
       },
       "RULE-72": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-217": {
             "after": "            if not own and named[later]:\n                named[index] = True",
@@ -1802,39 +1680,25 @@
             "after": "LEFT_HEADING = 'Purlin left these:'",
             "aim": "past the test",
             "before": "LEFT_HEADING = 'Purlin left these for you:'",
-            "bug_key": "11324f7585c9e0c4052c52e24eaa9a5f3082158593c1e8f573d4ab7ca97a23a9",
+            "bug_key": "ca292526a3bf9db8b7a0cff432d9886e9178345a21a0cb6690a9d10a72974c1f",
             "case": "`.claude/hooks/check.sh` naming `purlin:verify` after the update with `--yes`; the proof says it is listed under `Purlin left these for you:` with `1 line`; the changed code lists it under `Purlin left these:`",
             "file": "scripts/init/update.py",
             "line": 244,
-            "result": "survived",
-            "test_key": "36c4ddc7d871e9d7391790694c059f8d0288132211e6c196f7fde13e671441fd",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-217: the test compares the whole of `CLAUDE.md` after the update with a literal expected text, and checks that `markers` is not among the pending ids, so each removal the proof names and the blank lines between what is left are observed.",
-          "PROOF-217: the project and the update run are built by a helper in the same file whose source is not shown, so that the update ran with `--yes` and that the project holds a test 0.9.5 marked are taken from the helper.",
-          "PROOF-218: the test compares `pipeline/AGENTS.md`, `ship.md` and `check.md` with literal texts, the settings as parsed JSON with `allow` holding `Bash(npm test)` alone, and `check.sh` with its original text, so each file result the proof names is observed.",
-          "PROOF-218: the test looks for the line `  .claude/hooks/check.sh: 1 line` followed by a sentence taken from the code under test, and never reads the heading `Purlin left these for you:`, so a different or missing heading still passes.",
-          "PROOF-218: the settings are compared after parsing, so the file's layout after the removal is not observed, which matches the proof's \"reading as JSON\"."
-        ],
-        "findings": [
-          "PROOF-218: the test still passes when scripts/init/update.py:244 reads \"LEFT_HEADING = 'Purlin left these:'\"",
-          "PROOF-218: the AI says this breaks: `.claude/hooks/check.sh` naming `purlin:verify` after the update with `--yes`; the proof says it is listed under `Purlin left these for you:` with `1 line`; the changed code lists it under `Purlin left these:`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-217 is longer than 60 words and holds several removals of different kinds in one case.",
-          "PROOF-218 is longer than 60 words and holds a second case, the file left as it was and listed, beside the files that lose their lines."
-        ],
         "proof_hash": "16b73146a43bce8226d7bf2aa8e897329729089c9d672532ed7e473cc35fe9ac",
         "rule_hash": "787f5a84a5f4e1b1c5a1bc4fa16cd469a991fa6babb44abcfe944e05cdf8947a",
-        "test_hash": "b8fda95d9d9a8956d4693861b14cc85167049f4469a634c0e3917993e780bf9e",
-        "verdict": "weak"
+        "test_hash": "8732055f8abe1464acd46655f9818121a20d6b83cb0c89294c95971e753c2054",
+        "verdict": "strong"
       },
       "RULE-73": {
         "at": "2026-10-06T15:44:24Z",
@@ -1934,7 +1798,7 @@
         "verdict": "strong"
       },
       "RULE-75": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:55:46Z",
         "bugs": {
           "PROOF-222": {
             "after": "    for line in list(status.ending_lines(data, root))[1:]:",
@@ -1951,12 +1815,11 @@
             "after": "        print(NOT_RUN, file=sys.stderr)\n        _print_ending(root)\n        return EXIT_OK\n    if advice:\n        report.owner(advice)",
             "aim": "past the test",
             "before": "        _print_ending(root)\n        return EXIT_OK\n    if advice:\n        report.owner(advice)",
-            "bug_key": "adb53944ad037015744f3c937f8c88d0621ba94dcf67db77d47beb38f4840f49",
+            "bug_key": "a801e1f5cd48fe4e1cb7901b6429af98715dbeacc1d4d15982959bd9b5cbd87f",
             "case": "a run that restored the project's files; the proof says its output holds none of `0.9.5`, `not run` and the rest; the changed code prints \"Every rule reads `not run` until the tests run again.\" on the error stream",
             "file": "scripts/init/update.py",
             "line": 2688,
-            "result": "survived",
-            "test_key": "2e577d4736534597e8bae2cf032b361236342231cb00839da37f623653ce07bb",
+            "result": "caught",
             "why": ""
           },
           "PROOF-225": {
@@ -1972,31 +1835,16 @@
           }
         },
         "code_hash": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "f118987851717b04f6f3202e053913c41c26197f",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-222: the test compares the tail of the printed lines with a blank line and the status's ending, and holds the whole output to four lines, one blank and that ending, so a missing, added or changed ending line fails it.",
-          "PROOF-222: the test takes the ending from the status after the run and requires a line holding `pass` and the line `Left to do:` in it, which stands for the proof's count of rules only as far as that line holds the word `pass`.",
-          "PROOF-222: the test never compares the first four lines, which the proof counts and does not name.",
-          "PROOF-223: the test looks for each word of its list in the standard output alone and checks the backup folder is absent, so a sentence of 0.9.5 printed on the error stream still passes.",
-          "PROOF-223: the list of words is a constant of the test file not shown here, so whether it holds every value the proof names cannot be read from the test's own lines.",
-          "PROOF-225: the test checks the skipped line, the restored line, the last commit's subject, the one pending id, the first line of the status's ending and that the output ends on that ending, which is each result the proof names.",
-          "PROOF-225: the test does not check the blank line above the ending or any line between the commit line and the ending, which the proof does not name either."
-        ],
-        "findings": [
-          "PROOF-223: the test still passes when scripts/init/update.py:2688 reads \"print(NOT_RUN, file=sys.stderr)\"",
-          "PROOF-223: the AI says this breaks: a run that restored the project's files; the proof says its output holds none of `0.9.5`, `not run` and the rest; the changed code prints \"Every rule reads `not run` until the tests run again.\" on the error stream"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-222 says \"that run\" and \"its four lines\" without naming what is done or what the four lines are, so the proof alone does not give the starting situation.",
-          "PROOF-223 names eleven values and a folder for one run, and the test reads them from a list kept outside the test's own lines."
-        ],
         "proof_hash": "875ecc1c45536e81b6ed347a52749502e228ba43e0f2735dc1a8ae2184f83071",
         "rule_hash": "745ef7a60e3b6247b8b28811f5e5f995a85ecc2d050c878e74fcceb235aa6185",
-        "test_hash": "a5b1c21b6a62be4b8792fc93c4b5c236634dbee501ad5ef2be064ffce6ef7ac8",
-        "verdict": "weak"
+        "test_hash": "c1a6fbda94785fd07b6f030e4305358deefaeba9e6498af7ea86eb18adf012af",
+        "verdict": "strong"
       },
       "RULE-76": {
         "at": "2026-10-06T15:44:24Z",
@@ -2108,14 +1956,14 @@
   "feature": "update",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:55Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:54:10Z",
+      "commit": "f118987851717b04f6f3202e053913c41c26197f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "8d4a108855f4c4d9ad80b171eea46e02a054622844a3d1f2538968a1242c165a",
         "spec": "19eac679801822452c4495fb2ea7f3d28a1eac599d2ce472a4105a93b04eaba5",
-        "tests": "b2ea44bdc19db0a5f1eb51e99ed4dee0336edbeefd5437909aa1df17be6a1ca1"
+        "tests": "ad37c4d949fb6ddd959f7b54c084c3965f54e45718d7eaed26a00b91fef2fce3"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
