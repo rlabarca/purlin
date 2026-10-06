@@ -14,8 +14,9 @@ Purlin keeps two things in your repository: the evidence of what the tests saw, 
 sign-off over it. It shows them as two facts, `Tests: met` and
 `Sign-off: signed 0.1.0 at a1b2c3d`.
 
-Purlin cannot prove your code is correct, and it makes no claim of compliance. Where sign-off
-happens in a regulated system, Purlin's evidence package is an input to it.
+Purlin cannot prove your code is correct, and it makes no claim of compliance. In a regulated
+environment, use it beside your document control system:
+[the sign-off](docs/sign-off.md) says how.
 
 ## What it touches
 
@@ -115,5 +116,6 @@ machine.
 [docs/index.md](docs/index.md) lists every guide. Three to start with:
 
 - [docs/how-purlin-works.md](docs/how-purlin-works.md): the model in one page.
-- [docs/sign-off.md](docs/sign-off.md): the sign-off, and what Purlin hands a regulated system.
+- [docs/sign-off.md](docs/sign-off.md): the sign-off, and where to start in a regulated
+  environment.
 - [docs/audit.md](docs/audit.md): how Purlin asks whether your tests would catch a bug.
