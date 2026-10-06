@@ -2,39 +2,31 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:57:32Z",
         "bugs": {
           "PROOF-1": {
             "after": "2. `## Proof`: numbered proof blueprints, `PROOF-N (RULE-N): description`\n3. ## Notes: free text on the feature, one paragraph",
             "aim": "past the test",
             "before": "2. `## Proof`: numbered proof blueprints, `PROOF-N (RULE-N): description`",
-            "bug_key": "0bceec7b6bff027fb65e022226765f89a31b8a004409a1c15d1edc61ca62f8be",
+            "bug_key": "b1ff417718b28f714f101e1c54332d6bdeaea338c29efa187a372b60dff237f2",
             "case": "the spec format reference read under `## Required sections`; the proof says exactly two sections, `## Rules` and `## Proof`, and no third; the changed reference lists a third required section, ## Notes",
             "file": "references/formats/spec_format.md",
             "line": 63,
-            "result": "survived",
-            "test_key": "ed0007cf3a558f77c42c24387497f2f1cab2ca49783dca40aa06b4009017b3af",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "03a2016081ebf298babb246dd05e3371ce51489b",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-1: the test reads the format reference under `## Required sections`, collects every name written in backticks that opens with `## `, and compares the list with exactly `## Rules` then `## Proof`, so a third section in backticks, a missing one or a changed order fails it.",
-          "PROOF-1: the test sees only names in backticks that open with two hashes and a space, so a third section listed without backticks, or at another heading level, is not seen and still passes.",
-          "PROOF-1: the spot tests found nothing, and the test does compare the two values the proof names against what the file holds."
-        ],
-        "findings": [
-          "PROOF-1: the test still passes when references/formats/spec_format.md:63 reads \"3. ## Notes: free text on the feature, one paragraph\"",
-          "PROOF-1: the AI says this breaks: the spec format reference read under `## Required sections`; the proof says exactly two sections, `## Rules` and `## Proof`, and no third; the changed reference lists a third required section, ## Notes"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "22815a274aa3022ad9818b3b79fcbc0282cb54d83121daed62ac2f2b4c72cbc9",
         "rule_hash": "0074c199a04b8340aee391263c2385b8f4fc20b8b4c972c4e34d3ec270d0e33c",
-        "test_hash": "94b3f8ee0e225684a3805ee361a9649e1d7208dca66fcd6d18c3c18c0f8e19be",
-        "verdict": "weak"
+        "test_hash": "fdf3ea0e9c5d3e2958bdb58eaf38aab7ca2cc98a34c7b6c1ddd55b8daa9efb4b",
+        "verdict": "strong"
       },
       "RULE-10": {
         "at": "2026-10-06T15:44:24Z",
@@ -457,7 +449,7 @@
         "verdict": "strong"
       },
       "RULE-41": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:57:32Z",
         "bugs": {
           "PROOF-14": {
             "after": "_RULE_RE = re.compile(r'^-\\s+(RULE-\\d):\\s*(.+)', re.MULTILINE)",
@@ -474,35 +466,25 @@
             "after": "A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, never gives its next proof `PROOF-13`.",
             "aim": "past the test",
             "before": "A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof `PROOF-13`.",
-            "bug_key": "978f67856c615b36f53be89843a3d5f6cbf5c6c7ae6477135086752beb97fb7c",
+            "bug_key": "b7a84af74e2ddf781216e24aa9d801930de0ef6861e3fbd66037294f40c5408b",
             "case": "the page on a spec whose `> Highest-Proof:` reads `12` with `PROOF-10` to `PROOF-12` deleted; the proof says the page gives its next proof `PROOF-13`; the changed page says such a spec never gives its next proof `PROOF-13`",
             "file": "references/formats/spec_format.md",
             "line": 214,
-            "result": "survived",
-            "test_key": "9ca37297c6043d6fadce23c48fa02d83223c3872f0765aa3290061ba6645abff",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "03a2016081ebf298babb246dd05e3371ce51489b",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-14: the test writes a spec with `RULE-1`, `RULE-3` and `RULE-20`, runs the status, checks that no line holds `is not numbered` and compares the rule ids with the exact list in order, which is the case and both results the proof names.",
-          "PROOF-69: the test looks for one sentence of the spec format page holding `> Highest-Proof:` reads `12`, the deleted `PROOF-10` to `PROOF-12` and the ending `gives its next proof PROOF-13`, and reads none of the words between those fragments, so a sentence that negates the claim still passes.",
-          "PROOF-69: nothing is done before the observation, since the proof reads a sentence of the documentation that exists whether or not the software numbers a new proof that way.",
-          "No proof of the rule adds a rule or proof to a spec and observes the number it takes, so the part of the rule about a new number being one more than the highest is shown only as wording on a page.",
-          "The spot tests found nothing, and both tests hold failable assertions with the values their proofs name."
-        ],
-        "findings": [
-          "PROOF-69: the test still passes when references/formats/spec_format.md:214 reads \"A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, never gives its next proof `PROOF-13`.\"",
-          "PROOF-69: the AI says this breaks: the page on a spec whose `> Highest-Proof:` reads `12` with `PROOF-10` to `PROOF-12` deleted; the proof says the page gives its next proof `PROOF-13`; the changed page says such a spec never gives its next proof `PROOF-13`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "492826a19c9f01087e7e85ed9d48fa329cc8e798cd76c307e48ccf70dc80b444",
         "rule_hash": "5e3015fbcdb05e2630a1a2f343a49350e177703887beb36fc832fc75f3eb7324",
-        "test_hash": "f944f54b5dfcf5801f86ec2775a5e6d47927cbb535c6351ffb1775fb88bc9747",
-        "verdict": "weak"
+        "test_hash": "0cb38cc0dc09f9067be512a553ff064d395aa83d135fd1b4810c85f2371c03cf",
+        "verdict": "strong"
       },
       "RULE-42": {
         "at": "2026-10-06T15:44:24Z",
@@ -742,14 +724,14 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:57Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:57:22Z",
+      "commit": "03a2016081ebf298babb246dd05e3371ce51489b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
         "spec": "31c754bf7239253973aa00b6d458ed6342c2dda1f26534f8c46101f1a1ff1a6b",
-        "tests": "19964887f1120bfed0be3754dd711a3083f1731e58497d5533d356bf3169e6f5"
+        "tests": "dfb1f317f645a2496c5f2ec3f775720a2d21601d302d15e05a892102dd2e1a52"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
