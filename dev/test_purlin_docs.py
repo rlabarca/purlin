@@ -115,7 +115,8 @@ def test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading():
     # repository does not hold, and one to a heading its file does not have,
     # are found, and one that climbs out of `docs/` to a real file is not.
     text = ('[a](how-purlin-works.md#no-such-heading) [b](no-such-page.md) '
-            '[c](../README.md#install) [d](how-purlin-works.md#four-words)')
+            '[c](../README.md#install) '
+            '[d](how-purlin-works.md#purlin-keeps-two-facts)')
     assert broken_links('docs/index.md', text) == [
         'docs/index.md: how-purlin-works.md#no-such-heading',
         'docs/index.md: no-such-page.md']
