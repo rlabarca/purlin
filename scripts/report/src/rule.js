@@ -196,14 +196,18 @@ function handCheckLines(rule) {
 /* Tests, one line each: a dot in the colour of the word its run gave it,
    the word in the dot's hover, then `file :: name`. A narrow line may break
    after a `::`, between a test's class and its name, rather than inside
-   either. */
+   either. Under a test that failed, one panel holds the text its tool
+   reported, `failure` in the payload, as the evidence keeps it; a failing
+   test with no such text, and a test that did not fail, have none. */
 function testLines(tests) {
   return (tests || []).map(function (t) {
     var word = TEST_WORDS[t.result] || 'not run';
     return '<p><span class="dot" role="img" title="' + esc(word)
       + '" aria-label="' + esc(word) + '" style="color:var(--state-'
       + tone(word) + ')"></span><span class="mono">' + esc(t.file) + ' :: '
-      + esc(t.name).split('::').join('::<wbr>') + '</span></p>';
+      + esc(t.name).split('::').join('::<wbr>') + '</span></p>'
+      + (t.result === 'fail' && t.failure
+        ? '<pre class="code failure">' + esc(t.failure) + '</pre>' : '');
   }).join('');
 }
 

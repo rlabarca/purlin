@@ -34,6 +34,12 @@ commit they were taken at:
         PROOF-1  passed  tests/test_login.py::test_proof_1
           carried forward from 4f1c2ab on macOS
 
+Under a test that failed, where the evidence keeps the text its tool
+reported, one line gives that text's first line, at most 200 characters:
+
+        PROOF-2  failed  tests/test_login.py::test_proof_2
+          failed with: AssertionError: expected 'Account locked'
+
 It
 exits 1 where it printed a warning and 0 where not. A name no spec of the
 checkout has is said so, and exits 1. The view writes nothing.
@@ -121,6 +127,10 @@ RULE_LINE = '  %s  %s  %s'                  # RULE-1, passed, not audited
 REASON_LINE = '    %s: %s'                  # not audited, no audit has ...
 PROOF_LINE = '    %s  %s'                   # PROOF-1, passed
 CARRIED_LINE = '      carried forward from %s on %s'      # 4f1c2ab, macOS
+# Under a failing test, the first line of the text its tool reported, a line
+# over FAILURE_SHOWN characters cut there and ended `...`.
+FAILURE_LINE = '      failed with: %s'
+FAILURE_SHOWN = 200
 MET = {'passed': 'passed', 'strong': 'strong'}
 # Cell words that name no work to do, so the view gives no reason under them.
 QUIET = ('passed', 'strong', 'not audited', 'waiting')
@@ -144,9 +154,11 @@ def view_lines(feature):
         for proof in rule.get('proofs') or ():
             lines.extend(_proof_lines(proof['id'], proof.get('result') or '',
                                       proof.get('tests')))
+            lines.extend(_failure_lines(proof.get('tests')))
             lines.extend(_carried_lines(proof.get('carried')))
         for test in rule.get('tests') or ():
             lines.append(PROOF_LINE % (rule['id'], _test_name(test)))
+            lines.extend(_failure_lines([test]))
         lines.extend(_carried_lines(rule.get('carried')))
     return lines
 
@@ -159,6 +171,22 @@ def _carried_lines(carried):
     return [CARRIED_LINE % (str(carried[name])[:7],
                             evidence_module.os_word(name))
             for name in states_module.SYSTEM_ORDER if carried.get(name)]
+
+
+def _failure_lines(tests):
+    """One line per failing test the payload carries a `failure` for: the
+    first line of the text its tool reported that says something."""
+    lines = []
+    for test in tests or ():
+        said = next((line.strip() for line
+                     in str(test.get('failure') or '').splitlines()
+                     if line.strip()), '')
+        if not said:
+            continue
+        if len(said) > FAILURE_SHOWN:
+            said = said[:FAILURE_SHOWN] + '...'
+        lines.append(FAILURE_LINE % said)
+    return lines
 
 
 def _test_name(test):

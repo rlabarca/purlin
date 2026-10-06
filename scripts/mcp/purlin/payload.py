@@ -1,4 +1,4 @@
-"""The structured project payload, schema 17.
+"""The structured project payload, schema 18.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 17,
+      "schema_version": 18,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -108,6 +108,11 @@ one of them, the full sha of the commit the newest was taken at
 so `{}` says every result was taken by the run that recorded it. A rule
 carries `carried` the same way for the tests marked with its own id.
 
+A test that reads `fail` carries `failure` where the evidence keeps a text
+its report held for it: the text of each case that failed or stopped on an
+error (`_failure_texts`), as the evidence's `reported` holds it. A test that
+passed, and a failing one of a suite with no report, carry no such key.
+
 A spec's `rules` holds its own rules and no other, anchors' included. Each
 carries `feature`, the name of the spec that owns it, so a rule is always
 addressed by its owner and its id: two features' `RULE-1` are two rules. An
@@ -185,7 +190,7 @@ from purlin import (PURLIN_VERSION,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -528,14 +533,16 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
     for proof_id in proof_ids:
         proof = owner_info['proofs'][proof_id]
         ran = _current_results(sections, proof_id, proof['env'])
+        said = _failure_texts(sections, proof_id, proof['env'])
         entry = {
             'id': proof_id,
             'manual': proof['manual'],
             'slow': bool(proof.get('slow')),
             'env': proof['env'],
             'text': proof['text'],
-            'tests': [{'file': f, 'name': n,
-                       'result': ran.get((f, n), 'not run')}
+            'tests': [_with_failure({'file': f, 'name': n,
+                                      'result': ran.get((f, n), 'not run')},
+                                     said)
                       for f, n in _backing_tests(sections, proof_id)],
             'carried': _carried_from(sections, proof_id, proof['env']),
         }
@@ -784,9 +791,56 @@ def _rule_tests(sections, rule_id):
                                           and results[key] != 'fail'):
                     results[key] = result
         if order:
-            return [{'file': path, 'name': name, 'result': results[(path, name)]}
+            said = _failure_texts(sections, rule_id)
+            return [_with_failure({'file': path, 'name': name,
+                                   'result': results[(path, name)]}, said)
                     for path, name in order]
     return []
+
+
+def _with_failure(test, said):
+    """`test` holding `failure`, the text its tool reported, where the test
+    reads `fail` and the evidence keeps a text for it."""
+    text = said.get((test['file'], test['name']))
+    if test.get('result') == 'fail' and text:
+        test['failure'] = text
+    return test
+
+
+def _failure_texts(sections, marker_id, env=None):
+    """`{(file, name): text}` for the tests of one proof, or of a rule's
+    own id, that a current section lists as `fail` with a text its report
+    held: the text of each case that failed or stopped on an error, a blank
+    line between two, each under a line naming its case where the test has
+    more than one. A newer section answers before an older one, and a proof
+    that names an operating system is read from that system alone.
+    """
+    found = {}
+    ordered = sorted((entry for entry in sections or ()
+                      if entry.get('current')
+                      and not (env and entry.get('os') != env)),
+                     key=lambda entry: str(entry['section'].get('at') or ''),
+                     reverse=True)
+    for entry in ordered:
+        for item in (entry['section'].get('proofs') or ()):
+            if not isinstance(item, dict) or item.get('id') != marker_id \
+                    or item.get('result') != 'fail':
+                continue
+            path, _, name = (item.get('test') or '').partition('::')
+            reported = item.get('reported')
+            cases = [case for case in (reported.get('cases') or ()
+                                       if isinstance(reported, dict) else ())
+                     if isinstance(case, dict)]
+            texts = [(str(case.get('name') or ''), str(case['text']))
+                     for case in cases
+                     if case.get('outcome') in ('fail', 'error')
+                     and isinstance(case.get('text'), str) and case['text']]
+            if not path or not texts or (path, name) in found:
+                continue
+            found[(path, name)] = '\n\n'.join(
+                '%s:\n%s' % pair if len(cases) > 1 else pair[1]
+                for pair in texts)
+    return found
 
 
 def _test_hash(project_root, proof_dicts, sources):

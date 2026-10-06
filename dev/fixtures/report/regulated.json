@@ -1310,7 +1310,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 17,
+  "schema_version": 18,
   "signoff": {
     "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432",
     "since": 4,

@@ -14,7 +14,8 @@ import sys
 import pytest
 
 from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, SERVER_PY, SPEC, Project,
-                         _commit_tests, _entry, _git, _rpc, _write, project)
+                         _commit_tests, _entry, _git, _report_held, _rpc,
+                         _write, project)
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import evidence as purlin_evidence
 from purlin import server as purlin_srv
@@ -573,6 +574,46 @@ class TestACarriedResultInTheView:
             '    RULE-1  tests/test_login.py::test_rule_1',
             '      carried forward from a1b2c3d on %s'
             % purlin_evidence.os_word(purlin_evidence.host_os())], lines
+
+
+class TestAFailingTestsTextInTheView:
+
+    @staticmethod
+    def _failing(project):
+        _commit_tests(project, 'PROOF-1')
+        project.evidence([_entry('PROOF-1', 'RULE-1', status='fail')])
+
+    # purlin: server PROOF-189
+    def test_a_failing_test_gives_the_first_line_its_tool_reported(
+            self, project):
+        self._failing(project)
+        _report_held(project, "AssertionError: expected 'Account locked'\n\n"
+                              'def test_proof_1():\n>       assert shown == '
+                              "'Account locked'")
+        lines = _view(project)
+        rule = next(line for line in lines if line.startswith('  RULE-1'))
+        under = _under(lines, rule)
+        at = under.index('    PROOF-1  failed  tests/test_login.py::'
+                         'test_proof_1')
+        assert under[at + 1:] == [
+            "      failed with: AssertionError: expected 'Account locked'"], \
+            lines
+
+    # purlin: server PROOF-190
+    def test_a_long_first_line_is_cut_at_200_characters(self, project):
+        self._failing(project)
+        _report_held(project, 'x' * 250 + '\nsecond line')
+        lines = _view(project)
+        assert ('      failed with: ' + 'x' * 200 + '...') in lines, lines
+        assert not any('second line' in line for line in lines), lines
+
+    # purlin: server PROOF-191
+    def test_a_failing_test_with_no_text_kept_has_no_such_line(self, project):
+        self._failing(project)
+        lines = _view(project)
+        assert ('    PROOF-1  failed  tests/test_login.py::test_proof_1'
+                in lines), lines
+        assert not any('failed with' in line for line in lines), lines
 
 
 class TestTheDriftScript:

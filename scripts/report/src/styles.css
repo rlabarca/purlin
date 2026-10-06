@@ -97,6 +97,11 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .ptests p:last-child{margin-bottom:0}
 .ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
 .ptests .dot,.tests .dot{margin-top:.45em}
+/* What a failing test's tool reported: one panel under the test's line. A
+   long line wraps inside it and a long text scrolls inside it, so the page
+   never scrolls sideways. */
+pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere}
+pre.failure:last-child{margin-bottom:0}
 /* The light theme's sunken ground is the darkest tan the page draws on, and
    the secondary and muted inks measure under 7 to 1 there, so text on it is
    set in the primary ink, which measures above. */

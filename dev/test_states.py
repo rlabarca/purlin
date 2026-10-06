@@ -15,7 +15,8 @@ import pytest
 
 from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, Project, SPEC,
                          _commit_tests, _entry, _git, _listed, _marked_tests,
-                         _write, project, spec_with_a_hand_check)
+                         _report_held, _write, project,
+                         spec_with_a_hand_check)
 from sign_project import _Out, signing_key
 # `mcp_project` puts `scripts/mcp` on the path, `sign_project` `scripts/review`.
 import sign as sign_module
@@ -908,7 +909,7 @@ class TestPayload:
     # purlin: states PROOF-31
     def test_schema_sixteen_carries_exactly_the_seventeen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 17
+        assert data['schema_version'] == 18
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
@@ -1076,6 +1077,59 @@ class TestPayload:
             shutil.rmtree(parent, ignore_errors=True)
         assert os.path.basename(moved) == 'work'
         assert data['project'] == 'labconnect', data['project']
+
+
+class TestAFailingTestsText:
+    """A failing test carries the text its tool reported, as the evidence
+    keeps it."""
+
+    @staticmethod
+    def _tests(project):
+        rules = {rule['id']: rule for rule in _feature(project.payload())[
+            'rules']}
+        return (rules['RULE-1']['proofs'][0]['tests'],
+                rules['RULE-2']['proofs'][0]['tests'])
+
+    # purlin: states PROOF-327
+    def test_a_failing_test_carries_the_text_its_report_held(self, project):
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence([_entry('PROOF-1', 'RULE-1', status='fail'),
+                          _entry('PROOF-2', 'RULE-2')])
+        _report_held(project, 'AssertionError: sum was wrong\n\n'
+                              'tests/test_login.py:9: AssertionError')
+        failed, passed = self._tests(project)
+        assert failed == [{
+            'file': 'tests/test_login.py', 'name': 'test_proof_1',
+            'result': 'fail',
+            'failure': 'AssertionError: sum was wrong\n\n'
+                       'tests/test_login.py:9: AssertionError'}]
+        assert passed == [{'file': 'tests/test_login.py',
+                           'name': 'test_proof_2', 'result': 'pass'}]
+
+    # purlin: states PROOF-328
+    def test_each_failing_case_of_several_is_named_above_its_text(
+            self, project):
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence([_entry('PROOF-1', 'RULE-1', status='fail'),
+                          _entry('PROOF-2', 'RULE-2')])
+        _report_held(project, None, cases=[
+            {'name': 'test_proof_1[a]', 'outcome': 'pass'},
+            {'name': 'test_proof_1[b]', 'outcome': 'fail', 'text': 'boom'},
+            {'name': 'test_proof_1[c]', 'outcome': 'error',
+             'text': 'fixture broke'}])
+        failed, _passed = self._tests(project)
+        assert failed[0]['failure'] == (
+            'test_proof_1[b]:\nboom\n\ntest_proof_1[c]:\nfixture broke')
+
+    # purlin: states PROOF-329
+    def test_a_failing_test_the_evidence_keeps_no_text_for_carries_none(
+            self, project):
+        _commit_tests(project, 'PROOF-1', 'PROOF-2')
+        project.evidence([_entry('PROOF-1', 'RULE-1', status='fail'),
+                          _entry('PROOF-2', 'RULE-2')])
+        failed, _passed = self._tests(project)
+        assert failed == [{'file': 'tests/test_login.py',
+                           'name': 'test_proof_1', 'result': 'fail'}]
 
 
 class TestProofResult:
