@@ -647,9 +647,14 @@ def test_three_people_reach_a_signed_version(tmp_path):
                          '.purlin/evidence/package/<version>.json')
     at_tag = os.path.join(team.base, 'package-at-tag.json')
     write(at_tag, check.git('show', '%s:%s' % (TAG, PACKAGE)) + '\n')
-    assert check.run('purlin:sign --check', [
-        sys.executable, SIGN, '--check', at_tag]).strip() == (
-            'The package matches its fingerprint.')
+    checked = check.run('purlin:sign --check', [
+        sys.executable, SIGN, '--check', at_tag]).strip().splitlines()
+    assert checked[0] == 'The package matches its fingerprint.'
+    #     The package lists the reports its results were read from; the
+    #     copy stands alone here, so none is beside it, which fails nothing.
+    assert len(checked) == 2 and re.fullmatch(
+        r'Reports beside the package that match their sha256: 0 of [1-9]\d*\.',
+        checked[1]), checked
     package = json.loads(read(check.path(PACKAGE)))
     assert package == json.loads(read(at_tag))
     assert package['tag'] == TAG and package['version'] == VERSION
