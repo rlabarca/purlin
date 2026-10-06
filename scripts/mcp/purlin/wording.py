@@ -33,12 +33,10 @@ if _MCP_DIR not in sys.path:
 
 from purlin import notices                                     # noqa: E402
 
-# What a line says is wrong: what changed in the proof's wording
-# (`notices.changed_words`), the test's file and line, the sha7 of the commit
-# that last changed the test. `STALE_REWORDED` where the two wordings share
-# too little to show a change.
-STALE = '%s after %s:%d last changed (%s).'
-STALE_REWORDED = 'It %s after %s:%d last changed (%s).'
+# What follows what changed in the proof's wording, in the sentence that says
+# what is wrong (`notices.change_sentence`): the test's file and line, the
+# sha7 of the commit that last changed the test.
+STALE_AFTER = ' after %s:%d last changed (%s)'
 # What to do where the old wording is now another proof's: that proof.
 STALE_MOVE = 'Move the comment to %s, which holds the old wording.'
 
@@ -105,9 +103,8 @@ def stale_line(info, path, marker, commit, old, new, now_under):
     "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run
     purlin:build package.` on one line. Neither wording is printed whole."""
     about, rule = notices.about_proof(info, marker.feature, marker.id)
-    changed = notices.changed_words(old, new)
-    wrong = (STALE_REWORDED if changed == notices.REWORDED else STALE) % (
-        changed, path, marker.line, commit)
+    wrong = notices.change_sentence(
+        old, new, STALE_AFTER % (path, marker.line, commit))
     do = (STALE_MOVE % now_under if now_under
           else notices.run('purlin:build %s' % marker.feature))
     return notices.line('to_correct', about, wrong, do, feature=marker.feature,

@@ -527,6 +527,12 @@ def _twice(*parsed):
             for item in ((spec or {}).get('doubled_lines') or {})}
 
 
+# A proof the range changed: `<spec> PROOF-N (RULE-N)`, then the words that
+# changed, or that it was reworded (`notices.change_sentence`). Neither
+# wording is printed whole.
+PROOF_CHANGED = '%s: changed. %s'
+
+
 def _proofs_view(before, after):
     """The proofs the range added, changed and moved, and their lines.
 
@@ -570,8 +576,10 @@ def _proofs_view(before, after):
             _plural(_rule_count(view['proofs_added']), 'proof'),
             _rules_text(view['proofs_added'])))
     for entry in changed:
-        lines.append('%s %s changed: it read "%s" and now reads "%s".' % (
-            entry['feature'], entry['id'], entry['old'], entry['new']))
+        about, _rule = notices.about_proof(after.get(entry['feature']),
+                                           entry['feature'], entry['id'])
+        lines.append(PROOF_CHANGED % (about, notices.change_sentence(
+            entry['old'], entry['new'])))
     for entry in moved:
         lines.append('%s %s moved to %s.' % (entry['feature'], entry['from'],
                                              entry['to']))

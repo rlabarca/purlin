@@ -727,7 +727,8 @@ class TestNumbersWrittenTwice:
                 if line.startswith('login PROOF-4: number written twice.')], \
             _lines(report)
         assert not [line for line in _lines(report)
-                    if line.startswith('login PROOF-4 changed')], _lines(report)
+                    if line.startswith('login PROOF-4')
+                    and ': changed.' in line], _lines(report)
         assert _view(report)['proofs_changed'] == []
 
     # purlin: drift PROOF-90
@@ -1021,12 +1022,17 @@ class TestProofsChanged:
             'login': ['PROOF-5', 'PROOF-6']}
 
     # purlin: drift PROOF-68
-    def test_a_pull_rewording_proof_1_quotes_both_wordings(self, tmp_path):
+    def test_a_pull_rewording_proof_1_shows_the_words_that_changed(
+            self, tmp_path):
         report = _pulled_proofs(
             tmp_path, dict(FOUR, **{'PROOF-1': 'An age of 90 minutes'}))
-        assert ('login PROOF-1 changed: it read "An age of 150 minutes" and '
-                'now reads "An age of 90 minutes".') in _lines(report), \
+        assert ('login PROOF-1 (RULE-1): changed. "150" became "90".'
+                in _lines(report)), _lines(report)
+        assert not any('An age of' in line for line in _lines(report)), \
             _lines(report)
+        assert _view(report)['proofs_changed'] == [{
+            'feature': 'login', 'id': 'PROOF-1',
+            'old': 'An age of 150 minutes', 'new': 'An age of 90 minutes'}]
         assert _view(report)['proofs_changed'] == [{
             'feature': 'login', 'id': 'PROOF-1',
             'old': 'An age of 150 minutes', 'new': 'An age of 90 minutes'}]
@@ -1041,3 +1047,10 @@ class TestProofsChanged:
             _lines(report)
         assert _view(report)['proofs_moved'] == [
             {'feature': 'login', 'from': 'PROOF-4', 'to': 'PROOF-6'}]
+
+    # purlin: drift PROOF-91
+    def test_a_pull_rewording_proof_2_whole_says_it_was_reworded(
+            self, tmp_path):
+        report = _pulled_proofs(tmp_path, dict(FOUR, **{'PROOF-2': 'Deux'}))
+        assert ('login PROOF-2 (RULE-1): changed. It was reworded.'
+                in _lines(report)), _lines(report)

@@ -18,7 +18,8 @@ beside it. `entries` gives those parts for the dashboard's data, which draws
 the name and the kind apart from the rest. `grouped` folds three or more
 entries of one kind into one, the kind first (`GROUP_MANY`), so the board
 stays short; the terminal prints every line. `changed_words` says what
-changed between two wordings of a proof without printing either whole.
+changed between two wordings of a proof without printing either whole, and
+`change_sentence` is that as the sentence every surface prints.
 """
 
 # Every kind of warning and of information, `(key, words)`. The words are
@@ -77,6 +78,10 @@ WORDS_SHOWN = 8
 CUT = '...'
 BECAME = '"%s" became "%s"'
 REWORDED = 'was reworded'
+# The sentence a change is said in: what changed, then what follows it in the
+# same sentence. `CHANGE_REWORDED` where the change is too large to show.
+CHANGE = '%s%s.'
+CHANGE_REWORDED = 'It %s%s.'
 
 
 class Notice(str):
@@ -162,6 +167,15 @@ def changed_words(old, new):
     if len(was) > WORDS_SHOWN and len(now) > WORDS_SHOWN:
         return REWORDED
     return BECAME % (shown(' '.join(was)), shown(' '.join(now)))
+
+
+def change_sentence(old, new, tail=''):
+    """`changed_words` as a whole sentence: `"sixteen" became "seventeen".`,
+    or `It was reworded.` where the change is too large to show. `tail` is
+    what follows in the same sentence, before its full stop."""
+    changed = changed_words(old, new)
+    return (CHANGE_REWORDED if changed == REWORDED else CHANGE) % (changed,
+                                                                   tail)
 
 
 def entries(lines, tone):

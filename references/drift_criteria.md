@@ -60,7 +60,7 @@ are not repeated here.
 | `rules_removed` | `1 rule removed: cart RULE-4.` |
 | none of the three | `No rule was added, changed or removed since your last pull.` |
 | `proofs_added` | `2 proofs added: sample_age PROOF-5, PROOF-6; stability PROOF-3.` |
-| `proofs_changed` | `sample_age PROOF-1 changed: it read "<old>" and now reads "<new>".` |
+| `proofs_changed` | `sample_age PROOF-1 (RULE-1): changed. "72 hours" became "96 hours".`, or `It was reworded.` where the change is too large to show |
 | `proofs_moved` | `sample_age PROOF-4 moved to PROOF-6.` |
 | `numbers_twice` | `sample_age PROOF-4: number written twice. The line on origin/main keeps it. Renumber the other to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
 | `comments_changed` | `sample_age PROOF-4 (RULE-2): test comment to correct. "<old words>" became "<new words>" after tests/test_age.py:14 last changed (a1b2c3d). Run purlin:build sample_age.` |
