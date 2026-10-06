@@ -2008,14 +2008,14 @@
   "feature": "purlin_report",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T16:41:09Z",
-      "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
+      "at": "2026-10-06T16:47:20Z",
+      "commit": "408eaafabc8b5ac49cb83c7472fda79650f25ff2",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "b3d4ed6c70f2d4255474f2a5d1d6b479f1eb63ff8c0abff4540af1633a040e52",
         "spec": "be2c93c0b39bdd1e535610e045b419cabdbfa8cfae43c067fe05c417130a1116",
-        "tests": "7965b3ebe9ba1e0b33838e4299bd6ca97035a35b739dea8bd731d38427b597fe"
+        "tests": "fe46fe0c6f3eb42f4685e4f45e9b04aeb10a0c425376d6128577689290e122a0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [

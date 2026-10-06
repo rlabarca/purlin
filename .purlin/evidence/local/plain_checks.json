@@ -447,7 +447,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-06T15:07:57Z",
-      "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+      "commit": "408eaafabc8b5ac49cb83c7472fda79650f25ff2",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {

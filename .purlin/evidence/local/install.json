@@ -169,7 +169,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-06T16:00:22Z",
-      "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+      "commit": "408eaafabc8b5ac49cb83c7472fda79650f25ff2",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -180,6 +180,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-06T16:00:22Z",
+            "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -188,6 +194,12 @@
           "test": "dev/test_install.py::test_both_pages_give_the_same_install_lines_and_this_repositorys_address"
         },
         {
+          "carried": {
+            "at": "2026-10-06T16:00:22Z",
+            "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -196,6 +208,12 @@
           "test": "dev/test_install.py::test_the_pages_commands_leave_purlin_installed_and_enabled"
         },
         {
+          "carried": {
+            "at": "2026-10-06T16:00:22Z",
+            "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -204,6 +222,12 @@
           "test": "dev/test_install.py::test_every_skill_of_this_checkout_landed_byte_for_byte"
         },
         {
+          "carried": {
+            "at": "2026-10-06T16:00:22Z",
+            "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -212,6 +236,12 @@
           "test": "dev/test_install.py::test_claude_code_offers_every_purlin_skill_to_the_model"
         },
         {
+          "carried": {
+            "at": "2026-10-06T16:00:22Z",
+            "commit": "b6aa8a5984a5ee90e4765bf3f2cfbd55a93944d8",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
