@@ -64,7 +64,7 @@ dashboard, so a reader learns it once:
 ```
 
 ```
-package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after dev/test_export.py:336 last changed (82c91f6). Run purlin:build package.
+package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run purlin:build package.
 ```
 
 - **What it is about** comes first, as you would look it up: `<spec> PROOF-N (RULE-N)` for a

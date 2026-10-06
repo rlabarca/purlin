@@ -2,7 +2,7 @@
 
     <what it is about>: <kind>. <what is wrong, in few words>. Run <command>.
 
-    package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after dev/test_export.py:336 last changed (82c91f6). Run purlin:build package.
+    package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run purlin:build package.
 
 What it is about comes first, as a person looks it up: `<spec> PROOF-N
 (RULE-N)` for a proof, `<spec> RULE-N` for a rule, `<spec>` for a whole spec

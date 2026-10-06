@@ -102,7 +102,7 @@ def stale_comments(project_root, features, scanned=None):
 def stale_line(info, path, marker, commit, old, new, now_under):
     """One test comment to correct, as every surface prints it:
     `package PROOF-3 (RULE-3): test comment to correct. "sixteen" became
-    "seventeen" after dev/test_export.py:336 last changed (82c91f6). Run
+    "seventeen" after tests/test_export.py:336 last changed (82c91f6). Run
     purlin:build package.` on one line. Neither wording is printed whole."""
     about, rule = notices.about_proof(info, marker.feature, marker.id)
     changed = notices.changed_words(old, new)
