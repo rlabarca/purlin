@@ -1862,6 +1862,47 @@ class TestSlowProofs:
         assert (root / 'ran.txt').read_text(encoding='utf-8').split() == [
             'fast'], output
 
+    @staticmethod
+    def _two_names(tmp_path, slow, ordinary):
+        """The slow project with its two tests named `slow`, the test of the
+        slow PROOF-2, and `ordinary`, the test of PROOF-1."""
+        root = _slow_project(tmp_path)
+        (root / 'tests' / 'test_feat.py').write_text(
+            SLOW_BODY.replace('def test_slow():', 'def %s():' % slow)
+            .replace('def test_ok():', 'def %s():' % ordinary),
+            encoding='utf-8')
+        return root
+
+    # purlin: run_script PROOF-327
+    def test_a_slow_test_whose_name_starts_another_tests_name_is_started(
+            self, tmp_path):
+        root = self._two_names(tmp_path, 'test_slow', 'test_slow_start')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert _proof(root, 'PROOF-1') == (
+            'pass', 'tests/test_feat.py::test_slow_start')
+        assert (root / 'started').exists()
+        lines = output.splitlines()
+        assert ('Started 1 slow test in the pytest suite: its command gives '
+                'Purlin no way to leave one test out.') in lines, output
+        assert not any(line.startswith('Left out') for line in lines), output
+        assert '--deselect' not in output, output
+
+    # purlin: run_script PROOF-328
+    def test_a_slow_test_whose_name_another_tests_name_starts_is_left_out(
+            self, tmp_path):
+        root = self._two_names(tmp_path, 'test_ok_slow', 'test_ok')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        (running,) = [line for line in output.splitlines()
+                      if line.startswith('Running pytest: ')]
+        assert ' --deselect tests/test_feat.py::test_ok_slow ' in running
+        assert not (root / 'started').exists()
+        assert _proof(root, 'PROOF-1') == ('pass',
+                                           'tests/test_feat.py::test_ok')
+        assert _proof(root, 'PROOF-2') == (
+            'not run', 'tests/test_feat.py::test_ok_slow')
+
     # purlin: run_script PROOF-278
     def test_a_command_that_cannot_leave_a_test_out_starts_it_and_says_so(
             self, tmp_path):
@@ -2003,6 +2044,269 @@ class TestSlowProofs:
         assert ('Started 1 slow test in the dotnet suite: its command gives '
                 'Purlin no way to leave one test out.') in lines, output
         assert not any(line.startswith('Left out') for line in lines), output
+
+
+    # purlin: run_script PROOF-329
+    def test_a_slow_dotnet_test_named_as_another_but_for_case_is_started(
+            self, tmp_path):
+        dotnet = dict(frameworks.entry_for('dotnet'),
+                      run='bash ./dotnet test --logger trx '
+                          '--results-directory {report}')
+        root = _project(tmp_path, tests=[dotnet])
+        # A stand-in for the tool, which writes down how it was started.
+        _script(root / 'dotnet', 'printf \'%s\\n\' "$@" > started-with.txt\n')
+        (root / 'Shop.Tests').mkdir()
+        (root / 'Shop.Tests' / 'CartTests.cs').write_text(
+            'using Xunit;\n\n'
+            'namespace Shop.Tests\n{\n'
+            '    public class CartTests\n    {\n'
+            '        // purlin: feat PROOF-1\n'
+            '        [Fact]\n'
+            '        public void checksout() { }\n\n'
+            '        // purlin: feat PROOF-2\n'
+            '        [Fact]\n'
+            '        public void ChecksOut() { }\n'
+            '    }\n}\n', encoding='utf-8')
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', ' @slow')))
+        _code, output = _run(root, '--feature', 'feat', '--test')
+        started = (root / 'started-with.txt').read_text(
+            encoding='utf-8').split()
+        assert started[:3] == ['test', '--logger', 'trx'], output
+        assert '--filter' not in started, started
+        lines = output.splitlines()
+        assert ('Started 1 slow test in the dotnet suite: its command gives '
+                'Purlin no way to leave one test out.') in lines, output
+        assert not any(line.startswith('Left out') for line in lines), output
+
+
+# `feat` of three rules. The test of PROOF-2, tagged `@slow`, writes the file
+# `started` and checks nothing; the test of PROOF-3, tagged `@slow` too,
+# writes `started-other`.
+SETTLE_BODY = ('from src.feat import VALUE\n\n'
+               '# purlin: feat PROOF-1\n'
+               'def test_ok():\n'
+               '    assert VALUE\n\n'
+               '# purlin: feat PROOF-2\n'
+               'def test_slow():\n'
+               "    open('started', 'a').close()\n\n"
+               '# purlin: feat PROOF-3\n'
+               'def test_other_slow():\n'
+               "    open('started-other', 'a').close()\n"
+               '    assert VALUE\n')
+CHECKS_NOTHING = "    open('started', 'a').close()\n\n"
+CHECKS_THE_VALUE = ("    open('started', 'a').close()\n"
+                    '    assert VALUE == 1\n\n')
+
+
+@pytest.fixture
+def slow_rule_settled(tmp_path, claude):
+    """A git checkout of `feat` after `--all --audit` kept a bug as
+    `survived` for the slow PROOF-2, its test was changed to check the value
+    and `--audit --feature feat --settle RULE-2` ran.
+    `(root, the settle's exit code, its output)`."""
+    install, _directory = claude
+    root = _pytest_project(tmp_path, body=SETTLE_BODY)
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+    _spec(root, 'feat', rules=3, proofs=(('PROOF-1', 'RULE-1', ''),
+                                         ('PROOF-2', 'RULE-2', ' @slow'),
+                                         ('PROOF-3', 'RULE-3', ' @slow')))
+    (root / '.gitignore').write_text(
+        '.purlin/runtime/\n__pycache__/\n.pytest_cache/\nstarted*\n',
+        encoding='utf-8')
+    _git_repo(root)
+    install(answers=[{'PROOF-2': fake_claude.change(
+        'src/feat.py', 'VALUE = 1', 'VALUE = 2',
+        case='the value is read; the proof says 1; the changed code gives 2',
+        aim='past the test')}])
+    code, output = _run(root, '--all', '--audit')
+    assert code == 0, output
+    kept = json.loads((root / '.purlin' / 'evidence' / 'local' / 'feat.json')
+                      .read_text(encoding='utf-8'))['audit']['rules']
+    assert kept['RULE-2']['bugs']['PROOF-2']['result'] == 'survived', kept
+    for name in ('started', 'started-other'):
+        (root / name).unlink()
+    path = root / 'tests' / 'test_feat.py'
+    path.write_text(path.read_text(encoding='utf-8').replace(
+        CHECKS_NOTHING, CHECKS_THE_VALUE), encoding='utf-8')
+    install()
+    code, output = _run(root, '--audit', '--feature', 'feat', '--settle',
+                        'RULE-2')
+    return root, code, output
+
+
+class TestASettleStartsTheSlowTestOfItsRule:
+
+    # purlin: run_script PROOF-330
+    def test_the_slow_test_of_the_rule_named_is_started(
+            self, slow_rule_settled):
+        root, code, output = slow_rule_settled
+        assert code == 0, output
+        assert (root / 'started').exists(), output
+        assert _proof(root, 'PROOF-2') == ('pass',
+                                           'tests/test_feat.py::test_slow')
+
+    # purlin: run_script PROOF-331
+    def test_the_slow_test_of_another_rule_stays_left_out(
+            self, slow_rule_settled):
+        root, _code, output = slow_rule_settled
+        assert ('Left out 1 slow proof: feat PROOF-3. purlin:test --all runs '
+                'it when it is due.') in output.splitlines(), output
+        assert not (root / 'started-other').exists(), output
+
+    # purlin: run_script PROOF-332
+    def test_the_one_command_settles_the_rule(self, slow_rule_settled):
+        _root, _code, output = slow_rule_settled
+        lines = output.splitlines()
+        assert 'feat RULE-2   strong' in lines, output
+        under = lines[lines.index('feat RULE-2   strong') + 1:][:2]
+        assert ('  PROOF-2: the test now catches the bug it missed at '
+                'src/feat.py:1.') in under, output
+        assert not any('nothing to settle' in line for line in lines), output
+
+
+# ---------------------------------------------------------------------------
+# A run over every feature reads an audited anchor again
+# ---------------------------------------------------------------------------
+
+ANCHOR_TESTS = ('import os\n\n'
+                '# purlin: shared PROOF-1\n'
+                'def test_the_readme_is_there():\n'
+                "    assert os.path.isfile('README.md')\n\n"
+                '# purlin: shared PROOF-2\n'
+                'def test_the_readme_holds_a_line():\n'
+                "    assert open('README.md').read().strip()\n")
+HOLDS_A_LINE = "    assert open('README.md').read().strip()\n"
+ANCHORS_READ = ('Anchors: the spot tests read 2 audited rules again. '
+                '%d spot-checked, %d weak.')
+NO_BUG_FOR_AN_ANCHOR = ("No bug was planted: no bug is planted for an "
+                        "anchor's rule.")
+
+
+def _anchor_project(tmp_path):
+    """A git checkout of `feat` and the anchor `shared`, whose two rules
+    each have one passing test."""
+    root = _pytest_project(tmp_path)
+    _spec(root, 'feat')
+    (root / 'src').mkdir()
+    (root / 'src' / 'feat.py').write_text('VALUE = 1\n', encoding='utf-8')
+    (root / 'README.md').write_text('one\n', encoding='utf-8')
+    anchors = root / 'specs' / '_anchors'
+    anchors.mkdir()
+    (anchors / 'shared.md').write_text(
+        '# Anchor: shared\n\n## Rules\n\n'
+        '- RULE-1: The project has a readme\n'
+        '- RULE-2: The readme holds a line\n\n## Proof\n\n'
+        '- PROOF-1 (RULE-1): The file README.md is there\n'
+        '- PROOF-2 (RULE-2): The file README.md holds a line\n',
+        encoding='utf-8')
+    (root / 'tests' / 'test_shared.py').write_text(ANCHOR_TESTS,
+                                                   encoding='utf-8')
+    (root / '.gitignore').write_text(
+        '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n'
+        '.pytest_cache/\n', encoding='utf-8')
+    _git_repo(root)
+    return root
+
+
+def _audited_anchor(tmp_path):
+    """The anchor project after `--all --audit --commit` read both rules of
+    `shared`, and `README.md` was then changed and committed."""
+    root = _anchor_project(tmp_path)
+    code, output = _run(root, '--all', '--audit', '--commit')
+    assert code == 0, output
+    assert _strong_words(root) == ['spot-checked', 'spot-checked'], output
+    _readme_commit(root)
+    return root
+
+
+def _strong_words(root, feature='shared'):
+    """The word each rule's strong cell reads, in rule order."""
+    return [_rule(root, feature, rule_id)['cells']['strong']['word']
+            for rule_id in ('RULE-1', 'RULE-2')]
+
+
+def _audit_rules(root, feature='shared'):
+    return (_evidence(root, feature).get('audit') or {}).get('rules') or {}
+
+
+class TestAFullRunReadsAnAuditedAnchorAgain:
+
+    # purlin: run_script PROOF-333
+    def test_a_full_run_brings_an_audited_anchor_up_to_date(
+            self, tmp_path, claude):
+        _install, directory = claude
+        root = _audited_anchor(tmp_path)
+        asked = len(fake_claude.calls(directory))
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert ANCHORS_READ % (2, 0) in output.splitlines(), output
+        assert _strong_words(root) == ['spot-checked', 'spot-checked']
+        assert len(fake_claude.calls(directory)) == asked
+        entry = _audit_rules(root)['RULE-1']
+        assert (entry['verdict'], entry['findings'], entry['no_bug']) == (
+            'spot-checked', [], [NO_BUG_FOR_AN_ANCHOR]), entry
+
+    # purlin: run_script PROOF-334
+    def test_a_test_that_can_no_longer_fail_reads_weak(self, tmp_path,
+                                                       claude):
+        root = _audited_anchor(tmp_path)
+        path = root / 'tests' / 'test_shared.py'
+        path.write_text(path.read_text(encoding='utf-8').replace(
+            HOLDS_A_LINE, '    assert True\n'), encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert ANCHORS_READ % (1, 1) in output.splitlines(), output
+        entry = _audit_rules(root)['RULE-2']
+        assert entry['verdict'] == 'weak', entry
+        assert entry['findings'] == [
+            'tests/test_shared.py::test_the_readme_holds_a_line: the check '
+            'cannot fail: assert True.'], entry
+
+    # purlin: run_script PROOF-338
+    def test_a_rule_whose_test_fails_is_not_read_again(self, tmp_path,
+                                                       claude):
+        root = _audited_anchor(tmp_path)
+        before = _audit_rules(root)['RULE-2']
+        path = root / 'tests' / 'test_shared.py'
+        path.write_text(path.read_text(encoding='utf-8').replace(
+            HOLDS_A_LINE, '    assert not open(\'README.md\').read()\n'),
+            encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert ('Anchors: the spot tests read 1 audited rule again. '
+                '1 spot-checked, 0 weak.') in output.splitlines(), output
+        assert _audit_rules(root)['RULE-2'] == before
+
+    # purlin: run_script PROOF-335
+    def test_an_anchor_never_audited_is_left_as_it_is(self, tmp_path):
+        root = _anchor_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert not [line for line in output.splitlines()
+                    if line.startswith('Anchors: ')], output
+        assert _audit_rules(root) == {}
+
+    # purlin: run_script PROOF-336
+    def test_a_run_of_the_anchor_alone_reads_nothing_again(self, tmp_path,
+                                                           claude):
+        root = _audited_anchor(tmp_path)
+        code, output = _run(root, '--feature', 'shared', '--test')
+        assert code == 0, output
+        assert not [line for line in output.splitlines()
+                    if line.startswith('Anchors: ')], output
+        assert _strong_words(root) == ['out of date', 'out of date']
+
+    # purlin: run_script PROOF-337
+    def test_a_clean_run_reads_the_anchor_again_and_commits_it(
+            self, tmp_path, claude):
+        root = _audited_anchor(tmp_path)
+        code, output = _run(root, '--clean', '--test', '--commit')
+        assert code == 0, output
+        assert ANCHORS_READ % (2, 0) in output.splitlines(), output
+        assert _git(root, 'status', '--porcelain').strip() == '', output
+        assert _strong_words(root) == ['spot-checked', 'spot-checked']
 
 
 class TestNothingToRunOverAFailure:

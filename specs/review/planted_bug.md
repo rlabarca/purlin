@@ -14,7 +14,7 @@
 > Scope: scripts/review/planted_bug.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
 > Highest-Rule: 30
-> Highest-Proof: 61
+> Highest-Proof: 63
 
 ## Rules
 
@@ -40,7 +40,7 @@
 - RULE-23: Terminal escape sequences and control characters are removed from a part's `case:` line, from its `file:` value and from a `no bug` reason before any of them is recorded or printed
 - RULE-24: The words `aim:` and `case:` that open their lines are read in any letter case and after any spaces
 - RULE-25: The line the finding of a bug that survived names is the first line the change made different that is neither blank nor a comment line; where the change left no such line, it is the first line the change made different
-- RULE-26: Where the suite's test tool can leave a test out by name, the other marked tests of the proof's test file are not started against the bug, before it is planted or with it in place; where it cannot, the whole file runs and only the proof's own tests are read
+- RULE-26: Where the suite's test tool can leave a test out by name, the other marked tests of the proof's test file are not started against the bug, before it is planted or with it in place; a test the tool cannot leave out without leaving out one of the proof's own, such as a pytest test whose name is the start of the name of the proof's test, is started; where the tool can leave no test out, the whole file runs; only the proof's own tests are read
 - RULE-27: A `not made` result is worded by where its reason came from: a reason the model gave on a `no bug:` line prints `No bug was planted: the model found no change that would break <PROOF-N>: <why>.` whatever its words, when the bug is asked for and each time the kept result is read again
 - RULE-28: A `case:` line wrapped over a second line is read to the end of that second line, the two joined by one space, where the second line is not blank and opens none of `aim:`, `case:`, `file:`, `before:`, `after:`, `no bug:` or `===`
 - RULE-29: A `case:` line standing after the `file:` line and before `before:` is read as one above `file:` is
@@ -96,6 +96,8 @@
 - PROOF-48 (RULE-25): The model's change turns `return days`, line 12 of `src/age.py`, into three lines, `# planted`, an empty line and `return 0`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:14 reads "return 0"`
 - PROOF-49 (RULE-25): The model's change puts the line `# planted` above `days = minutes(stamp)`, leaves that line and the next as they were and turns `return 0` into `return 1`, and the test of `PROOF-1` still passes; the audit prints `  PROOF-1: the test still passes when src/age.py:12 reads "return 1"`
 - PROOF-50 (RULE-26): `tests/test_age.py` holds the test of `PROOF-1` and the test of `PROOF-2`, which writes a line to a log each time it runs; a bug is planted for `PROOF-1` and its test catches it; the log was never written
+- PROOF-62 (RULE-26): `tests/test_age.py` holds `test_proof_1`, the test of `PROOF-1`, and `test_proof_10`, the test of `PROOF-10`, each checking that the age is `90`; a bug that makes the age `0` is planted for `PROOF-10`; its result reads `caught`
+- PROOF-63 (RULE-26): `tests/test_age.py` holds `test_proof_1`, the test of `PROOF-1`, and `test_proof_10`, the test of `PROOF-10`, which writes a line to a log each time it runs; a bug is planted for `PROOF-1` and its test catches it; the log was never written
 - PROOF-51 (RULE-27): The part for `PROOF-1` reads `no bug: the refund path the proof names is not in the project`; the audit prints `age RULE-1   spot-checked` and under it `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the refund path the proof names is not in the project.`
 - PROOF-52 (RULE-27): `PROOF-1` keeps the result of `no bug: the refund path the proof names is not in the project`; the rule is read again with nothing changed, and the audit prints `  The spot tests found nothing. No bug was planted: the model found no change that would break PROOF-1: the refund path the proof names is not in the project.`
 - PROOF-53 (RULE-28): The part for `PROOF-1` holds the line `case: a stamp of 2026-01-01; the proof says 90;`, then the line `the changed code gives 0`, then `file: src/age.py`; the bug is planted and reads `caught`, and its entry reads `case` `a stamp of 2026-01-01; the proof says 90; the changed code gives 0`

@@ -58,6 +58,9 @@ The audit found 42 of 50 rules strong (84%): 42 strong, 8 weak.
   sharper proof.
 - Never change a sound test or narrow a rule to clear a finding.
 
+A spot test's finding is settled too. `purlin:build` fixes the test and settles the rule: the
+spot tests read the test again, no AI is asked, and the finding is gone at once.
+
 Auditing again does not clear a finding. If the code changes and the test does not,
 `purlin:audit` plants the same bug again first. The test still passes: the rule stays `weak`.
 
@@ -79,6 +82,8 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
   bug was caught is the test's own pass or fail.
 - **A result goes out of date.** When a rule, its proof, its test or the code it covers changes,
   the rule reads `out of date`, with its last result and date, until the audit reads it again.
+  An anchor covers the whole project, so any change ends its result. `purlin:test --all` runs
+  the spot tests over an audited anchor's tests again, so its result stays current.
 - **The AI is given no tools.** It is started with no tools, no plugins and none of your
   settings, in an empty folder. It can read and change nothing.
 - **It stays fast.** Only proofs whose test or code changed since the last audit get a new bug.
@@ -98,6 +103,10 @@ bug still survives, else `strong` where any of its proofs has a caught bug, else
   bugs, so a result is kept until the rule, its proof, its test or its code changes.
 - It does not say why a test now catches a bug it missed. If the code changed and the test did
   not, and the test now fails with the bug, the bug reads `caught`.
+- It does not read a test again because a helper it calls changed. A result is kept until the
+  test's own lines change: change them to have a new bug planted, or run `purlin:audit --all`,
+  which reads every rule again with the spot tests and the AI's reading and keeps each planted
+  bug's result.
 - It reads only rules whose tests pass. A failing test is fixed first.
 - It plants no bug for an anchor's rule, so an anchor's rule reads `spot-checked`, never
   `strong`.

@@ -239,6 +239,15 @@ settle, so the next audit plants a bug for it. An entry settled without a
 model being asked keeps the `model` and `criteria` of the entry it replaces,
 and its `explanation` is empty.
 
+`purlin:test --all` and `purlin:test --clean` write an anchor's entries
+again: for each rule of an anchor that passes its tests and holds an entry,
+the spot tests run over its tests and no model is asked
+(`references/review_criteria.md`, "Anchors and rules with no proof"). The
+entry reads `spot-checked` or `weak`, holds no bug, and keeps the `model` and
+`criteria` of the entry it replaces. It keeps that entry's `explanation` and
+`notes` where the rule, its proofs and its tests are as that entry read
+them, and holds neither where one of them changed.
+
 `test_key` says whether a proof's test changed since its bug got past it.
 It is the sha256 of the sorted lines `<file> <test name> <sha256 of the
 test's source>`, one per test tied to that proof, the source as the audit
@@ -350,7 +359,9 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
 
 - A test run reads the file from disk and replaces `platforms[<this os>]`
   whole, so a run on another machine replaces the results of the one before.
-  Every other section and `audit` stay as they are. One result is carried
+  Every other section stays as it is, and so does `audit`, but for an
+  anchor's entries under `purlin:test --all` and `--clean`, as "The audit"
+  says. One result is carried
   from the section replaced into the new one: that of a slow proof's test
   the run left out, where both sections have the same fingerprint. Its
   entry is marked `carried`.

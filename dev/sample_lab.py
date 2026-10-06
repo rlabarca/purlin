@@ -509,6 +509,35 @@ def change_both_tests_of_rule_4(root):
              "    assert record['status']")
 
 
+# The test of `PROOF-11` as it stands, which checks nothing, and as
+# `purlin:build` strengthens it: the proof's two numbers.
+PRINTS_THE_NUMBERS = "    print(first['accession'], second['accession'])\n"
+CHECKS_THE_NUMBERS = (
+    "    assert (first['accession'], second['accession']) == (\n"
+    "        'BOS-2026-00001', 'BOS-2026-00002')\n")
+# The end of the test of `PROOF-7`, and the same test with a check that
+# cannot fail.
+CHECKS_72 = ("at('2026-03-04T07:00'))\n"
+             "    assert record['status'] == 'accepted'\n")
+CANNOT_FAIL_72 = "at('2026-03-04T07:00'))\n    assert True\n"
+
+
+def check_the_accession_numbers(root):
+    """Change the test of `PROOF-11` to check the proof's two numbers."""
+    _replace(root, 'tests/test_intake.py', PRINTS_THE_NUMBERS,
+             CHECKS_THE_NUMBERS)
+
+
+def check_nothing_at_72_hours(root):
+    """Change the test of `PROOF-7` to end on `assert True`."""
+    _replace(root, 'tests/test_intake.py', CHECKS_72, CANNOT_FAIL_72)
+
+
+def check_the_status_at_72_hours(root):
+    """Change the test of `PROOF-7` back to check the status `accepted`."""
+    _replace(root, 'tests/test_intake.py', CANNOT_FAIL_72, CHECKS_72)
+
+
 def hand_in_72_hours(root):
     """Change the test of `PROOF-7` to hand in a sample exactly 72 hours
     old, the proof's own case, and leave the test of `PROOF-6` as it is."""
@@ -606,14 +635,21 @@ class Settled(object):
 
 
 def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
-            exit_code=0, reply=None, sound=()):
+            exit_code=0, reply=None, sound=(), weaken=None):
     """Build the sample lab under `folder`, audit it once with `reply`,
     `REPLY` by default, make `change(root)`, then run the audit of
     `sample_intake` with `--settle` for each of `rules` (a plain audit for
     none) and `--sound` for each proof of `sound`, a fake `claude` answering
-    `answers`. No call reaches a real model."""
+    `answers`. `weaken(root)` is a change made before the first audit, after
+    which the tests run once more. No call reaches a real model."""
     folder = str(folder)
     root = build(folder)
+    if weaken is not None:
+        weaken(root)
+        done = subprocess.run(
+            [sys.executable, RUN_SCRIPT, '--project-root', root, '--all',
+             '--test'], capture_output=True, text=True, cwd=root)
+        assert done.returncode == 0, done.stdout + done.stderr
     directory = fake_claude.install(os.path.join(folder, 'claude'),
                                     answers=[REPLY if reply is None
                                              else reply])

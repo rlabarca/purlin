@@ -19,8 +19,8 @@
 >   and the rule reads `weak`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 76
-> Highest-Proof: 186
+> Highest-Rule: 78
+> Highest-Proof: 191
 
 ## Rules
 
@@ -57,10 +57,10 @@
 - RULE-59: A bug planted again whose test does not run with it in place, because it is skipped, ends in an error or runs past its limit, reads `not run`
 - RULE-60: A kept bug whose recorded change can no longer be planted is read as any audit reads its proof: one new bug is asked for, and one that survives reads `survived`
 - RULE-61: Settling a rule leaves a proof whose result is not `survived`, and whose test and code are unchanged since that result, with the entry it has
-- RULE-62: A rule named with `--settle` that keeps no bug as `survived` prints `<feature> <RULE-N> has no planted bug that survived: nothing to settle.`, and its entry is left as it is
+- RULE-62: A rule named with `--settle` that keeps no bug as `survived`, and whose entry holds no finding of the spot tests, prints `<feature> <RULE-N> has no planted bug that survived: nothing to settle.`, and its entry is left as it is
 - RULE-63: A rule named with `--settle` whose tests do not pass is not settled: its entry is left as it is, and the run exits 1 and names the rule as failing
 - RULE-64: An audit without `--settle` plants no recorded bug again for a proof whose test changed since the bug got past it: the model is asked for a new bug for that proof
-- RULE-65: Settling a rule keeps no result other than `survived` that was taken on another test or code: the proof is left out of the rule's entry, the rule's verdict comes from the results the entry holds, and the next audit without `--settle` plants a bug for that proof
+- RULE-65: Settling a rule keeps no result other than `survived` that was taken on another test or code: the proof is left out of the rule's entry, the audit prints under the rule `  <PROOF-N>: no bug is on record for its test as it stands. Run purlin:audit <feature> to plant one.`, the rule's verdict comes from the results the entry holds, and the next audit without `--settle` plants a bug for that proof
 - RULE-66: Settling a rule runs the spot tests again over the rule's tests, and a finding of theirs makes the rule `weak` as in any audit
 - RULE-67: A settled rule that needs no new bug is written with no model asked: its entry holds no `explanation` and keeps the `model` and the `criteria` of the entry it replaces
 - RULE-68: A settle plants nothing for a proof whose bug reads `survived` and whose own tests are as they were when the bug got past them: the audit prints under the rule `  <PROOF-N>: its test is as it was when the bug got past it. Strengthen it with purlin:build, then settle.`, the bug still reads `survived`, and the rule reads `weak`
@@ -72,6 +72,8 @@
 - RULE-74: Where the proof's tests still pass with the bug planted again, the bug still reads `survived`, at the line its change now stands at, its two findings stay, the rule reads `weak`, the audit prints under the rule `  <PROOF-N>: its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`, and a later audit with nothing changed does not plant it again
 - RULE-75: Where the proof's tests fail with the bug planted again, the bug's entry reads `caught` with the same `file`, `before`, `after`, `aim` and `case`, its two findings leave the rule, and the audit prints under the rule `  <PROOF-N>: the test now catches the bug it missed at <file>:<line>.`; where they do not run with it, the entry reads `not run`
 - RULE-76: Where the bug's recorded change can no longer be planted, the model is asked for one new bug for that proof in the rule's request, as for any proof whose code changed
+- RULE-77: A rule named with `--settle` whose entry holds a finding of the spot tests is read whether or not it keeps a bug as `survived`: the spot tests run over its tests as they stand, no model is asked for a rule that needs no new bug, each proof's result taken on the same test and code is kept, and the verdict is set as in any audit
+- RULE-78: Where the spot tests of a settle find nothing in a test the rule's entry holds a finding of theirs for, the audit prints under the rule, before any other line, `  <file>::<test>: the spot tests now find nothing.`, and the evidence does not hold that line
 
 ## Proof
 
@@ -187,3 +189,8 @@
 - PROOF-184 (RULE-75): `src/intake.py` is changed to check its helper as it loads, so the test of `PROOF-5`, left as it was, cannot be collected with the bug kept for it; audited without `--settle`, the entry of `PROOF-5` reads `not run`, and `no_bug` is exactly `A bug was planted for PROOF-5 and its test did not run.`
 - PROOF-185 (RULE-76): The helper's line `return int(seconds // 3600)`, which the bug kept for `PROOF-5` changes, is written as two lines, the test left as it was, and `sample_intake` is audited without `--settle`; `claude` is asked a bug for `PROOF-5` in a request that holds one file, `src/intake.py` as it now stands, and its bug `hours = seconds // 3600 + 1` reads `survived`
 - PROOF-186 (RULE-74): The bug kept for `PROOF-5` was planted again by an audit without `--settle` and still survived; every rule is then read again with nothing changed; the lines under `sample_intake RULE-3   weak` are the bug's two findings and no other, and the entry of `PROOF-5` is as it was
+- PROOF-187 (RULE-77): `RULE-7` reads `weak` on the one finding `tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing.` and keeps no bug as `survived`; the test of `PROOF-11` is changed to check `BOS-2026-00001` and `BOS-2026-00002`, and `RULE-7` is settled; `claude` is started `0` times, the audit prints `sample_intake RULE-7   spot-checked` and no `nothing to settle`, and the entry's `findings` are empty
+- PROOF-188 (RULE-78): `RULE-7` reads `weak` on the finding that the test of `PROOF-11` checks nothing; that test is changed to check the proof's two numbers and `RULE-7` is settled; the first line under `sample_intake RULE-7   spot-checked` reads `  tests/test_intake.py::test_accession_numbers_count_up: the spot tests now find nothing.`, and the evidence file does not hold that sentence
+- PROOF-189 (RULE-77): `RULE-7` reads `weak` on the one finding `tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing.`, keeps no bug as `survived`, and nothing has changed since; named with `--settle`, the audit prints `sample_intake RULE-7   weak`, then that finding, and no `nothing to settle`; `claude` is started `0` times, and the entry of `RULE-7` is as it was
+- PROOF-190 (RULE-65): The entry of `PROOF-11` reads `not made`; its test is changed to check the proof's two numbers and `RULE-7` is settled; the entry of `RULE-7` holds no bug, and the second line under the rule reads `  PROOF-11: no bug is on record for its test as it stands. Run purlin:audit sample_intake to plant one.`
+- PROOF-191 (RULE-77): `RULE-4` reads `weak` on the one finding `tests/test_intake.py::test_72_hours_is_accepted: the check cannot fail: assert True.`, and the bug of `PROOF-6` reads `caught`; the test of `PROOF-7` is changed to check the status `accepted` and `RULE-4` is settled; `RULE-4` reads `strong`, the entry of `PROOF-6` is as it was, and `claude` is started `0` times

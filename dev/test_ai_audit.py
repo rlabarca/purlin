@@ -2523,3 +2523,102 @@ class TestAnAuditPlantsASurvivingBugAgain:
         assert made.under('RULE-3') == [
             '  PROOF-5: the test still passes when src/intake.py:17 reads '
             '"hours = seconds // 3600 + 1"', '  ' + AI_SAYS_5], made.lines
+
+
+# ---------------------------------------------------------------------------
+# A settle and a finding of the spot tests
+# ---------------------------------------------------------------------------
+
+NOW_FIND_NOTHING_11 = ('  tests/test_intake.py::test_accession_numbers_count_up'
+                       ': the spot tests now find nothing.')
+NO_BUG_ON_RECORD = ('  %s: no bug is on record for its test as it stands. Run '
+                    'purlin:audit sample_intake to plant one.')
+CANNOT_FAIL_7 = ('tests/test_intake.py::test_72_hours_is_accepted: the check '
+                 'cannot fail: assert True.')
+
+
+@pytest.fixture(scope='module')
+def spot_finding_fixed(tmp_path_factory):
+    """`RULE-7`, weak on one finding of the spot tests and with no bug kept
+    as `survived`, settled after the test of `PROOF-11` was changed to check
+    the proof's two numbers."""
+    return sample_lab.settled(
+        tmp_path_factory.mktemp('spot-fixed'), rules=('RULE-7',),
+        change=sample_lab.check_the_accession_numbers)
+
+
+@pytest.fixture(scope='module')
+def spot_finding_fixed_beside_a_caught_bug(tmp_path_factory):
+    """`RULE-4` audited with the test of `PROOF-7` ending on `assert True`
+    and the bug of `PROOF-6` caught, then settled after that test was changed
+    back to check the status."""
+    return sample_lab.settled(
+        tmp_path_factory.mktemp('spot-beside'), rules=('RULE-4',),
+        weaken=sample_lab.check_nothing_at_72_hours,
+        change=sample_lab.check_the_status_at_72_hours)
+
+
+class TestASettleReadsTheSpotTestsAgain:
+
+    # purlin: ai_audit PROOF-187
+    def test_a_fixed_test_clears_its_spot_test_finding(
+            self, spot_finding_fixed):
+        made = spot_finding_fixed
+        before = made.before['RULE-7']
+        assert before['verdict'] == 'weak', before
+        assert before['findings'] == [CHECKS_NOTHING_11], before
+        assert made.code == 0, (made.lines, made.errors)
+        assert made.calls == []
+        assert not [line for line in made.lines
+                    if 'nothing to settle' in line], made.lines
+        assert made.rule_lines('RULE-7') == [
+            'sample_intake RULE-7   spot-checked'], made.lines
+        entry = made.entries['RULE-7']
+        assert entry['findings'] == [], entry
+        assert entry['verdict'] == 'spot-checked', entry
+
+    # purlin: ai_audit PROOF-188
+    def test_the_audit_names_the_test_the_spot_tests_now_pass(
+            self, spot_finding_fixed):
+        made = spot_finding_fixed
+        assert made.under('RULE-7')[0] == NOW_FIND_NOTHING_11, made.lines
+        assert NOW_FIND_NOTHING_11.strip() not in made.text
+
+    # purlin: ai_audit PROOF-189
+    def test_a_finding_that_still_holds_is_printed_again(self, tmp_path):
+        made = sample_lab.settled(tmp_path, rules=('RULE-7',))
+        assert made.code == 0, (made.lines, made.errors)
+        assert made.calls == []
+        assert made.rule_lines('RULE-7') == [
+            'sample_intake RULE-7   weak'], made.lines
+        assert made.under('RULE-7')[0] == '  ' + CHECKS_NOTHING_11, made.lines
+        assert not [line for line in made.lines
+                    if 'nothing to settle' in line], made.lines
+        assert made.entries['RULE-7'] == made.before['RULE-7']
+
+    # purlin: ai_audit PROOF-190
+    def test_a_proof_left_with_no_bug_names_the_audit_that_plants_one(
+            self, spot_finding_fixed):
+        made = spot_finding_fixed
+        assert made.before['RULE-7']['bugs']['PROOF-11']['result'] == \
+            'not made', made.before['RULE-7']
+        assert made.entries['RULE-7']['bugs'] == {}, made.entries['RULE-7']
+        assert made.under('RULE-7')[1] == NO_BUG_ON_RECORD % 'PROOF-11', \
+            made.lines
+
+    # purlin: ai_audit PROOF-191
+    def test_a_bug_caught_for_another_proof_is_kept_as_it_was(
+            self, spot_finding_fixed_beside_a_caught_bug):
+        made = spot_finding_fixed_beside_a_caught_bug
+        before = made.before['RULE-4']
+        assert before['verdict'] == 'weak', before
+        assert before['findings'] == [CANNOT_FAIL_7], before
+        assert before['bugs']['PROOF-6']['result'] == 'caught', before
+        assert made.code == 0, (made.lines, made.errors)
+        assert made.calls == []
+        entry = made.entries['RULE-4']
+        assert entry['bugs'] == {'PROOF-6': before['bugs']['PROOF-6']}, entry
+        assert entry['findings'] == [], entry
+        assert entry['verdict'] == 'strong', entry
+        assert made.rule_lines('RULE-4') == [
+            'sample_intake RULE-4   strong'], made.lines

@@ -85,8 +85,9 @@ one exception, a file list too long for a command line.
 Where the `tests` setting changed since the evidence was taken, the run first prints
 `The tests setting changed, so every result is out of date.` The status prints it too.
 
-`purlin:test` skips every slow test. Only `--all` and `--clean` start the test of a proof
-tagged `@slow`. Every other run lists it under `Left to do`, as
+`purlin:test` skips every slow test. `--all` and `--clean` start the test of a proof tagged
+`@slow`, and `purlin:audit <feature> RULE-N --settle` starts the slow tests of the rule it
+names. Every other run lists it under `Left to do`, as
 [Slow proofs](specs-and-anchors.md#slow-proofs) says.
 
 A plain run keeps an earlier slow result while nothing its spec covers changed, marked
@@ -104,6 +105,10 @@ It carries every other feature forward. None of its tests run. Its results are r
 on this commit, each marked `carried` with the commit, the time, the machine and the person of
 the run that took it. A result from another system, such as Windows, is carried the same way,
 from whichever machine took it. So is a slow proof's result.
+
+Any change to the project ends an anchor's audit result. Where an anchor was audited before,
+the run reads its rules again with the spot tests once its tests have run, with no AI asked,
+and prints `Anchors: the spot tests read 2 audited rules again. 2 spot-checked, 0 weak.`
 
 The run says how many it ran and how many it carried:
 
@@ -358,7 +363,7 @@ purlin:audit <feature> [...]    One feature, or several
 purlin:audit --all              Cover every feature as purlin:test --all does, and read every rule again
 purlin:audit --commit           Commit the work and the evidence the run wrote
 purlin:audit --arm-timeout <seconds>  Give each suite, and each planted bug's run, longer
-purlin:audit <feature> RULE-N --settle  Plant each bug that survived again, and run its proof's test
+purlin:audit <feature> RULE-N --settle  Run the spot tests over the rule's tests again, plant each bug that survived again, and run its proof's test
 purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 ```
 
@@ -441,13 +446,16 @@ Left to do:
 ```
 
 `purlin:build` does the work for a weak rule. It fixes a test a spot test flagged. For a bug
-that survived, it writes the check the proof names, runs `purlin:test`, then settles the rule:
+that survived, it writes the check the proof names. Either way it runs `purlin:test`, then
+settles the rule:
 
 ```
 purlin:audit login RULE-2 --settle
 ```
 
-The settle plants the bug the test missed again and runs the proof's test as it stands now.
+The settle runs the spot tests over the rule's tests again, with no AI asked, so a fixed test
+clears its finding at once. It plants the bug the test missed again and runs the proof's test
+as it stands now.
 
 - The test fails: the finding was right, and the bug reads `caught`.
 - The test still passes: the bug did not break what the proof says. It is dropped, and one new

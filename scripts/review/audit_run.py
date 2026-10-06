@@ -30,7 +30,10 @@ The run prints each rule it read with its findings and, last, the share of
 rules found strong (ai_audit RULE-35).
 
 `purlin:audit <feature> RULE-N --settle` settles the rules it names and reads
-no other (`settle`). Each bug the rule's entry keeps as `survived` is planted
+no other (`settle`). A rule is read where its entry keeps a bug as `survived`
+or holds a finding of the spot tests (`spot_findings_of`): the spot tests run
+over its tests as they stand, and `NOW_FIND_NOTHING` names each test they no
+longer find anything in. Each bug the rule's entry keeps as `survived` is planted
 again, with no model asked, and its proof's tests run as they stand now
 (`replayed`). A test that fails makes the entry `caught`. A test that still
 passes drops the bug, and one new bug is asked for that proof in the usual
@@ -117,6 +120,15 @@ TWO_SURVIVED = "two planted bugs left the proof's check passing"
 NO_BUG_CAUGHT = 'No bug was caught for %s: %s.'       # PROOF-N, TWO_SURVIVED
 SPOT_CHECKED = ai_audit.SPOT_CHECKED   # the `no_bug` sentences joined by one space
 
+# A settle and the spot tests. Both are printed under the rule and not stored.
+# `NOW_FIND_NOTHING`: the file and the name of a test the entry held a finding
+# of the spot tests for, which they no longer find anything in. `NO_BUG_ON_RECORD`:
+# PROOF-N, whose result was taken on another test or code and is left out of
+# the entry, and the feature.
+NOW_FIND_NOTHING = '%s::%s: the spot tests now find nothing.'
+NO_BUG_ON_RECORD = ('%s: no bug is on record for its test as it stands. Run '
+                    'purlin:audit %s to plant one.')
+
 # A settle and a test that has not changed. `REFUSED` is printed under the
 # rule and not stored: PROOF-N. `UNCHANGED` is the sentence `no_bug` holds for
 # a proof settled under `--sound` with its test as it was: PROOF-N. The last
@@ -133,6 +145,12 @@ NO_SURVIVOR = '%s %s has no planted bug that survived: nothing to settle.'
 # proof's tests as they were: printed under the rule and not stored. PROOF-N.
 STILL_PASSES = ('%s: its test is as it was and still passes with the bug it '
                 'missed. Strengthen it with purlin:build.')
+
+# What a test run over every feature says once it has read the audited rules
+# of the anchors again with the spot tests alone: how many rules, then how
+# many of them read each word.
+ANCHORS_READ = ('Anchors: the spot tests read %s again. %d spot-checked, '
+                '%d weak.')
 
 # The language a test file is read in, for a spot test that cannot read it.
 LANGUAGES = (
@@ -280,6 +298,37 @@ def spot_tests(project_root, reading, not_read, not_found=None):
             elif finding not in findings:
                 findings.append(finding)
     return findings
+
+
+def spot_findings_of(entry):
+    """The findings of an audit entry that the spot tests gave: every one
+    that is neither sentence of a planted bug that survived."""
+    bug = tuple(words.split('%s', 1)[1].split('%s', 1)[0]
+                for words in (planted_bug.SURVIVED, planted_bug.AI_SAYS))
+    found = []
+    for line in (entry or {}).get('findings') or ():
+        head, _, rest = str(line).partition(': ')
+        if not (head.startswith('PROOF-') and (': ' + rest).startswith(bug)):
+            found.append(str(line))
+    return found
+
+
+def cleared_lines(reading, last, spot):
+    """`NOW_FIND_NOTHING` for each test of the rule that the entry `last`
+    holds a finding of the spot tests for and `spot`, their findings now,
+    holds none for, in the order the tests are read."""
+    earlier = spot_findings_of(last)
+    lines = []
+    for test in reading.get('tests') or ():
+        if test.get('manual') or not test.get('file'):
+            continue
+        start = '%s::%s: ' % (test['file'], test.get('name'))
+        line = NOW_FIND_NOTHING % (test['file'], test.get('name'))
+        if (any(found.startswith(start) for found in earlier)
+                and not any(found.startswith(start) for found in spot)
+                and line not in lines):
+            lines.append(line)
+    return lines
 
 
 def _survived_finding(proof_id, kept, last):
@@ -646,8 +695,10 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
     `settle` names rules, `RULE-N`, of the one feature selected: only those are
     read, each bug kept as `survived` is planted again before any model is asked
     (`replayed`), and the model is asked only for a rule a new bug is needed for.
-    A rule named that keeps no such bug is said to have nothing to settle and is
-    left as it is; one whose tests do not pass is not read. `sound` names
+    A rule named that keeps no such bug, and whose entry holds no finding of the
+    spot tests, is said to have nothing to settle and is left as it is; one
+    whose tests do not pass is not read. A rule read for a finding of the spot
+    tests alone asks no model. `sound` names
     proofs, `PROOF-N`, whose tests were judged to assert what their proofs name
     already: a settle is refused for any other proof whose tests are as they
     were when its bug got past them."""
@@ -683,18 +734,29 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
                                        rule['id'])
         last = audit_entry(project_root, feature, rule, code)
         plan = bug_plan(reading, last, code, settle=bool(settle), sound=sound)
-        if settle and not any(what in ('replay', 'refused')
-                              for _p, what, _v in plan):
+        if settle and not spot_findings_of(last) and not any(
+                what in ('replay', 'refused') for _p, what, _v in plan):
             nothing.append(NOTHING_TO_SETTLE % (feature, rule['id']))
             continue
         spot = spot_tests(project_root, reading, not_read, not_found)
         scope_files = fingerprint_module.expand_scope(
             project_root, info.get('scope') or [])[0]
         reading['findings'] = spot
+        # What a settle says before the proofs' own lines: each test the spot
+        # tests no longer find anything in, then each proof it asked no bug
+        # for and holds no result of.
+        first = []
+        if settle:
+            planned = {proof for proof, _what, _value in plan}
+            first = cleared_lines(reading, last, spot) + [
+                NO_BUG_ON_RECORD % (proof, feature)
+                for proof in ai_audit.plants_for(
+                    rule, bool(info.get('is_anchor')))
+                if proof not in planned]
         done.append({'feature': feature, 'rule': rule, 'reading': reading,
                      'spot': spot, 'plan': plan, 'scope_files': scope_files,
                      'last': last, 'code': code, 'said': {},
-                     'unchanged': set()})
+                     'unchanged': set(), 'first': first})
 
     # 2. The model's request for each rule; 3. each bug planted, one at a time.
     try:
@@ -772,6 +834,8 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
         say(RULE_LINE % (item['feature'], item['rule']['id'],
                          item['verdict']))
         # What settling did, by proof, then the rule's lines as any audit's.
+        for line in item['first']:
+            say(FINDING_LINE % line)
         for proof, _what, _value in item['plan']:
             if proof in item['said']:
                 say(FINDING_LINE % item['said'][proof])
@@ -785,6 +849,62 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
 
     say(share_line(project_root, payload, selected))
     return 0
+
+
+def read_anchors_again(project_root, features, selected):
+    """`ANCHORS_READ` filled, once the spot tests have read again each rule
+    of an anchor in `selected` that passes its tests and holds an audit
+    entry; None where there is no such rule.
+
+    What `purlin:test --all` and `--clean` call after the anchors' tests
+    ran. Any change to the project ends an anchor's audit entry, and no bug
+    is planted for an anchor's rule, so its audit is the spot tests alone:
+    no model is asked. Each entry is written as the audit writes an
+    anchor's, `spot-checked` with `ANCHOR` as its reason or `weak` with the
+    spot tests' findings. It keeps the `model` and the `criteria` of the
+    entry it replaces, and that entry's `explanation` and `notes` where the
+    rule, its proofs and its tests are as that entry read them. An anchor's
+    rule with no entry is left as it is: the audit is a person's to start.
+    """
+    anchors = {name for name in selected
+               if (features.get(name) or {}).get('is_anchor')}
+    if not anchors:
+        return None
+    payload = payload_module.build_payload(project_root, generated_by='run')
+    commit = head_commit(project_root)
+    cache, by_feature, words = {}, {}, []
+    for feature, rule in counted_rules(payload, anchors):
+        code = _code_part(project_root, features, feature, cache)
+        last = audit_entry(project_root, feature, rule, code)
+        if not last:
+            continue
+        reading = ai_audit.reading_for(project_root, payload, feature,
+                                       rule['id'])
+        spot = spot_tests(project_root, reading, set())
+        plan = bug_plan(reading, last, code)
+        bugs, survived, no_bug = planted_bugs(
+            project_root, reading, plan, [], last, {'parts': {}})
+        same = not {'rule', 'proof', 'test'} & set(
+            last.get('out_of_date') or ())
+        verdict = verdict_of(spot, survived, bugs)
+        words.append(verdict)
+        by_feature.setdefault(feature, {})[rule['id']] = \
+            evidence_writer.audit_entry(rule, {
+                'code_hash': code, 'verdict': verdict, 'findings': spot,
+                'no_bug': no_bug, 'bugs': bugs,
+                'explanation': last.get('explanation') if same else [],
+                'notes': last.get('notes') if same else [],
+                'model': last.get('model'),
+                'criteria': last.get('criteria')}, commit)
+    for feature, entries in sorted(by_feature.items()):
+        evidence_writer.write_audit(project_root, 'local', feature,
+                                    features.get(feature) or {}, entries)
+    if not words:
+        return None
+    return ANCHORS_READ % (
+        '1 audited rule' if len(words) == 1
+        else '%d audited rules' % len(words),
+        words.count('spot-checked'), words.count('weak'))
 
 
 def rule_lines(verdict, findings, no_bug):

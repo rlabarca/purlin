@@ -51,7 +51,9 @@ What it skipped is left as it was, and `purlin:test --clean` runs it too.
 `@env` for this machine's system.
 
 **Slow proofs.** `--test` and `--audit` without `--all` never start a test
-whose every marker names a proof tagged `@slow` (`slow_plan`): the test is
+whose every marker names a proof tagged `@slow` (`slow_plan`), but for the
+proofs of the rules `--settle` names (`settled_proofs`), whose tests start
+with the feature's other tests: the test is
 left out through its own tool's option (`frameworks.leave_out`), the run
 says which proofs it left out, lists each as `not run`, and keeps the
 result the section it replaces holds for it where that section was taken
@@ -91,6 +93,14 @@ the run names up to ten and says to commit them and run again
 (`uncommitted_lines`). A section's `commit` is the first of those
 commits where `--commit` made one, else `HEAD` when the run started.
 
+`--test` with `--all` or `--clean` also keeps an audited anchor current. Any
+change to the project ends an anchor's audit results, and no bug is planted
+for an anchor's rule, so once the anchors' tests have run the spot tests read
+again each rule of an anchor that passes and holds an audit entry, with no
+model asked (`audit_run.read_anchors_again`), and the run prints
+`Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w>
+weak.` An anchor never audited is left as it is.
+
 `--audit` is what `purlin:audit` runs: the tests, as `--test` runs them, then
 the audit (`scripts/review/audit_run.py`): the spot tests, the planted bugs
 and the model's reading, written into the same evidence file under `audit`,
@@ -99,7 +109,8 @@ rules; otherwise every feature's, and `--all` reads every passing rule again.
 
 `--settle RULE-N`, given once per rule beside `--audit` and exactly one
 `--feature`, is what `purlin:audit <feature> RULE-N --settle` runs: the
-feature's tests, then the audit of the rules named alone, each bug it keeps
+feature's tests, those of the slow proofs of the rules named among them,
+then the audit of the rules named alone, each bug it keeps
 as `survived` planted again and its proof's test run as it stands
 (`references/review_criteria.md`, "Settling a finding"). Without `--audit`,
 without `--feature` or with two features it is refused, exit 2; a rule the
@@ -860,16 +871,18 @@ class SlowPlan(object):
                                          for test in found.tests)
 
 
-def slow_plan(features, scan, suites):
+def slow_plan(features, scan, suites, asked=()):
     """The `SlowPlan` of a run that starts no slow proof's test.
 
     A test is a slow proof's when it carries a marker and every marker it
     carries names a proof tagged `@slow`; a test that also carries another
-    proof's marker is that proof's too, and runs.
+    proof's marker is that proof's too, and runs. `asked` is the `(feature,
+    proof id)` pairs a person asked for by name, the proofs of the rules a
+    settle names: their tests are started like any other.
     """
     slow_ids = {(name, proof_id) for name, info in features.items()
                 for proof_id, proof in (info.get('proofs') or {}).items()
-                if proof.get('slow')}
+                if proof.get('slow')} - set(asked)
     plan = SlowPlan()
     if not slow_ids:
         return plan
@@ -901,6 +914,16 @@ def slow_plan(features, scan, suites):
             markers = scan[path].markers if test is None else test.markers
             plan.proofs.update(marker.key() for marker in markers)
     return plan
+
+
+def settled_proofs(features, selected, rules):
+    """The `(feature, proof id)` pairs of the rules `--settle` names, which
+    are rules of the one feature selected; none without `--settle`."""
+    if not rules or not selected:
+        return set()
+    by_rule = (features.get(selected[0]) or {}).get('proofs_by_rule') or {}
+    return {(selected[0], proof_id) for rule in rules
+            for proof_id in by_rule.get(rule) or ()}
 
 
 def slow_lines(plan, selected, given):
@@ -1536,8 +1559,11 @@ def main(argv=None):
     scan = markers_module.scan(project_root, suites)
     # `--all`, `--clean` and `--ci` start every test of the features they
     # run; any other run leaves out the tests of the proofs tagged `@slow`.
+    # A settle starts the slow proofs of the rules it names: the person
+    # asked for exactly those rules.
     plan = (SlowPlan() if args.all or args.action == 'ci'
-            else slow_plan(features, scan, suites))
+            else slow_plan(features, scan, suites,
+                           settled_proofs(features, selected, args.settle)))
     # The code the sections describe where `--commit` makes no commit.
     started = head_commit(project_root)
 
@@ -1733,6 +1759,13 @@ def main(argv=None):
         # A run that carried every feature and found each section already
         # recorded on this commit wrote no file.
         print(evidence_writer.written_line(written))
+    if args.action == 'test' and args.all:
+        # A run over every feature has just run every anchor's tests: the
+        # spot tests read again each rule of an anchor audited before.
+        import audit_run
+        again = audit_run.read_anchors_again(project_root, features, selected)
+        if again:
+            print(again)
     if args.action == 'audit':
         # The tests ran on the selection; the audit reads every feature's
         # rules unless features were named.

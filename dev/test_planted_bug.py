@@ -332,6 +332,27 @@ def test_another_proofs_test_in_the_same_file_is_not_started(tmp_path):
     assert not os.path.exists(log)
 
 
+# purlin: planted_bug PROOF-62
+def test_a_test_whose_name_starts_the_proofs_own_tests_name_is_started(tmp_path):
+    root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-10': STRONG})
+    result = planted_bug.plant_bug(root, 'age', dict(PROOF, id='PROOF-10'),
+                                   own_test('PROOF-10'), SCOPE, BUG)
+    # `test_proof_1` is the start of `test_proof_10`: leaving the first out
+    # by pytest's `--deselect` would leave the proof's own test out with it.
+    assert result['result'] == 'caught', result
+
+
+# purlin: planted_bug PROOF-63
+def test_a_test_the_proofs_own_tests_name_starts_is_still_left_out(tmp_path):
+    log, logging = logs_where_it_runs(tmp_path)
+    root = project(tmp_path, {'PROOF-1': STRONG, 'PROOF-10': logging})
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test('PROOF-1'), SCOPE,
+                                   BUG)
+    assert result['result'] == 'caught', result
+    # `test_proof_10` writes a line each time it runs, and it never ran.
+    assert not os.path.exists(log)
+
+
 def ran_marker(tmp_path):
     ran = os.path.join(str(tmp_path), 'ran.txt')
     return ran, 'open(%r, "w").write("ran")\n%s' % (ran, STRONG)
