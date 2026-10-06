@@ -3,6 +3,9 @@
 Purlin does not make software compliant. It makes software more tested, and it keeps the
 evidence.
 
+**Use it beside a validated document control system, such as Veeva.** Purlin produces the
+evidence. That system approves it, signs it and keeps it.
+
 ## More of your software is tested, on every build
 
 AI writes code and tests quickly. Purlin holds both to rules people wrote.
@@ -45,13 +48,34 @@ flowchart LR
 The package carries a fingerprint, so anyone can check a copy is unchanged:
 `purlin:sign --check <file>`. [The sign-off](sign-off.md) walks through it.
 
+## Your document control system holds the record
+
+Purlin works in git, where the team builds. The record that counts lives in the system your
+company has validated for it.
+
+```mermaid
+flowchart LR
+    A["<b>Document control</b><br>approved requirements"] --> B["<b>Purlin, in git</b><br>rules, tests, results"]
+    B --> C(["<b>Evidence package</b><br>one file per version"])
+    C --> D["<b>Document control</b><br>approval, signature, retention"]
+```
+
+| When | In your document control system |
+|---|---|
+| Before the work | The approved requirements. Write each one's number into its rule. |
+| Before the tests count | Approval of the test cases: review the proofs there, or as a required review when they are merged. |
+| When a test fails on a version meant for release | The deviation, raised and closed by your procedure. |
+| After `purlin:sign` | The evidence package and its sign-offs, filed as the verification record. |
+| At approval | The electronic signature, by a person that system has authenticated. |
+| From then on | Retention, access control and the audit trail. |
+
 ## What a validation reader looks for, and where it is
 
 Regulated teams work to rules such as FDA 21 CFR Part 11, GAMP 5 and the FDA's guidance on
 Computer Software Assurance. **Purlin claims compliance with none of them.** It supplies
 records that your own process can use.
 
-| A reader looks for | Purlin's evidence | Stays with you |
+| A reader looks for | Purlin's evidence | In your document control system |
 |---|---|---|
 | A requirement that can be traced | the rule and its id | the approved requirements document |
 | A test case with an expected result | the proof | approval of test cases before they run |
@@ -65,7 +89,7 @@ records that your own process can use.
 
 - **It is not a quality system.** It controls no documents and approves nothing.
 - **A sign-off is not an electronic signature under Part 11.** It is a signed git commit: it
-  shows which key signed which package. Your system of record carries the approval that
+  shows which key signed which package. Your document control system carries the approval that
   counts.
 - **Git can be rewritten.** The fingerprint shows a changed package. The copy you keep in your
   system of record is the record.
@@ -78,9 +102,10 @@ records that your own process can use.
 
 ## Using it
 
-1. Product and QA write the rules and proofs: `purlin:spec`.
+1. Product and QA write the rules and proofs from the approved requirements: `purlin:spec`.
 2. The build writes code and tests to them: `purlin:build`.
 3. Every build runs them: `purlin:test`.
 4. Check the tests would catch a bug: `purlin:audit`.
 5. When the team is done, a person signs: `purlin:sign`.
-6. File the evidence package and its sign-offs in your system of record.
+6. File the evidence package and its sign-offs in your document control system, and approve
+   it there.
