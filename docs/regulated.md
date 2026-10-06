@@ -91,8 +91,8 @@ records that your own process can use.
 - **A sign-off is not an electronic signature under Part 11.** It is a signed git commit: it
   shows which key signed which package. Your document control system carries the approval that
   counts.
-- **Git can be rewritten.** The fingerprint shows a changed package. The copy you keep in your
-  system of record is the record.
+- **Git can be rewritten.** The fingerprint shows a changed package. The copy filed in your
+  document control system is the record.
 - **Nothing is approved before a test runs.** Review the proofs when they are merged, or in
   your own system. Purlin records who wrote and last changed each one.
 - **Purlin records who signed. It does not decide who may.**
