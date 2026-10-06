@@ -70,40 +70,31 @@
         "verdict": "spot-checked"
       },
       "RULE-3": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T16:36:21Z",
         "bugs": {
           "PROOF-3": {
             "after": "  \"license\": \"MIT\",\n  \"skills\": \"./docs\",",
             "aim": "past the test",
             "before": "  \"license\": \"MIT\",",
-            "bug_key": "4e25fba2828a472a73e7c022b5ea39fcab8618d0549c1f7e1232f54bb8e3694e",
+            "bug_key": "a6030f166b773b2e94ca3d41d5393dd7747baeccc1f414db69703c7a6965e596",
             "case": "the install of PROOF-2 from this checkout; the proof says the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/`; the changed manifest makes the plugin read its skills from `docs`, which holds no `SKILL.md`",
             "file": ".claude-plugin/plugin.json",
             "line": 11,
-            "result": "survived",
-            "test_key": "6df1cae7a0473887d405f7c39097c1ad39b3f64fa829ab775daf69f65c591c1b",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b4d3cf1798f313770e54dba3fc608cd30659f5a10bece7ac67b13df729a4ae38",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "59c788a18fb219a21d9ea2cac2bdb80c4fec219e",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-3: the test lists the folders under `skills/` of the checkout, requires at least 9, and for each compares the installed `SKILL.md` with the checkout's as bytes, so a missing, truncated or altered skill file fails it.",
-          "PROOF-3: the test takes the folder as `skills` under the install path and never reads from the installed manifest which folder the plugin reads its skills from, so a manifest that points the plugin at another folder still passes.",
-          "PROOF-3: both sides of the comparison come from the same checkout, so a change to a skill's text is copied by the install and cannot be seen by this test; the proof asks for nothing more than that.",
-          "PROOF-3: the spot tests found nothing, and the test does hold the `SKILL.md` and `skills` values the proof names."
-        ],
-        "findings": [
-          "PROOF-3: the test still passes when .claude-plugin/plugin.json:11 reads \"\"skills\": \"./docs\",\"",
-          "PROOF-3: the AI says this breaks: the install of PROOF-2 from this checkout; the proof says the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/`; the changed manifest makes the plugin read its skills from `docs`, which holds no `SKILL.md`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "83a5f572f579d758e4c609dff1b282632c5c774d2e4c4cff0c26af39c74e5c09",
         "rule_hash": "829425105dbedaf7de8e1762a4b115b6721179c51238e7eabadf2e351710b41f",
-        "test_hash": "743a52704f960f6cc75e4ba7b1836690f12d91448b80668d7d69a9955fca74c4",
-        "verdict": "weak"
+        "test_hash": "5eea3516786e90792468bdf774b2bbe36975463367d7d77fb4e7265a2a057f2b",
+        "verdict": "strong"
       },
       "RULE-4": {
         "at": "2026-10-06T15:44:24Z",
