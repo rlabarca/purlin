@@ -9,11 +9,11 @@ AI writes code and tests quickly. Purlin holds both to rules people wrote.
 
 ```mermaid
 flowchart LR
-    R["Requirement"] --> U["Rule<br>product writes it"]
-    U --> P["Proof<br>QA writes the test case"]
-    P --> T["Test<br>AI or a developer writes it"]
-    T --> E["Result<br>every build"]
-    E --> K(["Evidence package<br>a person signs it"])
+    R["<b>Requirement</b>"] --> U["<b>Rule</b><br>product writes it"]
+    U --> P["<b>Proof</b><br>QA writes the test case"]
+    P --> T["<b>Test</b><br>AI or a developer writes it"]
+    T --> E["<b>Result</b><br>every build"]
+    E --> K(["<b>Evidence package</b><br>a person signs it"])
 ```
 
 - **QA defines quality before the code exists.** A proof is a test case in plain words, with
