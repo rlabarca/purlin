@@ -280,30 +280,28 @@
         "verdict": "strong"
       },
       "RULE-37": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:52:21Z",
         "bugs": {
           "PROOF-37": {
             "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('tests/conftest.py', '')",
             "aim": "past the test",
             "before": "    write_gitignore(plan)\n    write_evidence(plan)",
-            "bug_key": "e1e6864376f012707764526704ab1fac8aafa8d265174b8c92f6186d425f911d",
+            "bug_key": "90601a74da90c5b2a142860ee2ada93689baace487aeff2bc28479de89677aca",
             "case": "a python project set up with nothing to answer from; the proof says there is no `conftest.py`; the changed code has init write an empty tests/conftest.py into the project's tests",
             "file": "scripts/init/scaffold.py",
             "line": 381,
-            "result": "survived",
-            "test_key": "cbda74e9528d01611bc9dc94150bfbce18aba66aa672f93e960f2c2b9aeced05",
+            "result": "caught",
             "why": ""
           },
           "PROOF-94": {
             "after": "    write_gitignore(plan)\n    write_evidence(plan)\n    plan.write('tests/vitest.config.ts', '')",
             "aim": "past the test",
             "before": "    write_gitignore(plan)\n    write_evidence(plan)",
-            "bug_key": "94090cc3fe7799848c278feaea9fa50dd183220d201298d48c25f306ba1be85c",
+            "bug_key": "c90e59a468bfc330a1d0e6b1789f6af5e3341572cfe01dc56c6cf042acae11e7",
             "case": "a typescript project set up with nothing to answer from; the proof says there is no `vitest.config.ts`; the changed code has init write an empty tests/vitest.config.ts into the project",
             "file": "scripts/init/scaffold.py",
             "line": 381,
-            "result": "survived",
-            "test_key": "92495a5b1a084ddd692748b33f5ce4c1f5d27f8db322d808e399ce5b1ae99c32",
+            "result": "caught",
             "why": ""
           },
           "PROOF-95": {
@@ -319,33 +317,16 @@
           }
         },
         "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-37: the test reads init's exit code, the `tests` setting after init, the absence of `conftest.py` among the files after init, the suggested name `pytest` and both printed lines the proof names, all from a walk built in a fixture outside the test's own lines.",
-          "PROOF-37: the absence check looks for the exact entry `conftest.py` in a list of files, so a `conftest.py` written under a folder may not be seen if that list holds paths.",
-          "PROOF-94: the test reads the empty `tests` setting, the absence of `vitest.config.ts`, the suggested name `vitest` and the line `1 rule. 1 passes its tests.`; the skip where npm cannot install Vitest is not in the test's own lines and would sit in the fixture.",
-          "PROOF-94: the absence check has the same exact-entry form as PROOF-37's, so a `vitest.config.ts` under a folder may not be seen.",
-          "PROOF-95: the test reads the empty `tests` setting, the suggested name `dotnet` and the line `1 rule. 1 passes its tests.`, which are the values the proof names; the skip where `dotnet` is not installed is not in the test's own lines.",
-          "The spot tests found nothing, and each test does compare the literal values its proof marks; what they miss is how the walk's facts are gathered, which the shown lines do not hold."
-        ],
-        "findings": [
-          "PROOF-37: the test still passes when scripts/init/scaffold.py:381 reads \"plan.write('tests/conftest.py', '')\"",
-          "PROOF-37: the AI says this breaks: a python project set up with nothing to answer from; the proof says there is no `conftest.py`; the changed code has init write an empty tests/conftest.py into the project's tests",
-          "PROOF-94: the test still passes when scripts/init/scaffold.py:381 reads \"plan.write('tests/vitest.config.ts', '')\"",
-          "PROOF-94: the AI says this breaks: a typescript project set up with nothing to answer from; the proof says there is no `vitest.config.ts`; the changed code has init write an empty tests/vitest.config.ts into the project"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-37 holds more than one action: the setup, the first test run that suggests an entry, and the run with the entry written.",
-          "PROOF-94 holds a second case, the skip where npm cannot install Vitest, beside the case that runs.",
-          "PROOF-95 holds a second case, the skip where `dotnet` is not installed, beside the case that runs."
-        ],
         "proof_hash": "7631c93ab2ba704d57dd5c62de67ed728bab80271537847457403181ff9e9306",
         "rule_hash": "a1ffc08493ff063f9d356429ffc88439caa84c027d4d2ae9dcccce74f8e1753b",
-        "test_hash": "4c84871727ca02e16d932b6457bc8e3ceefe3008d688dc4012597d6846c61a61",
-        "verdict": "weak"
+        "test_hash": "ccd2f352147c613426553bd9a3ad38358c5c3284016c604bb902e5e5d3addb81",
+        "verdict": "strong"
       },
       "RULE-47": {
         "at": "2026-10-06T15:44:24Z",
@@ -438,7 +419,7 @@
         "verdict": "strong"
       },
       "RULE-68": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:52:21Z",
         "bugs": {
           "PROOF-157": {
             "after": "    except EOFError:\n        return 'y'",
@@ -455,12 +436,11 @@
             "after": "    paths = to_commit(root, plan.files)\n    if paths and args.yes:\n        print(COMMIT_QUESTION)\n    if paths and (args.yes or yes_or_no(COMMIT_QUESTION) in ('y', 'yes')):",
             "aim": "past the test",
             "before": "    paths = to_commit(root, plan.files)\n    if paths and (args.yes or yes_or_no(COMMIT_QUESTION) in ('y', 'yes')):",
-            "bug_key": "b9e54d4ec58ab3c55f84890219c04c3b1e7b84030cde3dd34f09aebd6ef0d669",
+            "bug_key": "cbbac5fb15305b8fdbcfbe9d4985298bd2f99b717b4abba1550bb4e3e727b646",
             "case": "a pytest project set up with `--yes`; the proof says no commit question is shown; the changed code prints the line `Commit the files setup wrote?` before it commits",
             "file": "scripts/init/scaffold.py",
             "line": 389,
-            "result": "survived",
-            "test_key": "f3efa96bd87f8635a1cb22b31f3ce6b5870ac54bf3f030d9c5c9709bcdbd7b4a",
+            "result": "caught",
             "why": ""
           },
           "PROOF-160": {
@@ -476,29 +456,16 @@
           }
         },
         "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-157: the test runs setup with no input, finds the question line, checks it sits right after the last `wrote`, `kept` or `copied` line, checks no line starts `Committed`, and compares the last commit with the one read before, so each result the proof names is observed.",
-          "PROOF-157: the question line is found through the constant `COMMIT`, whose value is not in the source shown, so whether it holds the proof's `Commit the files setup wrote? [y/N] ` cannot be read here.",
-          "PROOF-158: the test reads the last commit's subject, the `Committed` line with the first seven characters of the last commit, and the three file lines after it, each against the values the proof names.",
-          "PROOF-158: the test takes \"no commit question is shown\" as the absence of `[y/N]` alone, so the question's words printed without that suffix would still pass.",
-          "PROOF-158: `project.run()` is a helper whose source is not shown, so that it passes `--yes` is assumed and not read.",
-          "PROOF-160: the test first checks the project has no commit, runs setup, and compares the whole list of commit subjects with the single `chore(init): set up Purlin`, so both the count and the subject the proof names are observed.",
-          "PROOF-160: `made.run()` is the same unshown helper, so that it passes `--yes` is assumed here too.",
-          "The rule also says `y` and `yes` commit and that any other answer or an empty one commits nothing; of the three proofs shown, only the end of input and `--yes` are exercised, so a typed answer is not observed by these tests.",
-          "Findings: the spot tests found nothing, and each test holds failable assertions on values its proof names."
-        ],
-        "findings": [
-          "PROOF-158: the test still passes when scripts/init/scaffold.py:389 reads \"if paths and args.yes:\"",
-          "PROOF-158: the AI says this breaks: a pytest project set up with `--yes`; the proof says no commit question is shown; the changed code prints the line `Commit the files setup wrote?` before it commits"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "abaaeb13998c204d804d49094f539550969e8a71544ea6a1ae4f55cf4f5cc0f6",
         "rule_hash": "3c16851228bed2db36c94b6e4eb009b6244dc8220c71977cab3c6c8307bfe769",
-        "test_hash": "8991285b4929b657e507efb7ecf5980718bfe22c82642a1f89b59249cff667fa",
-        "verdict": "weak"
+        "test_hash": "7e4adbb1357ab126de11891bbc5927ea68a6c09260547caaf36269e1f4074702",
+        "verdict": "strong"
       },
       "RULE-70": {
         "at": "2026-10-06T15:44:24Z",
@@ -656,18 +623,17 @@
         "verdict": "strong"
       },
       "RULE-83": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:52:21Z",
         "bugs": {
           "PROOF-171": {
             "after": "    sys.stderr.write('Skip the proofs for other systems? [y/N] ')\n    sys.stderr.flush()\n    paths = to_commit(root, plan.files)",
             "aim": "past the test",
             "before": "    paths = to_commit(root, plan.files)",
-            "bug_key": "bd6d906470a5909f6f3bc3bd934b3a323646862ffa441efd428ef38b9f57133e",
+            "bug_key": "6b73eacad7cce6d4d167fff9d1ee9159589c1829d1b1b516751c85bb571812d2",
             "case": "a new pytest project with a proof tagged for another system, set up with nothing to answer from; the proof says `[y/N]` appears exactly once, on the commit line; the changed code's output holds `[y/N]` twice, the second on a question written to standard error",
             "file": "scripts/init/scaffold.py",
             "line": 388,
-            "result": "survived",
-            "test_key": "8c9af131ed25ee15fdacc4fb0dcd38ce16c5d12292758fff8b177a63f6766dc8",
+            "result": "caught",
             "why": ""
           },
           "PROOF-172": {
@@ -685,92 +651,66 @@
             "after": "    for line in plan.lines:\n        print(line)\n    sys.stderr.write('Which command runs the tests? ')\n    sys.stderr.flush()\n    sys.stdin.readline()",
             "aim": "past the test",
             "before": "    for line in plan.lines:\n        print(line)",
-            "bug_key": "b2f3fc1b5774abe6282291ea4b3fc3fb678aca99d160033b959cfd60e2c4a644",
+            "bug_key": "a3f72500f0aa713c1c0b8a598b199ede6903f9f21bb31495614201cb1947f8cb",
             "case": "an empty git project set up with nothing to answer from; the proof says the one question asked is `Commit the files setup wrote?`; the changed code also asks `Which command runs the tests?` on standard error and reads an answer",
             "file": "scripts/init/scaffold.py",
             "line": 385,
-            "result": "survived",
-            "test_key": "4ddcbd2a9d57737c74da460d4014ccbcba01c32599b98139740bf19c350d5827",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-171: the test tags a proof for another system, runs setup, and checks that standard output holds `[y/N]` once and that its line equals a constant `COMMIT`, whose definition is not shown.",
-          "PROOF-171: the test never reads standard error, so a second `[y/N]` question written there would still pass.",
-          "PROOF-172: the test reads the settings file and compares its sorted keys with `tests` and `version`, `tests` with an empty list, and `version` with a constant `VERSION`, whose source is not shown.",
-          "PROOF-172: every value the proof names is compared, so a wrong key set, a non-empty `tests` or a wrong `version` fails it, provided `VERSION` is read from the plugin's file and not from the code under test.",
-          "PROOF-88: the test checks the exit code, that the only standard-output line ending ` [y/N] ` is `Commit the files setup wrote?`, that standard output holds one `?`, and that `tests` is an empty list.",
-          "PROOF-88: the count of questions is taken from standard output alone, so a second question asked on standard error would still pass.",
-          "Findings: the spot tests found nothing, and each test holds failable assertions on the values its proof names."
-        ],
-        "findings": [
-          "PROOF-171: the test still passes when scripts/init/scaffold.py:388 reads \"sys.stderr.write('Skip the proofs for other systems? [y/N] ')\"",
-          "PROOF-171: the AI says this breaks: a new pytest project with a proof tagged for another system, set up with nothing to answer from; the proof says `[y/N]` appears exactly once, on the commit line; the changed code's output holds `[y/N]` twice, the second on a question written to standard error",
-          "PROOF-88: the test still passes when scripts/init/scaffold.py:385 reads \"sys.stderr.write('Which command runs the tests? ')\"",
-          "PROOF-88: the AI says this breaks: an empty git project set up with nothing to answer from; the proof says the one question asked is `Commit the files setup wrote?`; the changed code also asks `Which command runs the tests?` on standard error and reads an answer"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "2aad491aa847b2e45331de52c4ac963b8bb5cb975d3a263078c368ac00173dce",
         "rule_hash": "c62df1950c217c9e0c637a561d1a7ab255972975894f07f2bc7bf77146651280",
-        "test_hash": "215494b453346cbeb291c98ab023070f7906145f058fcb8f2d798c974a7e697c",
-        "verdict": "weak"
+        "test_hash": "50b5c5e328d829d80ee084003a0cf233c2e40ba96e7665c31c6eaf91c8bd74e6",
+        "verdict": "strong"
       },
       "RULE-84": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-06T15:52:21Z",
         "bugs": {
           "PROOF-178": {
             "after": "    for flag in ('--update', '--yes', '--Force'):",
             "aim": "past the test",
             "before": "    for flag in ('--update', '--yes'):",
-            "bug_key": "e4c21d4ca8754e03a6fe07fd9244641759e1b53952da46319771dce481bae322",
+            "bug_key": "0ab74b28786cb94251e03dbe9087235fab16eef1b1c367c9907d9108bf82ee9b",
             "case": "setup's usage asked for with `--help`; the proof says it lists exactly `--apply`, `--help`, `--project-root`, `--test-command`, `--update` and `--yes`; the changed code also lists `--Force`",
             "file": "scripts/init/scaffold.py",
             "line": 316,
-            "result": "survived",
-            "test_key": "3c3526c2d7aacecbf8d6c68ea5b589e094d2cd761242c59d2ac23720f61b3bda",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+        "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-178: the test runs setup with `--help`, reads exit 0 and compares the sorted set of flags found in the usage with the six the proof names.",
-          "PROOF-178: the flags are found with a pattern that matches only names opening with a lower-case letter, so a listed flag that opens with a capital or a digit is not seen.",
-          "PROOF-178: the test runs setup with `--colour` and reads exit 2, `unrecognized arguments: --colour` in the error output and the project's tree equal to the tree taken before the run, which is what the proof names for that case.",
-          "PROOF-178: the spot tests found nothing, and each assertion compares against a literal or a tree taken before the run, none against a value the code under test computes."
-        ],
-        "findings": [
-          "PROOF-178: the test still passes when scripts/init/scaffold.py:316 reads \"for flag in ('--update', '--yes', '--Force'):\"",
-          "PROOF-178: the AI says this breaks: setup's usage asked for with `--help`; the proof says it lists exactly `--apply`, `--help`, `--project-root`, `--test-command`, `--update` and `--yes`; the changed code also lists `--Force`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-178 holds two cases, the usage listed with `--help` and the refusal of `--colour`."
-        ],
         "proof_hash": "b018143907ceb1f16a39e46fec3d4b4fd9585cde0f124d51f1d3b37ab836b477",
         "rule_hash": "597597cf4025a924aaeb6557e345445d5295a7b1b08532da3ba624f3a088717d",
-        "test_hash": "ed5b7869bcf392f5ef265d25b7c16bfbfb0b9527074e23d9dd31c55ee6e1c49f",
-        "verdict": "weak"
+        "test_hash": "bb91448e8e8bd24478680bc0b1cdd81a2c4ba8317b5a24c80bc95e2509a9fe58",
+        "verdict": "strong"
       }
     }
   },
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T15:07:55Z",
-      "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
+      "at": "2026-10-06T15:51:45Z",
+      "commit": "794983db1d7e09fa0450fba73fcaee9323dab6f4",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "66fee1001a839d09afff4ddf1064dddcad4427ffcb7ad35c6ee8bb11cdc596d2",
         "spec": "af442f2b5e679cac087b9330564cd09a386d2e506f0c8ba1fc1fb4eff2dbebbe",
-        "tests": "9222b69fb3eda4fce1a35d16069c9c639d2f2487a8f52ff81adb487b575c5325"
+        "tests": "eb33c81bfe12eb5cc8d53e49957ec5107a2ba3c038edf3f2f41dc7d87fef1c0c"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
