@@ -2,18 +2,18 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-1: the test gathers every `.py`, `.sh` and `.js` file under `scripts/`, fails if that list is empty, and fails if any hit is returned, which matches the proof's `0` found.",
-          "PROOF-1: whether comment-only lines are set aside and whether every form the rule names is looked for per file type rests on `_pattern_hits` and `_DANGEROUS_BY_EXT`, whose source is not shown, so a form dropped from that table would still leave this test passing.",
-          "PROOF-14: the test plants `a.py` holding `x = eval(src)` and hands the file name and the form `eval(` to `_assert_names`, so it names the proof's case and both expected values, but the assertion itself lives in that helper, whose source is not shown.",
-          "PROOF-22: the test plants `a.py` whose one line is `# eval(src) is never called` and passes it to `_assert_none_counted`, which matches the proof's case, with the check that nothing is counted again resting on a helper whose source is not shown.",
-          "Findings: the spot tests found nothing, and they do not show whether the helpers compare the file name and form in PROOF-14 or the empty count in PROOF-22, since those comparisons sit outside the test bodies shown.",
-          "The three proofs shown plant only the Python form `eval(`, so the shell and JavaScript forms the rule names are proved here only through PROOF-1's scan of the files that exist today."
+          "PROOF-1: the test gathers every `.py`, `.sh` and `.js` file under `scripts/`, asserts the list is not empty and asserts the scan returns no hits, which matches the proof's `0` found over every file and not a sample.",
+          "PROOF-1: setting comment-only lines aside and the forms looked for per file type happen inside `_pattern_hits` and `_DANGEROUS_BY_EXT`, whose source is not shown, so a form missing from that table would leave this test passing.",
+          "PROOF-14: the test plants `a.py` holding `x = eval(src)` and passes the file name and the form `eval(` to `_assert_names`, which matches the proof's case, but whether the helper asserts that the finding names both the file and the form cannot be seen from the test's own lines.",
+          "PROOF-22: the test plants `a.py` whose one line is the comment `# eval(src) is never called` and calls `_assert_none_counted` with the same table, which matches the proof's case, but the assertion that nothing is counted sits in the helper, whose source is not shown.",
+          "The spot tests found nothing, and they do not show whether the helpers' assertions compare the values the proofs name.",
+          "Of the forms the rule names, the three proofs shown plant only Python `eval(`, so `exec(`, the shell forms and the JavaScript forms are not shown being found by these proofs."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -26,18 +26,19 @@
         "verdict": "spot-checked"
       },
       "RULE-2": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-2: the test gathers every `.py` and `.js` file under `scripts/`, fails if it gathers none, and with comments left in asserts that no file holds a shell request, which is the `0` the proof names.",
-          "PROOF-2: the pattern for each file type and the search itself sit in `_SHELL_FLAG_BY_EXT` and `_pattern_hits`, neither shown here, so the test's own lines do not show that the forms looked for are `shell=True` and `shell: true`.",
-          "PROOF-24: the test plants `a.py` holding `subprocess.run(argv, shell=True)` and hands the file name and the form `shell=True` to `_assert_names`, which is not shown, so the check that the finding names both is in that helper and not in the test's own lines.",
-          "PROOF-28: the test plants `a.py` holding `subprocess.run(argv, shell=False)` and hands it to `_assert_none_counted`, which is not shown, so the check that nothing is counted is in that helper and not in the test's own lines.",
-          "The three proofs shown cover the real files, a planted Python request and a planted Python non-request; none of them plants a `.js` file holding `shell: true`, so the JavaScript half of the rule is observed here only through the scan of the real files.",
-          "Findings: none were reported, and nothing in the test bodies shown contradicts that, since each test either asserts directly or calls a helper that may assert."
+          "PROOF-2: the test gathers every `.py` and `.js` file under `scripts/`, asserts the list is not empty, and asserts the scan with comments kept returns no hits, which matches the `0` the proof names.",
+          "PROOF-2: the scan reads the real project, so it observes only that nothing is found today; whether it can find a request for a shell rests on the planted-file proofs.",
+          "PROOF-24: the test plants `a.py` holding `subprocess.run(argv, shell=True)` and passes `a.py` and `shell=True` to `_assert_names`, so the file name and the form the proof names are both given to the check.",
+          "PROOF-24: the assertion itself is inside `_assert_names`, whose source is not shown here, so whether both the file and the form are compared cannot be read from the test's own lines.",
+          "PROOF-28: the test plants `a.py` holding `subprocess.run(argv, shell=False)` and hands it to `_assert_none_counted`, which matches the proof's case of a file that is not counted.",
+          "PROOF-28: the assertion is inside `_assert_none_counted`, whose source is not shown here, so what \"not counted\" compares cannot be read from the test's own lines.",
+          "The spot tests found nothing; they do not show whether the JavaScript form `shell: true` would be found, because no proof shown here plants a `.js` file and PROOF-2 only observes that the project holds none."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -50,17 +51,17 @@
         "verdict": "spot-checked"
       },
       "RULE-3": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-3: the test gathers every `.py` file under `scripts/`, fails if there are none, checks that the pattern matches the spaced form `os.system (cmd)`, and asserts the scan returns no hits, which is the proof's 0 found.",
-          "PROOF-3: setting comment-only lines aside happens inside `_pattern_hits`, whose source is not shown, so this test alone does not show that step; the unspaced form is exercised only by PROOF-29's test.",
-          "PROOF-29: the test hands `_assert_names` a planted `a.py` holding `os.system(cmd)` and the form `os.system(`, matching the proof's case, but the checks on the file name and the form are in that helper, whose source is not shown.",
-          "PROOF-31: the test hands `_assert_none_counted` a planted `a.py` whose one line is the comment `# os.system(cmd) is never called`, matching the proof's case, but the check that nothing is counted is in that helper, whose source is not shown.",
-          "The spot tests found nothing: each test either asserts directly or calls a helper that may assert, and the proofs' values `os.system(` and `0` appear in the test file."
+          "PROOF-3: the test gathers every `.py` file under `scripts/`, asserts the list is not empty, asserts the Python pattern matches `os.system (cmd)` with a space, and asserts the scan gives no hits, which is the `0` the proof names.",
+          "PROOF-3: the test never checks the pattern against the form without a space and never shows that comment-only lines are set aside; both rest on `_pattern_hits` and the pattern table, whose source is not shown here.",
+          "PROOF-29: the test plants `a.py` holding `os.system(cmd)` and passes the file name and the form `os.system(` to `_assert_names`; whether the finding is compared against both the file and the form rests on that helper, whose source is not shown.",
+          "PROOF-31: the test plants `a.py` whose one line is the comment the proof names and passes it to `_assert_none_counted`; that nothing is counted rests on that helper, whose source is not shown.",
+          "Findings: none; each test asserts or calls a helper and the file holds `os.system(`, so no spot test fires, but the spot tests do not judge whether the two helpers compare the values their proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -73,19 +74,21 @@
         "verdict": "spot-checked"
       },
       "RULE-4": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-4: the test gathers every `.py`, `.sh` and `.js` file under `scripts/`, fails if there are none, and fails on any credential hit, which matches the `0` the proof names.",
-          "PROOF-4: setting aside `test_` files and comment-only lines happens in `_all_script_files` and `_credential_hits`, whose source is not shown, so the test's own lines do not show either being done.",
-          "PROOF-7: the test plants `a.py` holding `API_KEY = \"abc\"` and hands the file name and `API_KEY` to `_assert_each_credential_named`, so every assertion sits in that helper.",
-          "PROOF-7: the helper's source is not shown, so it cannot be seen here that the finding is checked for both the file name and the matched name.",
-          "PROOF-34: the test plants `test_a.py` holding `password = \"x\"` and calls `_assert_no_credential_counted`, so the check that nothing is counted sits in a helper whose source is not shown.",
-          "PROOF-34: it cannot be seen here whether that helper would fail if the scan read no file at all, rather than skipping this one by its name.",
-          "The spot tests found nothing; all three tests hold the values their proofs name, and the two that assert only through helpers are not flagged for it."
+          "PROOF-4: the test gathers every `.py`, `.sh` and `.js` file under `scripts/`, fails if there are none, and asserts the list of credential hits is empty, which matches the `0` the proof names.",
+          "PROOF-4: setting aside comment-only lines and files whose names begin `test_` happens in the helpers `_all_script_files` and `_credential_hits`, whose source is not shown, so the test body alone does not show either exclusion being made.",
+          "PROOF-4: the proof defines a find only as \"as the proofs below find one\", so what it checks rests on the other proofs and on the helper's pattern rather than on a value it names itself.",
+          "PROOF-7: the test plants `a.py` holding `API_KEY = \"abc\"` and passes the expected name `API_KEY` to `_assert_each_credential_named`, which matches the proof's case.",
+          "PROOF-7: whether the finding is compared with the file's name and with `API_KEY` is decided inside that helper, whose source is not shown.",
+          "PROOF-34: the test plants `test_a.py` holding `password = \"x\"` and passes it to `_assert_no_credential_counted`, which matches the proof's case.",
+          "PROOF-34: the test does not show the same line being found in a file not named `test_`, so a helper that found nothing at all would also pass unless the helper checks that itself.",
+          "The spot tests found nothing, and each test holds its proof's values (`API_KEY`, `test_a.py`, `password = \"x\"`) in its own lines.",
+          "Of the proofs shown, none names a credential given with `:` as a JavaScript field, a name in another casing, or the names `secret` and `token`, all of which the rule covers."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -98,18 +101,21 @@
         "verdict": "spot-checked"
       },
       "RULE-5": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-5: the test gathers every `.py` and `.js` file under `scripts/`, fails if that list is empty, and fails with the faults listed if any launch is handed a command string, which is the `0` the proof names.",
-          "PROOF-5: setting comment-only lines aside and reaching every file both happen inside `_launch_faults` and `_all_script_files`, whose source is not shown, so the test's own lines do not show either.",
-          "PROOF-35: the test plants `a.py` holding `subprocess.run(\"git status\")` and hands it to `_assert_each_launch_found`, so whether the finding is checked to name `a.py` rests on that helper, whose source is not shown.",
-          "PROOF-36: the test plants `a.py` holding `subprocess.run([\"git\", \"status\"])` and hands it to `_assert_no_launch_counted`, whose source is not shown; a check that found nothing at all would also pass this test, and only PROOF-35 guards against that.",
-          "The rule also names JavaScript `spawn` and `execFile`, and none of the three proofs shown plants a JavaScript launch, so that half is observed here only through PROOF-5's scan of the existing files.",
-          "The spot tests found nothing; they do not show whether the two planted-file helpers compare the finding's file name or the count."
+          "PROOF-5: the test gathers every `.py` and `.js` file under `scripts/`, asserts the list is not empty, and asserts that `_launch_faults` returns nothing, which matches the `0` the proof names.",
+          "PROOF-5: whether comment-only lines are set aside, and what counts as a launch handed a command string, is decided inside `_launch_faults`, whose source is not shown, so the test's own lines cannot show that a real command string under `scripts/` would be reported.",
+          "PROOF-35: the test plants `a.py` holding `subprocess.run(\"git status\")` and hands it to `_assert_each_launch_found`, so the planted input matches the proof, but the test's own lines hold no assertion.",
+          "PROOF-35: the proof says the finding names its file, and whether the helper compares the finding against `a.py` or only checks that some finding exists cannot be seen from the source shown.",
+          "PROOF-36: the test plants `a.py` holding `subprocess.run([\"git\", \"status\"])` and hands it to `_assert_no_launch_counted`, so the planted input matches the proof, but the check that nothing is counted sits in a helper whose source is not shown.",
+          "PROOF-36: if `_assert_no_launch_counted` scans the wrong folder or the wrong extension, it would pass without ever reading the planted file, and the test's own lines do not rule that out.",
+          "The spot tests found nothing; each test either asserts directly or calls a helper, so nothing in the text shown marks a check that cannot fail.",
+          "The rule names JavaScript `spawn` and `execFile`, and none of the three proofs shown plants a JavaScript launch, so the rule's JavaScript half is covered here only by the PROOF-5 scan of the real files.",
+          "PROOF-5 says comment-only lines are set aside, and no proof shown plants a command-string launch on a comment line to show that it is skipped."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -122,28 +128,24 @@
         "verdict": "spot-checked"
       },
       "RULE-6": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-9: the test reads the status of a project whose anchor's source is a local repository, requires at least one captured `git ls-remote`, and for each requires the repository's path with `--end-of-options` in the slot just before it, which is what the proof names.",
-          "PROOF-9: the test picks out `ls-remote` only where it is the second word of the command, so an `ls-remote` launched with a git option ahead of it would not be looked at, and the \"one commit\" of the proof rests on a helper not shown.",
-          "PROOF-10: the test reads drift for a project on a branch that changes a spec, requires `--end-of-options` just before the first revision of every captured git command that carries one, and requires that `rev-list`, `diff` and `show` each carried a revision, which is what the proof names.",
-          "PROOF-10: what counts as a commit, a range or a `<commit>:<path>`, and that `HEAD` does not, is decided by a helper not shown, so a revision that helper does not recognise would reach git unchecked and the test would still pass.",
-          "PROOF-10: the two commits and the spec they change are set up by a helper not shown, and the test asserts nothing about them beyond the three commands having carried a revision.",
-          "Neither proof hands git a source or a revision that begins with a dash and observes that it is not taken as an option, so the rule is shown by the marker's position only and not by a refused case.",
-          "The rule names a commit read from a spec, and neither proof names a case where the revision comes from a spec rather than from git.",
-          "The spot tests found nothing, and both tests hold failable assertions on the captured commands, with expected values written as literals."
+          "PROOF-9: the test reads a project whose anchor's source is a local one-commit repository, captures the git commands the status launches, requires at least one `ls-remote`, and asserts for each that the repository's path is present with `--end-of-options` immediately before it, which is what the proof names.",
+          "PROOF-9: a command counts as `ls-remote` only when that word is the second argument, so an `ls-remote` launched with a git option before the subcommand would go unchecked as long as one call in the plain form is still captured.",
+          "PROOF-10: the test reads drift on a branch whose commits change a spec, asserts that every captured git command holding a revision has `--end-of-options` immediately before its first, and asserts that `rev-list`, `diff` and `show` each carried one, which is what the proof names.",
+          "PROOF-10: what counts as a revision is decided by the helper `_is_revision`, whose source is not in the request, so a commit, range or `<commit>:<path>` the helper does not recognise would reach git unchecked, and the exemption of `HEAD` rests on that helper too.",
+          "PROOF-10: the subcommand is read from the second argument, so a `rev-list`, `diff` or `show` launched with a git option before it would be recorded under another word and fail the final check, not slip past it.",
+          "Neither proof names a source or a commit that begins with a dash, so the rule is shown by the position of `--end-of-options` in the arguments and not by a hostile string being refused.",
+          "The spot tests found nothing, and both tests hold failable assertions on values taken from the captured commands, not from the code's own output."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: no bug is planted for an anchor's rule."
-        ],
-        "notes": [
-          "PROOF-10 holds, beside its case of a commit handed to git, a second statement that `HEAD` alone is not held to it, which the test does not observe on its own."
         ],
         "proof_hash": "06c3103bf4b54a92d2dd80dcdebab3094fae966814c1844c32683187040123d4",
         "rule_hash": "591339ff08d4011ecef9c7554d5a67edc6b4c33fdcb92a8c536648c56948fd5a",
@@ -151,17 +153,18 @@
         "verdict": "spot-checked"
       },
       "RULE-7": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-11: the test reads the drift of a project whose branch changes a spec, records every git command launched, and asserts that each command holding a path has `--` in the position just before its first path, which is the result the proof names.",
-          "PROOF-11: the test also asserts that at least one recorded command carried a path, so a run that launched no git command with a path fails, as the proof's \"at least one\" requires.",
-          "PROOF-11: which arguments count as a path is decided by the helper `_is_path_operand`, whose source is not shown, so a path that helper does not recognise, whether `specs/` or a file under it, would reach git without `--` and the test would still pass.",
-          "PROOF-11: the two commits and the changed spec come from the helper `_branch_changing_a_spec`, whose source is not shown, so the test's own lines do not show that the starting situation is the one the proof names.",
-          "PROOF-11: the spot tests found nothing, and that holds as far as they go: the test has two failable assertions, takes no expected value from the code, and intercepts only the launching of git, a dependency, not the drift reading it checks."
+          "PROOF-11: the test builds a project on a branch whose commits change a spec, reads its drift, and records every git command launched, which is the case the proof names.",
+          "PROOF-11: for each recorded command that holds a path it asserts the argument just before the first path is `--`, and it asserts at least one command carried a path, so both results the proof names are observed.",
+          "PROOF-11: which arguments count as a path is decided by the helper `_is_path_operand`, whose source is not shown, so a path that helper does not recognise would be skipped without a check.",
+          "PROOF-11: the test never compares a path with `specs/` in its own lines, so whether the path carried is `specs/` or a file under it rests on that same helper.",
+          "PROOF-11: only the first path of each command is checked, which matches the proof's \"immediately before its first path\".",
+          "The spot tests found nothing: the test asserts, its checks can fail, and `--` stands in its file."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -174,19 +177,18 @@
         "verdict": "spot-checked"
       },
       "RULE-8": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-06T17:37:22Z",
         "bugs": {},
-        "code_hash": "b5123cfa6e7727f2da66c4bfc912ea402abe3490c1ba9593fb912267e578b45c",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
+        "code_hash": "6bccc606d9b6e64b548522f20b2f51b9efc52220e1a2ff9a4dbbfdbbd022c704",
+        "commit": "483c4e14343e8afc5d2351236c89e474e08c5963",
         "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
         "explanation": [
-          "PROOF-6: the test passes the anchor name `evil_policy`, the constant `EVIL_SOURCE` and the exact line `evil_policy: (source rejected: begins with \"-\")` to the helper `_assert_refused`, whose body is not in the request, so whether that line is compared with the status cannot be read from the test's own lines.",
-          "PROOF-6: the proof names the source `--upload-pack=/bin/echo /tmp/policy.git`, and the test takes it from `EVIL_SOURCE`, whose value is not shown, so the test may run on a different source from the one the proof names.",
-          "PROOF-47: the test passes `ext_policy`, the constant `EXT_SOURCE` and the exact line `ext_policy: (source rejected: names an ext:: transport)` to `_assert_refused`, and nothing in its own lines shows that `EXT_SOURCE` is the proof's `ext::sh -c \"touch /tmp/purlin-pwned\" /tmp/policy.git`.",
-          "PROOF-48: the test passes `fd_policy`, the constant `FD_SOURCE` and the exact line `fd_policy: (source rejected: names an fd:: transport)` to `_assert_refused`, and nothing in its own lines shows that `FD_SOURCE` is the proof's `fd::7/policy.git`.",
-          "PROOF-6, PROOF-47 and PROOF-48: each proof also says no command started while the status is read carries the value, and the tests take `monkeypatch` and hand it to the helper, so whether started commands are recorded and checked for the value rests wholly on the unseen `_assert_refused`.",
-          "The spot tests found nothing; they cannot show whether the helper checks both the status line and the absence of a command, and a helper that checked only the status line would let a source that is reported as refused but still passed to a subprocess go unnoticed.",
-          "All three proofs are refusals, so no proof of the rule shows that a source naming neither a leading `-` nor an `ext::` or `fd::` transport is still accepted, and code that refused every source would satisfy all three."
+          "PROOF-6: the test hands the anchor name `evil_policy`, the constant `EVIL_SOURCE` and the line `evil_policy: (source rejected: begins with \"-\")` to the helper `_assert_refused` and asserts nothing itself, so what it observes depends on that helper, whose source is not shown here.",
+          "PROOF-47: the test hands `ext_policy`, the constant `EXT_SOURCE` and the line `ext_policy: (source rejected: names an ext:: transport)` to the same helper, so the comparison with the status line and the check that no command carries the value both rest on the helper's body, which is not shown here.",
+          "PROOF-48: the test hands `fd_policy`, the constant `FD_SOURCE` and the line `fd_policy: (source rejected: names an fd:: transport)` to the same helper, and nothing in its own lines reads the status or the commands started.",
+          "PROOF-6, PROOF-47 and PROOF-48: the source values the proofs name (`--upload-pack=/bin/echo /tmp/policy.git`, `ext::sh -c \"touch /tmp/purlin-pwned\" /tmp/policy.git`, `fd::7/policy.git`) appear in the tests only as constants defined elsewhere, so whether each test uses its proof's value cannot be read from the lines shown.",
+          "PROOF-6, PROOF-47 and PROOF-48: each proof observes that no command started carries the value, while the rule says the refusal comes before any subprocess starts, so a refusal that follows an unrelated command would satisfy the proofs as written.",
+          "The spot tests found nothing, and they do not show whether `_assert_refused` compares the whole status line or records the commands started, which the planted bug's test run would show."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
