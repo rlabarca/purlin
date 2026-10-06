@@ -1,9 +1,11 @@
 """The pages under `docs/`, read as a person on the git host reads them.
 
-`specs/instructions/purlin_docs.md` holds four rules: every relative link
-on the pages resolves, the audit page says what to do with a finding, it cites its research by links it lists
-again under `Sources`, and the page on working together holds one paragraph
-on working in more than one checkout.
+`specs/instructions/purlin_docs.md` holds five rules: every relative link
+on the pages resolves, the audit page says what to do with a finding and
+links to its research, the research page cites its papers by links it lists
+again under `Sources`, the page on working together holds one paragraph
+on working in more than one checkout, and the example that fetches Purlin
+clones it at this version's signed tag.
 """
 
 import glob
@@ -122,19 +124,20 @@ def test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading():
         'docs/index.md: no-such-page.md']
 
 
-# --- The audit page ---------------------------------------------------------
+# --- The audit page and its research ----------------------------------------
 
 AUDIT_PAGE = os.path.join(DOCS, 'audit.md')
+RESEARCH_PAGE = os.path.join(DOCS, 'audit-research.md')
 PAPERS = ('Inozemtseva and Holmes, ICSE 2014', 'Just et al., FSE 2014',
           'Petrović et al., TSE 2021', 'Foster et al., FSE 2025',
           'LLMorpheus')
 
 
 def around_sources(text):
-    """The audit page's text before its heading `Sources`, and the list
+    """The research page's text before its heading `Sources`, and the list
     under it."""
     before, heading, after = text.partition('\n## Sources\n')
-    assert heading, 'docs/audit.md has no heading Sources'
+    assert heading, 'docs/audit-research.md has no heading Sources'
     return before, after
 
 
@@ -148,8 +151,8 @@ def papers_not_cited(text):
 
 
 # purlin: purlin_docs PROOF-21
-def test_the_audit_page_cites_the_five_papers_each_as_an_https_link():
-    before, _ = around_sources(read(AUDIT_PAGE))
+def test_the_research_page_cites_the_five_papers_each_as_an_https_link():
+    before, _ = around_sources(read(RESEARCH_PAGE))
     assert papers_not_cited(before) == []
     # A paper named in plain words, or by a link that is not https, is not
     # cited.
@@ -170,11 +173,18 @@ def links_not_listed(text):
 
 
 # purlin: purlin_docs PROOF-22
-def test_every_link_of_the_audit_page_appears_again_under_sources():
-    text = read(AUDIT_PAGE)
+def test_every_link_of_the_research_page_appears_again_under_sources():
+    text = read(RESEARCH_PAGE)
     before, after = around_sources(text)
     assert len(targets(before)) >= 10, targets(before)
     assert links_not_listed(text) == []
+    # The audit page links to the research page and names 3 or 4 of its
+    # sources, each by an https link the list under `Sources` holds.
+    given = targets(read(AUDIT_PAGE))
+    assert 'audit-research.md' in given, given
+    named = [target for target in given if target.startswith('https://')]
+    assert 3 <= len(set(named)) <= 4 and len(named) == len(set(named)), named
+    assert [target for target in named if target not in targets(after)] == []
     # A link the text gives and the list leaves out is found.
     sample = ('[a](https://example.com/a.pdf) [b](https://example.com/b.pdf)'
               '\n\n## Sources\n\n- [a](https://example.com/a.pdf)\n')

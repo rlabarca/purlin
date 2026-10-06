@@ -1,8 +1,8 @@
 """The sample lab project: a lab's sample intake, with three weak tests.
 
 The project the audit's own tests audit, and the one of the trial
-`docs/audit.md` reports: the spec `sample_intake` with 8 rules and 12
-proofs, `src/intake.py`, and `tests/test_intake.py`, whose 12 tests hold three
+`docs/audit-research.md` reports: the spec `sample_intake` with 8 rules and
+12 proofs, `src/intake.py`, and `tests/test_intake.py`, whose 12 tests hold three
 written weak on purpose:
 
     PROOF-5    the expected age comes from `age_hours`, the code's own helper
