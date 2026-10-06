@@ -30,7 +30,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import fingerprint as fingerprint_module          # noqa: E402
+from purlin import fingerprint as fingerprint_module, notices  # noqa: E402
 
 SCHEMA = 'purlin-evidence/2'
 SOURCES = ('local', 'ci')
@@ -95,8 +95,19 @@ def evidence_path(source, feature):
 
 
 # The step that writes an ignored file again, by the folder it sits in.
-REWRITE_LOCAL = 'Run purlin:test %s to write it again.'
+REWRITE_LOCAL = 'Run purlin:test %s.'
 REWRITE_CI = 'Start the run that wrote it again.'
+
+
+# Why an evidence file is ignored, after `<path>: evidence file ignored.`
+NOT_JSON = 'It is not valid JSON.'
+NOT_AN_OBJECT = 'It is not a JSON object.'
+OTHER_SCHEMA = 'It carries the schema %s, not %s.'
+OTHER_SOURCE = 'It names the source %s and sits in %s/.'
+
+
+def _ignored(path, feature, why, fix):
+    return notices.line('evidence_ignored', path, why, fix, feature=feature)
 
 
 def rewrite_fix(source, feature):
@@ -127,21 +138,18 @@ def load(project_root, feature):
             with open(full, 'r', encoding='utf-8') as handle:
                 data = json.load(handle)
         except (IOError, OSError, UnicodeDecodeError, ValueError):
-            warnings.append('%s is not valid JSON; it is ignored. %s'
-                            % (path, fix))
+            warnings.append(_ignored(path, feature, NOT_JSON, fix))
             continue
         if not isinstance(data, dict):
-            warnings.append('%s is not a JSON object; it is ignored. %s'
-                            % (path, fix))
+            warnings.append(_ignored(path, feature, NOT_AN_OBJECT, fix))
             continue
         if data.get('schema') != SCHEMA:
-            warnings.append('%s carries the schema %s, not %s; it is ignored. %s'
-                            % (path, _shown(data.get('schema')), SCHEMA, fix))
+            warnings.append(_ignored(path, feature, OTHER_SCHEMA % (
+                _shown(data.get('schema')), SCHEMA), fix))
             continue
         if data.get('source') != source:
-            warnings.append('%s names the source %s but sits in %s/; it is '
-                            'ignored. %s' % (path, _shown(data.get('source')),
-                                             source, fix))
+            warnings.append(_ignored(path, feature, OTHER_SOURCE % (
+                _shown(data.get('source')), source), fix))
             continue
         files[source] = data
     return {'feature': feature, 'files': files, 'paths': paths,

@@ -287,9 +287,8 @@ class TestWhereDriftStarts:
 
         view = _view(_report(root))
         assert view['lines'][1] == (
-            'A merge is in progress and is not committed, so the range above '
-            'stops before it. Resolve it and commit, then run purlin:drift '
-            'again.'), view['lines']
+            'MERGE_HEAD: merge in progress. The range above stops before it. '
+            'Commit the merge, then run purlin:drift.'), view['lines']
         assert view['merge_in_progress'] is True
 
     # purlin: drift PROOF-86
@@ -519,8 +518,8 @@ class TestAnchorsBehind:
         assert rows[0]['anchor'] == 'external_anchor', rows
         assert rows[0]['status'] == 'behind', rows
         assert rows[0]['remote_sha'] == new_sha[:7], (rows, new_sha)
-        assert ('anchor external_anchor: the pin %s is behind its source, now '
-                '%s. Run purlin:anchor sync external_anchor.'
+        assert ('external_anchor: anchor pin behind. The pin %s is behind its '
+                'source, now %s. Run purlin:anchor sync external_anchor.'
                 % (first[:7], new_sha[:7])) in _lines(report), _lines(report)
 
     # purlin: drift PROOF-88
@@ -553,8 +552,8 @@ class TestAnchorsBehind:
         assert _view(report)['anchors_behind'] == [
             {'anchor': 'policy', 'source': source, 'pinned': None,
              'status': 'unpinned'}], _view(report)['anchors_behind']
-        assert ('anchor policy: names a source and no pin. Run purlin:anchor '
-                'sync policy.') in _lines(report), _lines(report)
+        assert ('policy: anchor with no pin. It names a source and no pin. '
+                'Run purlin:anchor sync policy.') in _lines(report), _lines(report)
         assert _handed(calls, source) == [], _handed(calls, source)
 
     # purlin: drift PROOF-40
@@ -589,8 +588,9 @@ class TestAnchorsBehind:
                          'pinned': 'abc1234', 'status': 'error',
                          'error': reason}], rows
         assert _lines(report).count(
-            'anchor policy: the source could not be read (%s). Check its '
-            '> Source: line, then run purlin:anchor sync policy.'
+            'policy: anchor source not read. Its source could not be read '
+            '(%s). Check its > Source: line, then run purlin:anchor sync '
+            'policy.'
             % reason) == 1, _lines(report)
 
 
@@ -614,9 +614,10 @@ class TestSourceNamesNoRepository:
         assert [(row['anchor'], row['status']) for row in rows] == [
             ('refunds', 'error')], rows
         lines = [line for line in _lines(report)
-                 if line.startswith("anchor refunds: its source, policy.txt, is "
-                                    "not a spec in Purlin's format kept in a "
-                                    "git repository")]
+                 if line.startswith("refunds: anchor source not a spec. Its "
+                                    "source, policy.txt, is not a spec in "
+                                    "Purlin's format kept in a git "
+                                    "repository")]
         assert len(lines) == 1, _lines(report)
         assert 'purlin:spec refunds' in lines[0], lines
         assert _handed(calls, 'policy.txt') == [], calls
@@ -633,9 +634,8 @@ class TestUnsafeSources:
                                                          monkeypatch):
         report = _refused(tmp_path, monkeypatch, '--upload-pack=/bin/echo',
                           'begins with "-"')
-        assert ('anchor policy: the source could not be read (begins with '
-                '"-"). Check its > Source: line, then run purlin:anchor sync '
-                'policy.') in _lines(report), _lines(report)
+        assert ('policy: anchor source refused. Its > Source: line begins '
+                'with "-". Run purlin:spec policy.') in _lines(report), _lines(report)
 
     # purlin: drift PROOF-42
     def test_a_source_naming_the_ext_transport_is_refused(self, tmp_path,
@@ -696,9 +696,9 @@ class TestNumbersWrittenTwice:
     # purlin: drift PROOF-70
     def test_the_line_on_the_default_branch_keeps_the_number(self, tmp_path):
         report = _report(_merged_twice(tmp_path))
-        assert ('login: PROOF-4 is written twice. The line on origin/main keeps '
-                'PROOF-4; renumber the other to PROOF-5 and move its test '
-                'comments with it: "B".') in _lines(report), _lines(report)
+        assert ('login PROOF-4: number written twice. The line on origin/main '
+                'keeps it. Renumber the other to PROOF-5 and move its test '
+                'comments with it. It reads "B".') in _lines(report), _lines(report)
 
     # purlin: drift PROOF-71
     def test_proof_7_twice_with_neither_line_on_origin_main_renumbers_to_8(
@@ -711,9 +711,9 @@ class TestNumbersWrittenTwice:
             'PROOF-6 (RULE-1): Six', 'PROOF-7 (RULE-1): X',
             'PROOF-7 (RULE-1): Y')})
         report = _report(checkout)
-        assert ('login: PROOF-7 is written twice, and neither line is on '
-                'origin/main. The one that reaches origin/main first keeps '
-                'PROOF-7; renumber the other to PROOF-8 and move its test '
+        assert ('login PROOF-7: number written twice. Neither line is on '
+                'origin/main, and the one that reaches it first keeps the '
+                'number. Renumber the other to PROOF-8 and move its test '
                 'comments with it.') in _lines(report), _lines(report)
 
     # purlin: drift PROOF-85
@@ -724,7 +724,7 @@ class TestNumbersWrittenTwice:
                  for entry in _view(report)['numbers_twice']]
         assert twice == [('login', 'PROOF-4')], twice
         assert [line for line in _lines(report)
-                if line.startswith('login: PROOF-4 is written twice')], \
+                if line.startswith('login PROOF-4: number written twice.')], \
             _lines(report)
         assert not [line for line in _lines(report)
                     if line.startswith('login PROOF-4 changed')], _lines(report)
@@ -756,7 +756,7 @@ class TestNumbersWrittenTwice:
 
         lines = _lines(_report(checkout))
         (named,) = [index for index, line in enumerate(lines)
-                    if line.startswith('login: RULE-2 is written twice.')]
+                    if line.startswith('login RULE-2: number written twice.')]
         assert lines[named + 1] == 'login: PROOF-3 will name RULE-3.', lines
         assert not [line for line in lines if 'PROOF-2 will name' in line], \
             lines
@@ -779,11 +779,11 @@ class TestNumbersWrittenTwice:
             clock.setattr(purlin_drift.time, 'time', lambda: float(now))
             report = _report(checkout)
         assert _lines(report).count(
-            'origin/main was last fetched 3 days ago, and drift does not '
-            'fetch. Run git fetch, then purlin:drift again.') == 1, \
+            'origin/main: last fetch. It was 3 days ago, and drift does not '
+            'fetch. Run git fetch, then purlin:drift.') == 1, \
             _lines(report)
         assert not [line for line in _lines(report)
-                    if 'was last fetched' in line
+                    if ': last fetch. ' in line
                     and '3 days ago' not in line], _lines(report)
         assert _view(report)['default_branch']['ref'] == 'origin/main'
 
@@ -809,7 +809,7 @@ def _comment_pulled(tmp_path, proofs_after):
 
 def _names_line_1(report):
     return [line for line in _lines(report)
-            if line.startswith('tests/test_login.py:1 ')]
+            if ' after tests/test_login.py:1 last changed (' in line]
 
 
 class TestCommentsChanged:
@@ -819,10 +819,9 @@ class TestCommentsChanged:
             self, tmp_path):
         checkout, sha = _comment_pulled(tmp_path, {'PROOF-1': 'One',
                                                    'PROOF-4': 'B'})
-        assert ('tests/test_login.py:1 names login PROOF-4, whose wording '
-                'changed after the test was last changed in %s: it read "A" '
-                'and now reads "B". Run purlin:build login to make the test '
-                'show it; the line clears once the test changes.' % sha) in \
+        assert ('login PROOF-4 (RULE-1): test comment to correct. It was '
+                'reworded after tests/test_login.py:1 last changed (%s). Run '
+                'purlin:build login.' % sha) in \
             _lines(_report(checkout)), _lines(_report(checkout))
 
     # purlin: drift PROOF-76
@@ -833,8 +832,8 @@ class TestCommentsChanged:
         lines = _names_line_1(_report(checkout))
         assert len(lines) == 1, lines
         assert lines[0].endswith(
-            'it read "A" and now reads "B". Its old wording is now PROOF-6: '
-            'move the comment there.'), lines
+            ' last changed (%s). Move the comment to PROOF-6, which holds '
+            'the old wording.' % _sha7), lines
 
     # purlin: drift PROOF-82
     def test_a_test_changed_in_a_commit_after_the_pull_is_not_named(
@@ -865,7 +864,7 @@ class TestCommentsChanged:
             'test(login): the comment respaced')
         lines = _names_line_1(_report(checkout))
         assert len(lines) == 1, lines
-        assert lines[0].startswith('tests/test_login.py:1 names login PROOF-4,'), \
+        assert lines[0].startswith('login PROOF-4 (RULE-1): test comment to correct. '), \
             lines
 
 

@@ -42,8 +42,8 @@ TAG_PREFIX = 'signed/'
 
 # A sign-off read from its files: the tag, the version, the sha7 of the commit
 # that added the sign-off.
-TAG_NOT_HERE = ('%s is not in this checkout: the sign-off of %s at %s is read from its '
-                'files. Run git fetch --tags, or purlin:sign if no one wrote the tag.')
+TAG_NOT_HERE = 'The sign-off of %s at %s is read from its files.'
+TAG_NOT_HERE_DO = 'Run git fetch --tags, or purlin:sign if no one wrote the tag.'
 
 
 def tests_fact(payload):
@@ -88,7 +88,10 @@ def signoff_fact(project_root):
             commit, _why = signatures.standing_by_files(project_root, version)
             if not commit:
                 continue
-            warnings.append(TAG_NOT_HERE % (name, version, commit[:7]))
+            from purlin import notices
+            warnings.append(notices.line(
+                'tag_not_here', name, TAG_NOT_HERE % (version, commit[:7]),
+                TAG_NOT_HERE_DO))
         since = commits_since(project_root, commit)
         if records_only_since(project_root, commit):
             word = SIGNED_AT % (version, commit[:7])

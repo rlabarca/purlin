@@ -56,7 +56,12 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .btn:hover{background:var(--hover-tint)}
 .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
 .notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
-.notice-text{min-width:0}
+.notice-text{min-width:0;position:relative}
+.unseen{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:pre}
+.notice-name{font-family:var(--font-mono);font-weight:var(--weight-bold);margin-right:var(--space-2)}
+.notice-name.link{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.notice-name.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.notice-kind{display:inline-block;font-size:var(--ui-sm);line-height:1.2;padding:1px 8px;border:1px solid;border-radius:var(--radius-sm);color:var(--text-primary);white-space:nowrap;margin-right:var(--space-2)}
 .notices .notice:last-child{margin-bottom:0}
 .nowrap{white-space:nowrap}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
@@ -582,7 +587,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 18;
+var SCHEMA = 19;
 var TESTS = 'Tests';
 var SIGNOFF = 'Sign-off';
 var MET = 'met';
@@ -903,94 +908,44 @@ function topBar(readable) {
     + '<span class="spacer"></span>' + (readable ? factBoxes() : '')
     + themeButton() + '</header>';
 }
-function notice(line, hue, names) {
-  return '<div class="notice"' + (names ? hover(names) : '')
+function notice(item) {
+  var hue = item.tone === 'neutral' ? 'neutral' : 'warn';
+  var label = item.kind ? '<span class="notice-kind" style="border-color:'
+    + 'var(--state-' + hue + ')">' + esc(item.label) + '</span>'
+    + unseen(item.about ? '. ' : ': ') + '<wbr>' : '';
+  var name = '';
+  if (item.kind && item.about) {
+    name = (hasRule(item.feature, item.rule)
+      ? '<span class="notice-name link" role="link" tabindex="0" '
+        + 'data-act="rule" data-feature="' + esc(item.feature)
+        + '" data-rule="' + esc(item.rule) + '">' + nameText(item.about)
+        + '</span>'
+      : '<span class="notice-name">' + nameText(item.about) + '</span>')
+      + unseen(': ') + '<wbr>';
+  }
+  var rest = item.kind ? item.rest : item.text;
+  return '<div class="notice"' + (item.names ? hover(item.names) : '')
     + '><span class="dot" '
     + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
-    + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
+    + name + label + String(rest || '').split(' ').map(noticeWord).join(' ')
+    + '</span></div>';
 }
-var NOTICE_KINDS = [
-  [/^(\S+): \d+ lines? under ## Rules (?:is|are) not numbered/,
-    'hold', 'holds', 'a line under ## Rules with no number'],
-  [/^(\S+): RULE-\d+ is written twice/,
-    'write', 'writes', 'a rule\'s number twice'],
-  [/^(\S+): PROOF-\d+ is written twice/,
-    'write', 'writes', 'a proof\'s number twice'],
-  [/^(\S+): \d+ lines? (?:is|are) left from a merge conflict/,
-    'hold', 'holds', 'a line left from a merge conflict'],
-  [/^(.+?): the name holds a character other than letters/,
-    'have', 'has', 'a name no test comment can name'],
-  [/^(\S+): a line under ## Proof cannot be read/,
-    'hold', 'holds', 'a proof line Purlin cannot read'],
-  [/^(\S+): the first line names /,
-    'name', 'names', 'another spec on the first line'],
-  [/^(\S+): PROOF-\d+ is tagged @slow and @manual/,
-    'tag', 'tags', 'a proof @slow and @manual'],
-  [/^(\S+): > Requires: is not read/,
-    'carry', 'carries', '> Requires:, which Purlin does not read'],
-  [/^(\S+): > Global: is not read/,
-    'carry', 'carries', '> Global:, which Purlin does not read'],
-  [/^(\S+): > Scope: is not read on an anchor/,
-    'carry', 'carries', '> Scope:, which Purlin does not read on an anchor'],
-  [/^(\S+): its source, .* which Purlin does not read on an anchor/,
-    'come', 'comes', 'from a source with a line Purlin does not read'],
-  [/^.+:\d+ names (\S+) (?:PROOF|RULE)-\d+, whose wording changed after/,
-    'have', 'has', 'a proof reworded after its test was last changed'],
-  [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
-    'have', 'has', 'an evidence file Purlin ignores'],
-  [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
-    'name', 'names', 'a file in the scope that is not written yet'],
-  [/^(\S+) RULE-\d+ passes with nothing to check here: /,
-    'have', 'has', 'a rule that passes with nothing to check here']
-];
-function groupedLines(lines) {
-  var found = lines.map(function (line) {
-    for (var kind = 0; kind < NOTICE_KINDS.length; kind++) {
-      var match = NOTICE_KINDS[kind][0].exec(line);
-      if (match) { return {kind: kind, name: match[1]}; }
-    }
-    return null;
-  });
-  var groups = {};
-  found.forEach(function (hit) {
-    if (!hit) { return; }
-    var group = groups[hit.kind] = groups[hit.kind] || {lines: 0, names: []};
-    group.lines += 1;
-    if (group.names.indexOf(hit.name) < 0) { group.names.push(hit.name); }
-  });
-  var out = [];
-  lines.forEach(function (line, index) {
-    var hit = found[index];
-    var group = hit && groups[hit.kind];
-    if (!group || group.lines < 3) { out.push({line: line}); return; }
-    if (group.drawn) { return; }
-    group.drawn = true;
-    out.push({line: groupLine(NOTICE_KINDS[hit.kind], group),
-              names: group.names});
-  });
-  return out;
+function unseen(text) { return '<span class="unseen">' + esc(text) + '</span>'; }
+function nameText(about) {
+  return String(about).split(' ').map(function (word) {
+    return word.indexOf('/') < 0 ? noticeWord(word) : pathText(word);
+  }).join(' ');
 }
-function groupLine(kind, group) {
-  var names = group.names;
-  if (names.length === 1) {
-    return names[0] + ' ' + kind[2] + ' ' + kind[3] + ', in ' + group.lines
-      + ' places. Run purlin:status ' + names[0] + '.';
-  }
-  return names.length + ' specs ' + kind[1] + ' ' + kind[3] + ': '
-    + (names.length === 2 ? names[0] + ' and ' + names[1]
-      : names[0] + ', ' + names[1] + ', and ' + (names.length - 2) + ' more')
-    + '. Run purlin:status for each.';
+function hasRule(feature, rule) {
+  if (!feature || !rule) { return false; }
+  return ((DATA && DATA.features) || []).some(function (entry) {
+    return entry.name === feature && (entry.rules || []).some(function (r) {
+      return r.id === rule;
+    });
+  });
 }
 function notices() {
-  var lines = DATA.dirty
-    ? [{line: 'The working tree has uncommitted changes, so what is on this '
-       + 'board is not what a commit would carry.'}] : [];
-  lines = lines.concat(groupedLines(DATA.warnings || []));
-  var drawn = lines.map(function (item) {
-    return notice(item.line, 'warn', item.names);
-  }).join('') + groupedLines(DATA.information || []).map(function (item) {
-    return notice(item.line, 'neutral', item.names);
-  }).join('');
+  var drawn = (DATA.notices || []).map(notice).join('');
   return drawn ? '<section class="notices">' + drawn + '</section>' : '';
 }
 function pathText(path) {
@@ -1051,6 +1006,11 @@ function onClick(event) {
 restoreTheme();
 document.getElementById('app').addEventListener('click', onClick);
 document.getElementById('app').addEventListener('keydown', function (event) {
+  if (event.key === 'Enter' && event.target.getAttribute('role') === 'link') {
+    event.preventDefault();
+    onClick(event);
+    return;
+  }
   var group = event.target.getAttribute('data-group');
   if (!group || (event.key !== 'Enter' && event.key !== ' ')) { return; }
   event.preventDefault();

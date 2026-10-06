@@ -357,13 +357,13 @@ class TestKeysThisVersionDoesNotRead:
         _write_bytes(project, b'{"version": "0.10.0", "tests": [], '
                               b'"pre_push": "warn", "digest": true}')
         assert settings_warnings(resolve_config(project)) == [
-            '.purlin/config.json carries pre_push, digest, which this '
-            'version does not read. Run purlin:init --update.']
+            '.purlin/config.json: setting not read. This version does not '
+            'read pre_push, digest. Run purlin:init --update.']
 
     # purlin: config_engine PROOF-51
     def test_a_key_the_upgrade_has_no_step_for_is_to_be_removed(self, project):
         _write_bytes(project, b'{"version": "0.10.0", "tests": [], '
                               b'"colour": "blue"}')
         assert settings_warnings(resolve_config(project)) == [
-            '.purlin/config.json carries colour, which this version does not '
-            'read. Remove it from .purlin/config.json.']
+            '.purlin/config.json: setting not read. This version does not '
+            'read colour. Remove it from the file.']

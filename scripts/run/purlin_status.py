@@ -112,7 +112,8 @@ def spec_lines(project_root, name):
     path = info.get('spec_path') or ''
     data = payload_module.build_payload(project_root)
     warnings = [line for line in data['warnings']
-                if line.startswith(name + ': ') or (path and path in line)]
+                if getattr(line, 'feature', None) == name
+                or (path and path in line)]
     feature = next((entry for entry in data['features']
                     if entry['name'] == name), None)
     lines = warnings + [''] if warnings else []

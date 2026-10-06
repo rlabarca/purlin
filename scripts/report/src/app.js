@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 18;
+var SCHEMA = 19;
 
 /* The two facts the top bar states, as the payload gives them: whether the
    tests are met on the committed evidence, the payload's `met`, and whether
@@ -506,118 +506,66 @@ function topBar(readable) {
     + themeButton() + '</header>';
 }
 
-/* One notice: a dot in its tone, then the line whole. A notice that counts
-   several specs names every one of them in its hover, one to a line. */
-function notice(line, hue, names) {
-  return '<div class="notice"' + (names ? hover(names) : '')
+/* One notice, an entry of the data's `notices`: a dot in its tone, the name
+   of what it is about in the machine typeface, its kind as a label in the
+   same tone, then the rest of the line. A name that is a rule or a proof of
+   a rule the page has opens that rule's page. A notice that counts several
+   specs opens on its kind and names every spec in its hover, one to a line.
+   An entry with no kind is drawn as its text, whole. The `: ` after the
+   name and the `. ` after the kind are in the page and not drawn, so the
+   notice reads, and copies, as the line the terminal prints. */
+function notice(item) {
+  var hue = item.tone === 'neutral' ? 'neutral' : 'warn';
+  var label = item.kind ? '<span class="notice-kind" style="border-color:'
+    + 'var(--state-' + hue + ')">' + esc(item.label) + '</span>'
+    + unseen(item.about ? '. ' : ': ') + '<wbr>' : '';
+  var name = '';
+  if (item.kind && item.about) {
+    name = (hasRule(item.feature, item.rule)
+      ? '<span class="notice-name link" role="link" tabindex="0" '
+        + 'data-act="rule" data-feature="' + esc(item.feature)
+        + '" data-rule="' + esc(item.rule) + '">' + nameText(item.about)
+        + '</span>'
+      : '<span class="notice-name">' + nameText(item.about) + '</span>')
+      + unseen(': ') + '<wbr>';
+  }
+  var rest = item.kind ? item.rest : item.text;
+  return '<div class="notice"' + (item.names ? hover(item.names) : '')
     + '><span class="dot" '
     + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
-    + line.split(' ').map(noticeWord).join(' ') + '</span></div>';
+    + name + label + String(rest || '').split(' ').map(noticeWord).join(' ')
+    + '</span></div>';
 }
 
-/* The kinds of line the status writes about one spec, each as the pattern
-   its line matches, the spec's name the pattern's one group, and what the
-   one notice drawn for three or more of the kind says of those specs: the
-   verb for several specs, the verb for one, then the rest. A line that
-   matches none is about no one spec and always keeps its own notice. */
-var NOTICE_KINDS = [
-  [/^(\S+): \d+ lines? under ## Rules (?:is|are) not numbered/,
-    'hold', 'holds', 'a line under ## Rules with no number'],
-  [/^(\S+): RULE-\d+ is written twice/,
-    'write', 'writes', 'a rule\'s number twice'],
-  [/^(\S+): PROOF-\d+ is written twice/,
-    'write', 'writes', 'a proof\'s number twice'],
-  [/^(\S+): \d+ lines? (?:is|are) left from a merge conflict/,
-    'hold', 'holds', 'a line left from a merge conflict'],
-  [/^(.+?): the name holds a character other than letters/,
-    'have', 'has', 'a name no test comment can name'],
-  [/^(\S+): a line under ## Proof cannot be read/,
-    'hold', 'holds', 'a proof line Purlin cannot read'],
-  [/^(\S+): the first line names /,
-    'name', 'names', 'another spec on the first line'],
-  [/^(\S+): PROOF-\d+ is tagged @slow and @manual/,
-    'tag', 'tags', 'a proof @slow and @manual'],
-  [/^(\S+): > Requires: is not read/,
-    'carry', 'carries', '> Requires:, which Purlin does not read'],
-  [/^(\S+): > Global: is not read/,
-    'carry', 'carries', '> Global:, which Purlin does not read'],
-  [/^(\S+): > Scope: is not read on an anchor/,
-    'carry', 'carries', '> Scope:, which Purlin does not read on an anchor'],
-  [/^(\S+): its source, .* which Purlin does not read on an anchor/,
-    'come', 'comes', 'from a source with a line Purlin does not read'],
-  [/^.+:\d+ names (\S+) (?:PROOF|RULE)-\d+, whose wording changed after/,
-    'have', 'has', 'a proof reworded after its test was last changed'],
-  [/^\.purlin\/evidence\/[^\/ ]+\/(\S+)\.json (?:is not valid JSON|is not a JSON object|carries the schema |names the source )/,
-    'have', 'has', 'an evidence file Purlin ignores'],
-  [/^(\S+): \d+ files? its scope names (?:is|are) not written yet/,
-    'name', 'names', 'a file in the scope that is not written yet'],
-  [/^(\S+) RULE-\d+ passes with nothing to check here: /,
-    'have', 'has', 'a rule that passes with nothing to check here']
-];
+/* Text the page holds and does not draw. */
+function unseen(text) { return '<span class="unseen">' + esc(text) + '</span>'; }
 
-/* The lines as the board draws them, each `{line, names}`: three or more
-   lines of one kind become one line, where the first of them stood, counting
-   the specs they name and naming the first two; `names` is every spec it
-   counts, for its hover. Any other line stands as it came, whole. */
-function groupedLines(lines) {
-  var found = lines.map(function (line) {
-    for (var kind = 0; kind < NOTICE_KINDS.length; kind++) {
-      var match = NOTICE_KINDS[kind][0].exec(line);
-      if (match) { return {kind: kind, name: match[1]}; }
-    }
-    return null;
-  });
-  var groups = {};
-  found.forEach(function (hit) {
-    if (!hit) { return; }
-    var group = groups[hit.kind] = groups[hit.kind] || {lines: 0, names: []};
-    group.lines += 1;
-    if (group.names.indexOf(hit.name) < 0) { group.names.push(hit.name); }
-  });
-  var out = [];
-  lines.forEach(function (line, index) {
-    var hit = found[index];
-    var group = hit && groups[hit.kind];
-    if (!group || group.lines < 3) { out.push({line: line}); return; }
-    if (group.drawn) { return; }
-    group.drawn = true;
-    out.push({line: groupLine(NOTICE_KINDS[hit.kind], group),
-              names: group.names});
-  });
-  return out;
+/* A notice's name: each word on one line, and a path as `pathText` sets
+   it, breaking after a `/` or a `_`, so a long one fits a phone's width. */
+function nameText(about) {
+  return String(about).split(' ').map(function (word) {
+    return word.indexOf('/') < 0 ? noticeWord(word) : pathText(word);
+  }).join(' ');
 }
 
-/* The one line for a kind: `<n> specs <what>: <first two names>, and <n-2>
-   more. Run purlin:status for each.` Two specs are both named, and one spec
-   is named with how many places its lines name. */
-function groupLine(kind, group) {
-  var names = group.names;
-  if (names.length === 1) {
-    return names[0] + ' ' + kind[2] + ' ' + kind[3] + ', in ' + group.lines
-      + ' places. Run purlin:status ' + names[0] + '.';
-  }
-  return names.length + ' specs ' + kind[1] + ' ' + kind[3] + ': '
-    + (names.length === 2 ? names[0] + ' and ' + names[1]
-      : names[0] + ', ' + names[1] + ', and ' + (names.length - 2) + ' more')
-    + '. Run purlin:status for each.';
+/* True where the data holds that rule of that spec. */
+function hasRule(feature, rule) {
+  if (!feature || !rule) { return false; }
+  return ((DATA && DATA.features) || []).some(function (entry) {
+    return entry.name === feature && (entry.rules || []).some(function (r) {
+      return r.id === rule;
+    });
+  });
 }
 
 /* The notices, which stand below the boxes and above the two tables: the
-   uncommitted working tree, then the warnings the data carries, in the warn
-   tone; then the lines of information, in the neutral tone. Between them the two lists hold every
-   line the status prints between its table and its summary sentence, which
-   `report_data.with_status_lines` sees to. Three or more of one kind are
-   drawn as one notice. */
+   warnings in the warn tone, then the lines of information in the neutral
+   tone, as the data's `notices` lists them. The data folds three or more of
+   one kind into one notice, and between them its lines are every line the
+   status prints between its table and its summary sentence
+   (`report_data.with_status_lines`). */
 function notices() {
-  var lines = DATA.dirty
-    ? [{line: 'The working tree has uncommitted changes, so what is on this '
-       + 'board is not what a commit would carry.'}] : [];
-  lines = lines.concat(groupedLines(DATA.warnings || []));
-  var drawn = lines.map(function (item) {
-    return notice(item.line, 'warn', item.names);
-  }).join('') + groupedLines(DATA.information || []).map(function (item) {
-    return notice(item.line, 'neutral', item.names);
-  }).join('');
+  var drawn = (DATA.notices || []).map(notice).join('');
   return drawn ? '<section class="notices">' + drawn + '</section>' : '';
 }
 
@@ -694,6 +642,12 @@ document.getElementById('app').addEventListener('click', onClick);
 /* A band is a control drawn as a row, so Enter and Space press it as they
    press a button, and the focus comes back to it once the page is drawn. */
 document.getElementById('app').addEventListener('keydown', function (event) {
+  /* A notice's name that opens a rule is a link: Enter follows it. */
+  if (event.key === 'Enter' && event.target.getAttribute('role') === 'link') {
+    event.preventDefault();
+    onClick(event);
+    return;
+  }
   var group = event.target.getAttribute('data-group');
   if (!group || (event.key !== 'Enter' && event.key !== ' ')) { return; }
   event.preventDefault();

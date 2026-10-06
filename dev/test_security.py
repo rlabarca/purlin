@@ -519,20 +519,23 @@ class TestGitArgvHardening:
     def test_a_source_beginning_with_a_dash_is_refused(self, tmp_path,
                                                        monkeypatch):
         _assert_refused(tmp_path, monkeypatch, 'evil_policy', EVIL_SOURCE,
-                        'evil_policy: (source rejected: begins with "-")')
+                        'evil_policy: anchor source refused. Its > Source: '
+                        'line begins with "-". Run purlin:spec evil_policy.')
 
     # purlin: security_no_dangerous_patterns PROOF-47
     def test_a_source_naming_the_ext_transport_is_refused(self, tmp_path,
                                                           monkeypatch):
         _assert_refused(tmp_path, monkeypatch, 'ext_policy', EXT_SOURCE,
-                        'ext_policy: (source rejected: names an ext:: '
-                        'transport)')
+                        'ext_policy: anchor source refused. Its > Source: '
+                        'line names an ext:: transport. Run purlin:spec '
+                        'ext_policy.')
 
     # purlin: security_no_dangerous_patterns PROOF-48
     def test_a_source_naming_the_fd_transport_is_refused(self, tmp_path,
                                                          monkeypatch):
         _assert_refused(tmp_path, monkeypatch, 'fd_policy', FD_SOURCE,
-                        'fd_policy: (source rejected: names an fd:: transport)')
+                        'fd_policy: anchor source refused. Its > Source: line '
+                        'names an fd:: transport. Run purlin:spec fd_policy.')
 
     # purlin: security_no_dangerous_patterns PROOF-9
     def test_a_source_reaches_ls_remote_after_end_of_options(self, tmp_path,

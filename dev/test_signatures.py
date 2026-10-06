@@ -480,9 +480,8 @@ class TestWhereItReadsSigned:
         word, warned = signoff_and_warnings(signed)
         assert word == 'not signed'
         assert warned == [
-            'signed/9.9.9: it names a commit that holds no evidence package '
-            'for 9.9.9, so it is not a sign-off. Delete it: git tag -d '
-            'signed/9.9.9.']
+            'signed/9.9.9: tag with no sign-off. Its commit holds no evidence '
+            'package for 9.9.9. Run git tag -d signed/9.9.9.']
 
     # purlin: signatures PROOF-253
     def test_a_sign_off_changed_in_an_unsigned_commit_is_no_sign_off(
@@ -502,8 +501,8 @@ class TestWhereItReadsSigned:
         assert word == 'not signed'
         assert len(warned) == 1, warned
         assert warned[0].startswith(
-            'signed/2.1.0: no sign-off of 2.1.0 counts: the commit that added '
-            'it is not signed'), warned
+            'signed/2.1.0: tag with no sign-off. No sign-off of 2.1.0 counts: '
+            'the commit that added it is not signed.'), warned
 
 
     # purlin: signatures PROOF-274
@@ -516,9 +515,9 @@ class TestWhereItReadsSigned:
             word, warned = signoff_and_warnings(made)
             assert word == 'signed 0.1.0 at %s' % signed_at[:7]
             assert warned == [
-                'signed/0.1.0 is not in this checkout: the sign-off of 0.1.0 '
-                'at %s is read from its files. Run git fetch --tags, or '
-                'purlin:sign if no one wrote the tag.' % signed_at[:7]]
+                'signed/0.1.0: tag not in this checkout. The sign-off of '
+                '0.1.0 at %s is read from its files. Run git fetch --tags, '
+                'or purlin:sign if no one wrote the tag.' % signed_at[:7]]
         finally:
             made.close()
 

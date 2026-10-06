@@ -555,11 +555,11 @@ def test_three_people_reach_a_signed_version(tmp_path):
     status = dana.status()
     assert opening(status)[0] == 'Tests: not met'
     stale = [line for line in status.splitlines()
-             if line.startswith('tests/test_year_end.py:')]
+             if ' after tests/test_year_end.py:' in line]
     assert len(stale) == 1 and stale[0].endswith(
-        'Its old wording is now PROOF-5: move the comment there.'), status
-    assert 'names sample_age PROOF-4, whose wording changed after the test ' \
-           'was last changed in ' in stale[0]
+        'Move the comment to PROOF-5, which holds the old wording.'), status
+    assert stale[0].startswith('sample_age PROOF-4 (RULE-'), stale
+    assert '): test comment to correct. ' in stale[0], stale
     assert '1 test comment to correct: purlin:build' in status
     given(skill('build'), 'moves as `purlin:spec`\'s "Renumbering" says')
     given(skill('spec'), "a test comment whose proof's old wording now stands "

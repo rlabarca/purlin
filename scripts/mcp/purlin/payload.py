@@ -1,4 +1,4 @@
-"""The structured project payload, schema 18.
+"""The structured project payload, schema 19.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 18,
+      "schema_version": 19,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -83,7 +83,11 @@ be coupled to a layout; this is the shape they all read instead.
                                                  "current": true,
                                                  "path": ...}}}},
       "information": ["..."],
-      "warnings": ["..."]
+      "warnings": ["..."],
+      "notices": [{"tone": "warn", "kind": "to_correct",
+                   "label": "test comment to correct",
+                   "about": "login PROOF-2 (RULE-1)", "feature": "login",
+                   "rule": "RULE-1", "rest": "...", "text": "..."}]
     }
 
 `branch` is the branch HEAD is on, or null on a detached HEAD; `commit` is
@@ -158,7 +162,15 @@ counts such specs, not their rules.
 `information` holds one line per spec whose `> Scope:` names files git does
 not have yet, as `status.not_written_lines` words it. `warnings` holds every
 other line: an evidence file left out, a spec mistake, each test comment to
-correct as `wording.stale_comments` words it.
+correct as `wording.stale_comments` words it. Every line takes the one shape
+`notices.line` gives it. `notices` holds one entry per line of `warnings`,
+then one per line of `information`: its `tone`, `warn` or `neutral`; its
+`kind`, a key of `notices.KINDS`, and `label`, that kind's words; `about`,
+what the line names first; `feature` and `rule`, the spec and the rule it is
+about, each null where it names none; `rest`, the line after its name and its
+kind; and `text`, the whole line. Three or more entries of one kind that
+each name a spec are one entry, which opens on the kind, carries `names`,
+every spec it counts, and null for `about`, `feature` and `rule`.
 
 `write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
@@ -184,13 +196,14 @@ from purlin import (PURLIN_VERSION,
                     facts as facts_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
+                    notices as notices_module,
                     project as project_module,
                     signatures as signatures_module,
                     specs as specs_module, states,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -217,16 +230,7 @@ def build_payload(project_root, generated_by='sync_status', config=None,
     tag_warning = specs_module.unknown_tag_warning(features)
     if tag_warning:
         warnings.append(tag_warning)
-    for name in sorted(features):
-        unnumbered = features[name].get('unnumbered_lines') or []
-        if unnumbered:
-            lines = ('1 line' if len(unnumbered) == 1
-                     else '%d lines' % len(unnumbered))
-            verb = 'is' if len(unnumbered) == 1 else 'are'
-            warnings.append(
-                '%s: %s under ## Rules %s not numbered; a rule is '
-                '`- RULE-N: <text>`. Run purlin:spec %s.'
-                % (name, lines, verb, name))
+    warnings.extend(specs_module.unnumbered_warnings(features))
     for line in specs_module.spec_mistakes(project_root, features):
         warnings.append(line)
 
@@ -303,6 +307,7 @@ def build_payload(project_root, generated_by='sync_status', config=None,
         'information': status_module.not_written_lines(project_root, features),
         'warnings': warnings,
     }
+    payload['notices'] = notice_entries(payload)
     payload['met'] = facts_module.tests_fact(payload) == facts_module.TESTS_MET
     if payload['last_line'] == summary_module.LAST_LINE:
         # The last line never names a sign-off `purlin:sign` would refuse,
@@ -319,6 +324,15 @@ def build_payload(project_root, generated_by='sync_status', config=None,
                 summary_module.LAST_LINE_OLD_ONE if old == 1
                 else summary_module.LAST_LINE_OLD_MANY % old)
     return payload
+
+
+def notice_entries(payload):
+    """`notices`: one entry per line of `warnings`, then one per line of
+    `information`, as `notices.entries` gives them, three or more of one
+    kind folded into one (`notices.grouped`)."""
+    return notices_module.grouped(
+        notices_module.entries(payload.get('warnings'), 'warn')
+        + notices_module.entries(payload.get('information'), 'neutral'))
 
 
 def proof_counts(rule_entries, tied=None):

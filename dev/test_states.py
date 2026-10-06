@@ -9,6 +9,7 @@ project and its helpers are in `dev/mcp_project.py`.
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 
 import pytest
@@ -438,7 +439,8 @@ class TestThePlatformsInThePassedCell:
             'no test', None, {}), cell
         named = [w for w in data['warnings'] if path in w]
         assert len(named) == 1, data['warnings']
-        assert 'it is ignored' in named[0], named
+        assert named[0].startswith(
+            '.purlin/evidence/ci/login.json: evidence file ignored. '), named
 
     # purlin: states PROOF-66
     def test_a_linux_ci_pass_and_a_macos_local_failure_read_partial(self):
@@ -907,15 +909,15 @@ class TestBuckets:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_sixteen_carries_exactly_the_seventeen_keys(self, project):
+    def test_schema_nineteen_carries_exactly_the_eighteen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 18
+        assert data['schema_version'] == 19
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
             'left', 'met', 'signoff', 'last_line', 'os_words', 'evidence',
-            'information', 'warnings')), sorted(data)
-        assert len(data) - 1 == 17
+            'information', 'warnings', 'notices')), sorted(data)
+        assert len(data) - 1 == 18
         assert data['generated_at'].endswith('Z')
 
     @staticmethod
@@ -1278,13 +1280,15 @@ class TestATestCommentToCorrect:
         try:
             self._reworded(made)
             data = made.payload()
+            sha7 = subprocess.run(
+                ['git', 'log', '-1', '--format=%H', '--', 'tests/test_age.py'],
+                cwd=made.root, capture_output=True, text=True).stdout[:7]
         finally:
             made.close()
-        named = [line for line in data['warnings']
-                 if line.startswith('tests/test_age.py:3 names sample_age '
-                                    'PROOF-1, whose wording changed after '
-                                    'the test was last changed')]
-        assert len(named) == 1, data['warnings']
+        assert data['warnings'] == [
+            'sample_age PROOF-1 (RULE-1): test comment to correct. "90" '
+            'became "90 minutes" after tests/test_age.py:3 last changed (%s). '
+            'Run purlin:build sample_age.' % sha7], data['warnings']
         assert '1 test comment to correct' in [item['text']
                                                for item in data['left']], \
             data['left']
@@ -1300,7 +1304,7 @@ class TestATestCommentToCorrect:
         finally:
             made.close()
         assert not [line for line in data['warnings']
-                    if 'whose wording changed' in line], data['warnings']
+                    if 'test comment to correct' in line], data['warnings']
         assert 'to_correct' not in [item['kind'] for item in data['left']], \
             data['left']
 
@@ -1321,7 +1325,7 @@ class TestATestCommentToCorrect:
             made.close()
         assert slow is True
         assert not [line for line in data['warnings']
-                    if 'whose wording changed' in line], data['warnings']
+                    if 'test comment to correct' in line], data['warnings']
         assert 'to_correct' not in [item['kind'] for item in data['left']], \
             data['left']
 
@@ -1362,8 +1366,8 @@ class TestNothingToCheck:
         assert cell['word'] == 'passed', cell
         assert cell['reasons'] == ['PROOF-3: this project has no screens'], \
             cell
-        assert ('security_no_dangerous_patterns RULE-3 passes with nothing to '
-                'check here: this project has no screens.') in lines, lines
+        assert ('security_no_dangerous_patterns RULE-3: nothing to check '
+                'here. It passes: this project has no screens.') in lines, lines
 
     # purlin: states PROOF-278
     def test_a_feature_proof_with_nothing_to_check_reads_not_run(self,
@@ -1452,15 +1456,15 @@ class TestASpecAheadOfItsCode:
             made.close()
         found = [line for line in lines if 'not written yet' in line]
         assert found == [
-            'states: 3 files its scope names are not written yet: facts.py, '
-            'project.py, wording.py. Run purlin:build states, or correct the '
-            'path with purlin:spec states.'], lines
+            'states: spec ahead of its code. 3 files are not written yet: '
+            'facts.py, project.py, wording.py. Run purlin:build states, or '
+            'purlin:spec states to correct the path.'], lines
 
     # purlin: states PROOF-280
     def test_one_file_not_written_beside_one_in_git_is_information(self):
-        line = ('login: 1 file its scope names is not written yet: '
-                'src/gone.py. Run purlin:build login, or correct the path with '
-                'purlin:spec login.')
+        line = ('login: spec ahead of its code. src/gone.py is not written '
+                'yet. Run purlin:build login, or purlin:spec login to correct '
+                'the path.')
         made = Project(spec=SPEC.replace('> Scope: src/login.py',
                                          '> Scope: src/login.py, src/gone.py'))
         try:
@@ -1798,14 +1802,16 @@ class TestTheAnchorLines:
         old = _anchor_source(source)
         new = _advance(source)
         lines = _anchored_status(source, old)
-        assert ('policy: the pin %s is behind its source, now %s. Run '
-                'purlin:anchor sync policy.' % (old[:7], new[:7])) in lines, \
+        assert ('policy: anchor pin behind. The pin %s is behind its source, '
+                'now %s. Run purlin:anchor sync policy.'
+                % (old[:7], new[:7])) in lines, \
             lines
 
     # purlin: states PROOF-234
     def test_a_source_refused_names_the_reason(self):
         lines = _anchored_status('--upload-pack=/bin/echo', 'abc1234')
-        assert 'policy: (source rejected: begins with "-")' in lines, lines
+        assert ('policy: anchor source refused. Its > Source: line begins '
+                'with "-". Run purlin:spec policy.') in lines, lines
 
 
 # ---------------------------------------------------------------------------

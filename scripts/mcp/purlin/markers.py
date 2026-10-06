@@ -63,7 +63,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import specs as specs_module                      # noqa: E402
+from purlin import notices, specs as specs_module             # noqa: E402
 
 # The four report formats a suite may name.
 FORMATS = ('junit', 'trx', 'gotest', 'exit')
@@ -1061,11 +1061,10 @@ def marker_index(project_root):
 
 # A marker naming a feature, a proof or a rule no spec has, or naming a rule
 # that has proofs, fails the run, and its line says what to do.
-NAMES_NOTHING = ('%s:%d names %s %s, which no spec has. Correct the comment, '
-                 'or run purlin:build to repair it.')
-RULE_HAS_PROOFS = ('%s:%d names %s %s, which has proofs; a comment names one '
-                   'of its proofs. Correct the comment, or run purlin:build '
-                   'to repair it.')
+# What is wrong, after `<feature> <id>: test comment to correct.`: the file
+# and the line of the comment.
+NAMES_NOTHING = '%s:%d names it, and no spec has it.'
+RULE_HAS_PROOFS = '%s:%d names the rule, and a comment names one of its proofs.'
 
 
 def marker_problems(scan, features):
@@ -1084,12 +1083,17 @@ def marker_problems(scan, features):
                      (info.get('proofs') if marker.id.startswith('PROOF-')
                       else info.get('rules')) or {})
             if marker.id not in known:
-                lines.append(NAMES_NOTHING % (path, marker.line,
-                                              marker.feature, marker.id))
+                wrong = NAMES_NOTHING
             elif (not marker.id.startswith('PROOF-')
                   and (info.get('proofs_by_rule') or {}).get(marker.id)):
-                lines.append(RULE_HAS_PROOFS % (path, marker.line,
-                                                marker.feature, marker.id))
+                wrong = RULE_HAS_PROOFS
+            else:
+                continue
+            lines.append(notices.line(
+                'to_correct', '%s %s' % (marker.feature, marker.id),
+                wrong % (path, marker.line), notices.run('purlin:build'),
+                feature=marker.feature,
+                rule=None if marker.id.startswith('PROOF-') else marker.id))
     return lines
 
 

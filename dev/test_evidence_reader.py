@@ -104,17 +104,17 @@ def _ignored_local(root, content):
 # purlin: evidence PROOF-18
 def test_a_file_that_is_not_json_is_ignored_with_one_warning(root):
     assert _ignored_local(root, '{not json') == (
-        '.purlin/evidence/local/login.json is not valid JSON; it is ignored. '
-        'Run purlin:test login to write it again.')
+        '.purlin/evidence/local/login.json: evidence file ignored. It is not '
+        'valid JSON. Run purlin:test login.')
 
 
 # purlin: evidence PROOF-52
 def test_a_file_of_another_schema_is_ignored_with_one_warning(root):
     content = json.dumps(_file('local', schema='purlin-evidence/1'))
     assert _ignored_local(root, content) == (
-        '.purlin/evidence/local/login.json carries the schema '
-        '"purlin-evidence/1", not purlin-evidence/2; it is ignored. '
-        'Run purlin:test login to write it again.')
+        '.purlin/evidence/local/login.json: evidence file ignored. It '
+        'carries the schema "purlin-evidence/1", not purlin-evidence/2. '
+        'Run purlin:test login.')
 
 
 # purlin: evidence PROOF-19
@@ -123,8 +123,9 @@ def test_a_source_that_disagrees_with_its_folder_is_ignored(root):
     loaded = evidence.load(root, 'login')
     assert loaded['files']['ci'] is None
     assert loaded['warnings'] == [
-        '.purlin/evidence/ci/login.json names the source "local" but sits '
-        'in ci/; it is ignored. Start the run that wrote it again.']
+        '.purlin/evidence/ci/login.json: evidence file ignored. It names '
+        'the source "local" and sits in ci/. Start the run that wrote it '
+        'again.']
 
 
 # purlin: evidence PROOF-20

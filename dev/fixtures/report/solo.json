@@ -473,6 +473,7 @@
     }
   ],
   "met": false,
+  "notices": [],
   "os_words": {
     "linux": {
       "short": "Lin",
@@ -488,7 +489,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 18,
+  "schema_version": 19,
   "signoff": {
     "commit": null,
     "since": null,

@@ -22,9 +22,11 @@ Below the table come each anchor rule that passes with nothing to check here,
 the specs that name no files, one line per spec whose `> Scope:` names files
 not written yet, and the anchors whose pin is not current, then the warnings,
 the last of them the one for the markers Purlin 0.9.5 wrote that are still in
-a test: its opening line, one line per test with the feature and the rule the
-marker names, and what to do. The dashboard's data carries that warning as
-one line. The report ends on the summary sentence, `Left to do` and the last
+a test: its line, which ends on what to do, then one line per test with the
+feature and the rule the marker names. The dashboard's data carries that
+warning as one line. Every one of these lines takes the one shape
+`scripts/mcp/purlin/notices.py` gives: what it is about, its kind, what is
+wrong, what to run. The report ends on the summary sentence, `Left to do` and the last
 line, with `→ Run: purlin:init --update` above them while an upgrade is
 pending. Where every rule passes and `purlin:sign` would refuse the results
 as they stand, the last line names the run to make first
@@ -55,6 +57,7 @@ from purlin import (board as board_module, drift as drift_module,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
                     payload as payload_module,
+                    notices,
                     project as project_module, report_data,
                     specs as specs_module, summary as summary_module)
 
@@ -63,7 +66,7 @@ DOT = board_module.DOT
 
 # An anchor rule whose proof found nothing to check: the anchor, the rule,
 # the reason after `nothing to check: `.
-NOTHING_LINE = '%s %s passes with nothing to check here: %s.'
+NOTHING_LINE = 'It passes: %s.'
 
 # What the status says, after its first line, of a project Purlin 0.9.5 set
 # up while its upgrade is pending.
@@ -72,27 +75,40 @@ PENDING = ('This project was set up by Purlin 0.9.5. Nothing here counts '
 
 # What the status says once where the `tests` setting changed since the
 # evidence was taken (`fingerprint.setting_changed`).
-SETTING_CHANGED = 'The tests setting changed, so every result is out of date.'
+SETTING_CHANGED = notices.line(
+    'setting_changed', '.purlin/config.json', 'Every result is out of date.',
+    notices.run('purlin:test --all'))
 
 # What the status says while a tracked test file still holds a marker Purlin
-# 0.9.5 wrote, where that release read it. In the terminal: the count, one
-# line per test, `OLD_MARKERS_SHOWN` of them and then the rest counted, and
-# what to do. In the dashboard's data: one line.
-OLD_MARKER_ONE = '1 test still carries'
-OLD_MARKER_MANY = '%d tests still carry'
-OLD_MARKERS_OPEN = '%s a marker from Purlin 0.9.5, which is not read:'
+# 0.9.5 wrote, where that release read it. In the terminal: the line, about
+# the count, or about the one test by its file and line, ending on what to
+# do, then one line per test, `OLD_MARKERS_SHOWN` of them and then the rest
+# counted. In the dashboard's data: the line, ending on `purlin:status`.
+OLD_MARKER_ONE = '%s:%d'
+OLD_MARKER_MANY = '%d tests'
+OLD_MARKERS_WRONG = 'It is not read.'
 OLD_MARKERS_SHOWN = 20
 OLD_MARKERS_MORE = '  and %d more'
 OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '
                   'comment above the test, and take the old tag out.')
-OLD_MARKERS_DATA = ('%s a marker from Purlin 0.9.5, which is not read. Run '
-                    'purlin:status to see each.')
+OLD_MARKERS_DO_ONE = ('Write the proof with purlin:spec, put the comment '
+                      'above the test, and take the old tag out.')
+OLD_MARKERS_DATA = 'Run purlin:status to see each.'
+OLD_MARKERS_DATA_ONE = 'Run purlin:status to see what it names.'
 
 # A spec ahead of its code: one line for the spec, as information.
-NOT_WRITTEN_ONE = ('%s: 1 file its scope names is not written yet: %s. Run purlin:build %s, '
-                   'or correct the path with purlin:spec %s.')
-NOT_WRITTEN_MANY = ('%s: %d files its scope names are not written yet: %s. Run purlin:build '
-                    '%s, or correct the path with purlin:spec %s.')
+NOT_WRITTEN_ONE = '%s is not written yet.'
+NOT_WRITTEN_MANY = '%d files are not written yet: %s.'
+NOT_WRITTEN_DO = 'Run purlin:build %s, or purlin:spec %s to correct the path.'
+
+# The feature specs with no `> Scope:` line: one spec, then several.
+NO_SCOPE_ONE = 'Its tests run every time.'
+NO_SCOPE_ONE_DO = 'Run purlin:spec %s to add its > Scope: line.'
+NO_SCOPE_MANY = 'Their tests run every time: %s.'
+NO_SCOPE_MANY_DO = 'Run purlin:spec with each name to add its > Scope: line.'
+
+# The spec files that are not committed, each as git names it.
+UNCOMMITTED_SPECS = '%s.'
 
 # What a tree holds that counts as code, for a project with no spec yet: a
 # file git lists, tracked or not ignored, outside these folders, with one of
@@ -193,11 +209,10 @@ def sync_status(project_root):
         lines.append('')
         lines.extend(pin_lines)
 
-    uncommitted = _uncommitted_specs(project_root)
+    uncommitted = uncommitted_line(project_root)
     if uncommitted:
         lines.append('')
-        lines.append('Uncommitted spec changes:')
-        lines.extend('  ' + line for line in uncommitted)
+        lines.append(uncommitted)
 
     if warnings or old:
         lines.append('')
@@ -383,30 +398,36 @@ def _old_markers_found(project_root):
 
 
 def _old_marker_opening(found):
-    return (OLD_MARKER_ONE if len(found) == 1
+    """What the warning is about: the one test, `<file>:<line>`, or how many."""
+    return (OLD_MARKER_ONE % found[0][:2] if len(found) == 1
             else OLD_MARKER_MANY % len(found))
 
 
 def old_marker_line(found):
     """The warning for the 0.9.5 markers `old_markers` found, as the one
     line the dashboard's data carries."""
-    return OLD_MARKERS_DATA % _old_marker_opening(found)
+    return notices.line('old_marker', _old_marker_opening(found),
+                        OLD_MARKERS_WRONG,
+                        OLD_MARKERS_DATA_ONE if len(found) == 1
+                        else OLD_MARKERS_DATA)
 
 
 def old_marker_lines(found):
     """The same warning as the terminal prints it, or [] with none found:
-    the count, one line per test, `<file>:<line>` then the feature and the
-    rule its marker names, the first `OLD_MARKERS_SHOWN` and then the rest
-    counted, and what to do."""
+    the line, ending on what to do, then one line per test, `<file>:<line>`
+    then the feature and the rule its marker names, the first
+    `OLD_MARKERS_SHOWN` and then the rest counted."""
     if not found:
         return []
-    lines = [OLD_MARKERS_OPEN % _old_marker_opening(found)]
+    lines = [notices.line('old_marker', _old_marker_opening(found),
+                          OLD_MARKERS_WRONG,
+                          OLD_MARKERS_DO_ONE if len(found) == 1
+                          else OLD_MARKERS_DO)]
     for rel, line, feature, rule in found[:OLD_MARKERS_SHOWN]:
         named = ' '.join(word for word in (feature, rule) if word)
         lines.append(('  %s:%d  %s' % (rel, line, named)).rstrip())
     if len(found) > OLD_MARKERS_SHOWN:
         lines.append(OLD_MARKERS_MORE % (len(found) - OLD_MARKERS_SHOWN))
-    lines.append(OLD_MARKERS_DO)
     return lines
 
 
@@ -495,12 +516,10 @@ def incomplete_line(names):
     The status prints it, and so does the upgrade.
     """
     if len(names) == 1:
-        return ('1 spec names no files, so its tests run every time: %s. Run '
-                'purlin:spec %s to add its > Scope: line.'
-                % (names[0], names[0]))
-    return ('%d specs name no files, so their tests run every time: %s. Run '
-            'purlin:spec with each name to add its > Scope: line.'
-            % (len(names), ', '.join(names)))
+        return notices.line('no_scope', names[0], NO_SCOPE_ONE,
+                            NO_SCOPE_ONE_DO % names[0], feature=names[0])
+    return notices.line('no_scope', '%d specs' % len(names),
+                        NO_SCOPE_MANY % ', '.join(names), NO_SCOPE_MANY_DO)
 
 
 def nothing_lines(data):
@@ -514,8 +533,11 @@ def nothing_lines(data):
             if passed.get('word') != 'passed':
                 continue
             for item in passed.get('nothing_to_check') or ():
-                lines.append(NOTHING_LINE % (feature['name'], rule['id'],
-                                             item['reason']))
+                lines.append(notices.line(
+                    'nothing_to_check',
+                    '%s %s' % (feature['name'], rule['id']),
+                    NOTHING_LINE % item['reason'], feature=feature['name'],
+                    rule=rule['id']))
     return lines
 
 
@@ -536,11 +558,13 @@ def not_written_lines(project_root, features):
         if not scope:
             continue
         _files, unmatched = fingerprint_module.expand_scope(project_root, scope)
-        if len(unmatched) == 1:
-            lines.append(NOT_WRITTEN_ONE % (name, unmatched[0], name, name))
-        elif unmatched:
-            lines.append(NOT_WRITTEN_MANY % (name, len(unmatched),
-                                             ', '.join(unmatched), name, name))
+        if not unmatched:
+            continue
+        wrong = (NOT_WRITTEN_ONE % unmatched[0] if len(unmatched) == 1
+                 else NOT_WRITTEN_MANY % (len(unmatched),
+                                          ', '.join(unmatched)))
+        lines.append(notices.line('not_written', name, wrong,
+                                  NOT_WRITTEN_DO % (name, name), feature=name))
     return lines
 
 
@@ -562,34 +586,25 @@ def ending_lines(data, project_root):
 # ---------------------------------------------------------------------------
 
 def _pin_lines(project_root):
-    """One line per anchor whose pin is not current, or whose Source is refused."""
+    """One line per anchor whose pin is not current, or whose Source is
+    refused, as `drift.pin_line` words it."""
     features = specs_module.scan_specs(project_root)
     rows = drift_module.pin_report(project_root, features)
-    lines = []
-    for row in rows:
-        # An anchor whose source names no repository is read as any spec;
-        # purlin:drift and the anchor check name it, and the status does not.
-        if row.get('not_a_spec'):
-            continue
-        if row.get('reason'):
-            lines.append('%s: (source rejected: %s)'
-                         % (row['anchor'], row['reason']))
-        elif row['status'] == 'behind':
-            lines.append('%s: the pin %s is behind its source, now %s. Run '
-                         'purlin:anchor sync %s.'
-                         % (row['anchor'], (row.get('pinned') or '')[:7],
-                            row.get('remote_sha', ''), row['anchor']))
-        elif row['status'] == 'unpinned':
-            lines.append('%s: names a source and no pin. Run purlin:anchor sync '
-                         '%s.' % (row['anchor'], row['anchor']))
-        else:
-            lines.append('%s: the source could not be read (%s). Check its '
-                         '> Source: line, then run purlin:anchor sync %s.'
-                         % (row['anchor'], row.get('error', 'unknown'),
-                            row['anchor']))
-    if lines:
-        lines.insert(0, 'Anchors:')
-    return lines
+    # An anchor whose source names no repository is read as any spec;
+    # purlin:drift and the anchor check name it, and the status does not.
+    return [drift_module.pin_line(row) for row in rows
+            if not row.get('not_a_spec')]
+
+
+def uncommitted_line(project_root):
+    """The one line naming the spec files that are not committed, each as
+    git names it, `M specs/auth/login.md`, or None with none."""
+    found = [line.strip() for line in _uncommitted_specs(project_root)]
+    if not found:
+        return None
+    return notices.line('spec_uncommitted', 'specs/',
+                        UNCOMMITTED_SPECS % ', '.join(found),
+                        'Commit it.' if len(found) == 1 else 'Commit them.')
 
 
 def _uncommitted_specs(project_root):

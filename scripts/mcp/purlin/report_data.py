@@ -24,6 +24,10 @@ payload's own lists leave to the status:
                   pin is not current, the uncommitted spec files on one
                   line, then the payload's own warnings
 
+`notices` is written again over the two lists as they then stand
+(`payload.notice_entries`), after one entry the board alone shows, first,
+while the working tree holds a change that is not committed (`TREE_DIRTY`).
+
 The one line of the status the data leaves out is `→ Run: purlin:init
 --update`, which the status prints above its sentence while an upgrade is
 pending.
@@ -43,7 +47,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import (fingerprint as fingerprint_module,
+from purlin import (fingerprint as fingerprint_module, notices,
                     payload as payload_module)
 
 CONFIG_PATH = os.path.join('.purlin', 'config.json')
@@ -78,9 +82,12 @@ def refresh(project_root, data=None, generated_by='sync_status'):
     return path
 
 
-# The uncommitted spec files, which the status prints as a heading and one
-# line per file, on the one line a notice holds.
-UNCOMMITTED_SPECS = 'Uncommitted spec changes: %s'
+# What the board says while the working tree holds a change that is not
+# committed.
+TREE_DIRTY = notices.line(
+    'tree_dirty', 'working tree',
+    'This board is not what a commit would carry.',
+    'Commit them, then run purlin:status.')
 
 
 def with_status_lines(project_root, data):
@@ -88,11 +95,7 @@ def with_status_lines(project_root, data):
     `warnings` also carry the lines the status prints outside those lists.
 
     `data` itself is left as it is, since the status goes on to print from
-    it. Each line is the status's own, word for word, but two the status
-    prints under a heading: an anchor's pin line stands without the
-    `Anchors:` line above it, since it names its anchor, and the
-    uncommitted spec files follow their heading on one line, each as git
-    names it, `M specs/auth/login.md`.
+    it. Each line is the status's own, word for word.
     """
     # Imported here: the status imports this module.
     from purlin import status as status_module
@@ -105,13 +108,16 @@ def with_status_lines(project_root, data):
     warnings = []
     if fingerprint_module.setting_changed(project_root):
         warnings.append(status_module.SETTING_CHANGED)
-    warnings.extend(status_module._pin_lines(project_root)[1:])
-    uncommitted = status_module._uncommitted_specs(project_root)
+    warnings.extend(status_module._pin_lines(project_root))
+    uncommitted = status_module.uncommitted_line(project_root)
     if uncommitted:
-        warnings.append(UNCOMMITTED_SPECS % ', '.join(
-            line.strip() for line in uncommitted))
+        warnings.append(uncommitted)
     warnings.extend(data.get('warnings') or ())
-    return dict(data, information=information, warnings=warnings)
+    out = dict(data, information=information, warnings=warnings)
+    # The board alone says the working tree is dirty: its first notice.
+    out['notices'] = payload_module.notice_entries(dict(
+        out, warnings=([TREE_DIRTY] if data.get('dirty') else []) + warnings))
+    return out
 
 
 def write_page(project_root):

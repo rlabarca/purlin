@@ -51,7 +51,7 @@ _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import markers as markers_module                  # noqa: E402
+from purlin import markers as markers_module, notices         # noqa: E402
 from purlin.markers import (                                  # noqa: E402
     NAMES_NOTHING, RULE_HAS_PROOFS, marker_problems)
 
@@ -63,12 +63,11 @@ NOT_RUN = 'not run'
 
 # The words the run prints about a marker it could not use, and about a case
 # it could not count. Each line says what to do.
-TIED_TO_NO_TEST = ('%s:%d names %s %s and no test follows it. Put the comment '
-                   'directly above a test, or run purlin:build to repair it.')
-UNREADABLE_TITLE = ("%s:%d: the test's title is not one plain string, so its "
-                    'result cannot be matched. Write it as one string.')
-AMBIGUOUS = ("The report's %s matches %d tests in %s, so its result is not "
-             'counted. Give the tests different names, then run purlin:test.')
+TIED_TO_NO_TEST = 'No test follows %s:%d.'
+UNREADABLE_TITLE = 'It is not one plain string, so its result cannot be matched.'
+UNREADABLE_TITLE_DO = 'Write it as one string.'
+AMBIGUOUS = 'It matches %d tests in %s, so its result is not counted.'
+AMBIGUOUS_DO = 'Give the tests different names, then run purlin:test.'
 
 # The outcomes TRX writes that mean the test ran and did not pass, and those
 # that mean the test itself ran and passed; any other outcome is a skip.
@@ -678,8 +677,9 @@ def tie(project_root, suite, cases, marked):
             outcomes.setdefault((path, test.line), []).append(
                 Outcome(case.outcome, case.reason, case.error, case))
         elif len(found) > 1:
-            line = AMBIGUOUS % (case.name, len(found),
-                                ', '.join(sorted({path for path, _t in found})))
+            line = notices.line('ambiguous', case.name, AMBIGUOUS % (
+                len(found), ', '.join(sorted({path for path, _t in found}))),
+                AMBIGUOUS_DO)
             if line not in problems:
                 problems.append(line)
     return outcomes, problems
@@ -810,9 +810,15 @@ def untied_lines(scan):
         titles = {id(marker): test for marker, test in found.unreadable}
         for marker in found.untied:
             test = titles.get(id(marker))
-            line = (TIED_TO_NO_TEST % (path, marker.line, marker.feature,
-                                       marker.id) if test is None
-                    else UNREADABLE_TITLE % (path, test.line))
+            if test is None:
+                line = notices.line(
+                    'untied', '%s %s' % (marker.feature, marker.id),
+                    TIED_TO_NO_TEST % (path, marker.line),
+                    notices.run('purlin:build'), feature=marker.feature)
+            else:
+                line = notices.line('title_unread',
+                                    '%s:%d' % (path, test.line),
+                                    UNREADABLE_TITLE, UNREADABLE_TITLE_DO)
             if line not in lines:
                 lines.append(line)
     return lines

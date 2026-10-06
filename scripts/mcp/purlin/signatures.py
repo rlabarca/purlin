@@ -48,7 +48,7 @@ _EXPORT_DIR = os.path.join(os.path.dirname(_MCP_DIR), 'export')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from purlin import (facts as facts_module,                     # noqa: E402
+from purlin import (facts as facts_module, notices,            # noqa: E402
                     specs as specs_module, states)
 
 # Where a version's evidence package and its sign-offs sit.
@@ -162,10 +162,11 @@ def load_signoffs(project_root, version):
 
 # Why a `signed/<version>` tag is passed over, each one warning: the tag and
 # the version, or the tag, the version and why no sign-off of it counts.
-NO_PACKAGE_AT_TAG = ('%s: it names a commit that holds no evidence package for %s, so it '
-                     'is not a sign-off. Delete it: git tag -d %s.')
-NO_SIGNOFF_COUNTS = ('%s: no sign-off of %s counts: %s. Restore the files as they were '
-                     'signed, or sign this code: purlin:sign --version <version>.')
+NO_PACKAGE_AT_TAG = 'Its commit holds no evidence package for %s.'
+NO_PACKAGE_DO = 'Run git tag -d %s.'
+NO_SIGNOFF_COUNTS = 'No sign-off of %s counts: %s.'
+NO_SIGNOFF_DO = ('Restore the files as they were signed, or run purlin:sign '
+                 '--version <version>.')
 # Why none counts where HEAD holds no sign-off file for the version at all.
 NONE_AT_HEAD = 'HEAD holds none'
 
@@ -182,12 +183,16 @@ def standing(project_root, version):
     commit = facts_module.git_line(project_root, 'rev-list', '-n', '1', tag)
     if not commit or _at_head(project_root, package_rel(version),
                               commit) is None:
-        return False, NO_PACKAGE_AT_TAG % (tag, version, tag)
+        return False, notices.line('tag_no_signoff', tag,
+                                   NO_PACKAGE_AT_TAG % version,
+                                   NO_PACKAGE_DO % tag)
     signoffs = load_signoffs(project_root, version)
     if any(item['counts'] for item in signoffs):
         return True, ''
     reason = signoffs[0]['count_reason'] if signoffs else NONE_AT_HEAD
-    return False, NO_SIGNOFF_COUNTS % (tag, version, reason)
+    return False, notices.line('tag_no_signoff', tag,
+                               NO_SIGNOFF_COUNTS % (version, reason),
+                               NO_SIGNOFF_DO)
 
 
 # Why the sign-off files do not answer for a version.

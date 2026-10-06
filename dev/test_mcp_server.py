@@ -369,8 +369,8 @@ class TestTheStatusScript:
         project.spec(SPEC.replace('> Scope:', '> Requires: api\n> Scope:'))
         code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
         assert printed.splitlines()[:3] == [
-            'login: > Requires: is not read, because every anchor covers the '
-            'whole project. Run purlin:spec login.',
+            'login: line not read. Every anchor covers the whole project, so '
+            '> Requires: is not read. Run purlin:spec login.',
             '',
             'specs/auth/login.md: 2 rules'], printed
         assert code == 1, printed
@@ -956,11 +956,13 @@ class TestAProjectSetUpBy095:
 # The markers Purlin 0.9.5 wrote that are still in a test
 # ---------------------------------------------------------------------------
 
-OLD_OPENS = ' a marker from Purlin 0.9.5, which is not read:'
+OLD_OPENS = ': marker from Purlin 0.9.5. It is not read. '
 OLD_DO = ('For each, write the proof with purlin:spec, put the comment above '
           'the test, and take the old tag out.')
-OLD_DATA = (' a marker from Purlin 0.9.5, which is not read. Run '
-            'purlin:status to see each.')
+OLD_DO_ONE = ('Write the proof with purlin:spec, put the comment above the '
+              'test, and take the old tag out.')
+OLD_DATA = OLD_OPENS + 'Run purlin:status to see each.'
+OLD_DATA_ONE = OLD_OPENS + 'Run purlin:status to see what it names.'
 OLD_TS = ("import { it } from 'vitest';\n"
           "it('signs in ' + '[proof:login:PROOF-1b:RULE-1:unit]', () => {});\n")
 OLD_MARK = ('@pytest.mark.proof("login", "%s", "RULE-2")\n'
@@ -979,9 +981,10 @@ def _tracked(project, files):
 
 
 def _old_block(opening, places):
-    """The warning as the terminal prints it: its opening line, one line per
-    test, and what to do."""
-    return [opening + OLD_OPENS] + ['  ' + place for place in places] + [OLD_DO]
+    """The warning as the terminal prints it: its line, which ends on what
+    to do, then one line per test."""
+    do = OLD_DO if opening.endswith(' tests') else OLD_DO_ONE
+    return [opening + OLD_OPENS + do] + ['  ' + place for place in places]
 
 
 def _holds(lines, block):
@@ -994,7 +997,7 @@ def _holds(lines, block):
 def three_old_markers(project):
     _tracked(project, {'tests/login.test.ts': OLD_TS,
                        'tests/test_login.py': OLD_PY})
-    return project, _old_block('3 tests still carry', [
+    return project, _old_block('3 tests', [
         'tests/login.test.ts:2  login RULE-1',
         'tests/test_login.py:4  login RULE-2',
         'tests/test_login.py:9  login RULE-2'])
@@ -1026,7 +1029,7 @@ class TestMarkersFrom095StillInATest:
         project, block = three_old_markers
         _code, printed = _script(STATUS_PY, project.root)
         assert _holds(printed.splitlines(), block) == 1, printed
-        assert printed.count('a marker from Purlin 0.9.5') == 1, printed
+        assert printed.count('marker from Purlin 0.9.5') == 1, printed
 
     # purlin: states PROOF-309
     def test_the_tool_answers_what_the_command_prints(self, three_old_markers):
@@ -1044,17 +1047,17 @@ class TestMarkersFrom095StillInATest:
             'tests/test_login.py': OLD_PY.split('\n\n\n')[0] + '\n\n\n'
             + OLD_MARK % ('PROOF-2b', 'denied')})
         lines = purlin_status.sync_status(project.root).splitlines()
-        assert _holds(lines, _old_block('2 tests still carry', [
+        assert _holds(lines, _old_block('2 tests', [
             'tests/login.test.ts:2  login RULE-1',
             'tests/test_login.py:4  login RULE-2'])) == 1, lines
 
     # purlin: states PROOF-311
-    def test_one_reads_still_carries(self, project):
+    def test_one_is_named_by_its_file_and_line(self, project):
         _tracked(project, {
             'tests/test_login.py': 'import pytest\n\n\n'
             + OLD_MARK % ('PROOF-2b', 'denied')})
         lines = purlin_status.sync_status(project.root).splitlines()
-        assert _holds(lines, _old_block('1 test still carries', [
+        assert _holds(lines, _old_block('tests/test_login.py:4', [
             'tests/test_login.py:4  login RULE-2'])) == 1, lines
 
     # purlin: states PROOF-312
@@ -1065,18 +1068,18 @@ class TestMarkersFrom095StillInATest:
         lines = purlin_status.sync_status(project.root).splitlines()
         at = lines.index(block[0])
         assert 'not numbered' in lines[at - 1], lines
-        assert lines[at:at + 5] == block, lines
-        assert lines[at + 5] == '', lines
-        assert all(later.strip() for later in lines[at + 6:]), lines
-        assert '2 rules. 0 pass their tests.' in lines[at + 6:], lines
+        assert lines[at:at + 4] == block, lines
+        assert lines[at + 4] == '', lines
+        assert all(later.strip() for later in lines[at + 5:]), lines
+        assert '2 rules. 0 pass their tests.' in lines[at + 5:], lines
 
     # purlin: states PROOF-313
     def test_the_dashboard_data_carries_one_line_last(self, three_old_markers):
         project, _block = three_old_markers
         purlin_status.sync_status(project.root)
         warnings = _report_data(project.root)['warnings']
-        assert warnings[-1] == '3 tests still carry' + OLD_DATA, warnings
-        assert sum('a marker from Purlin 0.9.5' in line
+        assert warnings[-1] == '3 tests' + OLD_DATA, warnings
+        assert sum('marker from Purlin 0.9.5' in line
                    for line in warnings) == 1, warnings
 
     # purlin: states PROOF-316
@@ -1108,7 +1111,7 @@ class TestMarkersFrom095StillInATest:
                 "import { it } from 'vitest';\n"
                 "it('signs in [proof:login:PROOF-1b:unit]', () => {});\n"})
         lines = purlin_status.sync_status(project.root).splitlines()
-        assert _holds(lines, _old_block('2 tests still carry', [
+        assert _holds(lines, _old_block('2 tests', [
             'tests/login.test.ts:2  login',
             'tests/test_login.py:4  login'])) == 1, lines
 
@@ -1119,19 +1122,20 @@ class TestMarkersFrom095StillInATest:
                 '\n\n' + OLD_MARK % ('PROOF-2b', 'denied_%02d' % number)
                 for number in range(1, 23))})
         lines = purlin_status.sync_status(project.root).splitlines()
-        at = lines.index('22 tests still carry' + OLD_OPENS)
+        at = lines.index('22 tests' + OLD_OPENS + OLD_DO)
         assert lines[at + 1:at + 23] == [
             '  tests/test_login.py:%d  login RULE-2' % (4 + 5 * number)
-            for number in range(20)] + ['  and 2 more', OLD_DO], lines
+            for number in range(20)] + ['  and 2 more', ''], lines
 
     # purlin: states PROOF-319
-    def test_one_in_the_dashboard_data_reads_still_carries(self, project):
+    def test_one_in_the_dashboard_data_is_named_by_its_file_and_line(
+            self, project):
         _tracked(project, {
             'tests/test_login.py': 'import pytest\n\n\n'
             + OLD_MARK % ('PROOF-2b', 'denied')})
         purlin_status.sync_status(project.root)
         assert _report_data(project.root)['warnings'][-1] == (
-            '1 test still carries' + OLD_DATA)
+            'tests/test_login.py:4' + OLD_DATA_ONE)
 
     # purlin: states PROOF-314
     def test_a_comment_a_docstring_and_an_untracked_file_are_not_one(
@@ -1154,7 +1158,7 @@ class TestMarkersFrom095StillInATest:
         _write(os.path.join(project.root, 'tests', 'test_new.py'),
                'import pytest\n\n\n' + OLD_MARK % ('PROOF-2b', 'denied'))
         printed = purlin_status.sync_status(project.root)
-        assert 'a marker from Purlin 0.9.5' not in printed, printed
+        assert 'marker from Purlin 0.9.5' not in printed, printed
         assert '2 rules. 0 pass their tests.' in printed.splitlines()
 
     # purlin: states PROOF-315
