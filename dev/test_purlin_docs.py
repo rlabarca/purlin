@@ -245,6 +245,29 @@ def test_one_paragraph_of_working_together_names_a_worktree():
     assert not re.search(
         r"\b(?:not|never|no|none|nor|seldom|rarely|hardly|only|n't)\b|n't",
         said[0], re.I), said
+    # One sentence opens `Each checkout`, and it is the one that says both.
+    # After `has`, up to `its own dashboard`, it is a list of things the
+    # checkout has, each written `its own <word>`, joined by a comma or
+    # `and`, and nothing else: no word before `its own results` or before
+    # `its own dashboard` denies either, whatever the word is.
+    opening = [sentence for sentence
+               in re.split(r'(?<=[.!?])\s+(?=[A-Z])', paragraph)
+               if sentence.startswith('Each checkout')]
+    assert len(opening) == 1, paragraph
+    sentence = opening[0]
+    assert sentence.count(' has ') == 1, sentence
+    before, after = sentence.split(' has ')
+    assert before == 'Each checkout' + said[0], (before, said)
+    assert after.endswith('its own dashboard.'), sentence
+    assert re.fullmatch(r'its own \w+(?:, its own \w+)* and its own \w+\.',
+                        after), sentence
+    owned = re.findall(r'its own (\w+)', after)
+    assert owned[0] == 'results' and owned[-1] == 'dashboard', owned
+    assert len(owned) == len(re.split(r', | and ', after)), sentence
+    assert not re.search(
+        r"\b(?:not|never|no|none|nor|neither|without|seldom|rarely|hardly|"
+        r"barely|scarcely|only|lacks?|cannot)\b|n't", sentence, re.I), (
+            sentence)
     assert re.search(r'\bmerged?\b', paragraph)
     assert re.search(r'(?<![\w:-])`purlin:status`(?![\w:-])', paragraph)
 
