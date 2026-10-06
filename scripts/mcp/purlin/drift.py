@@ -584,6 +584,9 @@ PIN_MISSING = 'It names a source and no pin.'
 SOURCE_UNREAD = 'Its source could not be read (%s).'
 SOURCE_UNREAD_DO = 'Check its > Source: line, then run purlin:anchor sync %s.'
 SOURCE_REFUSED = 'Its > Source: line %s.'
+SOURCE_NOT_SPEC = "%s is not a spec in Purlin's format kept in a git repository."
+SOURCE_NOT_SPEC_DO = ('Run purlin:spec %s to take out its > Source: and '
+                      '> Pinned: lines.')
 
 
 def pin_line(row):
@@ -592,9 +595,9 @@ def pin_line(row):
     name = row['anchor']
     sync = notices.run('purlin:anchor sync %s' % name)
     if row.get('not_a_spec'):
-        error = row['error']
         return notices.line('source_not_spec', name,
-                            error[:1].upper() + error[1:], feature=name)
+                            SOURCE_NOT_SPEC % row.get('source', ''),
+                            SOURCE_NOT_SPEC_DO % name, feature=name)
     if row.get('reason'):
         return notices.line('source_refused', name,
                             SOURCE_REFUSED % row['reason'],

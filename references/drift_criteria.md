@@ -144,7 +144,7 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | The pin is behind | `<name>: anchor pin behind. The pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
 | A `> Source:` with no `> Pinned:` | `<name>: anchor with no pin. It names a source and no pin. Run purlin:anchor sync <name>.` |
 | The source cannot be read | `<name>: anchor source not read. Its source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
-| The source names no repository: words, or a file on disk | `<name>: anchor source not a spec. Its source, <source>, is not a spec in Purlin's format kept in a git repository, so it cannot be checked. Run purlin:spec <name> to take out its > Source: and > Pinned: lines and keep it as this project's own anchor.` |
+| The source names no repository: words, or a file on disk | `<name>: anchor source not a spec. <source> is not a spec in Purlin's format kept in a git repository. Run purlin:spec <name> to take out its > Source: and > Pinned: lines.` |
 
 Drift never advances a pin on its own; only `purlin:anchor sync` pulls. A change that came from
 somewhere else gets read before it is adopted.

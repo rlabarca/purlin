@@ -614,12 +614,12 @@ class TestSourceNamesNoRepository:
         assert [(row['anchor'], row['status']) for row in rows] == [
             ('refunds', 'error')], rows
         lines = [line for line in _lines(report)
-                 if line.startswith("refunds: anchor source not a spec. Its "
-                                    "source, policy.txt, is not a spec in "
-                                    "Purlin's format kept in a git "
-                                    "repository")]
-        assert len(lines) == 1, _lines(report)
-        assert 'purlin:spec refunds' in lines[0], lines
+                 if line.startswith('refunds: ')]
+        assert lines == [
+            "refunds: anchor source not a spec. policy.txt is not a spec in "
+            "Purlin's format kept in a git repository. Run purlin:spec "
+            "refunds to take out its > Source: and > Pinned: lines."], \
+            _lines(report)
         assert _handed(calls, 'policy.txt') == [], calls
 
 

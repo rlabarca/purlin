@@ -636,11 +636,9 @@ def _refused(what):
 
 
 def _not_a_spec(source):
-    return ("refunds: anchor source not a spec. Its source, %s, is not a spec "
-            "in Purlin's format kept in "
-            "a git repository, so it cannot be checked. Run purlin:spec "
-            "refunds to take out its > Source: and > Pinned: lines and keep it "
-            "as this project's own anchor." % source)
+    return ("refunds: anchor source not a spec. %s is not a spec in Purlin's "
+            "format kept in a git repository. Run purlin:spec refunds to take "
+            "out its > Source: and > Pinned: lines." % source)
 
 
 # purlin: upstream PROOF-42
