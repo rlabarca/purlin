@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tokenize
 import uuid
 
 import pytest
@@ -170,6 +171,38 @@ def python_files_that_do_not_parse_as_39(root, rels):
             ast.parse(source, filename=rel, feature_version=(3, 9))
         except SyntaxError as error:
             found.append('%s: %s' % (rel, error.msg))
+    return found
+
+
+def f_strings_later_than_39(root, rels):
+    """`<path>:<line>` for each f-string of the Python files `rels` that
+    holds, inside a replacement field, a string in the f-string's own quote:
+    Python 3.12 reads it and 3.9 rejects it, and `ast.parse` cannot tell.
+    Read with this Python's own tokenizer; `[]` where it is older than 3.12
+    and gives an f-string as one token."""
+    opening = getattr(tokenize, 'FSTRING_START', None)
+    if opening is None:
+        return []
+    found = []
+    for rel in rels:
+        if not rel.endswith('.py'):
+            continue
+        outer = []
+        with open(os.path.join(root, rel), 'rb') as handle:
+            for token in tokenize.tokenize(handle.readline):
+                if token.type not in (opening, tokenize.STRING,
+                                      tokenize.FSTRING_END):
+                    continue
+                if token.type == tokenize.FSTRING_END:
+                    outer.pop()
+                    continue
+                quote = token.string.lstrip('rRbBfFuU')
+                quote = quote[:3] if quote[:3] in ('"""', "'''") else quote[:1]
+                if any(quote == held or (len(held) == 1 and quote[0] == held)
+                       for held in outer):
+                    found.append('%s:%d' % (rel, token.start[0]))
+                if token.type == opening:
+                    outer.append(quote)
     return found
 
 
@@ -332,6 +365,15 @@ class TestPython39:
         found = python_files_that_do_not_parse_as_39(str(tmp_path),
                                                      ['later.py'])
         assert len(found) == 1 and found[0].startswith('later.py: '), found
+        # An f-string that reuses its own quote inside a field, which 3.12
+        # reads and 3.9 does not, is found too, and no script holds one.
+        assert f_strings_later_than_39(ROOT, rels) == []
+        (tmp_path / 'quoted.py').write_text(
+            'row = {"error": "x"}\nline = f"{row["error"]}"\n',
+            encoding='utf-8')
+        if hasattr(tokenize, 'FSTRING_START'):
+            assert f_strings_later_than_39(str(tmp_path), ['quoted.py']) == [
+                'quoted.py:2']
 
     # purlin: purlin_output PROOF-4
     def test_a_test_run_runs_on_39(self, tmp_path):
