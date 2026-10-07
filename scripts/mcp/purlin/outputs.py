@@ -69,6 +69,7 @@ AI_OUTPUT = 'ai-output'
 REPLY = 'reply.md'
 TRANSCRIPT = 'transcript.jsonl'
 FILES = 'files'
+INPUT = 'input'
 
 # The helper's own record of one run, beside the output and left out of its
 # sha256. `made` is `helper` where `purlin_ai.py run` made the output and
