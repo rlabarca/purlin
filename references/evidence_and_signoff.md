@@ -22,7 +22,7 @@ Sign-off: signed 0.1.0, 4 commits since
 **The tests** read `met` when every rule passes its tests on the committed evidence, and
 `not met` otherwise. They read `not met` while any kind of work that blocks is left: a spec to
 repair, a test comment to correct, a rule to fix, a rule to write a test for, a rule to test here
-or on another system, a slow proof to run, or results written and not committed. What they require is that every
+or on another system, a slow proof to run, a rule to test on a model, or results written and not committed. What they require is that every
 rule that has a test passes it on the committed evidence: a rule checked by hand alone reads
 `checked at sign-off`, is counted under no kind of work and never stops the tests reading `met`.
 
@@ -40,7 +40,9 @@ Neither fact is a bar a rule clears, and no setting changes what either means. A
 run `purlin:sign` whenever it chooses.
 
 **Every rule has two cells.** The passed cell says whether every test tied to the rule ran and
-passed, each current section answering for the proofs it lists. The strong cell says what the
+passed, each current section answering for the proofs it lists. A rule that passes with a proof
+a model grades reads `graded` there, not `passed`. It counts as passing everywhere, and the
+tests read `met` beside it. The strong cell says what the
 audit found: `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`
 for a hand check, `no proof`, or `waiting` while the passed cell is not met. Nothing waits on the strong cell.
 
@@ -58,7 +60,9 @@ Left to do:
 ```
 
 **The summary** is `<N> rules. <p> pass their tests.`, where `p` counts the rules whose passed
-cell reads `passed`. Where a rule's passed cell reads `checked at sign-off`,
+cell reads `passed` or `graded`. Where one reads `graded` the sentence says how many:
+`40 rules. 40 pass their tests, 6 of them graded by an AI.`, or `1 of them graded by an AI.`
+Where a rule's passed cell reads `checked at sign-off`,
 ` 1 is checked at sign-off.` follows, or ` <h> are checked at sign-off.` for more than one:
 `10 rules. 9 pass their tests. 1 is checked at sign-off.` Where the audit has read a
 rule that passes, ` The audit found <s> of <a> rules strong (<n>%): <s> strong` follows, `a`
@@ -81,14 +85,15 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 | `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` | yes |
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
-| `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test` | `<n> slow proofs to run` | `purlin:test --all` | yes |
+| `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test`. An AI proof, one tagged `@ai`, is a slow proof, and one no run has tried on any model is counted here | `<n> slow proofs to run` | `purlin:test --all` | yes |
+| `to_test_model` | an AI proof a run has tried holds no counting result on a model its tag names: no entry for the model, a run that is `not run`, or fewer runs than are asked now; one line per model, a rule counted on each model it waits for | `<n> rules to test on <model>` | `purlin:test --all` | yes |
 | `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `run purlin:test on <systems>` | yes |
 | `to_commit` | a feature's results are written and not committed, once no other work stops the tests being met; the line counts features | `<n> features whose results are not committed` | `purlin:test --commit` | yes |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` | no |
 
 A hand check adds no kind: a person looks at it in the sign-off walk. A count of 1 reads
 `1 spec to repair`, `1 rule to fix`, `1 test comment to correct`,
-`1 feature whose results are not committed`, and so on. The systems read `Linux/Unix`, `macOS`
+`1 feature whose results are not committed`, `1 rule to test on claude-opus-5-5`, and so on. The systems read `Linux/Unix`, `macOS`
 and `Windows`, in that order, joined by `, ` and ` and `.
 
 `run purlin:test on <systems>` is an instruction, not a command line: no command takes a system.
@@ -159,6 +164,12 @@ The developer's hand-off is therefore run and commit: `purlin:test --all --commi
 project's own run for any other system whose results changed, then the commit of the results
 that come back.
 
+**An AI proof counts per model.** A proof tagged `@ai(<model>, ...)` is run several times on
+each model it names, and passes when every run on every model passed
+(`references/formats/evidence_format.md`, "The models of an AI proof"). The tests are not `met`
+while a model it names has no counting result. A model that gave no answer reads `not run`,
+never `failed`.
+
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
 status, the dashboard and the evidence package show the reason, as in
@@ -205,7 +216,8 @@ entitled.
 **The evidence package** is one data file, `.purlin/evidence/package/<version>.json`
 (`references/formats/package_format.md`), which `purlin:sign` builds from the committed evidence:
 every rule's words, proofs, tests and results, what the test tool reported for each test, what
-the audit found, who ran the tests and where, who wrote and last changed each rule, proof and
+the audit found, who ran the tests and where, for each AI proof the models and every run on
+each, who wrote and last changed each rule, proof and
 test, with the co-authors git names on those commits, the hand checks, and a fingerprint of its
 own bytes. `purlin:sign --check <file>` checks a package against its fingerprint.
 
@@ -218,6 +230,14 @@ sign-off of a version commits those files with the package, under
 report taken on another machine, or removed since, is not there to commit: the package still
 names it, the sign-off's overview says how many are kept, and no sign-off is refused for one.
 To keep every report of a release, sign on the machine that ran `purlin:test --clean --commit`.
+
+**What an AI produced** is kept the same way. Each run of an AI proof's test leaves a folder on
+the machine that ran it, and the evidence names it by a sha256 over its files. The package gives,
+for each AI proof, the models, the runs asked, each run's result and, where a model graded the
+output, the grader, whether it accepted and its one reason. The first sign-off commits each
+folder this machine still keeps under `.purlin/evidence/package/<version>.outputs/ai-outputs/`,
+and `purlin:sign --check <file>` works each sha256 out again from the files. A folder that is
+not there is counted in the overview and refuses nothing.
 
 **The version** is read from the `VERSION` file at the project root, then the `version` of
 `package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then
@@ -271,15 +291,21 @@ sign-off from its files and names `git fetch --tags`.
 - a test still carries a marker from Purlin 0.9.5;
 - a result is not recorded on this version of the code, or was taken while files were changed
   and not committed;
+- a model an AI proof names has no counting result on the commit to sign: `No sign-off: these
+  results are not recorded on this version of the code, <sha7>: <feature> on <model>. Run
+  purlin:test --all --commit, then purlin:sign.`;
 - the committed package was changed after it was signed;
 - a rule has no test, or a rule does not pass;
 - the version's tag is on other code;
 - the branch's copy on the host holds commits the checkout lacks.
 
-Otherwise it names who ran the tests, where and when, and shows an overview, which ends on
+Otherwise it names who ran the tests, where and when, then each model the AI proofs ran on, as
+`AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.` It shows an overview, which counts
+the graded proofs per grader, as `Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.`,
+and ends on
 how many rules, proofs and tests were last changed in a commit that names a co-author, as a
-commit made with an AI's help usually does, and on how many test reports are kept with the
-package. Where a rule reads weak, or a proof was settled with its test unchanged, it offers the audit's findings as a list, the settled proofs after the weak rules' findings. It stops only at hand checks, where the signer
+commit made with an AI's help usually does, and on how many test reports and AI outputs are kept
+with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it offers the audit's findings as a list: the weak rules' findings, the settled proofs, then each graded proof's runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
 may type what they saw; an empty answer is recorded as `no note`. What the audit found never
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.

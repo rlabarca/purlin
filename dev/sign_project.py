@@ -28,6 +28,7 @@ from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
+from purlin import outputs as purlin_outputs  # noqa: E402
 
 
 SPEC = (
@@ -355,3 +356,96 @@ def reported_for(test, sha):
                        'class': 'tests.test_login', 'outcome': 'pass',
                        'duration': 0.25}],
             'report': {'file': REPORT_FROM, 'sha256': sha}}
+
+
+# Two AI proofs beside the two of `login`: `PROOF-3` shown on one model, and
+# `PROOF-4` shown on two, twice each, and graded by a third.
+OPUS = 'claude-opus-5-5'
+SONNET = 'claude-sonnet-5-5'
+GRADER = 'claude-haiku-4-5-20251001'
+AI_SPEC = SPEC.replace(
+    '\n\n## Proof',
+    '\n- RULE-3: The reply to a locked-out user names the wait\n'
+    '- RULE-4: The reply to a locked-out user blames no one\n\n## Proof'
+) + ('- PROOF-3 (RULE-3): With the sample lockout, the reply names the wait '
+     'of 15 minutes @ai(%s)\n'
+     '- PROOF-4 (RULE-4): With the sample lockout, the reply blames no one '
+     '@ai(%s, %s, runs=2) @graded(%s)\n' % (OPUS, OPUS, SONNET, GRADER))
+AI_TEST_FILE = TEST_FILE + (
+    '\n\n# purlin: login PROOF-3\n'
+    'def test_the_reply_names_the_wait():\n'
+    '    assert True\n'
+    '\n\n# purlin: login PROOF-4\n'
+    'def test_the_reply_blames_no_one():\n'
+    '    assert True\n')
+AI_TEST_NAMES = {'PROOF-3': 'test_the_reply_names_the_wait',
+                 'PROOF-4': 'test_the_reply_blames_no_one'}
+# The grader's one reason for a run it accepted.
+REASON = 'The reply blames no one.'
+
+
+def ai_reply(proof_id, model, run):
+    """What `reply.md` holds in the folder `ai_runs` keeps for one run."""
+    return '%s on %s, run %d\n' % (proof_id, model, run)
+
+
+def ai_sha(proof_id, model, run):
+    """The sha256 of the folder `ai_runs` keeps for one run, worked out
+    from its three files as `sha256sum` would print them."""
+    files = {'files/notes.txt': 'checked\n',
+             'reply.md': ai_reply(proof_id, model, run),
+             'transcript.jsonl': '{"run": %d}\n' % run}
+    return sha256(''.join('%s  %s\n' % (sha256(files[name]), name)
+                          for name in sorted(files)))
+
+
+def ai_runs(made, proof_id, model, runs, grader=None, keep=True,
+            feature='login', asked=None):
+    """One entry of an AI proof's `models`, as a run writes it: `runs`
+    passing runs on `model`, of `asked` where fewer were taken.
+
+    With `keep`, each run's folder is on this machine under
+    `.purlin/runtime/ai/`, holding `reply.md`, `transcript.jsonl`,
+    `files/notes.txt` and the helper's record; without, the evidence names
+    folders this machine does not hold. With `grader`, each run holds the
+    grade that model gave, `REASON`.
+    """
+    taken = []
+    for run in range(1, runs + 1):
+        entry = {'result': 'pass', 'output': ai_sha(proof_id, model, run),
+                 'made': purlin_outputs.MADE_BY_HELPER}
+        record = {'made': purlin_outputs.MADE_BY_HELPER, 'model': model,
+                  'reached': True, 'why': None}
+        if grader:
+            entry['grade'] = {'model': grader, 'accepted': True,
+                              'reason': REASON}
+            record['grade'] = dict(entry['grade'])
+        if keep:
+            folder = os.path.join(made.root, *purlin_outputs.ai_run_dir(
+                feature, proof_id, model, run).split('/'))
+            for name, text in (
+                    (purlin_outputs.REPLY, ai_reply(proof_id, model, run)),
+                    (purlin_outputs.TRANSCRIPT, '{"run": %d}\n' % run),
+                    (purlin_outputs.FILES + '/notes.txt', 'checked\n')):
+                path = os.path.join(folder, *name.split('/'))
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, 'w', encoding='utf-8', newline='') as handle:
+                    handle.write(text)
+            purlin_outputs.write_record(folder, record)
+        taken.append(entry)
+    return {'model': model, 'passed': runs, 'of': asked or runs,
+            'graded': bool(grader), 'runs': taken}
+
+
+def name_the_models(made, proof_id, models, source='local', feature='login'):
+    """Give each entry a feature's evidence file holds for one proof the
+    `models` a run writes for an AI proof."""
+    rel = '.purlin/evidence/%s/%s.json' % (source, feature)
+    path = os.path.join(made.root, *rel.split('/'))
+    with open(path, encoding='utf-8') as handle:
+        held = json.load(handle)
+    for section in held['platforms'].values():
+        for entry in section['proofs']:
+            if entry.get('id') == proof_id:
+                entry['models'] = json.loads(json.dumps(models))
+    write(path, json.dumps(held, indent=2, sort_keys=True))

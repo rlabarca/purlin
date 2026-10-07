@@ -1,4 +1,4 @@
-> Format-Version: 17
+> Format-Version: 18
 
 # Signature Format
 
@@ -47,12 +47,15 @@ same version writes over it.
                    "hand_checks": 1}],
       "audit": {"strong": 17, "weak": 1, "spot_checked": 0, "out_of_date": 0,
                 "not_audited": 0},
+      "graded": [{"grader": "claude-haiku-4-5-20251001", "proofs": 6}],
       "co_authors": {"rules": 2, "proofs": 5, "tests": 14},
-      "reports": {"named": 3, "kept": 2}
+      "reports": {"named": 3, "kept": 2},
+      "ai_outputs": {"named": 36, "kept": 36}
     },
     "runs": [{"at": "2026-10-01T12:17:13Z", "by": "dana.dev@labconnect.example",
               "commit": "<40 hex>", "machine": "dana-laptop", "os": "linux",
               "rules": 19, "source": "local"}],
+    "models": [{"model": "claude-opus-5-5", "proofs": 12, "runs": [3, 3]}],
     "hand_checks": [{"feature": "accession_screen", "rule": "RULE-1"}],
     "audit_list_opened": false
   },
@@ -80,10 +83,11 @@ Every field is REQUIRED, in this order.
 
 | Field | Type | What it holds |
 |---|---|---|
-| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`, `passing` counting the rules that pass their tests, a rule checked by hand alone not among them; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong`; and `co_authors`, `{rules, proofs, tests}`, how many rules, proofs and tests the package's `authors` give a co-author for on the last change, a test counted once, printed as `  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.`; and `reports`, `{named, kept}`, how many test reports the package lists and how many are committed with it, printed as `  Test reports kept with the package: 2 of 3.` |
+| `overview` | object | the overview's numbers: `systems`, one `{os, rules, passing, hand_checks}` per operating system the package holds results for, in the order `linux`, `macos`, `windows`, `passing` counting the rules that pass their tests, a rule checked by hand alone not among them; and `audit`, `{strong, weak, spot_checked, out_of_date, not_audited}` as the package counts them, or null where the audit read no rule. The walk prints them as `  The audit: 34 strong, 4 weak, 2 spot-checked.`, a count of zero left out but `strong`; and `co_authors`, `{rules, proofs, tests}`, how many rules, proofs and tests the package's `authors` give a co-author for on the last change, a test counted once, printed as `  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.`; and `reports`, `{named, kept}`, how many test reports the package lists and how many are committed with it, printed as `  Test reports kept with the package: 2 of 3.`; and `graded`, one `{grader, proofs}` per model that grades a proof, in the order the package first names them, printed after the systems as `  Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.`, `[]` where no proof is graded; and `ai_outputs`, `{named, kept}`, how many folders of what an AI produced the package lists and how many are committed with it, printed last, where the package lists one, as `  AI outputs kept with the package: 36 of 36.` |
 | `runs` | array | the package's `runs`, as the walk's opening lines named them |
+| `models` | array | one `{model, proofs, runs}` per model the package's AI proofs name, in the order it first names them: how many proofs ran on it, and `runs`, the least and the most runs one of them holds on it. The walk prints each after the run lines, as `AI proofs run on claude-opus-5-5: 12 proofs, 3 runs each.`, or `3 to 10 runs each` where the two differ. `[]` where the package holds no AI proof |
 | `hand_checks` | array | every hand check walked, in the order walked: `{feature, rule}` |
-| `audit_list_opened` | bool | whether the signer asked to see the audit's findings |
+| `audit_list_opened` | bool | whether the signer asked to see the audit's findings, the list that also holds each proof settled with its test unchanged and each graded proof's runs, with the grader and its reason |
 
 The file records what was shown and what was typed, and no answer word: it
 holds no judgment.
@@ -92,8 +96,8 @@ holds no judgment.
 
 `purlin:sign` adds the file in one signed commit whose subject is
 `sign(<version>): <signer email>`. The first sign-off of a version carries
-the package, `.purlin/evidence/package/<version>.json`, and its own file in
-that commit, and writes the signed tag `signed/<version>` on it, with the
+the package, `.purlin/evidence/package/<version>.json`, the outputs kept
+with it (`package_format.md`, "Outputs") and its own file in that commit, and writes the signed tag `signed/<version>` on it, with the
 message `Signed <version>.`, a blank line and `Commit: <the package's
 commit>`. A later sign-off carries its own file alone, after the tag, which
 does not move.

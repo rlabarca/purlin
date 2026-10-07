@@ -14,8 +14,11 @@ every proof is `@manual` has no test, so each of its results reads
 `checked at sign-off`. Above them it carries whether the tests are met, the
 total, the count that pass, what the audit found over the rules that pass
 their tests and have a tested proof, what is left to do, the runs the
-results came from, every hand check and every test report its results name.
-Each result lists its tests with what the suite's report held for each. It is
+results came from, every hand check and every output its results name: each
+test report, and each folder holding what an AI produced in one run of an AI
+proof's test. Each result lists its tests with what the suite's report held
+for each, and each proof tagged `@ai` the models it names, with every run on
+each and, where a model graded the output, its grade and its reason. It is
 written to
 
     .purlin/evidence/package/<version>.json
@@ -376,7 +379,8 @@ def build(project_root, version):
         'met': not any(item.get('kind') in summary_module.BLOCKING
                        for item in left),
         'rules': sum(len(feature['rules']) for feature in entries),
-        'steps': {'passed': steps.get('passed') or 0},
+        'steps': {'passed': steps.get('passed') or 0,
+                  'graded': steps.get('graded') or 0},
         'audit': audit_counts(entries),
         'left': left,
         'purlin_version': PURLIN_VERSION,
@@ -461,7 +465,12 @@ def _rule(rule, loaded, sections, same, authors, code=''):
         'left': rule.get('left'),
         'proofs': [{'id': proof.get('id'), 'text': proof.get('text') or '',
                     'manual': bool(proof.get('manual')),
-                    'env': proof.get('env')} for proof in proofs],
+                    'env': proof.get('env'),
+                    'ai': list(proof.get('ai') or ()),
+                    'graded': proof.get('graded'),
+                    'runs': proof.get('runs'),
+                    'models': json.loads(json.dumps(
+                        proof.get('models') or []))} for proof in proofs],
         'tests': _tests(rule),
         'results': _results(rule_id, proofs, sections, same),
         'audit': _audit(rule, loaded, code),
@@ -614,8 +623,10 @@ def _results(rule_id, proofs, sections, same):
 def _result_tests(section, ids):
     """`[{proof, test, result, reported}]`: each test the section lists for
     the rule, in the section's order, with what the suite's report holds
-    for it as the evidence keeps it, None where the evidence keeps none. A
-    proof no test is tied to has no entry."""
+    for it as the evidence keeps it, None where the evidence keeps none. An
+    entry the evidence holds `models` for, an AI proof's, carries them as
+    the evidence keeps them, each run's own `reported` with it. A proof no
+    test is tied to has no entry."""
     out = []
     for entry in (section or {}).get('proofs') or ():
         if not isinstance(entry, dict) or entry.get('id') not in ids \
@@ -626,43 +637,71 @@ def _result_tests(section, ids):
                     'result': entry.get('result'),
                     'reported': (json.loads(json.dumps(reported))
                                  if isinstance(reported, dict) else None)})
+        if isinstance(entry.get('models'), list):
+            out[-1]['models'] = json.loads(json.dumps(entry['models']))
     return out
 
 
-def _outputs(entries, version):
-    """`outputs[]`: one entry per report file the package's results name,
-    by file.
+def _runs(test):
+    """Each run a result's test entry holds under `models`."""
+    return [run for model in test.get('models') or ()
+            if isinstance(model, dict)
+            for run in model.get('runs') or () if isinstance(run, dict)]
 
-    Each is `{kind, file, sha256, from, tests}`: `report`, where the file
-    is committed beside the package when the machine that signs first keeps
-    it, the sha256 of its bytes, the path the run read it from, and how
-    many test results name it. It is read from the evidence alone, so the
-    same commit lists the same outputs on every machine.
+
+def _outputs(entries, version):
+    """`outputs[]`: one entry per output the package's results name, by
+    file.
+
+    A report is `{kind, file, sha256, from, tests}`: `report`, where the
+    file is committed beside the package when the machine that signs first
+    keeps it, the sha256 of its bytes, the path the run read it from, and
+    how many test results name it, a run of an AI proof's test counted with
+    its test. What an AI produced in one run is `{kind, file, sha256,
+    runs}`: `ai-output`, the folder it is committed as, the sha256 the
+    evidence names the folder by, and how many runs name it. Both are read
+    from the evidence alone, so the same commit lists the same outputs on
+    every machine.
     """
-    found = {}
+    reports, folders = {}, {}
     for feature in entries:
         for rule in feature['rules']:
             for result in rule['results']:
                 for test in result['tests']:
-                    report = (test.get('reported') or {}).get('report') or {}
-                    sha = str(report.get('sha256') or '')
-                    if not re.match(r'^[0-9a-f]{64}$', sha):
-                        continue
-                    source = str(report.get('file') or '')
-                    known = found.setdefault(sha, {'from': source,
-                                                   'tests': set()})
-                    known['tests'].add((feature['name'], result['os'],
-                                        result['source'], test['proof'],
-                                        test['test']))
+                    key = (feature['name'], result['os'], result['source'],
+                           test['proof'], test['test'])
+                    runs = _runs(test)
+                    for held in [test] + runs:
+                        report = (held.get('reported') or {}).get('report') \
+                            or {}
+                        sha = str(report.get('sha256') or '')
+                        if not _SHA256.match(sha):
+                            continue
+                        known = reports.setdefault(
+                            sha, {'from': str(report.get('file') or ''),
+                                  'tests': set()})
+                        known['tests'].add(key)
+                    for index, run in enumerate(runs):
+                        sha = str(run.get('output') or '')
+                        if _SHA256.match(sha):
+                            folders.setdefault(sha, set()).add(key + (index,))
     out = [{'kind': outputs_module.REPORT,
             'file': outputs_module.output_rel(
                 version, outputs_module.REPORT, sha,
                 outputs_module.extension_of(known['from'])),
             'sha256': sha, 'from': known['from'],
             'tests': len(known['tests'])}
-           for sha, known in found.items()]
+           for sha, known in reports.items()]
+    out.extend({'kind': outputs_module.AI_OUTPUT,
+                'file': outputs_module.output_rel(
+                    version, outputs_module.AI_OUTPUT, sha),
+                'sha256': sha, 'runs': len(named)}
+               for sha, named in folders.items())
     out.sort(key=lambda item: item['file'])
     return out
+
+
+_SHA256 = re.compile(r'^[0-9a-f]{64}$')
 
 
 def _audit(rule, loaded, code=''):
@@ -700,14 +739,15 @@ def audit_counts(entries):
     """`{strong, weak, spot_checked, out_of_date, not_audited}`, as
     `summary.audit_counts` counts them.
 
-    A rule is counted where its passed status reads `passed`, under its
-    strong status's word where that is one of the five. No other rule is
+    A rule is counted where its passed status reads `passed` or
+    `graded`, under its strong status's word where that is one of the five. No other rule is
     counted: one that does not pass, and one checked by hand, whose strong
     status reads `checked at sign-off`."""
     counts = {key: 0 for key, _word in summary_module.AUDIT_WORDS}
     for feature in entries:
         for rule in feature['rules']:
-            if (rule['statuses'].get('passed') or {}).get('word') != 'passed':
+            if not states_module.passes(
+                    (rule['statuses'].get('passed') or {}).get('word')):
                 continue
             word = (rule['statuses'].get('strong') or {}).get('word')
             if word in _AUDIT_KEYS:
@@ -831,6 +871,39 @@ def _by_system(found):
                     order.get(item[0][0], 9), item[0][0],
                     evidence_module.SOURCES.index(item[0][1])
                     if item[0][1] in evidence_module.SOURCES else 9))]
+
+
+# The kinds of work a rule waits for while a test of its own has not run.
+_WAITING = ('to_test', 'to_run_slow', 'to_test_model', 'to_test_remote')
+
+
+def models_not_run(package):
+    """[(model, 'local', [features])]: the models an AI proof names that
+    hold no counting result on the package's commit, in `off_code`'s shape
+    and in the order the package first names them.
+
+    A model is one where its word under the proof reads `not run`: the
+    evidence holds no entry for it, a run of it is `not run`, or it holds
+    fewer runs than the proof asks. Read for the rules that wait for a
+    run, so a rule with no test is left to its own refusal.
+    """
+    found = []
+    for feature in package.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('left') not in _WAITING:
+                continue
+            for proof in rule.get('proofs') or ():
+                for model in proof.get('models') or ():
+                    if model.get('word') != 'not run':
+                        continue
+                    known = next((item for item in found
+                                  if item[0] == model.get('model')), None)
+                    if known is None:
+                        found.append((model.get('model'), 'local',
+                                      [feature['name']]))
+                    elif feature['name'] not in known[2]:
+                        known[2].append(feature['name'])
+    return [(model, source, sorted(names)) for model, source, names in found]
 
 
 def taken_dirty(package, project_root):
@@ -1139,28 +1212,29 @@ def check_file(path):
 
 
 def check_outputs(path):
-    """`(listed, kept, differing)` for the outputs a package file lists,
-    read beside it: how many it lists, how many are there and give the
-    sha256 it records, and `[(file, sha256 its bytes give)]` for each that
-    is there and gives another. `path` is a package that matches its
-    fingerprint; an output is looked for under the package's own folder,
-    wherever that folder is.
+    """`[(kind, listed, kept, differing)]` for the outputs a package file
+    lists, read beside it, one per kind it lists, reports first: how many
+    of that kind it lists, how many are there and give the sha256 it
+    records, and `[(file, sha256 it gives)]` for each that is there and
+    gives another. `path` is a package that matches its fingerprint; an
+    output is looked for under the package's own folder, wherever that
+    folder is.
     """
     with open(path, 'rb') as handle:
         listed = json.loads(handle.read().decode('utf-8')).get('outputs') or []
     folder = os.path.dirname(os.path.abspath(path))
 
-    def read(rel):
+    def locate(rel):
         if not rel.startswith(PACKAGE_DIR + '/'):
             return None
-        try:
-            with open(os.path.join(folder, *rel[len(PACKAGE_DIR) + 1:]
-                                   .split('/')), 'rb') as handle:
-                return handle.read()
-        except (IOError, OSError):
-            return None
-    kept, differing = outputs_module.check(listed, read)
-    return len(listed), kept, differing
+        return os.path.join(folder, *rel[len(PACKAGE_DIR) + 1:].split('/'))
+    out = []
+    for kind in (outputs_module.REPORT, outputs_module.AI_OUTPUT):
+        of_kind = [item for item in listed if item.get('kind') == kind]
+        if of_kind:
+            out.append((kind, len(of_kind))
+                       + outputs_module.check(of_kind, locate))
+    return out
 
 
 # ---------------------------------------------------------------------------

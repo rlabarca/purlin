@@ -23,6 +23,8 @@ What each group holds:
 *the key that signed*  a commit signed with another key than the one named
 *the last note*  what a hand check's stop shows of the sign-off before
 *the agent*      `--show`, `--answers` and `--check`
+*AI proofs*      the models named, the graded proofs counted and listed, a
+                 model with no result refused, the output folders committed
 """
 
 import json
@@ -44,9 +46,11 @@ import sign as sign_module  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
-from sign_project import (REPORT_BYTES, SPEC, TEST_FILE,  # noqa: E402
-                          TEST_NAMES, Project, _Out, git, name_a_report,
-                          report_sha, write)
+from sign_project import (AI_SPEC, AI_TEST_FILE,  # noqa: E402
+                          AI_TEST_NAMES, GRADER, OPUS, REASON, REPORT_BYTES,
+                          SONNET, SPEC, TEST_FILE, TEST_NAMES, Project, _Out,
+                          ai_reply, ai_runs, ai_sha, git, name_a_report,
+                          name_the_models, report_sha, write)
 
 
 # ---------------------------------------------------------------------------
@@ -1457,9 +1461,10 @@ class TestTheSignOff:
         assert body['shown']['audit_list_opened'] is False
         assert body['notes'] == [{'feature': 'login', 'rule': 'RULE-2',
                                   'note': 'the lockout page read 401'}]
-        # What was shown is these four and nothing beside them.
+        # What was shown is these five and nothing beside them.
         assert sorted(body['shown']) == ['audit_list_opened', 'hand_checks',
-                                         'overview', 'runs'], body['shown']
+                                         'models', 'overview',
+                                         'runs'], body['shown']
         def values(item):
             if isinstance(item, dict):
                 return [found for value in item.values()
@@ -2122,3 +2127,397 @@ class TestTheKeptReports:
                 '%s/quinn.json' % SIGNOFFS]
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# AI proofs: the models, the graded proofs and the outputs kept
+# ---------------------------------------------------------------------------
+
+AI_OUTPUTS = '%s/ai-outputs' % OUTPUTS
+# Every run of the project `ai_ready` makes, as `(proof, model, run)`.
+AI_RUNS = ([('PROOF-3', OPUS, run) for run in (1, 2, 3)]
+           + [('PROOF-4', model, run) for model in (OPUS, SONNET)
+              for run in (1, 2)])
+# The four files of one kept run folder, with what each holds.
+AI_FILES = ('files/notes.txt', 'purlin.json', 'reply.md', 'transcript.jsonl')
+FINDINGS_ASK = "The audit's findings: %s. list / go on: "
+GRADED_LINE = ('  login RULE-4: PROOF-4 on %s, run %d of 2, %s by %s: %s')
+NOT_RECORDED = ('No sign-off: these results are not recorded on this version '
+                'of the code, %s: login on %s. Run purlin:test --all '
+                '--commit, then purlin:sign.')
+RULES_LINE = '  4 rules on Linux/Unix: 4 pass their tests, no hand check.'
+
+
+def ai_ready(spec=AI_SPEC, keep=True, models=None, words=None, weak=(),
+             settled=(), ignore=None):
+    """`login` with two AI proofs beside its two, its results committed and
+    Jane ready to sign: `PROOF-3` on 3 runs on one model, `PROOF-4` on 2
+    runs on each of two, graded.
+
+    `models` is `{PROOF-N: its models, or None for an entry that holds
+    none}` in place of those, and `words` `{PROOF-N: (the entry's result,
+    its rule's word)}` for a proof that does not read as passing. `keep`
+    is what `ai_runs` takes it as, or the count of run folders to keep,
+    the first ones. `ignore` is a line for the project's `.gitignore`.
+    """
+    made = Project(spec=spec)
+    made.edit_test(AI_TEST_FILE)
+    write(os.path.join(made.root, 'VERSION'), VERSION + '\n')
+    if ignore:
+        with open(os.path.join(made.root, '.gitignore'), 'a',
+                  encoding='utf-8') as handle:
+            handle.write(ignore + '\n')
+    commit_all(made, 'chore: version')
+    names = dict(TEST_NAMES, **AI_TEST_NAMES)
+    words = words or {}
+    proofs, rules = [], {}
+    for proof_id in sorted(names):
+        result, word = words.get(proof_id, ('pass', 'passed'))
+        rule = 'RULE-%s' % proof_id[-1]
+        proofs.append((proof_id, rule, result, names[proof_id], None))
+        rules[rule] = word
+    section(made, proofs, rules)
+    held = {'PROOF-3': [ai_runs(made, 'PROOF-3', OPUS, 3, keep=bool(keep))],
+            'PROOF-4': [ai_runs(made, 'PROOF-4', model, 2, GRADER,
+                                keep=bool(keep))
+                        for model in (OPUS, SONNET)]}
+    held.update(models or {})
+    for proof_id, found in held.items():
+        if found is not None:
+            name_the_models(made, proof_id, found)
+    if keep is not True and keep:
+        import shutil
+        for proof_id, model, run in AI_RUNS[keep:]:
+            shutil.rmtree(os.path.join(
+                made.root, '.purlin', 'runtime', 'ai', 'login', proof_id,
+                model, str(run)))
+    for rule in weak:
+        made.audit(rule, findings=[FINDING])
+    for rule in settled:
+        made.audit(rule, no_bug=[JUDGED % ('PROOF-%s' % rule[-1])])
+    commit_all(made)
+    key(made.root)
+    return made
+
+
+def shown_by(made, capsys):
+    """What `--show` prints over the project: `(exit, lines)`."""
+    return run_main(made, capsys, ['--show'])
+
+
+class TestTheModelsNamed:
+
+    # purlin: signatures PROOF-300
+    def test_the_opening_names_each_model_after_the_runs(self, capsys):
+        made = ai_ready()
+        try:
+            code, lines = shown_by(made, capsys)
+            assert code == 0, lines
+            assert lines[0].startswith('Tests run by ')
+            assert lines[1:4] == [
+                'AI proofs run on claude-opus-5-5: 2 proofs, 2 to 3 runs '
+                'each.',
+                'AI proofs run on claude-sonnet-5-5: 1 proof, 2 runs each.',
+                'Signing 2.1.0 at %s.' % made.head()[:7]]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-301
+    def test_one_proof_run_once_reads_in_the_singular(self, capsys):
+        spec = SPEC.replace(
+            'verify 401 and the body "denied"\n',
+            'verify 401 and the body "denied" @ai(claude-opus-5-5, runs=1)\n')
+        made = ready(spec=spec, signer=False)
+        try:
+            name_the_models(made, 'PROOF-2',
+                            [ai_runs(made, 'PROOF-2', OPUS, 1)])
+            commit_all(made)
+            key(made.root)
+            code, lines = shown_by(made, capsys)
+            assert code == 0, lines
+            assert lines[1] == ('AI proofs run on claude-opus-5-5: 1 proof, '
+                                '1 run each.')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-302
+    def test_a_project_with_no_ai_proof_has_no_such_line(self, signed,
+                                                         capsys):
+        code, lines = shown_by(signed, capsys)
+        assert code == 0, lines
+        assert lines[0].startswith('Tests run by ')
+        assert lines[1] == 'Signing 2.1.0 at %s.' % signed.head()[:7]
+
+
+class TestTheGradedProofs:
+
+    # purlin: signatures PROOF-303
+    def test_the_overview_counts_the_one_graded_proof(self, capsys):
+        made = ai_ready()
+        try:
+            overview = overview_of(shown_by(made, capsys)[1])
+            assert overview[:2] == [
+                RULES_LINE,
+                '  Graded by an AI: 1 proof, by claude-haiku-4-5-20251001.']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-304
+    def test_two_graded_proofs_of_one_grader_share_a_line(self, capsys):
+        spec = AI_SPEC.replace('@ai(%s)\n' % OPUS,
+                               '@ai(%s) @graded(%s)\n' % (OPUS, GRADER))
+        assert spec != AI_SPEC
+        made = ai_ready(spec=spec)
+        try:
+            name_the_models(made, 'PROOF-3',
+                            [ai_runs(made, 'PROOF-3', OPUS, 3, GRADER)])
+            commit_all(made)
+            overview = overview_of(shown_by(made, capsys)[1])
+            assert overview[:2] == [
+                RULES_LINE,
+                '  Graded by an AI: 2 proofs, by claude-haiku-4-5-20251001.']
+        finally:
+            made.close()
+
+    FOUR = [GRADED_LINE % (model, run, 'accepted', GRADER, REASON)
+            for model in (OPUS, SONNET) for run in (1, 2)]
+
+    # purlin: signatures PROOF-305
+    def test_list_prints_one_line_per_graded_run_and_adds_no_stop(self):
+        made = ai_ready()
+        try:
+            code, asked, shown, _lines = between_questions(
+                made, ['list', 'go on', 'n'])
+            assert code == 0
+            assert asked == [FINDINGS_ASK % '1 proof graded by an AI',
+                             'go on: ', SIGN_QUESTION]
+            assert shown == self.FOUR
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-306
+    def test_the_graded_proofs_are_counted_and_listed_last(self):
+        made = ai_ready(weak=('RULE-1',), settled=('RULE-2',))
+        try:
+            code, asked, shown, _lines = between_questions(made, ['list'])
+            assert asked[0] == FINDINGS_ASK % (
+                '1 weak, 1 proof settled with its test unchanged, 1 proof '
+                'graded by an AI')
+            assert shown == [
+                '  login RULE-1   %s' % FINDING,
+                '  login RULE-2: %s' % (JUDGED % 'PROOF-2')] + self.FOUR
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-307
+    def test_show_prints_the_graded_proofs(self, capsys):
+        made = ai_ready()
+        try:
+            code, lines = shown_by(made, capsys)
+            assert code == 0, lines
+            at = lines.index("The audit's findings: 1 proof graded by an AI.")
+            assert lines[at + 1:at + 5] == self.FOUR
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-308
+    def test_a_grade_that_did_not_accept_reads_rejected(self):
+        made = ai_ready()
+        try:
+            models = [ai_runs(made, 'PROOF-4', model, 2, GRADER)
+                      for model in (OPUS, SONNET)]
+            models[1]['runs'][1]['grade'] = {
+                'model': GRADER, 'accepted': False,
+                'reason': 'The reply blames the user.'}
+            name_the_models(made, 'PROOF-4', models)
+            commit_all(made)
+            shown = between_questions(made, ['list'])[2]
+            assert shown[-1] == GRADED_LINE % (
+                SONNET, 2, 'rejected', GRADER, 'The reply blames the user.')
+        finally:
+            made.close()
+
+
+class TestAModelWithNoResult:
+
+    def _refused(self, made, capsys, model, argv=()):
+        try:
+            before = status(made.root)
+            assert run_main(made, capsys, argv) == (1, [
+                NOT_RECORDED % (made.head()[:7], model)])
+            assert status(made.root) == before
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-309
+    def test_a_model_the_evidence_holds_no_entry_for_is_refused(self, capsys):
+        made = ai_ready(words={'PROOF-4': ('not run', 'not run')})
+        try:
+            name_the_models(made, 'PROOF-4',
+                            [ai_runs(made, 'PROOF-4', OPUS, 2, GRADER)])
+            commit_all(made)
+        except Exception:
+            made.close()
+            raise
+        self._refused(made, capsys, SONNET)
+
+    # purlin: signatures PROOF-310
+    def test_a_run_that_reads_not_run_is_refused(self, capsys):
+        made = ai_ready(words={'PROOF-4': ('not run', 'not run')})
+        try:
+            name_the_models(made, 'PROOF-4', [
+                ai_runs(made, 'PROOF-4', OPUS, 2, GRADER),
+                {'model': SONNET, 'passed': 0, 'of': 2, 'graded': True,
+                 'runs': [{'result': 'not run', 'made': 'helper',
+                           'why': 'The login expired.'}]}])
+            commit_all(made)
+        except Exception:
+            made.close()
+            raise
+        self._refused(made, capsys, SONNET)
+
+    # purlin: signatures PROOF-311
+    def test_fewer_runs_than_the_proof_asks_is_refused(self, capsys):
+        made = ai_ready(words={'PROOF-3': ('not run', 'not run')})
+        try:
+            name_the_models(made, 'PROOF-3',
+                            [ai_runs(made, 'PROOF-3', OPUS, 2, asked=3)])
+            commit_all(made)
+        except Exception:
+            made.close()
+            raise
+        self._refused(made, capsys, OPUS)
+
+    # purlin: signatures PROOF-312
+    def test_an_ai_proof_no_run_has_tried_is_refused(self, capsys):
+        made = ai_ready(words={'PROOF-3': ('not run', 'not run')},
+                        models={'PROOF-3': None})
+        self._refused(made, capsys, OPUS, ['--show'])
+
+
+def kept_paths():
+    """Every path the seven kept folders are committed at."""
+    return ['%s/%s/%s' % (AI_OUTPUTS, ai_sha(*run), name)
+            for run in AI_RUNS for name in AI_FILES]
+
+
+class TestTheKeptAIOutputs:
+
+    # purlin: signatures PROOF-313
+    def test_the_first_sign_off_commits_every_file_of_each_folder(self):
+        made = ai_ready()
+        try:
+            code, lines, _asked = walked(made, ['go on', 'y'])
+            assert code == 0, lines
+            changed = sorted(changed_in_head(made.root))
+            assert len(changed) == 31
+            assert changed == sorted([PACKAGE, SIGNOFF,
+                                      OUTPUTS + '/.gitattributes']
+                                     + kept_paths())
+            for proof_id, model, run in AI_RUNS:
+                kept = os.path.join(made.root, '.purlin', 'runtime', 'ai',
+                                    'login', proof_id, model, str(run))
+                for name in AI_FILES:
+                    with open(os.path.join(kept, *name.split('/')),
+                              'rb') as handle:
+                        on_disk = handle.read()
+                    held = subprocess.run(
+                        ['git', 'show', 'HEAD:%s/%s/%s' % (
+                            AI_OUTPUTS, ai_sha(proof_id, model, run), name)],
+                        cwd=made.root, capture_output=True).stdout
+                    assert held == on_disk, (proof_id, model, run, name)
+            reply = subprocess.run(
+                ['git', 'show', 'HEAD:%s/%s/reply.md' % (
+                    AI_OUTPUTS, ai_sha('PROOF-4', SONNET, 2))],
+                cwd=made.root, capture_output=True, text=True).stdout
+            assert reply == ai_reply('PROOF-4', SONNET, 2)
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-314
+    def test_a_file_the_project_ignores_is_committed_all_the_same(self):
+        made = ai_ready(ignore='notes.txt')
+        try:
+            code, lines, _asked = walked(made, ['go on', 'y'])
+            assert code == 0, lines
+            changed = changed_in_head(made.root)
+            assert [path for path in kept_paths()
+                    if path.endswith('files/notes.txt')
+                    and path not in changed] == []
+            assert len([path for path in changed
+                        if path.endswith('files/notes.txt')]) == 7
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-315
+    def test_a_folder_this_machine_does_not_hold_refuses_nothing(self):
+        made = ai_ready(keep=False)
+        try:
+            code, lines, _asked = walked(made, ['go on', 'y'])
+            assert code == 0, lines
+            assert not [line for line in lines
+                        if line.startswith('No sign-off')], lines
+            assert sorted(changed_in_head(made.root)) == sorted([PACKAGE,
+                                                                 SIGNOFF])
+            assert overview_of(lines)[-1] == (
+                '  AI outputs kept with the package: 0 of 7. 7 are not on '
+                'this machine, so they are not kept.')
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-316
+    def test_a_later_signer_reads_the_folders_the_commit_holds(self):
+        made = ai_ready()
+        try:
+            assert walked(made, ['go on', 'y'])[0] == 0
+            import shutil
+            shutil.rmtree(os.path.join(made.root, '.purlin', 'runtime'))
+            key(made.root, email='quinn@acme.com', name='Quinn', file='quinn')
+            code, lines, _asked = walked(made, ['go on', 'y'])
+            assert code == 0, lines
+            assert overview_of(lines)[-1] == (
+                '  AI outputs kept with the package: 7 of 7.')
+            assert changed_in_head(made.root) == [
+                '%s/quinn.json' % SIGNOFFS]
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-317
+    def test_the_overview_counts_the_folders_kept_after_the_reports(
+            self, capsys):
+        made = ai_ready(keep=6)
+        try:
+            code, lines = shown_by(made, capsys)
+            assert code == 0, lines
+            assert overview_of(lines)[-2:] == [
+                '  No test report is kept: no result names one.',
+                '  AI outputs kept with the package: 6 of 7. 1 is not on '
+                'this machine, so it is not kept.']
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-318
+    def test_the_sign_off_records_the_models_the_graders_and_the_folders(
+            self):
+        made = ai_ready()
+        try:
+            assert walked(made, ['go on', 'y'])[0] == 0
+            shown = signed_off(made)['shown']
+            assert shown['models'] == [
+                {'model': OPUS, 'proofs': 2, 'runs': [2, 3]},
+                {'model': SONNET, 'proofs': 1, 'runs': [2, 2]}]
+            assert shown['overview']['graded'] == [
+                {'grader': GRADER, 'proofs': 1}]
+            assert shown['overview']['ai_outputs'] == {'named': 7, 'kept': 7}
+        finally:
+            made.close()
+
+    # purlin: signatures PROOF-319
+    def test_with_no_ai_proof_the_three_read_empty(self, signed):
+        assert walked(signed, ['y'])[0] == 0
+        shown = signed_off(signed)['shown']
+        assert sorted(shown) == ['audit_list_opened', 'hand_checks',
+                                 'models', 'overview', 'runs']
+        assert shown['models'] == []
+        assert shown['overview']['graded'] == []
+        assert shown['overview']['ai_outputs'] == {'named': 0, 'kept': 0}

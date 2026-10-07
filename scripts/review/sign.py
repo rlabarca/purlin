@@ -8,13 +8,16 @@
 
 Any project may run it whenever it chooses. It reads the evidence committed
 at HEAD, builds the evidence package for the version and walks it with a
-person: who ran the tests, where and when, and which results an earlier run
-took and a later one carried forward; an overview counting per system
-the rules that pass their tests and the hand checks, what the audit found,
-how many last changes name a co-author and how many test reports are kept
-with the package; the
+person: who ran the tests, where and when, which results an earlier run
+took and a later one carried forward, and each model the AI proofs ran on,
+with how many proofs and how many runs each; an overview counting per system
+the rules that pass their tests and the hand checks, the proofs a model
+graded, per grader, what the audit found, how many last changes name a
+co-author and how many test reports and AI outputs are kept with the
+package; the
 audit's findings as a list the signer may open, each proof settled with its
-test unchanged listed after them; then one stop per hand check,
+test unchanged listed after them, then each graded proof's runs with the
+grader and its reason; then one stop per hand check,
 which shows the rule's last note where a sign-off holds one, and where the
 person types what they saw or presses Enter for no note. On yes to
 the last question it writes one file in one signed commit:
@@ -23,8 +26,9 @@ the last question it writes one file in one signed commit:
 
 The first sign-off of a version commits the package with it,
 `.purlin/evidence/package/<version>.json`, and under
-`.purlin/evidence/package/<version>.outputs/` each test report the package
-lists that this machine keeps, and writes the signed tag
+`.purlin/evidence/package/<version>.outputs/` each test report and each
+folder of what an AI produced that the package lists and this machine
+keeps, and writes the signed tag
 `signed/<version>` on that commit; a later sign-off adds its own file alone
 and the tag does not move. Where git could not write the tag, the next run
 writes it on that commit, and a signer who already signed gets the tag alone.
@@ -37,7 +41,8 @@ evidence is written and not committed; a test still carries a marker from
 Purlin 0.9.5; no version is stated or named;
 `signed/<version>` is on a commit this checkout does not hold, or the code
 changed since it; the committed package does not match its fingerprint; a
-result is not recorded on this version of the code; a result was taken while
+result is not recorded on this version of the code, or a model an AI proof
+names holds no counting result on it; a result was taken while
 files were changed and not
 committed; a rule has no test; a rule does not pass; the branch's copy on the
 host, as this checkout last fetched it, holds commits HEAD lacks; the signer
@@ -53,8 +58,8 @@ tag is written, and one line names both keys.
 no key. `--answers FILE` walks with the answers a JSON file gives, for an
 agent whose shell has no terminal to ask in; it signs only where the file's
 `sign` holds the signer's email address. `--check FILE` checks a package
-against its fingerprint, then the test reports beside it against the sha256
-the package lists for each. `--version <version>` names the version in place of
+against its fingerprint, then the test reports and the AI outputs beside it
+against the sha256 the package lists for each. `--version <version>` names the version in place of
 the one the project states.
 
 Exit codes: 0 signed, shown, checked and matching, stopped, or declined; 1
@@ -168,6 +173,14 @@ OVERVIEW_REPORTS = '  Test reports kept with the package: %d of %d.'
 # After it, where the first sign-off finds some missing: `1 is` or `<n> are`.
 REPORTS_NOT_HERE = ' %s not on this machine, so %s not kept.'
 OVERVIEW_NO_REPORTS = '  No test report is kept: no result names one.'
+# The same for the folders holding what an AI produced, where the package
+# lists one; REPORTS_NOT_HERE follows it too.
+OVERVIEW_AI_OUTPUTS = '  AI outputs kept with the package: %d of %d.'
+# A model the package's AI proofs name: the model, `<n> proofs`, then the
+# runs each proof holds on it, `5 runs` or `3 to 10 runs`.
+MODEL_LINE = 'AI proofs run on %s: %s, %s each.'
+# The proofs a model grades: `<n> proofs`, the grader.
+OVERVIEW_GRADED = '  Graded by an AI: %s, by %s.'
 AUDIT_ASK = "The audit's findings: %s. list / go on: "
 AUDIT_SHOWN = "The audit's findings: %s."
 AUDIT_LIST = '  %s %s   %s'
@@ -176,6 +189,12 @@ AUDIT_LIST = '  %s %s   %s'
 AUDIT_JUDGED = '  %s %s: %s'
 JUDGED_ONE = '1 proof settled with its test unchanged'
 JUDGED_MANY = '%d proofs settled with their tests unchanged'
+# One graded run: the feature, RULE-N, PROOF-N, the model, the run of how
+# many, GRADE_WORDS, the grader, its reason.
+AUDIT_GRADED = '  %s %s: %s on %s, run %d of %d, %s by %s: %s'
+GRADE_WORDS = {True: 'accepted', False: 'rejected'}
+GRADED_ONE = '1 proof graded by an AI'
+GRADED_MANY = '%d proofs graded by an AI'
 AUDIT_AGAIN = 'go on: '
 STOP_HEAD = '%s %s   hand check'
 HAND_ASK = '%s %s   what did you see, in one line, or Enter for no note, or stop: '
@@ -207,6 +226,13 @@ MATCHES = 'The package matches its fingerprint.'
 REPORTS_MATCH = 'Reports beside the package that match their sha256: %d of %d.'
 REPORT_DIFFERS = ('A report beside the package does not match it: %s gives the '
                   'sha256 %s, and the package records %s.')
+AI_OUTPUTS_MATCH = 'AI outputs beside the package that match their sha256: %d of %d.'
+AI_OUTPUT_DIFFERS = ('An AI output beside the package does not match it: %s gives '
+                     'the sha256 %s, and the package records %s.')
+# What `--check` says of each kind of output: the count line, then the line
+# for one that differs.
+CHECKED = {outputs_module.REPORT: (REPORTS_MATCH, REPORT_DIFFERS),
+           outputs_module.AI_OUTPUT: (AI_OUTPUTS_MATCH, AI_OUTPUT_DIFFERS)}
 NO_MATCH = 'The package does not match its fingerprint: %s.'
 
 # A stop.
@@ -454,8 +480,12 @@ def no_test_fill(package):
 
 
 def off_code_fill(package, project_root):
-    """`(what, commands)` for the results not recorded on this code, or None."""
-    return _results_fill(package_module.off_code(package, project_root))
+    """`(what, commands)` for the results not recorded on this code, or
+    None: a result whose section names other code, then a model an AI proof
+    names that holds no counting result on this commit, named as a system
+    is."""
+    return _results_fill(package_module.off_code(package, project_root)
+                         + package_module.models_not_run(package))
 
 
 def dirty_fill(package, project_root):
@@ -544,9 +574,9 @@ def refusal(project_root, name=None):
     `written` (the package is to be written with the sign-off), `head`,
     `email`, `tag_at` (the commit a tag git could not write belongs on, or
     None), `tag_only` (the signer already signed, and only the tag is
-    left to write) and `kept`, how many of the reports the package lists
-    are kept with it: on this machine where the package is to be written,
-    in HEAD's tree where it is committed.
+    left to write) and `kept`, how many of the outputs the package lists
+    are kept with it, by kind: on this machine where the package is to be
+    written, in HEAD's tree where it is committed.
     """
     changed = uncommitted_work(project_root)
     if changed:
@@ -626,22 +656,35 @@ def refusal(project_root, name=None):
                          'package': package, 'written': written,
                          'head': head, 'email': email, 'tag_at': tag_at,
                          'tag_only': bool(signed and tag_at),
-                         'kept': kept_reports(project_root, package, written)}
+                         'kept': kept_outputs(project_root, package, written)}
 
 
-def kept_reports(project_root, package, written):
-    """How many of the reports a package lists are kept with it.
+def _of_kind(package, kind):
+    """The entries of the package's `outputs` of one kind."""
+    return [item for item in package.get('outputs') or ()
+            if item.get('kind') == kind]
+
+
+def kept_outputs(project_root, package, written):
+    """`{kind: count}`: how many of the outputs a package lists are kept
+    with it, the reports and the AI outputs counted apart.
 
     For a package this sign-off is to write, the ones this machine keeps,
     which the sign-off commits; for a committed one, the ones HEAD's tree
     holds at the paths it lists.
     """
-    listed = package.get('outputs') or ()
-    if written:
-        return outputs_module.on_this_machine(project_root, listed)
-    return sum(1 for item in listed
-               if _git(project_root, 'cat-file', '-e', 'HEAD:%s'
-                       % item.get('file')).returncode == 0)
+    counts = {}
+    for kind in CHECKED:
+        listed = _of_kind(package, kind)
+        if written:
+            counts[kind] = outputs_module.on_this_machine(project_root,
+                                                          listed)
+        else:
+            counts[kind] = sum(
+                1 for item in listed
+                if _git(project_root, 'cat-file', '-e', 'HEAD:%s'
+                        % item.get('file')).returncode == 0)
+    return counts
 
 
 def _held_signoff(project_root, rel):
@@ -755,23 +798,26 @@ def last_notes(project_root):
     return signatures_module.hand_notes(project_root)
 
 
-def plan(package, notes=None, kept=0):
-    """What the walk shows: the overview's numbers, the weak rules, the
-    proofs settled with their test unchanged and the stops.
+def plan(package, notes=None, kept=None):
+    """What the walk shows: the models the AI proofs ran on, the overview's
+    numbers, the weak rules, the proofs settled with their test unchanged,
+    the graded proofs and the stops.
 
     `notes` is what `last_notes` gives; each stop carries its rule's lines
     as `last_notes` and what was reworded since them as `changed`. `kept`
-    is `kept_reports`' answer."""
+    is `kept_outputs`' answer."""
     notes = notes or {}
+    kept = kept or {}
     rules = package_rules(package)
     per_system = {}
-    weak, judged, stops = [], [], []
+    weak, judged, graded, stops = [], [], [], []
     for feature, rule in rules:
         for system, result in _chosen_results(rule).items():
             counts = per_system.setdefault(system, {'rules': 0, 'passing': 0,
                                                     'hand_checks': 0})
             counts['rules'] += 1
-            if result.get('result') == 'passed' and not _by_hand_alone(rule):
+            if states_module.passes(result.get('result')) \
+                    and not _by_hand_alone(rule):
                 counts['passing'] += 1
             if _hand_check(rule):
                 counts['hand_checks'] += 1
@@ -780,6 +826,10 @@ def plan(package, notes=None, kept=0):
                          'entry': rule})
         judged.extend({'feature': feature, 'rule': rule.get('id'),
                        'sentence': sentence} for sentence in _judged(rule))
+        graded.extend({'feature': feature, 'rule': rule.get('id'),
+                       'proof': proof}
+                      for proof in rule.get('proofs') or ()
+                      if proof.get('graded'))
         if _hand_check(rule):
             noted = notes.get((feature, rule.get('id'))) or {}
             stops.append({'feature': feature, 'rule': rule.get('id'),
@@ -794,11 +844,66 @@ def plan(package, notes=None, kept=0):
                     for name in _systems(per_system)],
         'audit': ({key: audit.get(key) or 0 for key in keys}
                   if audited else None),
+        'graded': grader_counts(graded),
         'co_authors': co_author_counts(rules),
-        'reports': {'named': len(package.get('outputs') or ()),
-                    'kept': kept}}
-    return {'overview': overview, 'weak': weak, 'judged': judged,
-            'stops': stops}
+        'reports': _kept_counts(package, kept, outputs_module.REPORT),
+        'ai_outputs': _kept_counts(package, kept, outputs_module.AI_OUTPUT)}
+    return {'models': model_counts(rules), 'overview': overview,
+            'weak': weak, 'judged': judged, 'graded': graded, 'stops': stops}
+
+
+def _kept_counts(package, kept, kind):
+    """`{named, kept}` for the outputs of one kind the package lists."""
+    return {'named': len(_of_kind(package, kind)), 'kept': kept.get(kind, 0)}
+
+
+def model_counts(rules):
+    """`[{model, proofs, runs}]`: each model the package's AI proofs name,
+    in the order it first names them, with how many proofs ran on it and
+    `runs`, the least and the most runs one of those proofs holds on it.
+    `rules` is `package_rules`' answer."""
+    found = []
+    for _feature, rule in rules:
+        for proof in rule.get('proofs') or ():
+            for model in proof.get('models') or ():
+                count = len(model.get('runs') or ())
+                known = next((item for item in found
+                              if item['model'] == model.get('model')), None)
+                if known is None:
+                    found.append({'model': model.get('model'), 'proofs': 1,
+                                  'runs': [count, count]})
+                else:
+                    known['proofs'] += 1
+                    known['runs'] = [min(known['runs'][0], count),
+                                     max(known['runs'][1], count)]
+    return found
+
+
+def grader_counts(graded):
+    """`[{grader, proofs}]`: each grader, in the order the package first
+    names it, with how many proofs it grades. `graded` is `plan`'s."""
+    found = []
+    for item in graded:
+        grader = item['proof'].get('graded')
+        known = next((one for one in found if one['grader'] == grader), None)
+        if known is None:
+            found.append({'grader': grader, 'proofs': 1})
+        else:
+            known['proofs'] += 1
+    return found
+
+
+def model_lines(models):
+    """One line per model of `model_counts`' answer."""
+    lines = []
+    for item in models:
+        least, most = item['runs']
+        runs = ('1 run' if most == 1 else '%d runs' % most
+                if least == most else '%d to %d runs' % (least, most))
+        lines.append(MODEL_LINE % (
+            item['model'], _count('1 proof', '%d proofs', item['proofs']),
+            runs))
+    return lines
 
 
 def co_author_counts(rules):
@@ -821,10 +926,12 @@ def co_author_counts(rules):
 
 
 def overview_lines(info, shown):
-    """The run lines, then what is signed, the rules per system, the audit
-    and the last changes that name a co-author."""
+    """The run lines, a line per model the AI proofs ran on, then what is
+    signed, the rules per system, the proofs a model graded, the audit, the
+    last changes that name a co-author and the outputs kept."""
     package = info['package']
     lines = package_module.run_lines(package)
+    lines.extend(model_lines(shown['models']))
     lines.append(OVERVIEW % (info['version'],
                              str(package.get('commit') or '')[:7]))
     for system in shown['overview']['systems']:
@@ -836,6 +943,9 @@ def overview_lines(info, shown):
             'no hand check' if not system['hand_checks']
             else _count('1 has a hand check', '%d have a hand check',
                         system['hand_checks'])))
+    lines.extend(OVERVIEW_GRADED % (
+        _count('1 proof', '%d proofs', item['proofs']), item['grader'])
+        for item in shown['overview']['graded'])
     audit = shown['overview']['audit']
     if audit:
         lines.append(OVERVIEW_AUDIT % summary_module.audit_words(audit))
@@ -845,17 +955,21 @@ def overview_lines(info, shown):
         _count('1 proof', '%d proofs', named['proofs']),
         _count('1 test', '%d tests', named['tests'])))
     lines.append(reports_line(shown['overview']['reports'], info['written']))
+    if shown['overview']['ai_outputs']['named']:
+        lines.append(reports_line(shown['overview']['ai_outputs'],
+                                  info['written'], OVERVIEW_AI_OUTPUTS))
     return lines
 
 
-def reports_line(reports, written):
-    """The overview's line on the test reports: how many of the ones the
-    package lists are kept with it, and, where this sign-off writes the
-    package, how many this machine does not hold."""
+def reports_line(reports, written, words=OVERVIEW_REPORTS):
+    """The overview's line on the test reports, or with `words` on the AI
+    outputs: how many of the ones the package lists are kept with it, and,
+    where this sign-off writes the package, how many this machine does not
+    hold."""
     named, kept = reports['named'], reports['kept']
     if not named:
         return OVERVIEW_NO_REPORTS
-    line = OVERVIEW_REPORTS % (kept, named)
+    line = words % (kept, named)
     if written and kept < named:
         line += REPORTS_NOT_HERE % (
             ('1 is', 'it is') if named - kept == 1
@@ -863,9 +977,11 @@ def reports_line(reports, written):
     return line
 
 
-def audit_list_lines(weak, judged=()):
+def audit_list_lines(weak, judged=(), graded=()):
     """One line per finding of each weak rule, the rule named on each; then
-    one per proof settled with its test unchanged, of a rule of any verdict."""
+    one per proof settled with its test unchanged, of a rule of any verdict;
+    then one per run of each graded proof that holds a grade, naming the
+    model, the run, the grader and its reason."""
     lines = []
     for item in weak:
         findings = (item['entry'].get('audit') or {}).get('findings') or ()
@@ -874,7 +990,25 @@ def audit_list_lines(weak, judged=()):
                                         finding)).rstrip())
     lines.extend(AUDIT_JUDGED % (item['feature'], item['rule'],
                                  item['sentence']) for item in judged)
+    for item in graded:
+        proof = item['proof']
+        for model in proof.get('models') or ():
+            runs = model.get('runs') or ()
+            for index, run in enumerate(runs, 1):
+                grade = run.get('grade') or {}
+                if grade.get('accepted') not in GRADE_WORDS:
+                    continue
+                lines.append(AUDIT_GRADED % (
+                    item['feature'], item['rule'], proof.get('id'),
+                    model.get('model'), index, len(runs),
+                    GRADE_WORDS[grade['accepted']], grade.get('model'),
+                    grade.get('reason')))
     return lines
+
+
+def _listed(shown):
+    """True where the walk has findings to offer as a list."""
+    return bool(shown['weak'] or shown['judged'] or shown['graded'])
 
 
 def _proof_tags(proof):
@@ -995,9 +1129,10 @@ def show(project_root, name=None, out=None):
         return EXIT_OK
     shown = plan(info['package'], last_notes(project_root), info['kept'])
     _say(overview_lines(info, shown), out)
-    if shown['weak'] or shown['judged']:
+    if _listed(shown):
         print(AUDIT_SHOWN % _findings_words(shown), file=out)
-        _say(audit_list_lines(shown['weak'], shown['judged']), out)
+        _say(audit_list_lines(shown['weak'], shown['judged'],
+                              shown['graded']), out)
     for stop in shown['stops']:
         print('', file=out)
         _say(render_stop(stop), out)
@@ -1007,13 +1142,16 @@ def show(project_root, name=None, out=None):
 
 
 def _findings_words(shown):
-    """`1 weak`, `1 proof settled with its test unchanged`, or both joined
-    by `, `; a count of zero left out."""
+    """`1 weak`, `1 proof settled with its test unchanged`, `1 proof graded
+    by an AI`, or those there are joined by `, `; a count of zero left
+    out."""
     words = []
     if shown['weak']:
         words.append('%d weak' % len(shown['weak']))
     if shown['judged']:
         words.append(_count(JUDGED_ONE, JUDGED_MANY, len(shown['judged'])))
+    if shown['graded']:
+        words.append(_count(GRADED_ONE, GRADED_MANY, len(shown['graded'])))
     return ', '.join(words)
 
 
@@ -1046,12 +1184,13 @@ def _walk(project_root, info, ask, out, answers_path=None):
     shown = plan(info['package'], last_notes(project_root), info['kept'])
     _say(overview_lines(info, shown), out)
     list_opened = False
-    if shown['weak'] or shown['judged']:
+    if _listed(shown):
         given = _choose(ask, 'audit', AUDIT_ASK % _findings_words(shown),
                         ('list', 'go on'))
         if given == 'list':
             list_opened = True
-            _say(audit_list_lines(shown['weak'], shown['judged']), out)
+            _say(audit_list_lines(shown['weak'], shown['judged'],
+                                  shown['graded']), out)
             _choose(ask, 'audit_again', AUDIT_AGAIN, ('go on',))
     notes, walked = [], []
     try:
@@ -1074,6 +1213,7 @@ def _walk(project_root, info, ask, out, answers_path=None):
         return EXIT_OK
     record = {'overview': shown['overview'],
               'runs': list(info['package'].get('runs') or ()),
+              'models': shown['models'],
               'hand_checks': walked,
               'audit_list_opened': list_opened}
     return _sign(project_root, info, record, notes, out)
@@ -1132,6 +1272,19 @@ def _read_bytes(path):
         return None
 
 
+def _files_under(project_root, rel):
+    """`{path: bytes}` for every file under the folder `rel`, each path `/`
+    separated from the project root; `{}` where there is no such folder."""
+    found = {}
+    top = os.path.join(project_root, *rel.split('/'))
+    for dirpath, _dirnames, names in os.walk(top):
+        for name in names:
+            path = os.path.join(dirpath, name)
+            found['%s/%s' % (rel, os.path.relpath(path, top).replace(
+                os.sep, '/'))] = _read_bytes(path)
+    return found
+
+
 def _take_back(project_root, kept):
     """Leave each file as it was before a commit not made."""
     rels = list(kept)
@@ -1152,8 +1305,11 @@ def _take_back(project_root, kept):
 
 
 def _commit(project_root, rels, message):
-    """Stage `rels` and commit them alone, signed. `(sha, None)` or `(None, why)`."""
-    add = _git(project_root, 'add', '--', *rels)
+    """Stage `rels` and commit them alone, signed. `(sha, None)` or `(None, why)`.
+
+    Each is staged whatever the project's `.gitignore` holds: a file an AI
+    wrote is kept under the name it gave it."""
+    add = _git(project_root, 'add', '-f', '--', *rels)
     if add.returncode != 0:
         return None, _first_line(add)
     made = _git(project_root, 'commit', '-q', '-S', '-m', message, '--', *rels)
@@ -1173,15 +1329,11 @@ def _sign(project_root, info, record, notes, out):
             kept[rel] = _read_bytes(os.path.join(project_root, *rel.split('/')))
             package_module.write(project_root, package)
             rels.append(rel)
-            # The reports the package lists that this machine keeps go into
-            # the same commit, beside the package.
-            before = {item['file']: _read_bytes(os.path.join(
-                project_root, *item['file'].split('/')))
-                for item in package.get('outputs') or ()}
-            attributes = '%s/%s' % (outputs_module.outputs_dir(version),
-                                    outputs_module.ATTRIBUTES)
-            before[attributes] = _read_bytes(os.path.join(
-                project_root, *attributes.split('/')))
+            # The outputs the package lists that this machine keeps, each
+            # report and each folder of what an AI produced, go into the
+            # same commit, beside the package.
+            before = _files_under(project_root,
+                                  outputs_module.outputs_dir(version))
             for kept_rel in outputs_module.copy_kept(
                     project_root, version, package.get('outputs')):
                 kept[kept_rel] = before.get(kept_rel)
@@ -1354,17 +1506,20 @@ def check(path, out=None):
         print(NO_MATCH % why, file=out)
         return EXIT_NOTHING
     print(MATCHES, file=out)
-    listed, kept, differing = package_module.check_outputs(path)
-    if listed:
-        print(REPORTS_MATCH % (kept, listed), file=out)
+    checked = package_module.check_outputs(path)
     recorded = {}
-    if differing:
+    if any(differing for _kind, _listed, _kept, differing in checked):
         with open(path, 'rb') as handle:
             recorded = {item.get('file'): item.get('sha256') for item in
                         json.loads(handle.read().decode('utf-8'))['outputs']}
-    for rel, gives in differing:
-        print(REPORT_DIFFERS % (rel, gives, recorded.get(rel)), file=out)
-    return EXIT_NOTHING if differing else EXIT_OK
+    code = EXIT_OK
+    for kind, listed, kept, differing in checked:
+        match, differs = CHECKED[kind]
+        print(match % (kept, listed), file=out)
+        for rel, gives in differing:
+            print(differs % (rel, gives, recorded.get(rel)), file=out)
+            code = EXIT_NOTHING
+    return code
 
 
 # ---------------------------------------------------------------------------

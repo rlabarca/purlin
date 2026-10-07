@@ -1,4 +1,4 @@
-> Format-Version: 17
+> Format-Version: 18
 
 # Package format
 
@@ -14,7 +14,8 @@ for a reviewer who cannot open the repository. It holds, in this order:
   audit found, who wrote and last changed the rule, each proof and each
   test, and the co-authors git names on those commits;
 - every hand check;
-- every test report its results name.
+- every output its results name: each test report, and each folder holding
+  what an AI produced in one run.
 
 ```
 .purlin/evidence/package/<version>.json
@@ -32,11 +33,13 @@ The sign-offs sit beside the package, one file per signer:
 .purlin/evidence/package/<version>.signoffs/<signer-slug>.json
 ```
 
-So do the outputs kept for the version, the test reports its results were
-read from, which the first sign-off commits with the package:
+So do the outputs kept for the version, which the first sign-off commits
+with the package: the test reports its results were read from, and for each
+run of an AI proof's test the folder holding what the AI produced:
 
 ```
 .purlin/evidence/package/<version>.outputs/reports/<sha256><extension>
+.purlin/evidence/package/<version>.outputs/ai-outputs/<sha256>/
 ```
 
 "Outputs" says which are there.
@@ -84,7 +87,7 @@ built at the tag again reads the same commit.
   "schema": "purlin-package/4",
   "met": true,
   "rules": 42,
-  "steps": {"passed": 41},
+  "steps": {"graded": 6, "passed": 41},
   "audit": {"not_audited": 3, "out_of_date": 1, "spot_checked": 3,
             "strong": 32, "weak": 2},
   "left": [
@@ -108,6 +111,8 @@ built at the tag again reads the same commit.
      "proofs": ["PROOF-3"], "rule": "RULE-2"}
   ],
   "outputs": [
+    {"file": ".purlin/evidence/package/0.1.0.outputs/ai-outputs/<sha256>",
+     "kind": "ai-output", "runs": 1, "sha256": "<sha256>"},
     {"file": ".purlin/evidence/package/0.1.0.outputs/reports/<sha256>.xml",
      "from": ".purlin/runtime/reports/pytest.xml", "kind": "report",
      "sha256": "<sha256>", "tests": 61}
@@ -125,9 +130,9 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `schema` | string | `purlin-package/4` |
 | `met` | bool | true when no line of `left` is of a kind that stops the tests being met. See "Met" |
 | `rules` | int | the rules of the project, each counted once under the feature that owns it |
-| `steps` | object | `{"passed": p}`: the rules whose `passed` status reads `passed` |
-| `audit` | object | `{"strong", "weak", "spot_checked", "out_of_date", "not_audited"}`, as `purlin:status` counts them: the rules that pass their tests and have a tested proof, each counted once under the word its `strong` status reads, `strong`, `weak`, `spot-checked`, `out of date` or `not audited`. A rule whose `passed` status does not read `passed` is in none of the five, and neither is a rule checked by hand, whose `strong` status reads `checked at sign-off` |
-| `left` | array | the lines of `Left to do`, in the order the work is done: `{kind, count, text, command}` each. See "What is left" |
+| `steps` | object | `{"passed": p, "graded": g}`: `p` the rules that pass their tests, whose `passed` status reads `passed` or `graded`, and `g` those of them that read `graded` |
+| `audit` | object | `{"strong", "weak", "spot_checked", "out_of_date", "not_audited"}`, as `purlin:status` counts them: the rules that pass their tests and have a tested proof, each counted once under the word its `strong` status reads, `strong`, `weak`, `spot-checked`, `out of date` or `not audited`. A rule whose `passed` status reads neither `passed` nor `graded` is in none of the five, and neither is a rule checked by hand, whose `strong` status reads `checked at sign-off` |
+| `left` | array | the lines of `Left to do`, in the order the work is done: `{kind, count, text, command}` each, and `model` on a `to_test_model` line. See "What is left" |
 | `purlin_version` | string | the version of Purlin that wrote the package |
 | `project` | string | the name the project's own files give it, read when the package is built: `name` under `[project]` or `[tool.poetry]` in `pyproject.toml`, `name` in `package.json`, the first root `*.csproj` file's name, the last segment of the `origin` remote, else the folder's name |
 | `version`, `tag` | string, string | the version the file is named for, and `signed/<version>` |
@@ -135,7 +140,7 @@ Whether the tests are met is the first thing a reader sees after the schema.
 | `runs` | array | one entry per group of results sharing a source, a system, who took them, a machine and whether they were carried forward. See "Runs" |
 | `features` | array | one entry per spec, ordered by name |
 | `hand_checks` | array | one entry per rule with a `@manual` proof, by feature then rule number. See "Hand checks" |
-| `outputs` | array | one entry per test report the results name, by `file`; `[]` where no result names one. See "Outputs" |
+| `outputs` | array | one entry per test report and per AI output folder the results name, by `file`; `[]` where no result names one. See "Outputs" |
 | `warnings` | array of strings | each warning reading the specs and the evidence raised. A warning about a `signed/*` tag is not among them: a tag is a checkout's own, and one commit gives the same bytes in every clone |
 | `fingerprint` | string | sha256 hex. See "The fingerprint" |
 
@@ -178,11 +183,11 @@ A feature entry holds exactly these five fields.
 | `id` | string | `RULE-N` |
 | `text` | string | the rule's words as the spec has them. A requirement's number written in the words is part of them and travels with the rule into the package; Purlin does nothing else with it |
 | `left` | string or null | the one kind of work the rule waits for, the first that applies in the order of "What is left", or null when it waits for none |
-| `proofs` | array | `{id, text, manual, env}` per proof: `manual` is whether the proof is a hand check (`@manual`), `env` the operating system its `@env` names, or null |
+| `proofs` | array | `{id, text, manual, env, ai, graded, runs, models}` per proof: `manual` is whether the proof is a hand check (`@manual`), `env` the operating system its `@env` names, or null. The last four describe an AI proof. See "An AI proof" |
 | `tests` | array | `{proof, file, name}` per test backing a proof, then per test marked with the rule's own id, whose `proof` is then the `RULE-N` |
 | `results` | array | one entry per evidence section that holds a result for the rule, ordered by operating system then source. See below |
 | `audit` | object or null | what the audit last found for the rule, which may be out of date. Null where no audit has read it |
-| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `passed` reads `checked at sign-off` for a rule whose every proof is `@manual`, until a sign-off that counts has noted it on its wording as it stands, and then `passed`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
+| `statuses` | object | `{"passed": {word, reasons}, "strong": {word, reasons}}`. `passed` reads `graded` for a rule that passes with a proof a model grades, and `checked at sign-off` for a rule whose every proof is `@manual`, until a sign-off that counts has noted it on its wording as it stands, and then `passed`. `strong` is what the audit found, and nothing waits on it: its word reads `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`, `no proof` or `waiting` |
 | `authors` | object | who wrote and last changed the rule, its proofs and its tests, and the co-authors those commits name. See "Authors" |
 
 Each `results` entry:
@@ -201,7 +206,33 @@ Each `results` entry:
 | `same_code` | bool | true when every commit from the result's `commit` to the package's `commit` changes only files under `.purlin/` and leaves the `tests` setting of `.purlin/config.json` as it was. A result counts for a sign-off only where it is true |
 | `carried` | array | `{proof, commit, at, machine, email}` per proof of the rule whose result the section's own run did not take, by proof number: the proof, and the full sha, the time, the machine and the email of the run that took it, as `evidence_format.md` gives `carried`. `[]` where the section's own run took every result |
 | `nothing_to_check` | array | `{proof, reason}` per proof whose every tied test skipped with a reason beginning `nothing to check:`, the reason the text after it |
-| `tests` | array | `{proof, test, result, reported}` per test the section lists for the rule, in the section's order: the proof, or the `RULE-N` for a test marked with the rule's own id, the test as `<file>::<name>`, the result the evidence holds for it, `pass`, `fail`, `missing`, `not run` or `nothing to check`, and `reported`, what the suite's report holds for the test, as `evidence_format.md`, "What the report held", gives it: each case's name, outcome, duration and text, and the report file it was read from with its sha256. `reported` is null where the evidence keeps none. A proof no test is tied to has no entry |
+| `tests` | array | `{proof, test, result, reported}` per test the section lists for the rule, in the section's order: the proof, or the `RULE-N` for a test marked with the rule's own id, the test as `<file>::<name>`, the result the evidence holds for it, `pass`, `fail`, `missing`, `not run` or `nothing to check`, and `reported`, what the suite's report holds for the test, as `evidence_format.md`, "What the report held", gives it: each case's name, outcome, duration and text, and the report file it was read from with its sha256. `reported` is null where the evidence keeps none. An entry of an AI proof also holds `models`, as the evidence keeps it (`evidence_format.md`, "The models of an AI proof"): every run on each model in that section, each run's own `reported` with it; any other entry holds no such key. A proof no test is tied to has no entry |
+
+### An AI proof
+
+An AI proof is one tagged `@ai(<model>, ...)`: its test is run several times
+on each model it names. Four fields of a proof say what the status reads for
+it at the package's `commit`:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `ai` | array of strings | the models the `@ai` tag names, in its order; `[]` for any other proof |
+| `graded` | string or null | the model the `@graded` tag names, which grades each output; null where no model grades |
+| `runs` | int or null | how many runs the proof asks of each model: its own `runs=`, else the `runs` setting, else 3; null for a proof that is not an AI proof |
+| `models` | array | one entry per model of `ai`, in its order; `[]` for a proof that is not an AI proof |
+
+Each `models` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `model` | string | the model |
+| `word` | string | `passed`, `failed` or `not run` on that model; `graded` in place of `passed` for a graded proof. `not run` where the evidence holds no entry for the model, a run that is `not run`, or fewer runs than `runs` |
+| `passed`, `of` | int, int | how many runs passed, of how many were asked when they were taken |
+| `runs` | array | one entry per run, in order: `result`, `pass`, `fail` or `not run`; `output`, the sha256 of the folder holding what the AI produced, which `outputs` lists; `made`, `helper` or `project`; `why`, on a `not run` run; and `grade`, `{model, accepted, reason}`, the grader, whether it accepted the output and its one reason, on a graded run. Each as `evidence_format.md` gives it, a key left out where the evidence holds none |
+
+These are read from the one section that decides the proof's word. Every
+section's own runs, with what the test tool reported for each, are under
+that section's `results[].tests[].models`.
 
 `audit`:
 
@@ -249,35 +280,44 @@ and a commit an AI helped with that carries no such line reads `[]`.
 
 ### Outputs
 
-An output is a file a result was read from. There is one kind, `report`: a
-test suite's report as the suite wrote it. Each `outputs` entry:
+An output is what a result was read from. There are two kinds. A `report` is
+a test suite's report as the suite wrote it, one file. An `ai-output` is the
+folder holding what an AI produced in one run of an AI proof's test:
+`reply.md`, `transcript.jsonl`, `files/` and the record `purlin.json`. Each
+`outputs` entry:
 
 | Field | Type | What it holds |
 |---|---|---|
-| `kind` | string | `report` |
-| `file` | string | where the file is committed beside the package, `/` separated: `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the extension that of the report the run read, `.txt` for a report read from the command's standard output |
-| `sha256` | string | the sha256 of the file's bytes, as the evidence records it |
-| `from` | string | the path the run read the report from, relative to the project root, or `-` |
-| `tests` | int | how many test results in the package name this report |
+| `kind` | string | `report` or `ai-output` |
+| `file` | string | where the output is committed beside the package, `/` separated. A report: `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the extension that of the report the run read, `.txt` for a report read from the command's standard output. An AI output: the folder `.purlin/evidence/package/<version>.outputs/ai-outputs/<sha256>` |
+| `sha256` | string | as the evidence records it. A report: the sha256 of the file's bytes. An AI output: the sha256 of the folder, taken over one line per file in it but `purlin.json`, `<sha256 of the file's bytes>  <path>` and a line feed, the paths sorted and `/` separated |
+| `from` | string | a report alone: the path the run read the report from, relative to the project root, or `-` |
+| `tests` | int | a report alone: how many test results in the package name this report, a run of an AI proof's test counted with its test |
+| `runs` | int | an AI output alone: how many runs in the package name this folder |
 
 The list is read from the evidence alone: it names every report a result's
-`reported.report` names, whether or not the file is kept. So the same commit
-lists the same outputs on every machine.
+`reported.report` names, a run's `reported` included, and every folder a
+run's `output` names, whether or not it is kept. So the same commit lists
+the same outputs on every machine.
 
 **Which are kept.** The first sign-off of a version commits, in the same
-signed commit as the package, each listed report the signing machine still
-keeps under `.purlin/runtime/kept/`, at its `file`, byte for byte, and a
-`.gitattributes` in `<version>.outputs/` reading `* -text`, so git rewrites
-no line end in them. A report is not there to commit where its results were
-taken on another machine, a project's own run on another system say, or
-where the file was removed since. Such a report is left out and the sign-off
-goes on: a sign-off is never refused for a missing report. The package
-still lists it, and each result still names it by its sha256.
+signed commit as the package, each listed output the signing machine still
+keeps, byte for byte: a report from `.purlin/runtime/kept/` at its `file`,
+and an AI output from `.purlin/runtime/ai/` as the folder its `file` names,
+every file of the run folder in it, `purlin.json` included. A file is
+committed whatever the project's `.gitignore` holds. A `.gitattributes` in
+`<version>.outputs/` reads `* -text`, so git rewrites no line end in them.
+An output is not there to commit where its results were taken on another
+machine, a project's own run on another system say, or where it was removed
+since. Such an output is left out and the sign-off goes on: a sign-off is
+never refused for a missing output. The package still lists it, and each
+result still names it by its sha256.
 
 A result names no report where its test belongs to an `exit` suite, which
-writes none, or where its `reported` is null.
+writes none, or where its `reported` is null. A run names no folder where it
+reads `not run`.
 
-`purlin:sign --check <file>` says which listed reports are beside the
+`purlin:sign --check <file>` says which listed outputs are beside the
 package. See "The fingerprint".
 
 ### Hand checks
@@ -298,7 +338,7 @@ Every time is ISO 8601 UTC with `Z`.
 | `met` | When |
 |---|---|
 | `true` | no line of `left` stops the tests being met: every rule's tests pass, and every spec and test comment can be read |
-| `false` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test`, `to_run_slow` or `to_test_remote` |
+| `false` | `left` holds a line of `to_repair`, `to_correct`, `to_fix`, `no_test`, `to_test`, `to_run_slow`, `to_test_model` or `to_test_remote` |
 
 A weak rule (`to_strengthen`) and a rule with no proof (`no_proof`) are listed
 in `left` and leave `met` true. `purlin:sign` refuses while `met` is false,
@@ -312,7 +352,9 @@ and a kind at zero has no line. `to_repair` counts specs, not rules: a spec
 that writes a number twice or holds a line left from a merge conflict, whose
 every rule is counted there. `to_correct` counts test comments, not rules,
 and is carried by the project. `to_run_slow` counts proofs, not rules: each
-proof tagged `@slow` that reads `not run`:
+slow proof that reads `not run`, an AI proof no run has tried among them.
+`to_test_model` has one line per model, each with the model under `model`,
+and counts a rule on each model it waits for:
 
 | `kind` | `text`, for one rule and for more | `command` |
 |---|---|---|
@@ -323,6 +365,7 @@ proof tagged `@slow` that reads `not run`:
 | `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
 | `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
 | `to_run_slow` | `1 slow proof to run`, `<n> slow proofs to run` | `purlin:test --all` |
+| `to_test_model` | `1 rule to test on <model>`, `<n> rules to test on <model>` | `purlin:test --all` |
 | `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `run purlin:test on <systems>` |
 | `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
 
@@ -332,7 +375,7 @@ proof tagged `@slow` that reads `not run`:
 ## The canonical form
 
 The same commit always gives the same bytes, with the same version of Purlin,
-whichever reports the machine keeps:
+whichever outputs the machine keeps:
 
 - The top-level keys in the order above. Every other object's keys sorted.
 - Lists in the order this page gives them.
@@ -364,12 +407,18 @@ exits 1. Its reasons:
 | The file cannot be opened | `the file could not be read: <the operating system's message>` |
 
 Where the package matches and lists outputs, `--check` then looks for each
-beside it, under the folder the package file is in, and prints `Reports
-beside the package that match their sha256: <k> of <n>.` A report that is
-not there is not counted and fails nothing. One that is there and gives
-another sha256 prints `A report beside the package does not match it: <file>
-gives the sha256 <computed>, and the package records <recorded>.`, and the
-command exits 1.
+beside it, under the folder the package file is in. Where it lists a report
+it prints `Reports beside the package that match their sha256: <k> of <n>.`,
+and where it lists an AI output, `AI outputs beside the package that match
+their sha256: <k> of <n>.`, working each folder's sha256 out again from the
+files in it. An output that is not there is not counted and fails nothing.
+A report that is there and gives another sha256 prints `A report beside the
+package does not match it: <file> gives the sha256 <computed>, and the
+package records <recorded>.`, and a folder one of whose files was changed,
+removed or added, `An AI output beside the package does not match it:
+<folder> gives the sha256 <computed>, and the package records <recorded>.`
+Either makes the command exit 1. `purlin.json` is no part of a folder's
+sha256, so a change to it alone is not named.
 
 The fingerprint shows the file was not changed after it was written. It is
 not a signature: each sign-off carries it as `package_hash`, and the sign-off's

@@ -12,7 +12,9 @@ bytes, and two places hold the bytes:
     .purlin/evidence/package/<version>.outputs/<kind>s/<sha256><extension>
         beside the evidence package, committed with the first sign-off of
         the version: the outputs the package lists that this machine still
-        holds. `<kind>` is `report` for a test suite's report.
+        holds. `<kind>` is `report` for a test suite's report, and
+        `ai-output` for what an AI produced, which is a folder there,
+        `<sha256>/`, holding every file of the run folder.
 
 A file is found by its sha256 alone, and its bytes are hashed again before
 they are copied or counted, so a file changed after it was kept is not kept
@@ -364,24 +366,75 @@ def extension_of(path):
     return extension if re.match(r'^\.[a-z0-9]+$', extension) else ''
 
 
+def _held_folders(project_root):
+    """`{sha256: run folder}` for the run folders this machine keeps, each
+    hashed once. Where two give one sha256 the first answers, the one
+    `ai_held` gives."""
+    found = {}
+    for rel in ai_run_dirs(project_root):
+        sha = folder_sha256(_full(project_root, rel))
+        if sha:
+            found.setdefault(sha, rel)
+    return found
+
+
+def _finder(project_root):
+    """A function giving what this machine holds of one entry of the
+    package's `outputs`, as `[(path beside the package, bytes)]`, `[]`
+    where it holds none.
+
+    A report is its one file, at the entry's `file`. An AI output is every
+    file of the kept run folder, the record with them, under the entry's
+    `file`. Each is found by the entry's `sha256`.
+    """
+    folders = []
+
+    def find(item):
+        sha = str(item.get('sha256') or '')
+        if item.get('kind') != AI_OUTPUT:
+            found = held(project_root, sha)
+            return [] if found is None else [(item['file'], found[1])]
+        if not folders:
+            folders.append(_held_folders(project_root))
+        rel = folders[0].get(sha)
+        if rel is None:
+            return []
+        folder = _full(project_root, rel)
+        names = folder_files(folder)
+        if os.path.isfile(os.path.join(folder, RECORD)):
+            names.append(RECORD)
+        return [('%s/%s' % (item['file'], name),
+                 _read(os.path.join(folder, *name.split('/'))) or b'')
+                for name in sorted(names)]
+    return find
+
+
 def copy_kept(project_root, version, listed):
     """Write beside the package each output of `listed` this machine holds.
     The paths written, `/` separated, the attributes file first where one
     output was written.
 
-    `listed` is the package's `outputs`. An output is written at its own
-    `file` where the kept bytes give its `sha256`; one this machine does
-    not hold is left out.
+    `listed` is the package's `outputs`. A report is written at its own
+    `file` where the kept bytes give its `sha256`, and an AI output as the
+    folder its `file` names, every file of the kept run folder in it; one
+    this machine does not hold is left out. A folder whose files, once
+    written, do not give its `sha256` is taken out again and left out.
     """
+    find = _finder(project_root)
     written = []
     for item in listed or ():
-        found = held(project_root, str(item.get('sha256') or ''))
-        if found is None:
+        paths = []
+        for rel, data in find(item):
+            path = _full(project_root, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            pathlib.Path(path).write_bytes(data)
+            paths.append(rel)
+        if paths and item.get('kind') == AI_OUTPUT and folder_sha256(
+                _full(project_root, item['file'])) != item.get('sha256'):
+            for rel in paths:
+                os.remove(_full(project_root, rel))
             continue
-        path = _full(project_root, item['file'])
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        pathlib.Path(path).write_bytes(found[1])
-        written.append(item['file'])
+        written.extend(paths)
     if written:
         rel = '%s/%s' % (outputs_dir(version), ATTRIBUTES)
         with open(_full(project_root, rel), 'w', encoding='utf-8',
@@ -393,27 +446,33 @@ def copy_kept(project_root, version, listed):
 
 def on_this_machine(project_root, listed):
     """How many of the package's `outputs` this machine holds."""
-    return sum(1 for item in listed or ()
-               if held(project_root, str(item.get('sha256') or ''))
-               is not None)
+    find = _finder(project_root)
+    return sum(1 for item in listed or () if find(item))
 
 
-def check(listed, read):
+def check(listed, locate):
     """`(kept, differing)` for the package's `outputs` against the files
     beside it.
 
-    `read(file)` gives one output's bytes, or None where it is not there.
-    `kept` counts the outputs whose bytes give the sha256 the package
-    records, and `differing` is `[(file, sha256 its bytes give)]` for each
-    that is there and gives another. An output that is not there is in
-    neither.
+    `locate(file)` gives where one output is on disk, or None where it
+    cannot be there. `kept` counts the outputs that give the sha256 the
+    package records: a report by its bytes, an AI output by
+    `folder_sha256` over the folder's files as they stand. `differing` is
+    `[(file, sha256 it gives)]` for each that is there and gives another.
+    An output that is not there is in neither.
     """
     kept, differing = 0, []
     for item in listed or ():
-        data = read(item.get('file') or '')
-        if data is None:
+        path = locate(item.get('file') or '')
+        if path is None:
             continue
-        gives = sha256_of(data)
+        if item.get('kind') == AI_OUTPUT:
+            gives = folder_sha256(path)
+        else:
+            data = _read(path)
+            gives = None if data is None else sha256_of(data)
+        if gives is None:
+            continue
         if gives == item.get('sha256'):
             kept += 1
         else:

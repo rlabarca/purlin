@@ -44,10 +44,12 @@ import sign as sign_module  # noqa: E402
 from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import fingerprint as purlin_fingerprint  # noqa: E402
-from sign_project import (CRITERIA, MODEL, REPORT_BYTES,  # noqa: E402
-                          REPORT_FROM, SPEC, TEST_FILE, TEST_NAMES, Project,
-                          _Out, git, name_a_report, name_the_model,
-                          report_sha, reported_for, write)
+from sign_project import (AI_SPEC, AI_TEST_FILE,  # noqa: E402
+                          AI_TEST_NAMES, CRITERIA, GRADER, MODEL, OPUS,
+                          REASON, REPORT_BYTES, REPORT_FROM, SONNET, SPEC,
+                          TEST_FILE, TEST_NAMES, Project, _Out, ai_runs,
+                          ai_sha, git, name_a_report, name_the_model,
+                          name_the_models, report_sha, reported_for, write)
 
 TOP_LEVEL = ['schema', 'met', 'rules', 'steps', 'audit', 'left',
              'purlin_version', 'project', 'version', 'tag', 'commit', 'runs',
@@ -427,7 +429,7 @@ class TestMet:
     def test_two_rules_that_pass_are_met(self, signed):
         package = signed.package
         assert (package['met'], package['rules'], package['steps'],
-                package['left']) == (True, 2, {'passed': 2}, [])
+                package['left']) == (True, 2, {'passed': 2, 'graded': 0}, [])
 
     # purlin: package PROOF-63
     def test_a_rule_left_only_to_strengthen_leaves_it_met(self):
@@ -491,6 +493,7 @@ class TestTheContent:
         assert rule['left'] is None
         assert rule['proofs'] == [{
             'id': 'PROOF-2', 'manual': False, 'env': None,
+            'ai': [], 'graded': None, 'runs': None, 'models': [],
             'text': 'POST /login with a bad password; verify 401 and the body '
                     '"denied"'}]
         assert rule['tests'] == [{'proof': 'PROOF-2',
@@ -1030,7 +1033,7 @@ class TestTheFingerprint:
         path = os.path.join(signed.root, *PACKAGE.split('/'))
         with open(path, 'rb') as handle:
             data = handle.read()
-        edited = data.replace(b'"passed"', b'"failed"', 1)
+        edited = data.replace(b'"met": true', b'"met": false', 1)
         assert edited != data
         with open(path, 'wb') as handle:
             handle.write(edited)
@@ -1241,6 +1244,7 @@ class TestTheCoAuthors:
             commit_all(made, 'chore: version')
             passing(made)
             commit_all(made)
+            # Built, not signed: a sign-off refuses this project.
             package = purlin_package.build(made.root, '2.1.0')
             assert rule_of(package, 'RULE-3')['authors']['rule'] == {
                 'written_by': PAT, 'commit': pats, 'co_authors': [CLAUDE]}
@@ -1519,3 +1523,299 @@ class TestAiOutputs:
         assert purlin_outputs.runs_asked({'runs': 10}, 5) == 10
         assert purlin_outputs.runs_asked({'runs': None}, 5) == 5
         assert purlin_outputs.runs_asked({'runs': None}, None) == 3
+
+
+# ---------------------------------------------------------------------------
+# AI proofs: the models, the runs and the outputs kept with the package
+# ---------------------------------------------------------------------------
+
+AI_OUTPUTS = '.purlin/evidence/package/2.1.0.outputs/ai-outputs'
+# Every run of the project `ai_project` makes, as `(proof, model, run)`.
+AI_RUNS = ([('PROOF-3', OPUS, run) for run in (1, 2, 3)]
+           + [('PROOF-4', model, run) for model in (OPUS, SONNET)
+              for run in (1, 2)])
+AI_SHAS = sorted(ai_sha(*run) for run in AI_RUNS)
+THE_GRADE = {'model': GRADER, 'accepted': True, 'reason': REASON}
+AI_CHECKED = 'AI outputs beside the package that match their sha256: %d of %d.'
+AI_DIFFERS = ('An AI output beside the package does not match it: %s gives '
+              'the sha256 %s, and the package records %s.')
+
+
+def ai_project(keep=True, models=None, strong=(), report=False):
+    """`login` with two AI proofs beside its two, every rule passing on
+    Dana's laptop: `PROOF-3` on 3 runs on one model, `PROOF-4` on 2 runs on
+    each of two, graded. `models` is `{PROOF-N: its models}` in place of
+    those. With `report` the first run of `PROOF-3` names one report."""
+    made = Project(spec=AI_SPEC)
+    made.edit_test(AI_TEST_FILE)
+    write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+    commit_all(made, 'chore: version')
+    passing(made, extra=[(proof_id, 'RULE-%s' % proof_id[-1], name)
+                         for proof_id, name in sorted(AI_TEST_NAMES.items())])
+    held = {'PROOF-3': [ai_runs(made, 'PROOF-3', OPUS, 3, keep=keep)],
+            'PROOF-4': [ai_runs(made, 'PROOF-4', model, 2, GRADER, keep=keep)
+                        for model in (OPUS, SONNET)]}
+    held.update(models or {})
+    if report:
+        held['PROOF-3'][0]['runs'][0]['reported'] = reported_for(
+            'tests/test_login.py::' + AI_TEST_NAMES['PROOF-3'], report_sha())
+    for proof_id, found in held.items():
+        name_the_models(made, proof_id, found)
+    for rule in strong:
+        made.audit(rule)
+    commit_all(made)
+    key(made.root)
+    made.models = held
+    return made
+
+
+def folder_sha(root, rel):
+    """An output folder's sha256, worked out here from the files under it:
+    every file but `purlin.json`, as `sha256sum` prints them."""
+    folder = os.path.join(root, *rel.split('/'))
+    lines = []
+    for dirpath, _dirnames, names in os.walk(folder):
+        for name in names:
+            path = os.path.join(dirpath, name)
+            inside = os.path.relpath(path, folder).replace(os.sep, '/')
+            if inside == 'purlin.json':
+                continue
+            with open(path, 'rb') as handle:
+                lines.append((inside, hashlib.sha256(
+                    handle.read()).hexdigest()))
+    return hashlib.sha256(''.join(
+        '%s  %s\n' % (sha, inside)
+        for inside, sha in sorted(lines)).encode('utf-8')).hexdigest()
+
+
+class TestTheModelsOfAnAIProof:
+
+    # purlin: package PROOF-107
+    def test_a_graded_proof_carries_its_models_and_every_run(self):
+        made = ai_project()
+        try:
+            [proof] = rule_of(signed_package(made), 'RULE-4')['proofs']
+            assert proof == {
+                'id': 'PROOF-4',
+                'text': 'With the sample lockout, the reply blames no one',
+                'manual': False, 'env': None, 'ai': [OPUS, SONNET],
+                'graded': GRADER, 'runs': 2,
+                'models': [{
+                    'model': model, 'word': 'graded', 'passed': 2, 'of': 2,
+                    'runs': [{'result': 'pass', 'made': 'helper',
+                              'output': ai_sha('PROOF-4', model, run),
+                              'grade': THE_GRADE} for run in (1, 2)]}
+                    for model in (OPUS, SONNET)]}
+        finally:
+            made.close()
+
+    # purlin: package PROOF-108
+    def test_an_ai_proof_no_model_grades_reads_passed_on_its_model(self):
+        made = ai_project()
+        try:
+            [proof] = rule_of(signed_package(made), 'RULE-3')['proofs']
+            assert (proof['ai'], proof['graded'], proof['runs']) == (
+                [OPUS], None, 3)
+            assert proof['models'] == [{
+                'model': OPUS, 'word': 'passed', 'passed': 3, 'of': 3,
+                'runs': [{'result': 'pass', 'made': 'helper',
+                          'output': ai_sha('PROOF-3', OPUS, run)}
+                         for run in (1, 2, 3)]}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-109
+    def test_a_result_carries_the_models_as_the_evidence_keeps_them(self):
+        made = ai_project(report=True)
+        try:
+            [result] = rule_of(signed_package(made), 'RULE-3')['results']
+            kept = made.models['PROOF-3']
+            assert kept[0]['runs'][0]['reported']['report']['sha256'] == \
+                report_sha()
+            assert result['tests'] == [{
+                'proof': 'PROOF-3',
+                'test': 'tests/test_login.py::test_the_reply_names_the_wait',
+                'result': 'pass', 'reported': None, 'models': kept}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-110
+    def test_a_graded_rule_is_counted_as_one_that_passes(self):
+        made = ai_project(strong=('RULE-4',))
+        try:
+            package = signed_package(made)
+            assert package['steps'] == {'passed': 4, 'graded': 1}
+            assert rule_of(package, 'RULE-4')['statuses']['passed'][
+                'word'] == 'graded'
+            assert package['audit'] == {'strong': 1, 'weak': 0,
+                                        'spot_checked': 0, 'out_of_date': 0,
+                                        'not_audited': 3}
+        finally:
+            made.close()
+
+    # purlin: package PROOF-111
+    def test_a_model_with_no_result_is_left_to_test(self):
+        made = Project(spec=AI_SPEC)
+        try:
+            made.edit_test(AI_TEST_FILE)
+            write(os.path.join(made.root, 'VERSION'), '2.1.0\n')
+            commit_all(made, 'chore: version')
+            section(made, [
+                ('PROOF-1', 'RULE-1', 'pass', TEST_NAMES['PROOF-1'], None),
+                ('PROOF-2', 'RULE-2', 'pass', TEST_NAMES['PROOF-2'], None),
+                ('PROOF-3', 'RULE-3', 'pass', AI_TEST_NAMES['PROOF-3'], None),
+                ('PROOF-4', 'RULE-4', 'not run', AI_TEST_NAMES['PROOF-4'],
+                 None)],
+                {'RULE-1': 'passed', 'RULE-2': 'passed', 'RULE-3': 'passed',
+                 'RULE-4': 'not run'})
+            name_the_models(made, 'PROOF-3',
+                            [ai_runs(made, 'PROOF-3', OPUS, 3)])
+            name_the_models(made, 'PROOF-4',
+                            [ai_runs(made, 'PROOF-4', OPUS, 2, GRADER)])
+            commit_all(made)
+            # Built, not signed: a sign-off refuses this project.
+            package = purlin_package.build(made.root, '2.1.0')
+            assert package['met'] is False
+            assert package['left'] == [{
+                'kind': 'to_test_model', 'count': 1,
+                'text': '1 rule to test on %s' % SONNET,
+                'command': 'purlin:test --all', 'model': SONNET}]
+            assert rule_of(package, 'RULE-4')['left'] == 'to_test_model'
+        finally:
+            made.close()
+
+
+class TestTheAIOutputsListed:
+
+    # purlin: package PROOF-112
+    def test_outputs_lists_each_folder_and_each_report_a_run_names(self):
+        made = ai_project(report=True)
+        try:
+            assert signed_package(made)['outputs'] == [
+                {'kind': 'ai-output', 'file': '%s/%s' % (AI_OUTPUTS, sha),
+                 'sha256': sha, 'runs': 1} for sha in AI_SHAS] + [
+                {'kind': 'report', 'file': KEPT, 'sha256': report_sha(),
+                 'from': REPORT_FROM, 'tests': 1}]
+        finally:
+            made.close()
+
+    # purlin: package PROOF-113
+    def test_two_runs_that_name_one_folder_are_listed_once(self):
+        same = ai_sha('PROOF-3', OPUS, 1)
+        made = ai_project(models={'PROOF-3': [{
+            'model': OPUS, 'passed': 3, 'of': 3, 'graded': False,
+            'runs': [{'result': 'pass', 'made': 'helper', 'output': sha}
+                     for sha in (same, same, ai_sha('PROOF-3', OPUS, 3))]}]})
+        try:
+            listed = [item for item in signed_package(made)['outputs']
+                      if item['sha256'] == same]
+            assert listed == [{'kind': 'ai-output', 'sha256': same,
+                               'file': '%s/%s' % (AI_OUTPUTS, same),
+                               'runs': 2}]
+        finally:
+            made.close()
+
+
+class TestCheckingTheKeptAIOutputs:
+
+    @staticmethod
+    def _signed(**kwargs):
+        made = ai_project(**kwargs)
+        code, lines = sign(made)
+        assert code == 0, lines
+        return made
+
+    @staticmethod
+    def _path(made):
+        return os.path.join(made.root, *PACKAGE.split('/'))
+
+    def _differs(self, made, capsys, change):
+        """Change the first listed folder with `change(its full path)`, then
+        check the package: the three lines a folder that differs gives."""
+        folder = '%s/%s' % (AI_OUTPUTS, AI_SHAS[0])
+        change(os.path.join(made.root, *folder.split('/')))
+        gives = folder_sha(made.root, folder)
+        assert gives != AI_SHAS[0]
+        assert check(self._path(made), capsys) == (1, [
+            'The package matches its fingerprint.', AI_CHECKED % (6, 7),
+            AI_DIFFERS % (folder, gives, AI_SHAS[0])])
+
+    # purlin: package PROOF-114
+    def test_check_counts_the_folders_that_match(self, capsys):
+        made = self._signed()
+        try:
+            assert check(self._path(made), capsys) == (0, [
+                'The package matches its fingerprint.', AI_CHECKED % (7, 7)])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-115
+    def test_check_names_a_folder_with_one_file_changed(self, capsys):
+        made = self._signed()
+        try:
+            def change(folder):
+                with open(os.path.join(folder, 'reply.md'), 'w',
+                          encoding='utf-8') as handle:
+                    handle.write('edited')
+            self._differs(made, capsys, change)
+        finally:
+            made.close()
+
+    # purlin: package PROOF-116
+    def test_check_names_a_folder_with_one_file_missing(self, capsys):
+        made = self._signed()
+        try:
+            self._differs(made, capsys, lambda folder: os.remove(
+                os.path.join(folder, 'transcript.jsonl')))
+        finally:
+            made.close()
+
+    # purlin: package PROOF-117
+    def test_check_names_a_folder_with_one_file_added(self, capsys):
+        made = self._signed()
+        try:
+            self._differs(made, capsys, lambda folder: write(
+                os.path.join(folder, 'files', 'more.txt'), 'more\n'))
+        finally:
+            made.close()
+
+    # purlin: package PROOF-118
+    def test_the_record_is_no_part_of_a_folders_sha256(self, capsys):
+        made = self._signed()
+        try:
+            write(os.path.join(made.root, *AI_OUTPUTS.split('/'), AI_SHAS[0],
+                               'purlin.json'), '{"made": "project"}\n')
+            assert check(self._path(made), capsys) == (0, [
+                'The package matches its fingerprint.', AI_CHECKED % (7, 7)])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-119
+    def test_check_passes_a_package_whose_folders_are_not_beside_it(
+            self, capsys, tmp_path):
+        made = self._signed()
+        try:
+            alone = str(tmp_path / '2.1.0.json')
+            shutil.copy(self._path(made), alone)
+            assert check(alone, capsys) == (0, [
+                'The package matches its fingerprint.', AI_CHECKED % (0, 7)])
+        finally:
+            made.close()
+
+    # purlin: package PROOF-120
+    def test_check_counts_the_reports_then_the_folders(self, capsys):
+        made = ai_project(report=True)
+        try:
+            kept = os.path.join(made.root, '.purlin', 'runtime', 'kept',
+                                report_sha() + '.xml')
+            os.makedirs(os.path.dirname(kept), exist_ok=True)
+            with open(kept, 'wb') as handle:
+                handle.write(REPORT_BYTES)
+            code, lines = sign(made)
+            assert code == 0, lines
+            assert check(self._path(made), capsys) == (0, [
+                'The package matches its fingerprint.',
+                'Reports beside the package that match their sha256: 1 of '
+                '1.', AI_CHECKED % (7, 7)])
+        finally:
+            made.close()
