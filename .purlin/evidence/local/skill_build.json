@@ -171,8 +171,8 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T19:48:38Z",
-      "commit": "bb3c21d9ccf3645992d9b9debd3b3e397c72aa8c",
+      "at": "2026-10-07T19:50:41Z",
+      "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -190,14 +190,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.005,
+                "duration": 0.002,
                 "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -219,7 +219,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -241,7 +241,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -263,7 +263,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",

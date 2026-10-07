@@ -66,7 +66,7 @@
         "verdict": "strong"
       },
       "RULE-34": {
-        "at": "2026-10-07T19:50:11Z",
+        "at": "2026-10-07T19:51:07Z",
         "bugs": {
           "PROOF-64": {
             "after": "- PROOF-10 (RULE-10): Asked for a refund over the limit, the reply refuses and blames nobody @ai(claude-opus-5-5)",
@@ -80,38 +80,34 @@
             "why": ""
           },
           "PROOF-65": {
-            "after": "grades a graded one. Where you may ask, pick a model yourself: the model is what is being",
-            "aim": "plain",
-            "before": "grades a graded one. Where you may ask, never pick a model yourself: the model is what is being",
-            "bug_key": "ddb3e8039ee23c9c0c41a52001e1c720b5d7a1c6cc63b58d1737cceff79e1060",
-            "case": "a reader of the part headed Proofs looks for the sentence on picking a model; the proof says `Where you may ask, never pick a model yourself: the model is what is being validated.`; the changed skill says `Where you may ask, pick a model yourself: the model is what is being validated.`",
+            "after": "graded. Where you may not ask, because the person said to ask nothing or nobody is there to",
+            "aim": "past the test",
+            "before": "validated. Where you may not ask, because the person said to ask nothing or nobody is there to",
+            "bug_key": "bd410289409c86922c40cc7e025f990c1ab6b71367e2834bfaafa37e4364868d",
+            "case": "the spec skill's part headed Proofs; the proof says it holds `Where you may ask, never pick a model yourself: the model is what is being validated.`; the changed part ends that sentence `the model is what is being graded.`",
             "file": "skills/spec/SKILL.md",
-            "line": 173,
+            "line": 174,
             "result": "caught",
             "why": ""
           }
         },
         "code_hash": "1912858239097caad26d1758926f7432c8e8aafe847ce0ad341c6d2c509d49d9",
-        "commit": "bb3c21d9ccf3645992d9b9debd3b3e397c72aa8c",
+        "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-64: the test splits the part on proofs into lines and requires each entry of AI_LINES to be one of them, so it reads whole lines, tags and models included.",
-          "PROOF-64: AI_LINES is defined outside the test's own lines and is not shown, so whether it holds both lines the proof names, exactly as written, cannot be read here.",
-          "PROOF-65: the test flattens the part on proofs and requires each entry of ASKS to be in it, so a sentence wrapped across lines in the skill is still found.",
-          "PROOF-65: ASKS is defined outside the test's own lines and is not shown, so whether it holds both sentences the proof names cannot be read here.",
-          "Both tests compare against literals kept in the test file and not against anything the skill computes, so the expected values do not come from the text under test.",
-          "The rule also says the agent asks which models each AI proof is shown on, and neither proof names the skill's sentence `In the same question, ask which model or models each AI proof is shown on`, so that sentence could be removed with both proofs still holding.",
-          "The spot tests report no finding, and nothing in the two tests as shown contradicts that."
+          "PROOF-64: the test splits the part headed Proofs into lines and requires every entry of AI_LINES to be one of them, so it observes the two lines whole if AI_LINES holds them as the proof writes them; that list is defined outside the test's own lines and is not shown.",
+          "PROOF-65: the test flattens the part and requires every entry of ASKS to be in it, and ASKS is not shown, so whether both sentences are compared in full rests on a list outside the test's own lines.",
+          "PROOF-65: the one literal the test itself holds is `Where you may ask, never pick a model yourself`, which stops before `: the model is what is being validated.`, so a changed ending of that sentence passes unless ASKS holds the whole sentence.",
+          "PROOF-65: the rule also says the agent is told to ask which models, and neither sentence the proof names carries that; the sentence in the skill that does, `ask which model or models each AI proof is shown on`, is named by no proof of the rule.",
+          "Both proofs read fixed text of the skill file with nothing done first, so they show the wording is present and not what an agent does with it.",
+          "The spot tests found nothing, and that holds on the text shown: each test asserts with a failable comparison against a list, and the backticked values may sit in AI_LINES and ASKS in the same file."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-65 names two sentences, one on asking which kind of check and one on never picking a model, which are two separate claims of the rule in one proof."
-        ],
         "proof_hash": "4b5168637e06d617d884126be999b9797991a8e736b52f1d830a1c6a41895fff",
         "rule_hash": "b0249d5efa87e462acf6eec9f3875364bb0a52cd0c06d228880d8e01d88e7373",
-        "test_hash": "08172e3eb40717a9e61ad3ad5eefd2381e5662e20f42adc6ee42fa27e1154c76",
+        "test_hash": "706039c033a76b8e65fcd1a39c94d00bdd2dcadd6a7fe398ff9b286531372e82",
         "verdict": "strong"
       },
       "RULE-35": {
@@ -155,14 +151,14 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T19:48:38Z",
-      "commit": "bb3c21d9ccf3645992d9b9debd3b3e397c72aa8c",
+      "at": "2026-10-07T19:50:41Z",
+      "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "1912858239097caad26d1758926f7432c8e8aafe847ce0ad341c6d2c509d49d9",
         "spec": "f676c75b1b6e8ebfe7493673ba57085c9f3f7f1be9c9c92f463c44ca2732d898",
-        "tests": "ba120ebc5d828a10b45a23de68f4b18108f0178ce4c87040e15d67fac21222b9"
+        "tests": "c0d564257fcfa64e0d5345e04489ad9d2dd2ab984d7ad862743025beb5cfd464"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -181,7 +177,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -203,7 +199,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -225,7 +221,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
@@ -241,18 +237,18 @@
               {
                 "class": "dev.test_skill_spec",
                 "duration": 0.0,
-                "name": "test_the_part_on_proofs_asks_which_check_and_picks_no_model",
+                "name": "test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
           "rule": "RULE-34",
-          "test": "dev/test_skill_spec.py::test_the_part_on_proofs_asks_which_check_and_picks_no_model"
+          "test": "dev/test_skill_spec.py::test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model"
         },
         {
           "env": null,
@@ -269,7 +265,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "42cc42fe3f1c140eb63538ccbe4d7a00e05f44ee60d2efb7221402d725b62d8a"
+              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
             }
           },
           "result": "pass",
