@@ -220,6 +220,7 @@ from purlin import (PURLIN_VERSION,
                     fingerprint as fingerprint_module,
                     markers as markers_module,
                     notices as notices_module,
+                    outputs as outputs_module,
                     project as project_module,
                     signatures as signatures_module,
                     specs as specs_module, states,
@@ -571,16 +572,19 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
     proof_dicts = []
     for proof_id in proof_ids:
         proof = owner_info['proofs'][proof_id]
-        ran = _current_results(sections, proof_id, proof['env'])
+        ai = list(proof.get('ai') or ())
+        asked = (outputs_module.runs_asked(proof, sources.get('runs'))
+                 if ai else None)
+        ran = _current_results(sections, proof_id, proof['env'], asked)
         said = _failure_texts(sections, proof_id, proof['env'])
         entry = {
             'id': proof_id,
             'manual': proof['manual'],
             'slow': bool(proof.get('slow')),
             'env': proof['env'],
-            'ai': list(proof.get('ai') or ()),
+            'ai': ai,
             'graded': proof.get('graded'),
-            'runs': None,
+            'runs': asked,
             'text': proof['text'],
             'tests': [_with_failure({'file': f, 'name': n,
                                       'result': ran.get((f, n), 'not run')},
@@ -588,8 +592,6 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
                       for f, n in _backing_tests(sections, proof_id)],
             'carried': _carried_from(sections, proof_id, proof['env']),
         }
-        if entry['ai']:
-            entry['runs'] = states.runs_asked(proof, sources.get('runs'))
         entry['models'] = states.model_results(entry, sections, anchor)
         entry['result'] = states.proof_result(entry, sections, marked, anchor)
         proof_dicts.append(entry)
@@ -783,15 +785,19 @@ def _backing_tests(sections, proof_id):
     return []
 
 
-def _current_results(sections, proof_id, env=None):
+def _current_results(sections, proof_id, env=None, asked=None):
     """`{(file, name): result}` for one proof's tests, over current sections.
 
     A proof's test reads what a current run found, `fail` where either source
     failed it and `pass` where one passed it, so a test and the proof above it
     never disagree. A test no current section lists is not in the map, and
     reads `not run`. A proof that names an operating system is read from that
-    system's sections alone, as its own result is.
+    system's sections alone, as its own result is. `asked` is the runs an
+    AI proof asks of each model now: its test reads what its `models` read
+    against them (`evidence.entry_result`), so `not run` where they hold
+    fewer runs.
     """
+    asked = {proof_id: asked} if asked else None
     results = {}
     for entry in sections or ():
         if not entry.get('current') or (env and entry.get('os') != env):
@@ -800,7 +806,7 @@ def _current_results(sections, proof_id, env=None):
             if not isinstance(item, dict) or item.get('id') != proof_id:
                 continue
             path, _, name = (item.get('test') or '').partition('::')
-            result = item.get('result')
+            result = evidence_module.entry_result(item, asked)
             if not path or result not in ('pass', 'fail'):
                 continue
             if results.get((path, name)) != 'fail':

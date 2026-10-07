@@ -183,7 +183,7 @@ def _model_results(proof):
     """`MODEL_RESULT` for each model of an AI proof, in its tag's order,
     the payload's `models`; `[]` for any other proof."""
     return [MODEL_RESULT % (entry.get('word'), entry.get('passed') or 0,
-                            max(entry.get('of') or 0, proof.get('runs') or 0),
+                            states_module.runs_of(entry, proof.get('runs')),
                             entry.get('model'))
             for entry in proof.get('models') or ()]
 

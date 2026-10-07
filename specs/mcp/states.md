@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 144
-> Highest-Proof: 343
+> Highest-Proof: 344
 
 ## Rules
 
@@ -51,7 +51,7 @@
 - RULE-59: `signoff` carries `word`, `version`, `commit` and `since` for the newest version whose sign-off counts, found by its `signed/*` tag on HEAD or an ancestor of it, or by its sign-off files where this checkout holds no such tag, numbered versions compared as numbers, `word` reading as the status's `Sign-off:` line does, and `word` reads `not signed` where there is none
 - RULE-61: Every rule carries `audit`, eleven fields: the `verdict`, `findings`, `no_bug` and `notes` of its audit entry, its `explanation` and its `bugs` exactly as the entry holds them, `[]` and `{}` where it holds none, the `model` that answered or `unknown`, `at`, `commit`, the evidence file under `path`, and `out_of_date`, the parts that changed since, `[]` for a current entry; or null where the rule has no entry
 - RULE-65: A rule no proof line names whose test is marked with the rule's own id reads its passed cell from that test, as a proof's test is read: `passed` where it passed in a current section and `failed` where it failed
-- RULE-71: Every proof in a rule's entry carries its own `result`: `hand check` for a `@manual` proof; otherwise, over the current sections from the operating system its `@env` names, or from every system where it names none, `failed` where one failed it and `passed` where one passed it; with no current answer, `not run` where a marker in the test files ties it to a test and `no test` where none does. Each test listed under a proof carries the `result` a current section gave it, `pass` or `fail`, and `not run` where no current section lists it
+- RULE-71: Every proof in a rule's entry carries its own `result`: `hand check` for a `@manual` proof; otherwise, over the current sections from the operating system its `@env` names, or from every system where it names none, `failed` where one failed it and `passed` where one passed it; with no current answer, `not run` where a marker in the test files ties it to a test and `no test` where none does. Each test listed under a proof carries the `result` a current section gave it, `pass` or `fail`, and `not run` where no current section lists it; a test of an AI proof carries what its runs on every model read against the runs asked now, so it reads `not run` wherever the proof it stands under does on that test
 - RULE-85: Every rule entry carries `machines`, `{system: machine}` over the current sections that speak for it, empty where none names a machine
 - RULE-138: Each proof of a rule entry carries `carried`, `{system: commit}`: for each operating system whose current section holds every result of the proof as carried forward, the full commit the newest of them was taken at; a system whose own run took a result is left out, and a rule with no proof carries the same for the tests marked with its own id
 - RULE-96: The status reads the specs of a project that has no `.purlin/config.json`
@@ -203,6 +203,7 @@
 - PROOF-332 (RULE-140): `PROOF-2` ends `@ai(claude-opus-5-5, claude-sonnet-5-5)` and the section holds three passing runs on `claude-opus-5-5` and nothing for `claude-sonnet-5-5`. `PROOF-2`'s `result` is `not run`, and its `models` are `claude-opus-5-5` reading `passed`, 3 of 3, then exactly `{"model": "claude-sonnet-5-5", "word": "not run", "passed": 0, "of": 0, "runs": []}`
 - PROOF-333 (RULE-140): The third run on `claude-opus-5-5` reads `not run` with the `why` `The model gave no answer.`. `PROOF-2`'s `result` is `not run`, its model's `word` is `not run` with `passed` 2 and `of` 3, and the model's third run is exactly `{"result": "not run", "why": "The model gave no answer."}`
 - PROOF-334 (RULE-140): The section holds three passing runs on `claude-opus-5-5` and the settings hold `runs` 5. `PROOF-2` carries `runs` 5, its `result` is `not run`, and its model reads `word` `not run`, `passed` 3, `of` 3
+- PROOF-344 (RULE-71): In the project of PROOF-334, whose section stores `pass` for `PROOF-2`'s one test over three passing runs while the settings ask for 5, the `tests` of `PROOF-2` are exactly `[{"file": "tests/test_login.py", "name": "test_proof_2", "result": "not run"}]`
 - PROOF-335 (RULE-140): `PROOF-2` ends `@ai(claude-opus-5-5)`, and the section holds three passing runs on `claude-opus-5-5` and one failing run on `claude-sonnet-5-5`. `PROOF-2`'s `result` is `passed`, and its `models` holds the one entry for `claude-opus-5-5`
 - PROOF-336 (RULE-140): `PROOF-2` ends `@ai(claude-opus-5-5, runs=2)`, the settings hold `runs` 5, and the section holds two passing runs. `PROOF-2` carries `runs` 2 and its `result` is `passed`
 - PROOF-337 (RULE-141): In the project of PROOF-330, the payload's entry for `PROOF-1`, which has no `@ai(...)` tag, holds `ai` `[]`, `graded` null, `runs` null and `models` `[]`

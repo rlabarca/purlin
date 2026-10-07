@@ -242,9 +242,9 @@ def read_sections(sections, anchor=False, proofs=()):
     `pass`, `fail` or `not run` per proof id. A proof whose every tied test
     skipped with `nothing to check:` reads `pass` on an anchor and `not run`
     on any other spec, its reason under `nothing`. An AI proof among
-    `proofs` reads what its models read in the section (`_section_models`):
-    `fail` where one failed, else `not run` where one of its tag has no
-    counting result, else `pass`; they are kept under `models`.
+    `proofs` reads what the models of its tag read in the section
+    (`_section_models`, kept under `models`), as `evidence.models_result`
+    reads them, a model the section holds nothing for reading `not run`.
     """
     ai = [proof for proof in proofs or () if proof.get('ai')]
     out = []
@@ -265,22 +265,12 @@ def read_sections(sections, anchor=False, proofs=()):
                 continue
             found = _section_models(proof, entry.get('section'))
             models[proof.get('id')] = found
-            words = [found[name]['word'] if name in found else 'not run'
-                     for name in proof['ai']]
-            results[proof.get('id')] = (
-                'fail' if 'failed' in words
-                else 'pass' if all(word == 'passed' for word in words)
-                else 'not run')
+            results[proof.get('id')] = evidence_module.models_result(
+                [found.get(name) for name in proof['ai']],
+                outputs_module.runs_asked(proof))
         out.append(dict(entry, results=results, nothing=nothing,
                         models=models))
     return out
-
-
-def runs_asked(proof, setting=None):
-    """How many runs an AI proof asks of each model now: its own `runs=`,
-    else `setting`, the `runs` setting as `config_engine.runs` reads it,
-    else `outputs.RUNS`."""
-    return proof.get('runs') or setting or outputs_module.RUNS
 
 
 _MODEL_WORST = {'failed': 2, 'not run': 1, 'passed': 0}
@@ -290,15 +280,14 @@ def _section_models(proof, section):
     """`{model: {word, passed, of, runs}}` for the models of an AI proof's
     tag that one section holds an entry for.
 
-    A model reads `failed` where any of its runs failed; else `not run`
-    where it holds no run, a run that is `not run`, or fewer runs than
-    `runs_asked` gives; else `passed`. `passed` and `of` are the entry's
+    A model's word is `evidence.model_word`'s, against the runs
+    `outputs.runs_asked` gives. `passed` and `of` are the entry's
     own, counted from its runs where it holds none. An entry for a model the
     tag does not name is left out. Where several tests back the proof, the
     worst of them answers for a model, and a test with no entry for it
     reads `not run`.
     """
-    asked = runs_asked(proof)
+    asked = outputs_module.runs_asked(proof)
     held = [{model['model']: model for model in reversed(
                  [model for model in entry.get('models') or ()
                   if isinstance(model, dict)])}
@@ -320,13 +309,7 @@ def _model_read(model, asked):
     runs = [run for run in (model or {}).get('runs') or ()
             if isinstance(run, dict)]
     results = [run.get('result') for run in runs]
-    if 'fail' in results:
-        word = 'failed'
-    elif len(runs) < asked or any(result != 'pass' for result in results):
-        word = 'not run'
-    else:
-        word = 'passed'
-    return {'word': word,
+    return {'word': evidence_module.model_word(model, asked),
             'passed': _count(model, 'passed', results.count('pass')),
             'of': _count(model, 'of', len(runs)),
             'runs': [{key: run[key] for key in RUN_FIELDS if key in run}
@@ -380,6 +363,12 @@ def model_results(proof, sections, anchor=False):
     return out
 
 
+def runs_of(entry, asked):
+    """The `<n>` of a model's `<k> of <n>`: the runs its entry of
+    `model_results` holds, or the runs `asked` now where they are more."""
+    return max(entry.get('of') or 0, asked or 0)
+
+
 def tried(models):
     """True where a run has tried an AI proof: one of its models, as
     `model_results` gives them, holds a run."""
@@ -400,7 +389,7 @@ def _model_reasons(proofs, current, anchor=False):
         found = model_results(proof, current, anchor)
         if not tried(found):
             continue
-        asked = runs_asked(proof)
+        asked = outputs_module.runs_asked(proof)
         for entry in found:
             name = entry['model']
             if entry['word'] == 'failed':
@@ -410,8 +399,7 @@ def _model_reasons(proofs, current, anchor=False):
             elif entry['word'] == 'not run':
                 counted = sum(1 for run in entry['runs']
                               if run.get('result') in ('pass', 'fail'))
-                reason = (MODEL_RUN % (name, counted,
-                                       max(entry['of'], asked))
+                reason = (MODEL_RUN % (name, counted, runs_of(entry, asked))
                           if entry['runs'] else NO_RUN_YET % name)
                 if reason not in waiting:
                     waiting.append(reason)

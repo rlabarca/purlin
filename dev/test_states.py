@@ -1454,6 +1454,13 @@ class TestAnAIProof:
         assert (model['word'], model['passed'], model['of']) == (
             'not run', 3, 3), model
 
+    # purlin: states PROOF-344
+    def test_a_test_reads_not_run_where_more_runs_are_asked_now(self):
+        _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass', 'pass'),
+                                       runs=5)
+        assert proof['tests'] == [dict(AI_TEST, result='not run')], proof
+
     # purlin: states PROOF-335
     def test_a_model_the_tag_dropped_is_not_read(self):
         _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
