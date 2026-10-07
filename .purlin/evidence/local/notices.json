@@ -61,78 +61,65 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-07T18:26:12Z",
+        "at": "2026-10-07T18:27:58Z",
         "bugs": {
           "PROOF-3": {
             "after": "WORDS = dict(KINDS, fetch_age='fetched')",
             "aim": "past the test",
             "before": "WORDS = dict(KINDS)",
-            "bug_key": "c6f73dd29f3a343cd2fc486486d67288db1cc73cd81a8d0666862d76ddb4662c",
+            "bug_key": "10d8d04d3d7eb76686d532fa3dc050fb644e47115f7196e1a1b47b083efb1887",
             "case": "the kind `fetch_age`, one of the other kinds; the proof says its words hold 2 to 5 words; the changed code prints the one word `fetched` for it in every line of that kind",
             "file": "scripts/mcp/purlin/notices.py",
             "line": 83,
-            "result": "survived",
-            "test_key": "e9a54d32c964e31928dee9f77c2669b764eb7089e3105a1711aacd1ce21e50ee",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
-        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "commit": "cf9fa058b4d9e408420074b8e6508aed6d0e7235",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-3: the test compares the four `Left to do` kinds through `notices.WORDS`, against both the status's own list and the four literal phrases, so a wrong word in any of those four fails it.",
-          "PROOF-3: the test checks that no two kinds share words, and that every other kind has 2 to 5 words, on the pairs in `notices.KINDS` only.",
-          "PROOF-3: a printed line takes its words from `notices.WORDS`, which the test reads for the four shared kinds alone, so words that differ between `WORDS` and `KINDS` for any other kind still pass.",
-          "PROOF-3: the test builds no line and reads no printed output, so it observes the tables and not what a line of a kind prints."
-        ],
-        "findings": [
-          "PROOF-3: the test still passes when scripts/mcp/purlin/notices.py:83 reads \"WORDS = dict(KINDS, fetch_age='fetched')\"",
-          "PROOF-3: the AI says this breaks: the kind `fetch_age`, one of the other kinds; the proof says its words hold 2 to 5 words; the changed code prints the one word `fetched` for it in every line of that kind"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-3 holds more than one case: that no two kinds share words, the four phrases shared with `Left to do`, and the 2 to 5 word limit on every other kind."
-        ],
         "proof_hash": "37ae1a32f4eda56ce52ba7d42b2259882ec9e301d4e2a824a1037092db6e44d1",
         "rule_hash": "42306185d4b13a4b991b2669a309f743306628224d2192ad1bdc33cc88e505ad",
-        "test_hash": "32de3762e3356e976abfb04f4549fb4c7f9cc047a7b2bd833a12879707d1ac47",
-        "verdict": "weak"
+        "test_hash": "1587d3ca34d116f89dbc1da7eda87e608cb824fefddeb454c4b2bf7d5367ec7e",
+        "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-07T18:26:12Z",
+        "at": "2026-10-07T18:27:58Z",
         "bugs": {
           "PROOF-4": {
-            "after": "    return proof_id, None",
+            "after": "    text = '%s: %s.' % (about.split(' ')[0], WORDS[kind])",
             "aim": "plain",
-            "before": "    return '%s %s' % (name, proof_id), None",
+            "before": "    text = '%s: %s.' % (about, WORDS[kind])",
             "bug_key": "e9d4a1ac3f8c8b50d75b6d359125fb151e3439e017e8dc1ce131f1ce07dbaa20",
-            "case": "a test comment at tests/test_login.py:1 naming login PROOF-9, which the spec login does not have; the proof says the line opens `login PROOF-9: test comment to correct.`; the changed code opens it `PROOF-9: test comment to correct.`",
+            "case": "a test comment at tests/test_login.py:1 naming login PROOF-9, which no spec has; the proof says the line opens `login PROOF-9: test comment to correct.`; the changed code gives a line opening `login: test comment to correct.`",
             "file": "scripts/mcp/purlin/notices.py",
-            "line": 159,
-            "result": "survived",
-            "test_key": "af7dd700fdee9e484a78d076c1a39808ec3ab1c9aacd9997fa6964ada52be892",
+            "line": 123,
+            "result": "caught",
+            "test_unchanged": true,
             "why": ""
           }
         },
         "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
-        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "commit": "cf9fa058b4d9e408420074b8e6508aed6d0e7235",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-4: the test writes a comment naming `login PROOF-9` at line 1 of tests/test_login.py, asks for the comments that name nothing, and compares the whole list with the one exact line the proof names, so a wrong name, kind, sentence or command, or a second line, fails it.",
-          "PROOF-4: the spot tests found nothing, and the test's expected line is a literal written in the test, not taken from the code.",
-          "PROOF-4: the file that builds the list of comments naming nothing was not among the files shown, so the planted change assumes that list takes the proof's name from the shared naming function in notices.py."
+          "PROOF-4: the test writes a comment naming `login PROOF-9` in a project with no such spec and compares the whole list of lines with the one exact line the proof names, so a changed name, kind, sentence or command fails it, as does a second line.",
+          "PROOF-4: the spot tests found nothing, and the test leaves no value of the proof's line unread, so the planted change is the plainest one that drops the proof's number from the name.",
+          "PROOF-4: the function that builds the line is in a file not shown here, so that the planted change reaches this line is assumed from the shape the shown file gives every line."
         ],
-        "findings": [
-          "PROOF-4: the test still passes when scripts/mcp/purlin/notices.py:159 reads \"return proof_id, None\"",
-          "PROOF-4: the AI says this breaks: a test comment at tests/test_login.py:1 naming login PROOF-9, which the spec login does not have; the proof says the line opens `login PROOF-9: test comment to correct.`; the changed code opens it `PROOF-9: test comment to correct.`"
-        ],
+        "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [],
+        "no_bug": [
+          "PROOF-4 was settled with its test unchanged: it was judged to assert what the proof names."
+        ],
         "proof_hash": "369c7d8ac0fb8aa836644f73276c5dca341f5d3423cbb6f443fb0c2d0aa5083f",
         "rule_hash": "a7de380add59fdb7f6d75ab0f83174ad0a0bf8c55cb207f0ffe26707a69e1ad6",
         "test_hash": "67551f3851e1c668fe6223239f56af7cc740a29cc2453f07aec2b454f7661778",
-        "verdict": "weak"
+        "verdict": "strong"
       },
       "RULE-4": {
         "at": "2026-10-07T18:26:12Z",
@@ -403,14 +390,14 @@
   "feature": "notices",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:13Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
-      "dirty": false,
+      "at": "2026-10-07T18:27:22Z",
+      "commit": "cf9fa058b4d9e408420074b8e6508aed6d0e7235",
+      "dirty": true,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
         "spec": "e5cb740055a7a71768b77f677f0ff45ced6430f76c951b8551ebed485a03552f",
-        "tests": "7d2c02dcd99b0a0ef9fc31bf64bd16fb95f227620ec2f51d1bed31ebf0357a46"
+        "tests": "8b9a4a7b16fc9e89b8351e9965bdd3d3d3ef7000641da5ecf0ab0d2b62feb43e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -422,14 +409,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheShape",
-                "duration": 0.281,
+                "duration": 0.376,
                 "name": "test_a_spec_mistake_names_the_spec_the_kind_and_the_command",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -444,14 +431,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheShape",
-                "duration": 0.185,
+                "duration": 0.303,
                 "name": "test_a_line_of_information_takes_the_same_shape",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -466,14 +453,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheShape",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_a_model_not_reached_takes_the_same_shape",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -495,7 +482,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -510,14 +497,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheShape",
-                "duration": 0.072,
+                "duration": 0.442,
                 "name": "test_a_proof_no_spec_gives_a_rule_is_named_without_one",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -532,14 +519,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestARewordedProof",
-                "duration": 0.247,
+                "duration": 0.49,
                 "name": "test_one_word_changed_prints_that_word_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -554,14 +541,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestARewordedProof",
-                "duration": 0.174,
+                "duration": 0.209,
                 "name": "test_neither_wording_is_printed_whole",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -583,7 +570,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -605,7 +592,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -627,7 +614,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -649,7 +636,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -664,14 +651,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheDashboardsData",
-                "duration": 0.28,
+                "duration": 0.374,
                 "name": "test_the_payload_carries_the_line_in_its_parts",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -693,7 +680,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -708,14 +695,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheTerminalFolds",
-                "duration": 0.556,
+                "duration": 0.771,
                 "name": "test_four_specs_with_one_kind_of_warning_fold_into_one_line",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -730,14 +717,14 @@
             "cases": [
               {
                 "class": "dev.test_notices.TestTheTerminalFolds",
-                "duration": 0.59,
+                "duration": 0.79,
                 "name": "test_two_specs_with_one_kind_of_warning_are_each_printed_whole",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -759,7 +746,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -781,7 +768,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
@@ -803,7 +790,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "dc9d7aa81095d849460aa61006e5f1011804460ae1e7a1dbe4046649f27099b4"
             }
           },
           "result": "pass",
