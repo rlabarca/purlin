@@ -22,6 +22,7 @@ What each group holds:
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 import sys
 
@@ -295,6 +296,11 @@ class TestInstructions:
         assert made.prompt().returncode == 0
         assert record_of(made.out) == {'made': 'helper', 'model': MODEL,
                                        'reached': True, 'why': None}
+        # A run of a skill reads the same as a run of a prompt.
+        other = str(made.tmp / 'other')
+        assert made.session(PURLIN_AI_OUT=other).returncode == 0
+        assert record_of(other) == {'made': 'helper', 'model': MODEL,
+                                    'reached': True, 'why': None}
 
 
 class TestASession:
@@ -329,6 +335,7 @@ class TestASession:
             == 'summarize'
         assert files['skills/summarize/SKILL.md'] == (
             '---\nname: summarize\n---\nSummarise the report.\n')
+        assert files['skills/summarize/notes/style.md'] == 'Short sentences.\n'
         assert not inside(plugin, made.root)
         assert not inside(plugin, call['cwd'])
         assert not os.path.exists(plugin)
@@ -368,12 +375,19 @@ class TestASession:
     # purlin: ai_helper PROOF-18
     def test_the_reply_is_the_result_and_the_transcript_every_line(
             self, made):
-        made.answers(fake.answer('Three findings: F-1, F-2, F-3.'))
+        printed = (
+            '{"type": "system", "subtype": "init", "model": "claude-test-1"}\n'
+            '{"type": "assistant", "message": {"role": "assistant", '
+            '"content": [{"type": "text", "text": "Reading."}]}}\n'
+            '{"type": "result", "subtype": "success", "is_error": false, '
+            '"result": "Three findings: F-1, F-2, F-3.", "duration_ms": 5}\n')
+        made.answers(fake.answer(raw=printed))
         done = made.session()
         assert done.returncode == 0
         assert done.stdout == made.out + '\n'
         held = tree(made.out)
         assert held['reply.md'] == b'Three findings: F-1, F-2, F-3.'
+        assert held['transcript.jsonl'] == printed.encode('utf-8')
         lines = held['transcript.jsonl'].decode('utf-8').splitlines()
         assert [json.loads(line)['type'] for line in lines] == [
             'system', 'assistant', 'result']
@@ -451,8 +465,8 @@ class TestASession:
         monkeypatch.setenv('PURLIN_AI_OUT', made.out)
         monkeypatch.delenv('PURLIN_AI_REPLAY', raising=False)
         monkeypatch.chdir(made.root)
-        assert purlin_ai.main(['run', '--skill', 'skills/summarize',
-                               '--say', 'Go.']) == 0
+        command = 'run --skill skills/summarize --say "Go."'
+        assert purlin_ai.main(shlex.split(command)) == 0
         assert [kwargs['timeout'] for kwargs in seen] == [1800]
 
 
@@ -482,6 +496,7 @@ class TestAModelThatGivesNoAnswer:
         os.makedirs(empty)
         done = made.session(PATH=empty)
         assert done.returncode == 2
+        assert done.stdout == ''
         assert said(done) == ('no answer from claude-test-1: claude is not '
                               'on PATH.')
         self._alone(made, 'claude is not on PATH')
@@ -590,6 +605,7 @@ class TestTheFolder:
         write(os.path.join(made.root, 'mine', 'reply.md'), 'Mine.\n')
         done = made.start('record', '--from', 'mine')
         assert done.returncode == 1
+        assert done.stdout == ''
         assert said(done) == (
             '%s already holds an output. One test makes one output: call '
             'run or record once.' % made.out)
