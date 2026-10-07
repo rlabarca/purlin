@@ -181,6 +181,14 @@ def test_every_link_of_the_research_page_appears_again_under_sources():
     before, after = around_sources(text)
     assert len(targets(before)) >= 10, targets(before)
     assert links_not_listed(text) == []
+    # A link is a link however it is written: in brackets, between `<` and
+    # `>`, or as the bare address. Each address before `Sources` is one the
+    # list gives.
+    written = [address.rstrip('.,;:') for address
+               in re.findall(r'https?://[^\s)>\]]+', before)]
+    assert len(written) >= 10, written
+    assert [address for address in written
+            if address not in targets(after)] == []
     # The audit page links to the research page and names 3 or 4 of its
     # sources, each by an https link the list under `Sources` holds.
     given = targets(read(AUDIT_PAGE))
@@ -221,6 +229,24 @@ def test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works():
     text = read(AUDIT_PAGE)
     found = headings(text)
     assert found[found.index('How it works') + 1] == 'What to do with a finding'
+    # No heading of any kind stands between the two: not one of another
+    # level, not one written as a line underlined with `=` or `-`, and not
+    # one in HTML. Lines inside a fenced block are not headings.
+    between = text.partition('\n## How it works\n')[2].partition(
+        '\n## What to do with a finding\n')[0].splitlines()
+    other, fenced = [], False
+    for number, line in enumerate(between):
+        if line.lstrip().startswith('```'):
+            fenced = not fenced
+        elif fenced:
+            continue
+        elif re.match(r' {0,3}#{1,6}(?: |$)', line) or re.search(
+                r'<h[1-6]\b', line, re.I):
+            other.append(line)
+        elif (re.fullmatch(r' {0,3}(?:=+|-+)\s*', line) and number
+              and between[number - 1].strip()):
+            other.append(between[number - 1])
+    assert other == []
     part = under(text, 'What to do with a finding')
     assert len(bullets(part)) == 6, bullets(part)
     # Exactly 6 whatever their marker: `-`, `*`, `+` or a number.
@@ -272,6 +298,8 @@ def test_one_paragraph_of_working_together_names_a_worktree():
     assert sentence.count(' has ') == 1, sentence
     before, after = sentence.split(' has ')
     assert before == 'Each checkout' + said[0], (before, said)
+    # The words before `has` are these and no others, so none denies it.
+    assert before == 'Each checkout of a repository, a worktree included,'
     assert after.endswith('its own dashboard.'), sentence
     assert re.fullmatch(r'its own \w+(?:, its own \w+)* and its own \w+\.',
                         after), sentence
@@ -306,6 +334,15 @@ def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
         if branch and re.search(r'/purlin(?:\.git)?\b', command):
             named.append(branch.group(1))
     assert named == ['signed/' + version], named
+    # The clone of the purlin repository names that branch and no second
+    # one: git takes the last branch a command names.
+    every = []
+    for clone in clones:
+        command = re.split(r'\n|\|\||&&|;', clone)[0]
+        if re.search(r'/purlin(?:\.git)?\b', command):
+            every += re.findall(
+                r'(?<!\S)(?:--branch[= ]|-b[= ]?)\s*(\S+)', command)
+    assert every == ['signed/' + version], every
 
 
 # --- The index --------------------------------------------------------------
@@ -384,6 +421,14 @@ def test_the_two_ai_pages_are_linked_from_each_other_and_each_folding_page():
     texts = {page: read(os.path.join(DOCS, page))
              for page in AI_PAGES + FOLDED_IN}
     assert links_missing(texts) == []
+    # A link shown as code is text a reader sees and cannot follow: with
+    # every fenced block and every code span taken out, each page still
+    # holds each link.
+    followed = {page: re.sub(r'`[^`]*`', '',
+                             re.sub(r'^```.*?^```$', '', text,
+                                    flags=re.M | re.S))
+                for page, text in texts.items()}
+    assert links_missing(followed) == []
     # A page that names the other in plain words, or in a code span, does
     # not link it; a link with a `#` part does.
     sample = dict(texts)
@@ -415,6 +460,16 @@ def test_each_ai_page_holds_one_flow_diagram_with_each_box_named_in_bold():
         assert len(labels) >= 5, (page, labels)
         assert [label for label in labels
                 if not label.startswith('<b>')] == [], page
+        # Every box, one whose label is written without quotation marks
+        # included: with the labels on the arrows taken out, what follows
+        # the bracket that opens each box is `"<b>`.
+        drawn = re.sub(r'\|[^|\n]*\|', '', '\n'.join(found[0][1:]))
+        drawn = re.sub(r'"[^"\n]*"',
+                       lambda held: ('"<b>' if held.group(0).startswith('"<b>')
+                                     else '"'), drawn)
+        opened = re.findall(r'\b\w+(?:\(\[|\[|\{|\()(.{0,4})', drawn)
+        assert len(opened) == len(labels), (page, opened, labels)
+        assert [box for box in opened if box != '"<b>'] == [], (page, opened)
     # A label on an arrow is no box, and a box whose name is not bold is
     # found.
     sample = ['flowchart LR', '    A["<b>One</b><br>x"] -->|"yes"| B(["Two"])',
@@ -437,5 +492,13 @@ def test_the_audit_pages_count_the_spot_tests_as_the_reference_does():
         text = ' '.join(read(page).split())
         assert text.count('The seven checks are in') == 1, page
         assert check_counts(text) == ['seven'], (page, check_counts(text))
+        # No other count under any of the names the checks go by: a number,
+        # in a word or in digits, before `checks`, `spot tests`, `spot
+        # checks` or `heuristics`, with at most one word between.
+        counted = re.findall(
+            r'\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|'
+            r'twelve|\d+) (?:\w+ )?(?:checks|spot tests|spot checks|'
+            r'heuristics)\b', text, re.I)
+        assert counted == ['seven'], (page, counted)
     assert check_counts('The six checks are in. The seven checks') == [
         'six', 'seven']
