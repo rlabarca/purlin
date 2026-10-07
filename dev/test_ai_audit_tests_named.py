@@ -206,3 +206,12 @@ class TestANameFromARecordFindsItsSource:
                             'Acme.LoginTests.Denied(user: "x")')
         assert body is not None and 'public void Denied' in body, body
         assert 'Allowed' not in body, body
+        # `Denied`'s own lines, from its attributes to the brace that closes
+        # its body, and no line of the class or the namespace after it.
+        assert body.splitlines() == [
+            '[Theory]',
+            '        [InlineData("x")]',
+            '        public void Denied(string user)',
+            '        {',
+            '            Assert.Equal(401, 401);',
+            '        }'], body

@@ -249,8 +249,11 @@ def test_a_change_that_keeps_the_files_size_is_still_run(tmp_path):
 
 
 # purlin: planted_bug PROOF-6
-def test_a_file_outside_the_copy_is_not_made(tmp_path):
+def test_a_file_outside_the_copy_is_not_made(tmp_path, monkeypatch):
     root = project(tmp_path, {'PROOF-1': STRONG})
+    # `../outside.py` read from the working folder lands under this test's own folder.
+    os.makedirs(os.path.join(str(tmp_path), 'working'))
+    monkeypatch.chdir(os.path.join(str(tmp_path), 'working'))
     answer = part('    return days', '    return 0', path='../outside.py')
     result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE + ['../outside.py'],
                                    answer)
@@ -258,6 +261,10 @@ def test_a_file_outside_the_copy_is_not_made(tmp_path):
     assert result['why'] == '../outside.py is outside the copy of the project'
     assert not os.path.exists(os.path.join(str(tmp_path), 'outside.py'))
     assert not os.path.exists(os.path.join(str(tmp_path), 'tmp', 'outside.py'))
+    assert not os.path.exists(os.path.join(os.getcwd(), os.pardir, 'outside.py'))
+    assert not os.path.exists(os.path.join(os.path.dirname(root), 'outside.py'))
+    assert [name for _dir, _dirs, names in os.walk(str(tmp_path)) for name in names
+            if name == 'outside.py'] == []
 
 
 # purlin: planted_bug PROOF-7
@@ -1166,7 +1173,12 @@ def test_a_path_that_leaves_the_copy_of_the_output_is_refused(note, monkeypatch)
 
 
 # purlin: planted_bug PROOF-71
-def test_a_line_that_would_be_a_comment_in_code_is_planted_in_an_output(note):
+def test_a_line_that_would_be_a_comment_in_code_is_planted_in_an_output(tmp_path):
+    # The test of `PROOF-1` keeps each reply it is handed, so what was planted is seen.
+    seen = os.path.join(str(tmp_path), 'seen.txt')
+    note = sample_lab.build_note(tmp_path / 'note', check=(
+        sample_lab.ANY_BARCODE
+        + "    open(%r, 'a', encoding='utf-8').write(note + chr(0))\n" % seen))
     answer = fake_claude.change('reply.md', sample_lab.NOTE_NAMES,
                                 '# Refused\n' + sample_lab.NOTE_NAMES,
                                 case=sample_lab.CASE_BARCODE)
@@ -1174,6 +1186,9 @@ def test_a_line_that_would_be_a_comment_in_code_is_planted_in_an_output(note):
                                     '# Refused\n' + sample_lab.NOTE_NAMES)
     result = wrong(note, 'PROOF-1', answer)
     assert (result['result'], result['line']) == ('survived', 1), result
+    handed = open(seen, encoding='utf-8').read().split(chr(0))
+    assert handed[-3:] == [sample_lab.NOTE, '# Refused\n' + sample_lab.NOTE, ''], handed
+    assert handed[-2].splitlines()[0] == '# Refused'
 
 
 # purlin: planted_bug PROOF-72

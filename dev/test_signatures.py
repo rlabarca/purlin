@@ -504,10 +504,10 @@ class TestWhereItReadsSigned:
         word, warned = signoff_and_warnings(hand_checked)
         assert word == 'not signed'
         assert len(warned) == 1, warned
-        assert warned[0].startswith(
+        assert warned == [
             'signed/2.1.0: tag with no sign-off. No sign-off counts: the '
             'commit that added it is not signed. Run purlin:sign --version '
-            '2.1.0.'), warned
+            '2.1.0.'], warned
 
 
     # purlin: signatures PROOF-274
@@ -867,11 +867,21 @@ class TestTheRefusals:
     def test_no_version_stated_or_named_is_refused(self, capsys):
         made = ready(version=None)
         try:
+            head = made.head()
+            refs = git(made.root, 'for-each-ref').stdout
+            ignored = git(made.root, 'status', '--porcelain', '--ignored',
+                          '--untracked-files=all').stdout
             assert run_main(made, capsys) == (1, [
                 'No version: nothing in this project states one. Run '
                 'purlin:sign --version <version>, or write it to a VERSION '
                 'file.'])
             assert status(made.root) == ''
+            # Nothing is written: no tag, no branch, no ignored file.
+            assert git(made.root, 'tag', '--list').stdout == ''
+            assert git(made.root, 'for-each-ref').stdout == refs
+            assert git(made.root, 'status', '--porcelain', '--ignored',
+                       '--untracked-files=all').stdout == ignored
+            assert made.head() == head
         finally:
             made.close()
 
@@ -955,9 +965,15 @@ class TestMarkersFrom095:
     def test_show_prints_the_same_line_and_exits_1(self, capsys):
         made = carrying(OLD_TAGS[:2])
         try:
-            assert run_main(made, capsys, ['--show']) == (1, [
-                'No sign-off: 2 tests still carry' + OLD_REST])
+            head = made.head()
+            capsys.readouterr()
+            code = sign_module.main(['--show', '--project-root', made.root])
+            printed = capsys.readouterr()
+            # Only that line, on either stream.
+            assert (code, printed.out.splitlines(), printed.err) == (1, [
+                'No sign-off: 2 tests still carry' + OLD_REST], '')
             assert status(made.root) == ''
+            assert made.head() == head
         finally:
             made.close()
 
@@ -971,8 +987,10 @@ class TestMarkersFrom095:
         assert run_main(signed, capsys, ['--show']) == (1, [OLD_ONE])
         code = sign_module.main(['--check', os.path.join(
             signed.root, *PACKAGE.split('/'))])
-        assert (code, capsys.readouterr().out.splitlines()) == (
-            0, ['The package matches its fingerprint.'])
+        printed = capsys.readouterr()
+        # Exactly that line, on either stream.
+        assert (code, printed.out.splitlines(), printed.err) == (
+            0, ['The package matches its fingerprint.'], '')
 
 
 # ---------------------------------------------------------------------------
@@ -1258,22 +1276,38 @@ class TestTheWalk:
     # purlin: signatures PROOF-218
     def test_stop_at_a_hand_check_writes_nothing(self, hand_checked):
         before = hand_checked.head()
+        refs = git(hand_checked.root, 'for-each-ref').stdout
+        ignored = git(hand_checked.root, 'status', '--porcelain', '--ignored',
+                      '--untracked-files=all').stdout
         code, lines, _asked = walked(hand_checked, ['go on', 'stop'])
         assert lines[-1] == (
             'Stopped at login RULE-2: nothing was signed. After the fix, run '
             'purlin:test --all --commit, then purlin:sign.')
         assert (code, hand_checked.head(), status(hand_checked.root)) == (
             0, before, '')
+        # No commit and no file anywhere: no tag, no branch, no ignored file.
+        assert git(hand_checked.root, 'tag', '--list').stdout == ''
+        assert git(hand_checked.root, 'for-each-ref').stdout == refs
+        assert git(hand_checked.root, 'status', '--porcelain', '--ignored',
+                   '--untracked-files=all').stdout == ignored
 
     # purlin: signatures PROOF-219
     def test_an_empty_line_at_every_question_signs_nothing(self, hand_checked):
         before = hand_checked.head()
+        refs = git(hand_checked.root, 'for-each-ref').stdout
+        ignored = git(hand_checked.root, 'status', '--porcelain', '--ignored',
+                      '--untracked-files=all').stdout
         code, lines, asked = walked(hand_checked, ['', '', ''])
         assert asked[-1] == ('Sign the evidence package for 2.1.0 as '
                              'jane@acme.com? [y/N] ')
         assert lines[-1] == 'Nothing was signed.'
         assert (code, hand_checked.head(), status(hand_checked.root)) == (
             0, before, '')
+        # No commit and no file anywhere: no tag, no branch, no ignored file.
+        assert git(hand_checked.root, 'tag', '--list').stdout == ''
+        assert git(hand_checked.root, 'for-each-ref').stdout == refs
+        assert git(hand_checked.root, 'status', '--porcelain', '--ignored',
+                   '--untracked-files=all').stdout == ignored
 
 
 # ---------------------------------------------------------------------------
@@ -1432,7 +1466,10 @@ class TestSettledByJudgment:
         try:
             assert walked(made, ['list', 'go on', 'y'])[0] == 0
             assert signed_off(made)['shown']['audit_list_opened'] is True
-            package = read_json(made.root, PACKAGE)
+            # The package as the sign-off's commit holds it.
+            assert PACKAGE in changed_in_head(made.root)
+            package = json.loads(git(made.root, 'show', 'HEAD:' + PACKAGE).stdout)
+            assert package == read_json(made.root, PACKAGE)
             login = next(f for f in package['features'] if f['name'] == 'login')
             rule = next(r for r in login['rules'] if r['id'] == 'RULE-1')
             assert rule['statuses']['strong']['word'] == 'strong'
@@ -1489,6 +1526,11 @@ class TestTheSignOff:
         assert not [word for word in values(body) + keys(body)
                     if str(word).strip().lower()
                     in ('go on', 'list', 'y', 'yes', 'stop')], body
+        # Nor does any value hold an answer word among its words.
+        for value in values(body):
+            words = str(value).lower().split()
+            assert not set(words) & {'list', 'y', 'yes', 'stop'}, value
+            assert 'go on' not in ' '.join(words), value
 
     # purlin: signatures PROOF-235
     def test_an_empty_answer_is_recorded_as_no_note(self, hand_checked):
@@ -1862,6 +1904,7 @@ class TestTheAgent:
     # purlin: signatures PROOF-220
     def test_show_prints_every_stop_and_asks_nothing(self, hand_checked,
                                                      capsys):
+        refs = git(hand_checked.root, 'for-each-ref').stdout
         code, lines = run_main(hand_checked, capsys, ['--show'])
         assert '  login RULE-1   PROOF-1 reads the status alone.' in lines
         head = lines.index('login RULE-2   hand check')
@@ -1879,7 +1922,18 @@ class TestTheAgent:
         assert lines[at + 1:at + 3] == [
             '  2 rules on Linux/Unix: 1 passes its tests, 1 has a hand check.',
             '  The audit: 0 strong, 1 weak.']
+        # The overview whole, every line of it, then the audit's list.
+        assert lines[at:lines.index('')] == [
+            'Signing 2.1.0 at %s.' % hand_checked.head()[:7],
+            '  2 rules on Linux/Unix: 1 passes its tests, 1 has a hand check.',
+            '  The audit: 0 strong, 1 weak.',
+            '  A co-author is named on the last change of 0 rules, 0 proofs '
+            'and 0 tests.',
+            '  No test report is kept: no result names one.',
+            'To read before you sign: 1 weak.',
+            '  login RULE-1   PROOF-1 reads the status alone.'], lines
         assert (code, status(hand_checked.root)) == (0, '')
+        assert git(hand_checked.root, 'for-each-ref').stdout == refs
 
     # purlin: signatures PROOF-228
     def test_show_with_no_key_prints_the_overview_after_the_signing_line(
