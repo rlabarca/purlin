@@ -2,16 +2,16 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-1": {
-            "after": "        'host': machine or local_machine(),",
+            "after": "",
             "aim": "plain",
             "before": "        'machine': machine or local_machine(),",
-            "bug_key": "6a0cc0236b883df62a78db0ac4a987ec7815554abd0f5f3c35428eeb5a7c7634",
-            "case": "one spec `feat` and one passing marked test, `--all --test`; the proof says the section holds exactly `commit`, `dirty`, `at`, `runner`, `email`, `machine`, `fingerprint`, `rules` and `proofs`; the changed code writes `host` in place of `machine`",
+            "bug_key": "5701ec8a9e33d5a55c1d7f331ba21558e3c28f893dff9cb79214d89996ddb720",
+            "case": "one spec `feat` and one passing marked test, `--all --test`; the proof says the section holds exactly commit, dirty, at, runner, email, machine, fingerprint, rules and proofs; the changed code writes a section with no `machine`",
             "file": "scripts/run/evidence.py",
-            "line": 263,
+            "line": 278,
             "result": "caught",
             "why": ""
           },
@@ -19,8 +19,8 @@
             "after": "    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ%z')",
             "aim": "past the test",
             "before": "    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')",
-            "bug_key": "8a7dcc0a31ad0efc10e410c448c81b49dd9ff4068a20784f791bc25368979b8f",
-            "case": "git email `dev@example.com`, one spec and one passing test, `--all --test`; the proof says `at` has the form `YYYY-MM-DDTHH:MM:SSZ`; the changed code writes `at` with `+0000` after the `Z`",
+            "bug_key": "8a25b5b7aacb2eb61aea6f3b9874d68b3f1213d35afda001c2fb96c5e60b0816",
+            "case": "git email dev@example.com, one spec and one passing test, `--all --test`; the proof says `at` has the form YYYY-MM-DDTHH:MM:SSZ; the changed code writes `at` as YYYY-MM-DDTHH:MM:SSZ+0000",
             "file": "scripts/run/evidence.py",
             "line": 75,
             "result": "caught",
@@ -30,26 +30,26 @@
             "after": "        'dirty': False,",
             "aim": "plain",
             "before": "        'dirty': bool(dirty),",
-            "bug_key": "d26f5e275329e573e7083f69c5dac3c826e6b350019044675bb81a5c036bc97b",
-            "case": "a tracked source file changed and not committed, `--all --test`; the proof says `dirty` is true; the changed code writes `dirty` false",
+            "bug_key": "858a556c495d8c1e7d1841172b038ac897e9fc57dad5420d4399eaf96d1cfcac",
+            "case": "a tracked source file changed and not committed, `--all --test`; the proof says the section's `dirty` is true; the changed code writes `dirty` false",
             "file": "scripts/run/evidence.py",
-            "line": 260,
+            "line": 275,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-1: the test runs `--all --test`, reads the written file and compares `schema`, `feature`, `source` and `spec` with the four values the proof names, the list of sections with this system alone, and the section's sorted keys with the nine the proof names, so each named result is checked.",
-          "PROOF-1: the test reads none of the section's values, which the proof does not name either.",
-          "PROOF-16: the test compares `commit` with HEAD's sha and its length with `40`, `dirty` with false, `runner` with `dev` and `rules` with `RULE-1` `passed`, each as the proof names it.",
-          "PROOF-16: the test reads `at` with a pattern matched from the start of the value, and the pattern is not shown, so a value with text after the `Z` passes unless the pattern is closed at its end.",
-          "PROOF-16: the expected `fingerprint` is taken from Purlin's own fingerprint function over the same project, which is what the proof names, so a fault in that function would pass on both sides.",
-          "PROOF-16: the git email `dev@example.com` is set by a helper that is not shown, so the test's own lines do not show where `dev` comes from.",
-          "PROOF-17: the test rewrites a source file after the commit, runs `--all --test` and compares the section's `dirty` with true, which is the proof's case and its result.",
-          "No proof of the rule reads the values of `email` or `machine`; PROOF-1 checks only that the two keys are present."
+          "PROOF-1: the test runs `--all --test`, compares `schema`, `feature`, `source` and `spec` with the four values the proof names, the section keys with this system alone, and the sorted field names with the nine the proof lists, so a missing or extra field fails it.",
+          "PROOF-1: the test reads the names of the section's fields and none of their values, which is all the proof names.",
+          "PROOF-16: the test compares `commit` with HEAD and its length with 40, `dirty` with false, `runner` with `dev` and `rules` with `RULE-1` `passed`, each a value the proof names.",
+          "PROOF-16: the test reads `at` with `STAMP.match`, whose pattern is not shown; a match anchored only at the start would let an `at` with text after the `Z` pass.",
+          "PROOF-16: the expected `fingerprint` is computed by Purlin's own fingerprint function at test time, so the test shows the section holds what that function returns and not that the value is right.",
+          "PROOF-16: the proof sets the git email to `dev@example.com` and the test shown never reads the section's `email`, which the proof does not name as a result.",
+          "PROOF-17: the test changes a source file after the repository is made, runs `--all --test` and compares `dirty` with true, which is the proof's case and its result.",
+          "The rule also names the `email` and the `machine` a section carries, and no proof of the three names a value for either."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -60,43 +60,42 @@
         "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-12": {
-            "after": "    merged['audit'] = {'rules': dict(entries or {})}",
+            "after": "    if isinstance(rules, dict):\n        rules = {}",
             "aim": "plain",
-            "before": "    merged['audit'] = {'rules': rules}",
-            "bug_key": "81240e9ddd0efb9af03ae9ecdd5b6b6603ccd2ecca757139881f334ceaa2c9e0",
-            "case": "an audit of RULE-1 alone written into a file holding a `weak` RULE-2 entry; the proof says `audit.rules` holds the new RULE-1 entry and RULE-2 exactly as it was; the changed code leaves RULE-1 alone and RULE-2 is gone",
+            "before": "    if not isinstance(rules, dict):\n        rules = {}",
+            "bug_key": "87fd0d000ae3f97ac05221a6796e27430da4927dcf6a4068e2cf50e2af3ca8b3",
+            "case": "a file holding a `weak` RULE-2 entry, with an audit of RULE-1 alone written into it; the proof says `audit.rules` holds the new RULE-1 entry and RULE-2 as it was; the changed code writes RULE-1 alone and drops RULE-2",
             "file": "scripts/run/evidence.py",
-            "line": 553,
+            "line": 632,
             "result": "caught",
             "why": ""
           },
           "PROOF-54": {
-            "after": "             'at': at or now_iso(), 'commit': ''}",
+            "after": "             'model': 'unknown',",
             "aim": "plain",
-            "before": "             'at': at or now_iso(), 'commit': commit or ''}",
-            "bug_key": "2750ad64a067103bd7af9e0efefb0bca9ad72c0308d35b6b720cfbe6f76e8e80",
-            "case": "`--all --audit` in a git checkout whose model answers `no bug` for PROOF-1; the proof says the RULE-1 entry holds HEAD's sha as `commit`; the changed code writes an empty `commit`",
+            "before": "             'model': found.get('model') or 'unknown',",
+            "bug_key": "001757599ddc0e652c915eb10cffeff5a30953122ee52b4bbbe62d7f83c54bd2",
+            "case": "`--all --audit` with the model `claude-fake-1` answering `no bug` for PROOF-1; the proof says the RULE-1 entry's `model` is `claude-fake-1`; the changed code writes `unknown`",
             "file": "scripts/run/evidence.py",
-            "line": 584,
+            "line": 668,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-54: the test runs `--all --audit` in a git checkout with a fake `claude-fake-1` that answers `no bug`, then reads the RULE-1 entry from the evidence file.",
-          "PROOF-54: it compares the four hashes with the ones the status payload and the fingerprint give, so the expected hashes do not come from the writer.",
-          "PROOF-54: it compares `verdict`, `findings`, the whole `no_bug` sentence, the `PROOF-1` result `not made`, `model`, the sha256 of the criteria file and HEAD's sha, so every value the proof names is checked.",
-          "PROOF-54: the test never reads `explanation`, which the rule lists and no proof of the rule names, so a wrong `explanation` would still pass.",
-          "PROOF-12: the test puts a `weak` RULE-2 entry in the file, writes a RULE-1 entry through the writer, and compares the whole `audit` object with the two entries expected.",
-          "PROOF-12: it also checks that the RULE-2 entry's text is in the file byte for byte before and after, so a dropped, changed or re-ordered RULE-2 entry fails it.",
-          "PROOF-12: the expected entries are built by the test's own helpers, not by the writer.",
-          "The spot tests found nothing, and both tests assert literal values that can fail."
+          "PROOF-54: the test runs `--all --audit` against a fake `claude-fake-1` and reads the RULE-1 entry from the evidence file, comparing its four hashes with the ones the status payload and the fingerprint give.",
+          "PROOF-54: it compares `verdict`, `findings`, the whole `no_bug` sentence, `model`, the criteria file's sha256 and HEAD's sha with the values the proof names, so a wrong value in any of them fails it.",
+          "PROOF-54: of `bugs` it reads the `result` of `PROOF-1` alone, so a second entry under `bugs` or a wrong `why`, `aim` or `bug_key` would still pass.",
+          "PROOF-54: the rule also names `explanation` and the proof does not; the test never reads it, so an entry written without the model's reading would still pass.",
+          "PROOF-12: the test writes a file holding a `weak` RULE-2 entry, writes an audit of RULE-1 into it, and compares the whole `audit` object with the new RULE-1 entry beside the earlier RULE-2 entry.",
+          "PROOF-12: it also checks that the RULE-2 entry's text is in the file before and after the write, so a dropped, changed or reordered RULE-2 entry fails it.",
+          "PROOF-12: the test calls the writer directly with a hand-built entry and runs no audit, which matches the proof's case of an entry being written into an existing file."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -107,27 +106,28 @@
         "verdict": "strong"
       },
       "RULE-13": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-63": {
-            "after": "# Dashboard data, regenerated locally, never committed\n.purlin/report-data.js\n.purlin/evidence/",
+            "after": "# Purlin runtime: the test reports and the run log, never committed\n.purlin/runtime/\n.purlin/evidence/",
             "aim": "plain",
-            "before": "# Dashboard data, regenerated locally, never committed\n.purlin/report-data.js",
-            "bug_key": "56a144ccd2a777b406e17bafb4ff50a11c1c3cb123dcc1e42c4d4899ddd07834",
-            "case": "after init in a fresh git repository, git is asked about `.purlin/evidence/local/feat.json` and `.purlin/runtime/run.log`; the proof says it names `.purlin/runtime/run.log` alone; the changed code makes it name both",
+            "before": "# Purlin runtime: the test reports and the run log, never committed\n.purlin/runtime/",
+            "bug_key": "11511a4f86f79dfd543e5c4421c6f1001c19166c26e547adba74936ef31ad983",
+            "case": "a fresh git repository after `purlin:init`, git asked about `.purlin/evidence/local/feat.json` and `.purlin/runtime/run.log`; the proof says git names `.purlin/runtime/run.log` alone; the changed template makes git name both files",
             "file": "templates/gitignore.purlin",
-            "line": 9,
+            "line": 3,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-63: the test sets up a fresh git repository with the real setup script, writes both files, asks git which of the two it ignores and compares the answer with exactly `.purlin/runtime/run.log`, so an ignored evidence file or an unignored run log fails it.",
-          "PROOF-63: the test asks only about one file under `.purlin/evidence/local`, as the proof does, so an ignore pattern that reaches only `.purlin/evidence/ci` would break the rule and pass both the proof's case and the test.",
-          "Findings: the spot tests found nothing, and the test's expected value is a literal the proof names, not one taken from the code."
+          "PROOF-63: the test makes a fresh git repository, runs the real setup script in it, writes both files the proof names and compares the whole of what `git check-ignore` prints with the one line `.purlin/runtime/run.log`, so an ignored evidence file or an unignored run log both fail it.",
+          "PROOF-63: the test also reads the written `.gitignore` for `.purlin/runtime/`, which the proof does not name and which the comparison of git's answer already covers.",
+          "PROOF-63: the rule speaks of every file under `.purlin/evidence` and the proof and test ask about one file under `local/`, so a pattern ignoring only `.purlin/evidence/ci/` or another file name would pass.",
+          "The spot tests found nothing, and the test's expected value is a literal taken from the proof, not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -138,16 +138,16 @@
         "verdict": "strong"
       },
       "RULE-14": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-14": {
             "after": "            'findings', 'no_bug', 'model', 'criteria', 'at')",
             "aim": "plain",
             "before": "            'findings', 'no_bug', 'model', 'criteria')",
-            "bug_key": "1989c773cf40eb786bc512c51464d1b2c568653bea4de02f88df42abeb10a1de",
-            "case": "the same entry from claude-a written again at 2026-09-02T00:00:00Z on another commit; the proof says the file reads the first time and the first commit; the changed code gives the later time and the later commit",
+            "bug_key": "105fc2844354df99d998b1e23067ba8f5a99d2249b9291d2aeef5d4556a07336",
+            "case": "the same entry from claude-a written again at 2026-09-02T00:00:00Z on another commit; the proof says the file reads the first time and the first commit; the changed code replaces the entry, so the file reads the later time and the later commit",
             "file": "scripts/run/evidence.py",
-            "line": 593,
+            "line": 679,
             "result": "caught",
             "why": ""
           },
@@ -155,10 +155,10 @@
             "after": "            'findings', 'no_bug', 'criteria')",
             "aim": "plain",
             "before": "            'findings', 'no_bug', 'model', 'criteria')",
-            "bug_key": "0eb0a758e7592447eb2cda4f636fbd0850e4afa3e064aa51fe71a8f8246b7148",
-            "case": "an entry from claude-a on file, the same entry answered by claude-b written at 2026-09-02T00:00:00Z on another commit; the proof says the file reads model claude-b, that time and that commit; the changed code gives claude-a, the first time and the first commit",
+            "bug_key": "353d5a2a1091cc0a16ce488106a0226e3d485b78270b0d2b41bedfba6f0fcce6",
+            "case": "the entry on file from claude-a, then the same entry answered by claude-b at 2026-09-02T00:00:00Z on another commit; the proof says the file reads the model claude-b, that time and that commit; the changed code leaves the file reading claude-a, the first time and the first commit",
             "file": "scripts/run/evidence.py",
-            "line": 593,
+            "line": 679,
             "result": "caught",
             "why": ""
           },
@@ -166,23 +166,24 @@
             "after": "    keys = ('proof_hash', 'test_hash', 'code_hash', 'verdict',",
             "aim": "plain",
             "before": "    keys = ('rule_hash', 'proof_hash', 'test_hash', 'code_hash', 'verdict',",
-            "bug_key": "43ca5eb98c3cf2ed057a39fe4a63eb7afc328655c9572cd82e6767c5a40974dc",
-            "case": "an entry on file, then one differing in its rule hash alone written at 2026-09-02T00:00:00Z on another commit; the proof says the file reads the new rule hash, that time and that commit; the changed code gives the old rule hash, the first time and the first commit",
+            "bug_key": "9df4468fb214deb6c2e3a84cccb1db0b1c187edc51fa33ee98a91af738b33999",
+            "case": "an entry differing from the one on file in its rule hash alone, written at 2026-09-02T00:00:00Z on another commit; the proof says the file reads the new rule hash, that time and that commit; the changed code leaves the file reading the old rule hash, the first time and the first commit",
             "file": "scripts/run/evidence.py",
-            "line": 592,
+            "line": 678,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-14: the test compares the entry's `at` and `commit` with the first time and the first commit, which are the two values the proof names; the writing of both entries is in the helper `_on_file_then`, whose source is not shown.",
-          "PROOF-64: the test hands the helper the same findings with the model `claude-b` and compares `model`, `at` and `commit` with `claude-b`, the later time and the later commit, which are the three values the proof names.",
-          "PROOF-65: the test compares what the helper `_one_field_differs` returns with `r2`, the later time and the later commit, which matches the proof if the helper returns the rule hash, time and commit read from the file; its source is not shown.",
-          "The spot tests found nothing, and each test holds one comparison against values that do not come from the code under test, as far as the shown source tells.",
-          "The rule says an entry differing in any of nine fields replaces the one on file, and its proofs name the model and the rule hash alone, so the other seven fields are not read here."
+          "PROOF-14: the test reads the entry's `at` and `commit` after the second write and compares both with the first time and the first commit, which is the result the proof names.",
+          "PROOF-14: the two writes are made in the helper `_on_file_then`, which is not shown, so the test's own lines do not show that the second entry is the same one from the same model at the later time.",
+          "PROOF-64: the test passes an entry whose model is `claude-b` and compares the `model`, `at` and `commit` it reads with `claude-b`, the later time and the later commit, the three values the proof names.",
+          "PROOF-65: the test compares what `_one_field_differs` returns for `rule_hash` and `r2` with the new rule hash, the later time and the later commit, the three values the proof names.",
+          "PROOF-65: the write and the reading of the file are made in the helper `_one_field_differs`, which is not shown, so the test's own lines do not show that the entry differs in its rule hash alone.",
+          "The rule says an entry differing in any of nine fields replaces the one on file, and the proofs name two of them, the model and the rule hash."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -193,16 +194,16 @@
         "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-15": {
             "after": "    if status == 'pass' and all(entry.get('status') == 'pass'\n                                for entry in seen):\n        return 'not run'",
             "aim": "plain",
             "before": "    if status == 'pass' and all(entry.get('status') == 'pass'\n                                for entry in seen):\n        return 'passed'",
-            "bug_key": "9668bd6f3108cb89734fdf2db2ded820fa2e2c06d55941f834dac86ecbebb0df",
-            "case": "RULE-1 has no proof and one passing test marked RULE-1; the proof says the section reads RULE-1 `passed`; the changed code gives `not run`",
+            "bug_key": "8b4185e4965c40c645d3b73f9925846bc3fd49230355ba047c3e00a922ffb967",
+            "case": "RULE-1 has no proof and one passing test marked RULE-1, tests/a.py::test_a; the proof says the section reads RULE-1 `passed`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
-            "line": 342,
+            "line": 428,
             "result": "caught",
             "why": ""
           },
@@ -210,23 +211,23 @@
             "after": "    if seen:\n        return 'not run'\n    return 'not run'",
             "aim": "plain",
             "before": "    if seen:\n        return 'not run'\n    return 'no test'",
-            "bug_key": "ef39236be1e910c34f568a697cf53dbd0bcc5055b4302d223166c69617fbc34a",
-            "case": "RULE-3 has no proof and no test marked RULE-3; the proof says the section reads RULE-3 `no test`; the changed code gives `not run`",
+            "bug_key": "3f9929d6aadb29d7c76a9a9588a2662a0366415bde06499820f145f40271c255",
+            "case": "RULE-3 has no proof and no test is marked RULE-3; the proof says the section reads RULE-3 `no test`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
-            "line": 345,
+            "line": 431,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-15: the test compares the section's whole `rules` map with `{'RULE-1': 'passed'}` and its one listed entry's id, rule, result and test with `RULE-1`, `RULE-1`, `pass` and `tests/a.py::test_a`, which is every value the proof names.",
-          "PROOF-15: the comparison goes through the helper `_no_proof`, whose source was not shown, so what it reads from each entry is taken from the tuple the test expects.",
-          "PROOF-72: the test compares the whole `rules` map with `{'RULE-3': 'no test'}` and the listed entries with an empty list, which is both results the proof names.",
-          "The rule also says a rule reads `failed` when one marked test failed, and neither proof names that case, so the rule is proved for `passed` and `no test` only.",
-          "The spot tests found nothing, and both tests hold literal expected values that equal the ones their proofs name."
+          "PROOF-15: the test hands one passing test marked `RULE-1` to a helper and compares the whole result with `{'RULE-1': 'passed'}` and one entry of `RULE-1`, `RULE-1`, `pass`, `tests/a.py::test_a`, which is each value the proof names.",
+          "PROOF-15: the helper `_no_proof` and `_seen` are not shown, so the reading takes it that they build the section from the writer and return its `rules` and each entry's `id`, `rule`, `result` and `test` unchanged.",
+          "PROOF-72: the test hands no marked test to the same helper and compares the whole result with `{'RULE-3': 'no test'}` and an empty list, which is the word and the empty `proofs` the proof names.",
+          "No spot test fired, and neither test leaves a named value out of its comparison, so both bugs are plain changes to the word the rule reads.",
+          "The rule says a rule with no proof reads `failed` when one marked test failed, and neither proof names that case, so the failing direction is not proved here."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -237,14 +238,14 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-41": {
-            "after": "    return 'unknown'",
+            "after": "    return platform.system() or 'unknown'",
             "aim": "plain",
             "before": "    return platform.node() or 'unknown'",
-            "bug_key": "4427517fff9b2a59212575771c581d3747d12f376c6511fa3f93f341f54148e8",
-            "case": "a `--all --test` run on this machine; the proof says `machine` reads this machine's host name; the changed code gives `unknown`",
+            "bug_key": "13f852262c07ba9e09a752f90744ebcf0c8c04d9ef4fbab80152ce1525ed60e6",
+            "case": "a `--all --test` run on this machine; the proof says the section's `machine` reads this machine's host name; the changed code writes the operating system's name, such as `Darwin`",
             "file": "scripts/run/evidence.py",
             "line": 87,
             "result": "caught",
@@ -254,24 +255,23 @@
             "after": "    return (_git(project_root, ['config', 'user.name']) or '').strip() or 'unknown'",
             "aim": "plain",
             "before": "    return (_git(project_root, ['config', 'user.email']) or '').strip() or 'unknown'",
-            "bug_key": "393247c5f49a8013f3f72bd88f3cf0cbf69656d169d9ded8d45a57a632ef7df2",
-            "case": "a `--all --ci` run in a checkout whose git email is `runner@example.com`; the proof says `email` reads `runner@example.com`; the changed code gives the git user name or `unknown`",
+            "bug_key": "85e576c6d55522bc8ca48d81f58666f6a7d02f52c78f0680b787a4d68f40014e",
+            "case": "a `--all --ci` run in a checkout whose git email is `runner@example.com`; the proof says the section's `email` reads `runner@example.com`; the changed code writes the git user name or `unknown`",
             "file": "scripts/run/evidence.py",
             "line": 92,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-41: the test makes a `--all --test` run, reads the section written for this system and compares its `machine` with the host name the standard library reports, after asserting that name is not empty, so a wrong or missing `machine` fails it.",
-          "PROOF-41: the expected host name comes from the same library call the code uses, not from the code under test, so the test observes what the proof names.",
-          "PROOF-78: the test makes a `--all --ci` run in the runner checkout, reads the `ci` section and compares its sorted keys with the nine the proof names, its `machine` with the host name and its `email` with `runner@example.com`, so each result the proof names is checked.",
-          "PROOF-78: the test relies on a helper to set the checkout's git email, so `runner@example.com` is checked only as far as that helper sets it.",
-          "The rule also says `machine` reads `unknown` where the host reports none, and neither proof names that case, so the rule is proved in one direction only.",
-          "The spot tests found nothing, and both tests hold failable assertions on the values their proofs name."
+          "PROOF-41: the test makes a `--all --test` run, reads this system's section of the local evidence file and compares its `machine` with the host name the standard library reports, after asserting that name is not empty, so a wrong `machine` fails it.",
+          "PROOF-78: the test makes a `--all --ci` run in the runner's checkout, reads this system's section of the `ci` file and compares its sorted field names with the nine the proof names, its `machine` with the host name and its `email` with `runner@example.com`, so each result the proof names is checked.",
+          "PROOF-41 and PROOF-78: the expected host name comes from `platform.node()`, the same library call the code makes, not from the code under test, so a change to how the code reads the name is noticed, while a host whose name the library reports wrongly would pass both.",
+          "RULE-16: the rule says `machine` reads `unknown` where the host reports none, and no proof names that case; both tests assert the host has a name, so the `unknown` branch is observed by neither.",
+          "Findings: the spot tests found nothing, and each test holds failable comparisons against the values its proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -282,27 +282,25 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-43": {
-            "after": "                 if key not in ('commit', 'at', 'email', 'machine')}",
+            "after": "        found = {key: value for key, value in (section or {}).items()\n                 if key not in ('commit', 'at', 'email', 'machine')}",
             "aim": "plain",
-            "before": "                 if key not in ('commit', 'at', 'email')}",
-            "bug_key": "d4d89e91d46fc53511d0e9abc0f570d1813f84acfd783f88c1c2bdb480a9135d",
-            "case": "a section with the same results and fingerprint taken on `build-2` where the file names `build-1`; the proof says the file's section reads `build-2`; the changed code leaves the section on disk, so it reads `build-1`",
+            "before": "        found = {key: value for key, value in (section or {}).items()\n                 if key not in ('commit', 'at', 'email')}",
+            "bug_key": "d21e2a6933d8d28a6e9c1865d6e0d2e3a3cf65a660e2a807cc73d0b7a47e4c1d",
+            "case": "a section with the same results and fingerprint taken on `build-2` where the file names `build-1`; the proof says the file's section reads `build-2`; the changed code leaves the section on disk as it was, reading `build-1`",
             "file": "scripts/run/evidence.py",
-            "line": 361,
+            "line": 454,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-43: the test puts a file whose `linux` section names `build-1`, writes a section that differs in `machine` and `at`, and reads the file's `machine` as `build-2`, which is the case and the value the proof names.",
-          "PROOF-43: the starting section and the new one come from helpers not shown, so the reading takes on trust that they give the same results, fingerprint, commit and `dirty`, leaving `machine` as the only compared difference.",
-          "No spot test fired, and none of the six applies: the test asserts a literal the proof names, on a file the writer wrote."
+          "PROOF-43: the test puts a file whose linux section names `build-1`, writes a section that differs in `machine` and `at` alone, and reads the file's section `machine` as `build-2`, which is the case and the value the proof names, so a write that keeps the section on disk fails it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -313,16 +311,16 @@
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-05T14:37:04Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-49": {
-            "after": "    if not (listed or '').strip():\n        print(WORK_COMMITTED % head[:7], file=sys.stderr)\n        return head",
-            "aim": "past the test",
+            "after": "    if not (listed or '').strip():\n        return ''",
+            "aim": "plain",
             "before": "    if not (listed or '').strip():\n        return head",
-            "bug_key": "cd2f2e5a97769cc681d35d2cc1009a89684f9022431eaeeceea22e851a5907e4",
-            "case": "the specs, tests and settings of a run over `feat` all committed, then the run's work is committed; the proof says it prints nothing; the changed code prints `Committed <sha7>, the work these results describe:` to standard error",
+            "bug_key": "b64abae4d486b77b5b91eb95ea3ce03e5fba550722b8e8e4e8556388a5742b7f",
+            "case": "specs, tests and settings all committed, then committing the run's work; the proof says the results' commit names HEAD; the changed code returns no sha, so the results' commit reads `purlin: evidence at an unknown commit`",
             "file": "scripts/run/evidence.py",
-            "line": 722,
+            "line": 808,
             "result": "caught",
             "why": ""
           },
@@ -330,40 +328,47 @@
             "after": "            print(' %s' % path.strip())",
             "aim": "plain",
             "before": "            print('  %s' % path.strip())",
-            "bug_key": "0a55224682b5fb7ec1af69406abfd644c2d85bd621dd4824ab2e9b82ac02ee29",
-            "case": "the spec `feat` edited and not committed, then `--all --test --commit`; the proof says the line after `Committed <sha7>, the work these results describe:` is `  specs/a/feat.md`, indented two spaces; the changed code prints ` specs/a/feat.md`, indented one space",
+            "bug_key": "959c8b321d8d9b60f4b52e819f85e369a4cdb3341e55578d9066b7d481d1a717",
+            "case": "the spec `feat` edited and not committed, then `--all --test --commit`; the proof says the run prints `  specs/a/feat.md` indented two spaces under the Committed line; the changed code prints ` specs/a/feat.md` indented one space",
             "file": "scripts/run/evidence.py",
-            "line": 735,
+            "line": 821,
             "result": "caught",
             "why": ""
           },
           "PROOF-98": {
-            "after": "            or _git(project_root, ['commit', '-a'] + work_message(features)\n                    ) is None):",
+            "after": "                    + ['-a']) is None):",
             "aim": "plain",
-            "before": "            or _git(project_root, ['commit'] + work_message(features)\n                    + ['--'] + paths) is None):",
-            "bug_key": "74ff68e90e212e0a2351c63863eeb3466899caef68d4e09a99b9ac2c0df3f040",
-            "case": "the spec `feat` and `src/other.py` both edited and not committed, then `--all --test --commit`; the proof says the commit holds `specs/a/feat.md` and not `src/other.py`, which `git status` still lists; the changed code commits `src/other.py` too and `git status` no longer lists it",
+            "before": "                    + ['--'] + paths) is None):",
+            "bug_key": "d53bff9fc573071abf3eb59f928688c6992e03ddbfcce55c44cfe4b8afb3bbe4",
+            "case": "the spec `feat` and `src/other.py` both edited and not committed, then `--all --test --commit`; the proof says the commit holds `specs/a/feat.md` and not `src/other.py`, which git status still lists; the changed code commits `src/other.py` too and git status no longer lists it",
             "file": "scripts/run/evidence.py",
-            "line": 726,
+            "line": 813,
             "result": "caught",
             "why": ""
           },
           "PROOF-99": {
-            "after": "            '-m', ' '.join(features)]",
-            "aim": "past the test",
+            "after": "            '-m', ', '.join(features)]",
+            "aim": "plain",
             "before": "            '-m', '\\n'.join(features)]",
-            "bug_key": "a885cfd3d58ce68760019b5866fd51878a85f22a987a4635d570bd131f7806b2",
-            "case": "the specs `f1` to `f6` edited and not committed, then `--all --test --commit`; the proof says the commit's body is the six lines `f1` to `f6`; the changed code gives a body of one line, `f1 f2 f3 f4 f5 f6`",
+            "bug_key": "ba9363b85bf1e6c275f4e8a2b9a1aae6d10c62c71fca529e42225649e0ac923a",
+            "case": "the specs `f1` to `f6` edited and not committed, then `--all --test --commit`; the proof says the commit's body is the six lines `f1` to `f6`; the changed code writes the body as one line `f1, f2, f3, f4, f5, f6`",
             "file": "scripts/run/evidence.py",
-            "line": 745,
+            "line": 831,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-50: the test edits the spec, runs `--all --test --commit`, and compares the two newest subjects, the Committed line with the first commit's sha7 and the line after it with `  specs/a/feat.md`, which is what the proof names.",
+          "PROOF-50: the test reads only the one line after the Committed line, so an extra file line printed below it would still pass.",
+          "PROOF-49: the test calls the commit step directly rather than a whole run, and checks the returned sha equals HEAD, that nothing is printed on either stream, that HEAD did not move and that the results' commit subject names HEAD's sha7, which is what the proof names.",
+          "PROOF-98: the test reads the files of the work commit as exactly `specs/a/feat.md`, finds ` M src/other.py` in git status and reads `dirty` as true from the written evidence, which is what the proof names.",
+          "PROOF-99: the test compares the work commit's subject with the counted form and its body with the six names in order, which is what the proof names; it reads no exit code, which the proof does not name.",
+          "No proof of the rule covers exactly 5 features, where the subject still lists the names, or a changed test file or `.purlin/config.json` in the work commit, so those parts of the rule are observed by none of these tests."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -373,13 +378,13 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-18": {
             "after": "    if all(observed.get(pid) == 'fail' for pid in here):",
             "aim": "plain",
             "before": "    if any(observed.get(pid) == 'fail' for pid in here):",
-            "bug_key": "11b606580be91b246c824a1b0861b056efed03e533f0ed3cc04089304f0d23b8",
+            "bug_key": "732ed069c840fea86fdf5551b538a4c40bbd0d9c8f4504a08b30f4f4b8c944b6",
             "case": "a rule with two proofs, one whose test passed and one whose test failed; the proof says `failed`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
             "line": 130,
@@ -387,13 +392,13 @@
             "why": ""
           },
           "PROOF-25": {
-            "after": "_WORST = {'fail': 2, 'not run': 0, 'pass': 1}",
+            "after": "            word = status if status in ('pass', 'fail') else 'pass'",
             "aim": "plain",
-            "before": "_WORST = {'fail': 2, 'not run': 1, 'pass': 0}",
-            "bug_key": "10959b211bdabdce6368835c2d4c6f0e904f6e8f01d1af2ba2b4768447b1ada6",
-            "case": "a rule's one proof tied to two tests, one passed and one skipped; the proof says `not run`; the changed code gives `passed`",
+            "before": "            word = status if status in ('pass', 'fail') else 'not run'",
+            "bug_key": "32b35a712c60f6c116274a41b20ecb72036f3c7b00b9c0658a1d7518cac1b324",
+            "case": "a rule whose one proof is tied to two tests, one passed and one skipped; the proof says `not run`; the changed code gives `passed`",
             "file": "scripts/run/evidence.py",
-            "line": 141,
+            "line": 153,
             "result": "caught",
             "why": ""
           },
@@ -401,24 +406,23 @@
             "after": "    if all(pid not in observed for pid in runnable):",
             "aim": "plain",
             "before": "    if any(pid not in observed for pid in runnable):",
-            "bug_key": "21534c2f985719afbaf1227094e8fcde7a3bbf6c0dc471c9d18e7fa9945271c2",
-            "case": "a rule with two proofs, PROOF-1 whose test passed and PROOF-2 tied to no test; the proof says `no test`; the changed code gives `not run`",
+            "bug_key": "fee836d9c9bc21e69d6309c9562c2d32743eb9b9a0721921ea43b3429fc9a977",
+            "case": "a rule with PROOF-1 whose test passed and PROOF-2 tied to no test; the proof says `no test`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
             "line": 134,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-18: the test gives two plain proofs, one with a passing test and one with a failing test, and compares the rule's word with the literal `failed`, which is the proof's case and its result.",
-          "PROOF-77: the test gives PROOF-1 a passing test and PROOF-2 no test, and compares the rule's word with the literal `no test`, which is the proof's case and its result.",
-          "PROOF-25: the test ties one proof to a passing test and a test that did not run, and compares the rule's word with the literal `not run`, so a result of `passed` fails it.",
-          "All three tests read the word through the helper `_rule_word`, whose source is not shown, so whether the word is taken from a written section, as each proof says, cannot be seen from the tests alone.",
-          "The spot tests found nothing, and each test holds its proof's expected word as a literal the code cannot influence.",
-          "No proof of the rule covers a proof tagged `@env` for another operating system, or a `ci` section that lists only the rules its proofs prove."
+          "PROOF-18: the test gives a rule two proofs, one with a passing test and one with a failing test, and compares the rule's word with `failed`, which is the proof's case and its value.",
+          "PROOF-77: the test gives a rule two proofs, a passing test for PROOF-1 and nothing for PROOF-2, and compares the rule's word with `no test`, which is the proof's case and its value.",
+          "PROOF-25: the test ties one proof to a passing test and a test that did not run and compares the rule's word with `not run`, so a result of `passed` would fail it.",
+          "All three tests read the word through a helper, `_rule_word`, whose source is not shown, so whether the word is read from a written section or from the function that works it out cannot be seen here.",
+          "The spot tests found nothing, and each test holds the value its proof names in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -429,24 +433,29 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-05T14:37:04Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-85": {
-            "after": "    return 'unknown'",
-            "aim": "past the test",
-            "before": "    return platform.node() or 'unknown'",
-            "bug_key": "d434163347903c90a18143764e7b27c6ff19162bf0eb174dbffca32f55abb4a0",
-            "case": "a section resolved to the `build-9` side, then a `--feature feat --test` run; the proof says the rewritten section names this machine; the changed code writes `unknown` as the machine",
+            "after": "        found = {key: value for key, value in (section or {}).items()\n                 if key not in ('commit', 'at', 'email', 'machine')}",
+            "aim": "plain",
+            "before": "        found = {key: value for key, value in (section or {}).items()\n                 if key not in ('commit', 'at', 'email')}",
+            "bug_key": "14f730b66f15540a4f51f99aba3bc0ba3e6e9c403480ebcd23e3fa8d7e7b8b6d",
+            "case": "feat's section resolved to the build-9 side of a merge, then a --feature feat --test run; the proof says the section is rewritten and names this machine; the changed code leaves the section as it was, naming build-9",
             "file": "scripts/run/evidence.py",
-            "line": 87,
+            "line": 454,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-85: the test commits a section naming `build-9` on one branch and `build-8` on the other, checks that the merge conflicts, resolves it to the `build-9` side and confirms the file reads `build-9` before the run.",
+          "PROOF-85: after the `--feature feat --test` run it reads the section's machine and compares it with the host's own name, taken from the platform library and not from the code under test, so a section left as the merge resolved it fails the test.",
+          "PROOF-85: the test reads only the machine of the rewritten section, so its time, commit and email could stay those of the `build-9` side without the test noticing.",
+          "PROOF-85: the test resolves to one side only, the `build-9` side, which is the case the proof names, while the rule says either side."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -456,16 +465,16 @@
         "verdict": "strong"
       },
       "RULE-26": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-88": {
-            "after": "            if (entry.get('rule_hash'), entry.get('proof_hash'),\n                    entry.get('test_hash')) == tuple(current[rule_id]):",
+            "after": "            if not isinstance(entry, dict) or rule_id in current:",
             "aim": "plain",
-            "before": "            if (entry.get('rule_hash'), entry.get('proof_hash'),\n                    entry.get('test_hash')) != tuple(current[rule_id]):",
-            "bug_key": "8c14aa73eb458a82b5ef4289d4aa4e9cb9cc26f4e9a2dd19469f4ceb3c1bb78d",
-            "case": "both sides' `RULE-1` entries are over the current rule, proof and test; the proof says the audit holds the `RULE-1` entry; the changed code writes the file with no `RULE-1` audit entry",
+            "before": "            if not isinstance(entry, dict) or rule_id not in current:",
+            "bug_key": "acd2af8f9d97c6e872d186d6711bd1b03dcaac46457ecf20d4a6ee4c03485bcc",
+            "case": "two branches each commit an audit entry for RULE-1 over its current rule, proof and test and the merge conflicts; the proof says the file's audit holds the RULE-1 entry after the run; the changed code skips every entry of a rule the spec has, so the audit holds no RULE-1 entry",
             "file": "scripts/run/evidence.py",
-            "line": 468,
+            "line": 551,
             "result": "caught",
             "why": ""
           },
@@ -473,23 +482,24 @@
             "after": "            if (entry.get('proof_hash'),\n                    entry.get('test_hash')) != tuple(current[rule_id])[1:]:",
             "aim": "plain",
             "before": "            if (entry.get('rule_hash'), entry.get('proof_hash'),\n                    entry.get('test_hash')) != tuple(current[rule_id]):",
-            "bug_key": "47c4450690683fc9f2cd24c1ee1ad39601b9527d974568672c0eae71ebfde31f",
-            "case": "one side's `RULE-1` entry was made before `RULE-1`'s text changed; the proof says the file holds no audit entry for `RULE-1`; the changed code keeps that entry",
+            "bug_key": "76d78017df800370b7fa5f4e3c0f4f86b582af5ef32c722b9424b290dfc4390a",
+            "case": "one side's audit entry for RULE-1 was made before RULE-1's text changed; the proof says the file holds no audit entry for RULE-1 after the run; the changed code no longer compares the rule's hash, so the entry of the older text is kept",
             "file": "scripts/run/evidence.py",
-            "line": 467,
+            "line": 553,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-88: the test runs `--all --test` over the conflicted file, parses the evidence, and reads the `RULE-1` audit entry's rule, proof and test hashes against the current ones, so a dropped or stale entry fails it.",
-          "PROOF-88: the test also reads the entry's findings as `['b']`, which pins which side's entry is kept, something the proof does not name.",
-          "PROOF-89: the test runs `--all --test` over the conflicted file with the rule reworded and reads that `RULE-1` is absent from the audit's rules, which is the result the proof names.",
-          "PROOF-89: the test would also pass if the run kept no audit entry from any conflicted file, so it shows the drop only when read beside PROOF-88.",
-          "Both tests take the conflicted file and the current hashes from helpers not shown here, so whether the two sides are built as the proofs describe cannot be read from the test bodies alone."
+          "PROOF-88: the test builds the conflicted file, runs `--all --test`, reads the file back and compares the RULE-1 entry's three hashes with the current ones and its findings with `['b']`, so a dropped entry or an entry from the wrong side fails it.",
+          "PROOF-88: the hashes the test expects come from a helper, `_current_hashes`, whose source is not shown, so whether they are taken apart from the code under test cannot be read here.",
+          "PROOF-89: the test builds the same file with the rule reworded, runs `--all --test` and asserts that the audit holds no `RULE-1`, which is the result the proof names.",
+          "PROOF-89: the helper `_conflicted_audits` is not shown, so whether the other side holds a current entry or none cannot be read here; the test would pass either way only if every entry is dropped.",
+          "PROOF-89: the test reads a missing `audit` as passing, so a run that wrote the file with no audit at all would pass too, which agrees with the proof.",
+          "Findings: none, and the tests assert on values read from the written file after the run."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -500,28 +510,28 @@
         "verdict": "strong"
       },
       "RULE-27": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-90": {
-            "after": "    return (_git(project_root, ['config', 'user.name']) or '').strip() or 'unknown'",
+            "after": "    return (_git(project_root, ['config', 'user.email']) or '').strip().split('@')[0] or 'unknown'",
             "aim": "plain",
             "before": "    return (_git(project_root, ['config', 'user.email']) or '').strip() or 'unknown'",
-            "bug_key": "9bc1348271d0a8dfebe27e56e521327e322704c227c061d7e2c197278afd47a2",
-            "case": "a `--all --test` run in a checkout whose git email is dana.dev@labconnect.example; the proof says the section's `email` reads dana.dev@labconnect.example; the changed code writes the git user name, or unknown where none is set",
+            "bug_key": "df10b690b8661df7ff972524e80465c5b2c98744893b6024b1693da7c3195eb3",
+            "case": "a git checkout whose git email is `dana.dev@labconnect.example`, after a `--all --test` run; the proof says the section's `email` reads `dana.dev@labconnect.example`; the changed code gives `dana.dev`",
             "file": "scripts/run/evidence.py",
             "line": 92,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-90: the test sets the checkout's git email to `dana.dev@labconnect.example`, runs `--all --test`, and compares this system's section's `email` with that exact literal, so it observes the action and the value the proof names.",
-          "PROOF-90: the expected value is a literal taken from the proof, not from the code, and the test also requires an exit code of 0, so a run that writes any other email fails it.",
-          "PROOF-90: the spot tests found nothing, and the test leaves nothing to add: it asserts, the assertion can fail, and nothing under test is mocked or swallowed.",
-          "PROOF-90: the proof covers only the case where git has an email; the test does not observe `unknown` where git has none, nor that the email is never compared."
+          "PROOF-90: the test sets the checkout's git email to `dana.dev@labconnect.example`, runs `--all --test`, checks the exit code is 0, and compares the written section's `email` with that literal, so it observes the proof's case and the result it names.",
+          "PROOF-90: the expected value is a literal written in the test, not taken from the code, so a change to the email the section holds fails the comparison.",
+          "PROOF-90: the spot tests found nothing, and the test has an assertion that can fail on the value the proof names.",
+          "PROOF-90: the proof covers the email being written; the rule's `unknown` case where git has none, and its \"never compared\" part, are not observed by this proof."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -532,16 +542,16 @@
         "verdict": "strong"
       },
       "RULE-29": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-93": {
             "after": "            observed[proof_id] = 'not run'",
             "aim": "plain",
             "before": "            observed[proof_id] = 'pass' if info.get('is_anchor') else 'not run'",
-            "bug_key": "35385e67b1aebaee0145747aec54473c4c792fec45dad371c5bb3f90cbecd7b3",
+            "bug_key": "c6da83c4f0035fbf432def09ce511113e689fdbf3e5d90ae67bca9ae6d1f0b87",
             "case": "the anchor `shared`'s one test skips with `nothing to check: this project has no screens`; the proof says its rule reads `passed`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
-            "line": 207,
+            "line": 211,
             "result": "caught",
             "why": ""
           },
@@ -549,22 +559,23 @@
             "after": "            observed[proof_id] = 'pass'",
             "aim": "plain",
             "before": "            observed[proof_id] = 'pass' if info.get('is_anchor') else 'not run'",
-            "bug_key": "9e2cdd146bcdd59d63bdab6eec40d3c4a3528b669b0fd2c2fe5894562f7df026",
+            "bug_key": "07ccbca582b6a8ffae5bacdad6fd881672f2712468bd74410ea2439b1bee9e29",
             "case": "the feature `feat`'s one test skips with `nothing to check: this project has no screens`; the proof says its rule reads `not run`; the changed code gives `passed`",
             "file": "scripts/run/evidence.py",
-            "line": 207,
+            "line": 211,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-93: the test runs `--all --test` over an anchor whose one test skips, and compares the proof's id, its result `nothing to check`, its reason `this project has no screens` and the whole `rules` map against `passed`, so every value the proof names is checked.",
-          "PROOF-94: the test runs `--all --test` over a feature whose one test skips, and compares the proof's id, its reason and the whole `rules` map against `not run`, which are the values the proof names.",
-          "PROOF-94: the test never reads the entry's `result`, which the rule says is `nothing to check` and the proof does not name, so a feature's entry with another result and the same reason would still pass.",
-          "The spot tests found nothing, and both tests compare literals that come from the proofs and not from the code."
+          "PROOF-93: the test runs `--all --test` over an anchor whose one test skips, and compares the proof's id, its result `nothing to check`, its reason `this project has no screens` and the whole rules map against `RULE-1` reading `passed`, which is everything the proof names.",
+          "PROOF-94: the test runs `--all --test` over a feature whose one test skips, and compares the proof's id, its reason and the whole rules map against `RULE-1` reading `not run`, which is what the proof names.",
+          "PROOF-94: the test does not read the entry's `result`, which the proof does not name either, so a wrong result word beside the kept reason would still pass.",
+          "Both tests take the skip reason from a helper defined elsewhere in the file, so the full reason `nothing to check: this project has no screens` is not visible in the test's own lines.",
+          "The spot tests found nothing, and both tests compare literal expected values that the code under test does not supply."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -575,16 +586,16 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-27": {
             "after": "                listed.append(dict(base, result='not run', test=''))",
             "aim": "plain",
             "before": "                listed.append(dict(base, result=unseen, test=''))",
-            "bug_key": "ead03d80f240d5b0c4909851e8915753adb8482469607036180e7970bc5bb6fd",
-            "case": "a proof tied to no test; the proof says one entry reading missing with an empty test; the changed code gives one entry reading not run with an empty test",
+            "bug_key": "978f2f3d74ff939d02efe4d125ee71a1a25c4a892199f5810c8063a9f8a75cf3",
+            "case": "a proof tied to no test; the proof says one entry reading `missing` with an empty `test`; the changed code gives one entry reading `not run` with an empty `test`",
             "file": "scripts/run/evidence.py",
-            "line": 257,
+            "line": 272,
             "result": "caught",
             "why": ""
           },
@@ -592,10 +603,10 @@
             "after": "            unseen = 'missing'",
             "aim": "plain",
             "before": "            unseen = 'not run' if foreign else 'missing'",
-            "bug_key": "7b9826b37d227c87813c1098644eeae27e662573dcfd8ad5f070b7ae4e8b024d",
-            "case": "a proof tagged @env for another operating system tied to tests/w.py::test_w, skipped here; the proof says one entry reading not run with that test named; the changed code gives missing with that test named",
+            "bug_key": "c0543e5106331ba227577eda9230dbbdeee8876134fd5b9ea988f92869b2f215",
+            "case": "a proof tagged `@env` for another operating system tied to tests/w.py::test_w, which was skipped here; the proof says one entry reading `not run` with that test named; the changed code gives one entry reading `missing` with that test named",
             "file": "scripts/run/evidence.py",
-            "line": 237,
+            "line": 242,
             "result": "caught",
             "why": ""
           },
@@ -603,23 +614,24 @@
             "after": "            base = {'id': rule_id, 'rule': rule_id, 'env': env,",
             "aim": "past the test",
             "before": "            base = {'id': proof_id, 'rule': rule_id, 'env': env,",
-            "bug_key": "c0d71e29ad9ac1eff6bc44501eb8b100923c1d2e69eacd92a462ad359767aef5",
-            "case": "a proof tied to tests/a.py::test_a, passed, and tests/b.py::test_b, failed; the proof says the proof is listed twice, under its own id PROOF-1; the changed code lists both entries under the id RULE-1",
+            "bug_key": "65e1184f08e40db265877eb920da3db163c61afd4bdf95f947b3e759de7b59f6",
+            "case": "a proof tied to tests/a.py::test_a, which passed, and tests/b.py::test_b, which failed; the proof says the proof is listed twice, each entry carrying its `id`; the changed code lists two entries whose `id` is the rule's, so the proof is listed under no entry",
             "file": "scripts/run/evidence.py",
-            "line": 234,
+            "line": 239,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-3: the test compares the result and test of both entries with `pass`, `tests/a.py::test_a`, `fail` and `tests/b.py::test_b`, and the sorted field names of each entry with the six the proof names.",
-          "PROOF-3: the test never reads the values of `id`, `rule`, `env` or `manual`, so an entry listed under the wrong id still passes.",
-          "PROOF-27: the test gives a proof no test and compares the whole list with one entry reading `missing` and an empty `test`, which is the proof's case and its result.",
-          "PROOF-29: the test gives a proof tagged for another system one skipped test and compares the whole list with one entry reading `not run` and `tests/w.py::test_w`, so a `missing` result fails it.",
-          "The spot tests found nothing, and each test holds the values its proof names."
+          "PROOF-3: the test builds a proof tied to one passing and one failing test and compares each entry's `result` and `test` and the exact set of six field names, which is the proof's case and its results.",
+          "PROOF-3: the test reads the names of the fields and never the values of `id`, `rule`, `env` or `manual`, so an entry listed under the wrong id or rule still passes.",
+          "PROOF-27: the test builds a proof with no tied test and compares the whole list with one entry reading `missing` and an empty `test`, which is what the proof names.",
+          "PROOF-29: the test builds a proof tagged for another system whose tied test did not run and compares the whole list with one entry reading `not run` and `tests/w.py::test_w`, which is what the proof names and rules out `missing`.",
+          "PROOF-29: the tied test is handed over with the status `not run`, so the test shows the skipped case the proof names and not a tied test that passed or failed on this system.",
+          "The rule's `ci` section, which lists only the proofs tagged for this machine's system, and its `nothing to check` result are named by none of the three proofs shown."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -630,40 +642,40 @@
         "verdict": "strong"
       },
       "RULE-30": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-21": {
-            "after": "        rules[rule_id] = rule_word(\n            [pid for pid in proof_ids if pid in observed],\n            proofs, observed, host_os)",
-            "aim": "past the test",
-            "before": "        rules[rule_id] = rule_word(proof_ids, proofs, observed, host_os)",
-            "bug_key": "91e557e58cb809e8ca6cf2f8e8331d09c71f1c0678dc4199424d8072b31c35d8",
-            "case": "a run where a rule's one proof is `@manual` and tied to no test; the proof says the section reads the rule `checked at sign-off`; the changed code writes `no test` in the section",
-            "file": "scripts/run/evidence.py",
-            "line": 229,
-            "result": "caught",
-            "why": ""
-          },
-          "PROOF-24": {
-            "after": "    if len(runnable) < len(written):\n        return states_module.CHECKED_AT_SIGNOFF",
+            "after": "    if not written:\n        return states_module.CHECKED_AT_SIGNOFF",
             "aim": "plain",
             "before": "    if not runnable:\n        return states_module.CHECKED_AT_SIGNOFF",
-            "bug_key": "c897b4bea4f48d6dbb144149bf20d1cd08136b03ed6c027c09c9eecae6006701",
-            "case": "a rule with two proofs, one `@manual` and one whose test failed; the proof says the section reads the rule `failed`; the changed code gives `checked at sign-off`",
+            "bug_key": "391519caf9ccfec15c04e14aca7e416daf1721ac511ff27b524659cfe5ab53e9",
+            "case": "a rule whose one proof is `@manual` and tied to no test; the proof says the section reads the rule `checked at sign-off`; the changed code gives `not run`",
             "file": "scripts/run/evidence.py",
             "line": 122,
             "result": "caught",
             "why": ""
+          },
+          "PROOF-24": {
+            "after": "    if all(observed.get(pid) == 'fail' for pid in written):\n        return 'failed'",
+            "aim": "plain",
+            "before": "    if any(observed.get(pid) == 'fail' for pid in here):\n        return 'failed'",
+            "bug_key": "9e764bb0c056dbe1d460a90297a428068f90a75b553732a5c4db6c76a3d3da87",
+            "case": "a rule with two proofs, one `@manual` and one whose test failed; the proof says the section reads the rule `failed`; the changed code gives `not run`",
+            "file": "scripts/run/evidence.py",
+            "line": 130,
+            "result": "caught",
+            "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-21: the test gives a helper one `@manual` proof with no test results and compares the word it returns with the literal `checked at sign-off`, which is the value the proof names.",
-          "PROOF-21: the helper `_rule_word` is not shown, so it is not seen whether the word is read from a written section, as the proof says, or from the rule-word step alone; a fault in how the section is built may pass.",
-          "PROOF-24: the test gives the helper a `@manual` proof beside a proof with one failed result and compares the word with the literal `failed`, which is the proof's case and its value.",
-          "PROOF-24: the same unseen helper stands between the test and the section the proof speaks of.",
-          "The spot tests found nothing, and both tests hold a failable comparison against a literal the proof names."
+          "PROOF-21: the test gives one `@manual` proof with no tied test and compares the rule's word with the literal `checked at sign-off`, which is the case and the value the proof names.",
+          "PROOF-21: the word is read through the helper `_rule_word`, whose source is not shown, so whether it comes from a written section or from the word function alone cannot be told from the test's own lines.",
+          "PROOF-24: the test gives a `@manual` proof beside a plain proof whose one tied test failed and compares the rule's word with the literal `failed`, which is the case and the value the proof names.",
+          "PROOF-24: the `@manual` proof stands first and the failing proof second in the only arrangement tried, and the same unseen helper produces the word.",
+          "The spot tests found nothing, and each test holds one comparison against a literal the proof names, so neither bug has an evident way past its test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -674,16 +686,16 @@
         "verdict": "strong"
       },
       "RULE-31": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-60": {
-            "after": "    if not (isinstance(kept, dict) and kept.get('fingerprint')\n            == section.get('fingerprint')):",
+            "after": "        platforms.setdefault(os_name, section)",
             "aim": "plain",
-            "before": "    if not (isinstance(kept, dict) and _same_observation(kept, section)\n            and _same_code(kept.get('commit'), section.get('commit'),\n                           same_code)):",
-            "bug_key": "f2b4a2db16076ab888035b98449035ebc68e61570a7d684410c5f74178e84abe",
-            "case": "a section over the same fingerprint that saw the test fail at 2030-01-02T00:00:00Z on another commit is written; the proof says the file reads the failure, that `at` and that commit; the changed code keeps the section on disk with its earlier result, `at` and commit",
+            "before": "        platforms[os_name] = section",
+            "bug_key": "14fe1426166c09e052e4b19c5c8c6d66388e2c75093902671b00a882598bd584",
+            "case": "a section that saw the test fail at 2030-01-02T00:00:00Z on another commit, written over one with the same fingerprint; the proof says the file reads the failure, that `at` and that commit; the changed code keeps the section on disk, with its pass, its `at` and its commit",
             "file": "scripts/run/evidence.py",
-            "line": 508,
+            "line": 597,
             "result": "caught",
             "why": ""
           },
@@ -691,78 +703,79 @@
             "after": "    return bool(older and newer and same_code is not None\n                and not same_code(older, newer))",
             "aim": "plain",
             "before": "    return bool(older and newer and same_code is not None\n                and same_code(older, newer))",
-            "bug_key": "cd033e2ae9f30958f29391b3f733d88fb0ef4726861fa77f20c3bd389999cda4",
-            "case": "a second `--all --test` on the evidence commit with nothing changed; the proof says feat.json stays byte for byte as committed, its `commit` the one the first run's evidence describes; the changed code writes the section again with the evidence commit as its `commit`",
+            "bug_key": "8f6a7f15b71d7e1318e734e435b4ccf933d2674b8d6dfb619c3b8c91c6a0ea51",
+            "case": "a second `--all --test` on the evidence commit with nothing changed; the proof says feat.json is byte for byte as committed with `commit` naming the described commit; the changed code writes the section again with the evidence commit as `commit` and `carried` on each result",
             "file": "scripts/run/evidence.py",
-            "line": 520,
+            "line": 606,
             "result": "caught",
             "why": ""
           },
           "PROOF-92": {
-            "after": "    return bool(older and newer and same_code is not None)",
+            "after": "    if not (isinstance(kept, dict) and _same_observation(kept, section)):",
             "aim": "plain",
-            "before": "    return bool(older and newer and same_code is not None\n                and same_code(older, newer))",
-            "bug_key": "fdde3ff0f3ad5967a390db6c34bf5be83f2dc53c783412c4180a428a9d2343c4",
-            "case": "`--clean --test` after a commit that changes `README.md`; the proof says the section holds the new HEAD as its `commit` and a new `at`; the changed code leaves the section with the earlier commit and the earlier `at`",
+            "before": "    if not (isinstance(kept, dict) and _same_observation(kept, section)\n            and _same_code(kept.get('commit'), section.get('commit'),\n                           same_code)):",
+            "bug_key": "deea36c165c3ce51e4c136c6913ed66710bde4cc67e2a0b334a2ea5dbce14cd8",
+            "case": "`--clean --test` after a committed change to README.md; the proof says the section holds the new HEAD as `commit` and a new `at`; the changed code leaves the section as it was, with the old `commit` and the old `at`",
             "file": "scripts/run/evidence.py",
-            "line": 519,
+            "line": 594,
             "result": "caught",
             "why": ""
           },
           "PROOF-97": {
-            "after": "        found['dirty'] = False",
+            "after": "                 if key not in ('commit', 'at', 'email', 'dirty')}",
             "aim": "plain",
-            "before": "        found['dirty'] = bool(found.get('dirty'))",
-            "bug_key": "ed879e49ee38c20460fb76219d8b0cb9dd855d117a0a9509fceac878efb537c3",
-            "case": "`--all --test` with untracked `notes.txt`, then again on the same commit after it is deleted; the proof says the section's `dirty` is false after the second run; the changed code leaves the section as it was with `dirty` true",
+            "before": "                 if key not in ('commit', 'at', 'email')}",
+            "bug_key": "464ad83d604c0d6a8048a94eaa910348ba0a17e5c487182e11495f7cb7c058e6",
+            "case": "`--all --test` again on the same commit after notes.txt is deleted; the proof says the section's `dirty` is false; the changed code reads the two sections as the same observation and leaves `dirty` true",
             "file": "scripts/run/evidence.py",
-            "line": 362,
+            "line": 454,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-91: the test reads the committed file from git, runs `--all --test` again and compares the file's bytes with the committed ones and its `commit` with the described commit, which is the proof's case and both results it names.",
-          "PROOF-92: the test commits `README.md`, runs `--clean --test` and compares the section's `commit` with HEAD, its `at` with the earlier one, and its rules, proofs and fingerprint with the earlier ones, so each value the proof names is checked.",
-          "PROOF-92: the new `at` is only checked to differ from the earlier one, so a wrong but different time would pass.",
-          "PROOF-60: the test writes a failing section through a helper whose source is not shown and compares the rule's word, the first proof's result, the `at` and the commit with literals, so the proof's values are checked.",
-          "PROOF-60: the helper's source is not shown, so the test itself does not show that the section on disk beforehand has the same fingerprint.",
-          "PROOF-97: the test asserts `dirty` is true after the run with `notes.txt` present, deletes the file, runs again, and asserts HEAD is unchanged and `dirty` is false, which is the proof's case and result.",
-          "The spot tests found nothing, and each test holds failable assertions on the values its proof names."
+          "PROOF-91: the test reads the committed file from git, runs `--all --test` again and compares the file's bytes and its `commit` with the committed ones, which is what the proof names.",
+          "PROOF-91: the committed section is first checked to name the described commit, so the byte comparison is over a section that names a commit other than HEAD.",
+          "PROOF-92: the test commits README.md, waits past one second, runs `--clean --test` and compares `commit` with HEAD, `at` with the earlier one, and the rules, results and fingerprint with the earlier ones.",
+          "PROOF-92: each result is compared without `reported`, so a change in what the report held for a test would pass; the proof names the results and fingerprint and not the report.",
+          "PROOF-60: the test writes a failed section through a helper and reads the rule's word, the first proof's result, `at` and `commit` against the literals the proof names.",
+          "PROOF-60: the helper's source is not shown, so the reading takes on trust that it puts a section with the same fingerprint on disk before the failed one is written.",
+          "PROOF-97: the test reads `dirty` as true with notes.txt present, deletes it, runs again, checks HEAD is unchanged and reads `dirty` as false, which is the proof's case and result.",
+          "The rule also names `machine` and `email`; no proof of the rule writes a section from another machine or reads `email` after a replacement."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "939268e09439bde2924c74563e65f005a45eb7fe0537c05b9555b5e385ce6e76",
         "rule_hash": "fb1ce8405d0d172a126f7a7788fba0dfe160867dcc6ba2d001c15df94fe2ec76",
-        "test_hash": "538b6ce32a09ae0c4dd7080e3449054f37641b2da905cbd128a0bb540e633563",
+        "test_hash": "ac33440df68d2eba38de6561a2f256f5b157322dcbce6f8041b6646de01ceb47",
         "verdict": "strong"
       },
       "RULE-32": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-10": {
-            "after": "        COMMIT_SUBJECT % (str(work_sha or '')[:8] or 'an unknown commit')))",
+            "after": "COMMIT_SUBJECT = 'purlin: evidence for %s'",
             "aim": "plain",
-            "before": "        COMMIT_SUBJECT % (str(work_sha or '')[:7] or 'an unknown commit')))",
-            "bug_key": "836cac44bdfac2586b8795d0807b80e48e33cc77fe68d2bac62289234b740525",
-            "case": "a `--all --test --commit` run with the spec and test already committed; the proof says the newest commit reads `purlin: evidence at <sha7>`, the first seven characters of HEAD before the run; the changed code writes eight characters",
+            "before": "COMMIT_SUBJECT = 'purlin: evidence at %s'",
+            "bug_key": "9bf466da66fd3d2949750da6250bbd5c7a113357260bfe6120e9bd592b278fa6",
+            "case": "a `--all --test --commit` run in a checkout with spec and test committed; the proof says the newest commit reads `purlin: evidence at <sha7>`; the changed code gives `purlin: evidence for <sha7>`",
             "file": "scripts/run/evidence.py",
-            "line": 780,
+            "line": 57,
             "result": "caught",
             "why": ""
           },
           "PROOF-38": {
-            "after": "UNCHANGED = 'Evidence is unchanged.'",
+            "after": "    return False",
             "aim": "plain",
-            "before": "UNCHANGED = 'Evidence unchanged.'",
-            "bug_key": "48705f170c9d5764d04abfcc9d432c424455e8c54e6604c3dfe63c8ba9bc57d3",
-            "case": "the same `--all --test --commit` run made a second time with nothing new; the proof says it prints `Evidence unchanged.`; the changed code prints `Evidence is unchanged.`",
+            "before": "    return bool(older and newer and same_code is not None\n                and same_code(older, newer))",
+            "bug_key": "f69214bcb737b7b0a94acc3ab7b835735966e6efd7aec10fc8a4701991aac36e",
+            "case": "the same `--all --test --commit` run made again right after its evidence was committed; the proof says `Evidence unchanged.` and no new commit; the changed code rewrites the section on the new HEAD, prints `Evidence committed.` and adds a commit",
             "file": "scripts/run/evidence.py",
-            "line": 67,
+            "line": 605,
             "result": "caught",
             "why": ""
           },
@@ -770,26 +783,25 @@
             "after": "        ['%s/local' % EVIDENCE_DIR]",
             "aim": "plain",
             "before": "        ['%s/local' % EVIDENCE_DIR] + list(removed or ())",
-            "bug_key": "4820145ac57a0f3bc444440a5a76ca27e5f0fcb95bf3596b7f8c4265cd240dc8",
-            "case": "committed evidence for `gone` under both `local` and `ci` with no spec; the proof says the last commit deletes both files; the changed code commits only the deletion of `.purlin/evidence/local/gone.json` and leaves the `ci` deletion uncommitted",
+            "bug_key": "dcf873c797b82653bcc51500b1ddd156068ea68991a65a8f3c7404a618674ea2",
+            "case": "committed evidence for `gone` under both `local` and `ci`, no spec; the proof says the last commit deletes `.purlin/evidence/ci/gone.json` as well as the local file; the changed code commits only the local deletion and leaves the ci removal uncommitted",
             "file": "scripts/run/evidence.py",
-            "line": 778,
+            "line": 864,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-10: the test runs the command in a real checkout and compares the printed line, the absence of `git push`, the newest subject against the first seven characters of HEAD read before the run, the author name and email, and the exact list of files the commit changed, which is every value the proof names.",
-          "PROOF-10: the test reads the author and not the committer, and the proof names only the author, so nothing the proof names is left unread.",
-          "PROOF-39: the test pushes `main` to a bare remote, runs the command, and reads the printed line, both deletions in the name-status of HEAD, and the remote's `main` against the sha recorded before the run, so a missing deletion or a push would fail it.",
-          "PROOF-39: the test also asserts HEAD differs from the pushed commit, which shows a commit was made locally while the remote stayed where it was.",
-          "PROOF-38: the test counts the commits after a first run, runs again, and compares the printed `Evidence unchanged.` and the commit count, which are the two results the proof names.",
-          "PROOF-38: the first run's output is not checked in this test, so it relies on that run having committed the evidence; a first run that committed nothing would still leave the second run's two checks passing.",
-          "No proof of the rule covers a `ci` file in which the run carried a section forward, or the subject naming the run's first commit when the run makes one; all three cases start with nothing for a first commit to carry.",
-          "The spot tests found nothing, and each test holds failable comparisons against literals or values read from git before the run."
+          "PROOF-10: the test runs `--all --test --commit` in a checkout whose identity is `Dev` and `dev@example.com`, and reads the printed `Evidence committed.`, the absence of `git push`, the newest subject against HEAD taken before the run, the author's name and email, and the exact list of files the commit changed, so each value the proof names is compared.",
+          "PROOF-10: the HEAD it compares is read from git before the run and not from the code under test, so a wrong subject or sha cannot agree with it by construction.",
+          "PROOF-39: the test commits evidence for `gone` under `local` and `ci`, pushes `main` to a bare remote, runs, and reads `Evidence committed.`, a `D` line for each of the two files in the last commit, and the remote's `main` against the sha pushed before, which is what the proof names.",
+          "PROOF-39: it also checks that the local HEAD moved past the pushed commit, so an unchanged remote cannot be explained by no commit having been made.",
+          "PROOF-38: the test makes the run twice, and on the second reads `Evidence unchanged.` and the count of commits against the count after the first run, which is the proof's case and both its results.",
+          "PROOF-38: the test does not assert that the first run printed `Evidence committed.`, so it relies on the helper setup to make that first run a committing one.",
+          "No proof of the rule covers a file under `.purlin/evidence/ci/` in which the run carried a section forward, or the subject when the run made a first commit, so those parts of the rule are observed by none of these tests."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -800,16 +812,16 @@
         "verdict": "strong"
       },
       "RULE-33": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-95": {
             "after": "        COMMIT_SUBJECT % (str(head_sha or '')[:8] or 'an unknown commit')))",
             "aim": "plain",
             "before": "        COMMIT_SUBJECT % (str(head_sha or '')[:7] or 'an unknown commit')))",
-            "bug_key": "c701bdf9334463fd7caf5941e34ade085b1c7bf977be39a7509ac74e5abdd7f0",
-            "case": "a `--all --ci --commit` run in the Runner checkout with HEAD at <sha7>; the proof says the newest commit reads `purlin: evidence at <sha7>`; the changed code names eight characters of HEAD, not seven",
+            "bug_key": "a5c779fce3578924b908135ddd7a09f5ea27ae732b9844e1bbe6dce4e7b2284a",
+            "case": "a `--all --ci --commit` run in the Runner checkout with README.md edited; the proof says the newest commit reads `purlin: evidence at <sha7>`, naming HEAD before the run; the changed code gives a subject with eight characters of that sha",
             "file": "scripts/run/evidence.py",
-            "line": 795,
+            "line": 881,
             "result": "caught",
             "why": ""
           },
@@ -817,24 +829,24 @@
             "after": "    if not listed.strip():\n        return COMMITTED",
             "aim": "plain",
             "before": "    if not listed.strip():\n        return UNCHANGED",
-            "bug_key": "5e43909ce8235845746ce59e3971471e6b11b6f21e2ed84b9d7081da62ea83cc",
-            "case": "a second `--all --ci --commit` run with nothing new under `.purlin/evidence/ci/`; the proof says it prints `Evidence unchanged.`; the changed code prints `Evidence committed.`",
+            "bug_key": "38dbfa9bd306fb672cf027425f0c1c32f02905c6253c113d1df87866b4ebbd3b",
+            "case": "a second `--all --ci --commit` run with nothing new; the proof says it prints `Evidence unchanged.`; the changed code prints `Evidence committed.`",
             "file": "scripts/run/evidence.py",
-            "line": 807,
+            "line": 893,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-95: the test edits `README.md` without committing it, runs `--all --ci --commit`, and reads the exit code, the printed line `Evidence committed.`, the newest subject against HEAD's first seven characters taken before the run, the author name `Runner`, the parent commit and the exact list of files the commit changed, which is each result the proof names.",
-          "PROOF-95: the expected subject is built from HEAD as git reports it before the run and the literal `purlin: evidence at`, not from the code under test, and the file list is compared whole, so a commit that also carried `README.md` would fail it.",
-          "PROOF-95: the git name, the email and the one proof tagged for this system come from the helper `_runner_checkout`, whose source is not shown, so the starting situation is taken on trust.",
-          "PROOF-96: the test pushes `main` to a bare remote on disk, runs once, counts the commits, runs again and reads the exit code, the printed line `Evidence unchanged.`, the unchanged commit count and the remote's `main` against the commit pushed before, which is each result the proof names.",
-          "PROOF-96: the remote is read only at `main`, so a push to another branch would pass the test, though the proof names `main` alone.",
-          "The spot tests found nothing, and both tests assert literal values against real git state, so neither planted bug had a way past its test and both are plain."
+          "PROOF-95: the test edits README.md, runs `--all --ci --commit`, and reads the printed line, the newest commit's subject against the first seven characters of HEAD taken before the run, the author name `Runner`, the parent commit and the exact list of files changed, so each result the proof names is compared.",
+          "PROOF-95: the test reads the author's name and not the author's email or the committer, so a commit made under another email with the name `Runner` would still pass; the proof names the email only as part of the setup.",
+          "PROOF-96: the test pushes `main` to a bare remote on disk, runs once, counts the commits, runs again, and reads the printed `Evidence unchanged.` line, the unchanged commit count and the remote's `main` against the commit pushed before, so each result the proof names is compared.",
+          "PROOF-96: the remote's `main` is taken before the first run, so a push by either run would move it and fail the test.",
+          "Neither proof covers the rule's \"any evidence file the run removed\" being carried in the commit, so that part of the rule is observed by no test shown here.",
+          "No spot test fired, and nothing in the two tests contradicts that: each asserts against literals or values taken from git before the run, not from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -844,30 +856,280 @@
         "test_hash": "6912d0710910b831ca73df31eb4e344eec5317b3c65adb3986dfac1db3c28f5e",
         "verdict": "strong"
       },
+      "RULE-34": {
+        "at": "2026-10-07T18:43:49Z",
+        "bugs": {
+          "PROOF-100": {
+            "after": "        listed['reported'] = {'cases': json.loads(json.dumps(reported.get('cases')))}",
+            "aim": "plain",
+            "before": "        listed['reported'] = json.loads(json.dumps(reported))",
+            "bug_key": "74a0afa3c22372a9ef992fde8f683ffe7b3cbe853210c2b7fc2ffce7bee4e83a",
+            "case": "a failing test handed over with `reported` holding one case and the report's file and sha256; the proof says the entry's `reported` is exactly as handed over; the changed code gives `reported` with the cases alone and no `report`",
+            "file": "scripts/run/evidence.py",
+            "line": 303,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-101": {
+            "after": "                took = status in ('pass', 'fail') and not foreign and bool(entry.get('reported'))",
+            "aim": "past the test",
+            "before": "                took = status in ('pass', 'fail') and not foreign",
+            "bug_key": "ec89346eb5ba7b07d46a3a1445fd5b2c6b348b35b70a10986cced8624f4290c9",
+            "case": "the third of the three tests, one that passed and was handed no `reported`; the proof says its entry reads `pass`; the changed code gives `missing`",
+            "file": "scripts/run/evidence.py",
+            "line": 255,
+            "result": "survived",
+            "test_key": "4908d9e116c95a95269678484b820a3d3523dd46bdb2e5d4b7d38bc12fa5a98f",
+            "why": ""
+          },
+          "PROOF-102": {
+            "after": "        if not isinstance(entry.get('carried'), dict):\n            entry['carried'] = dict(taken)\n        entry.pop('reported', None)",
+            "aim": "plain",
+            "before": "        if not isinstance(entry.get('carried'), dict):\n            entry['carried'] = dict(taken)",
+            "bug_key": "4906a21bcbbcf4df9e27c763406767e590f4fbea413b50f8bfa37d1d0ade4862",
+            "case": "a section whose entry holds `reported` with a duration of 0.5 seconds carried onto the commit of 40 `b`s; the proof says the entry's `reported` is the same; the changed code gives an entry with no `reported`",
+            "file": "scripts/run/evidence.py",
+            "line": 342,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-100: the test hands over one failing case and compares the entry's `result` with `fail` and its whole `reported` with a literal holding the name, class, outcome, duration, text, report file and sha256 the proof names.",
+          "PROOF-101: the test reads `not run` and the absence of `reported` for the left-out test and for the other system's proof, as the proof names.",
+          "PROOF-101: for the test handed no `reported` it reads only that `reported` is absent and never reads the `pass` the proof names, so a wrong result on that entry still passes.",
+          "PROOF-102: the test carries a section onto 40 `b`s and compares the section's `commit`, the entry's whole `reported` with a duration of 0.5, and `carried.commit` with 40 `a`s.",
+          "PROOF-102: the earlier commit of 40 `a`s comes from a helper the test does not show, and the proof names it only as the section's earlier commit.",
+          "No spot test fired, and none of the seven applies: each test asserts values its proof names in backticks."
+        ],
+        "findings": [
+          "PROOF-101: the test still passes when scripts/run/evidence.py:255 reads \"took = status in ('pass', 'fail') and not foreign and bool(entry.get('reported'))\"",
+          "PROOF-101: the AI says this breaks: the third of the three tests, one that passed and was handed no `reported`; the proof says its entry reads `pass`; the changed code gives `missing`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-101 holds three cases: a test the run left out, a test of a proof tagged for another operating system, and a test handed no `reported`."
+        ],
+        "proof_hash": "0a72afb4d8f2e93a8faadc875e4c0b30736d2be60db97d70afbfb792da0713ac",
+        "rule_hash": "681c3c891fa724507fb6f46fbedb5e3f753d1f9e963f9ebb42fefb99ab499a66",
+        "test_hash": "badc8891b25607d8bbca5298295b5a6e51a02ef1ad51a81789c355003fe2aaff",
+        "verdict": "weak"
+      },
+      "RULE-35": {
+        "at": "2026-10-07T18:43:49Z",
+        "bugs": {
+          "PROOF-103": {
+            "after": "        {key: value for key, value in case.items() if key != 'durations'}",
+            "aim": "plain",
+            "before": "        {key: value for key, value in case.items() if key != 'duration'}",
+            "bug_key": "abd584775489faf454ddb1ad89a8d00fbbdf292e8f0735bd4a6a370870da3c90",
+            "case": "the same failing case `boom` handed in at 0.75 seconds from a report of 64 `b`s; the proof says the section still reads `at` 2026-09-01T00:00:00Z, 0.25 seconds and the 64 `a`s; the changed code compares durations, so the section is replaced and reads the later `at`, 0.75 seconds and the 64 `b`s",
+            "file": "scripts/run/evidence.py",
+            "line": 385,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-104": {
+            "after": "        {key: value for key, value in case.items()\n         if key not in ('duration', 'text')}",
+            "aim": "plain",
+            "before": "        {key: value for key, value in case.items() if key != 'duration'}",
+            "bug_key": "6f1eed05270846aae6a45d4d518de51246afe9cc7e5aa510d52bc548835b5bcd",
+            "case": "the same failing case handed in with the text `another failure`; the proof says the section reads `at` 2026-09-02T00:00:00Z, the text `another failure` and the later report's sha256; the changed code leaves the text out of the comparison, so the section stays at 2026-09-01T00:00:00Z with `boom` and ",
+            "file": "scripts/run/evidence.py",
+            "line": 385,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-103: the test merges a second section with the same failing case at 0.75 seconds and 64 `b`s, then reads the kept section's `at` and its whole `reported` against the first run's values, so the time, the 0.25 seconds and the 64 `a`s the proof names are all compared.",
+          "PROOF-103: the two sections come from the helpers `_merged` and `_reported`, whose source is not shown, so the same machine, fingerprint and commit and the `at` of each run are taken from those helpers and not from the test's own lines.",
+          "PROOF-104: the test merges a second section whose case text is `another failure` and reads the later `at`, the case's text and the report's sha256 of 64 `b`s, which are the three results the proof names.",
+          "PROOF-104: the later time `2026-09-02T00:00:00Z` is a literal in the test, while the helper not shown decides that the second section carries it.",
+          "Both proofs speak of the file's section and the tests read what `_merged` returns, so whether a file on disk is written and read back depends on that helper.",
+          "The spot tests found nothing, and each test compares literal values that differ between the kept and the replaced section, so no change that breaks either case is seen to get past its test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-103 is longer than 60 words."
+        ],
+        "proof_hash": "fcb7dae0ebcdf583799d802f25bbba23b6f6a44cce1e02909b061049d6858a7e",
+        "rule_hash": "e1aa2366319e5af2dc60d1ed7000a6b9a957547496806ce1038307379da85e05",
+        "test_hash": "00fdd0001e9dbede89cf5c0345752ff28c0b7d6d594e94134037c12368f64c53",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-07T18:43:49Z",
+        "bugs": {
+          "PROOF-105": {
+            "after": "                    for model in models:\n                        for run in model.get('runs') or ():\n                            run.pop('made', None)\n                    made['models'] = json.loads(json.dumps(models))",
+            "aim": "past the test",
+            "before": "                    made['models'] = json.loads(json.dumps(models))",
+            "bug_key": "e612e2a54cf38201f9032d15c5bedd2e31e4d2613e0e69c545ceafc56769b417",
+            "case": "a passing AI proof handed over with one run holding `made` `helper`; the proof says `models` exactly as handed over; the changed code writes the run with no `made`",
+            "file": "scripts/run/evidence.py",
+            "line": 266,
+            "result": "survived",
+            "test_key": "6836b69a7c011adb6c3f3ea5e96de6f0a256e679521ed346160405a010aad0f1",
+            "why": ""
+          },
+          "PROOF-106": {
+            "after": "                models = None if foreign else entry.get('models')\n                if entry.get('held') and isinstance(models, list):\n                    for model in models:\n                        model['runs'] = []",
+            "aim": "past the test",
+            "before": "                models = None if foreign else entry.get('models')",
+            "bug_key": "37c3997117fb4e079b1f065c5fd785968543b0019cb7ce06657fd439e7420fa4",
+            "case": "a left-out test handed over with `models` holding `model-a` and one run reading `not run`; the proof says the entry holds those `models`; the changed code writes `model-a` with no runs",
+            "file": "scripts/run/evidence.py",
+            "line": 261,
+            "result": "survived",
+            "test_key": "c9df260a1f024632ad2ae16164cdc9c865afcd3b82e7b36a68f0b248fa6beb98",
+            "why": ""
+          }
+        },
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-105: the test compares the whole entry, `result` `pass` included, with a literal, but its expected `models` is the same list it handed to the code, so a change the code makes to that list in place still passes.",
+          "PROOF-105: the test never names `model-a`, `1` of `1`, the 64 `c`s or `helper` itself; those values come from a helper the test calls, so the test does not show that they are the ones the proof names.",
+          "PROOF-106: the test compares the whole entry, so a kept `reported`, a missing `carried` or another `result` fails it.",
+          "PROOF-106: the expected `models` is again the list handed to the code, so runs removed from it in place still pass.",
+          "PROOF-106: the expected `carried` is the shared constant and the test hands over copies of it, so a wrong entry-level `carried` fails the test."
+        ],
+        "findings": [
+          "PROOF-105: the test still passes when scripts/run/evidence.py:266 reads \"for model in models:\"",
+          "PROOF-105: the AI says this breaks: a passing AI proof handed over with one run holding `made` `helper`; the proof says `models` exactly as handed over; the changed code writes the run with no `made`",
+          "PROOF-106: the test still passes when scripts/run/evidence.py:261 reads \"if entry.get('held') and isinstance(models, list):\"",
+          "PROOF-106: the AI says this breaks: a left-out test handed over with `models` holding `model-a` and one run reading `not run`; the proof says the entry holds those `models`; the changed code writes `model-a` with no runs"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "0e6b5ee30acee04c394724423cb963f840c9eb462cb54437017bd69ffd3d9466",
+        "rule_hash": "c4555050df950151da2602e7511e75c7cd58c09d27c37d9dbf527f0486389eed",
+        "test_hash": "71ea880d686bb1592e46cf199ae14e3e846cbf80330e07a91f4cc53fd25e107a",
+        "verdict": "weak"
+      },
+      "RULE-37": {
+        "at": "2026-10-07T18:43:49Z",
+        "bugs": {
+          "PROOF-107": {
+            "after": "                dict(taken)))",
+            "aim": "plain",
+            "before": "                dict(model['carried'])\n                if isinstance(model.get('carried'), dict) else dict(taken)))",
+            "bug_key": "a1ce028f0dfc260be932321ec37efb14f0216eb9c725dd18e41cf5cf13ca42a3",
+            "case": "a section taken at 40 `a`s with `model-a` carried from 40 `d`s and `model-b` not marked, carried forward onto 40 `b`s; the proof says `model-a`'s `carried.commit` still reads the 40 `d`s; the changed code gives the 40 `a`s",
+            "file": "scripts/run/evidence.py",
+            "line": 314,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-107: the test carries a section with `model-a` already marked and `model-b` not onto the commit of 40 `b`s, and compares each model's whole `carried` with literals, so a wrong `commit`, `at`, `machine` or `email` on either model fails it.",
+          "PROOF-107: the expected value for `model-b` is written out in the test and not taken from the code, and the value for `model-a` is a constant, `EARLIER`, defined outside the lines shown, so the 40 `d`s the proof names are not visible in the test's own lines.",
+          "PROOF-107: the test also compares the entry's own `carried` and the section's `commit`, which the proof does not name, and it reads nothing else of the models, so a change to a model's other fields would pass.",
+          "The spot tests found nothing, and the test's assertions bear that out: each compares a result of the carry with a fixed value and can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "5185bbeda90deda6b06e1b98ce22021048848a785aa59bd00bab6a344767a852",
+        "rule_hash": "86003fbee40b811f52324c5fe17e10cb42019888387d52a33d4c1368bc25bfd5",
+        "test_hash": "4e088fc1d055d668c21ea9e33df2133a63d8231d54067bd9b61b9f9c15f2fb88",
+        "verdict": "strong"
+      },
+      "RULE-38": {
+        "at": "2026-10-07T18:43:49Z",
+        "bugs": {
+          "PROOF-108": {
+            "after": "        {key: value for key, value in case.items() if key != 'time'}",
+            "aim": "plain",
+            "before": "        {key: value for key, value in case.items() if key != 'duration'}",
+            "bug_key": "0e5b5da347c925b8bf47b6b7978a65dc2a40334784f089eb3ea67bc3dedf7203",
+            "case": "a section at 2026-09-01T00:00:00Z, then the same model handed in marked carried with its case at 0.75 seconds from another report; the proof says the section still reads at 2026-09-01T00:00:00Z; the changed code compares the durations and replaces the section, so at reads the later run's time",
+            "file": "scripts/run/evidence.py",
+            "line": 385,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-109": {
+            "after": "                 if key not in ('carried', 'reported', 'output')},",
+            "aim": "plain",
+            "before": "                 if key not in ('carried', 'reported')},",
+            "bug_key": "1c984a3c16835c1f7c5e75802a97a11c85cb54a3b9f6523563169762bc5564ce",
+            "case": "a section whose run holds the output of 64 c's, then the same run handed in with the output of 64 e's; the proof says at reads 2026-09-02T00:00:00Z with the later output; the changed code leaves output out of the comparison and keeps the section, so at reads 2026-09-01T00:00:00Z with 64 c's",
+            "file": "scripts/run/evidence.py",
+            "line": 398,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-110": {
+            "after": "            if isinstance(model, dict) and 'carried' in entry:",
+            "aim": "plain",
+            "before": "            if isinstance(model, dict) and 'carried' in model:",
+            "bug_key": "663e1a895c098fb849c1b0265606bcd61c32347c7b4692c809e878358455c02a",
+            "case": "a section on disk holding model-a marked carried, then the same model and run handed in with no carried; the proof says at reads 2026-09-02T00:00:00Z and model-a holds no carried; the changed code no longer counts a carried model, keeps the section, and at reads 2026-09-01T00:00:00Z with carried sti",
+            "file": "scripts/run/evidence.py",
+            "line": 417,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-108: the test merges a section whose model is marked carried, with a case at 0.75 seconds and a report of 64 b's, over one at 0.25 seconds and 64 a's, and reads the kept section's `at` as `2026-09-01T00:00:00Z`, which is the result the proof names.",
+          "PROOF-108: the test hands in all three differences at once, so it would fail if any one of them replaced the section, but it does not show which one did.",
+          "PROOF-109: the test hands in a run whose `output` is 64 e's and reads both the `at` of `2026-09-02T00:00:00Z` and the later `output`, which are the two results the proof names.",
+          "PROOF-109: the 64 c's the proof names for the section on disk are not in the test's own lines, so they come from a helper the request does not show.",
+          "PROOF-110: the test merges a model with no `carried` over one held as carried and reads both the `at` of `2026-09-02T00:00:00Z` and that the model holds no `carried`, which are the two results the proof names.",
+          "All three tests build and merge the sections through helpers whose source is not shown, so whether the machine, fingerprint and commit are the same, as the proofs say, cannot be read from the tests' own lines.",
+          "The spot tests found nothing, and each test holds an assertion on a literal the proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "b040048a366e28dd7405f5f6d6042d2d707fb52e9153e104635a3a583647ee7e",
+        "rule_hash": "cf3ebfe63d04403a969ed75c9a57c4444762c6f11fd88f9212fcfb0bf26e3fd8",
+        "test_hash": "ff503acf6ae9b2b0ca6b500e00013fe084751bda2397ad9142ef084d0da1a644",
+        "verdict": "strong"
+      },
       "RULE-4": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-55": {
             "after": "    return json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False) + '\\n'",
             "aim": "past the test",
             "before": "    return json.dumps(data, indent=2, sort_keys=True) + '\\n'",
-            "bug_key": "9722fb2a7084f8ddc620aec4a1af45c1968bd53d0915a79c1266a646ce72022f",
-            "case": "a linux section that saw the test fail is written over a file whose audit finding carries curly quotes; the proof says the audit object's text is exactly what it was; the changed code rewrites the finding's curly quotes as raw characters where the file held \\u escapes, so the audit text differs",
+            "bug_key": "84d2cab5a9f037e0e91452e1b89bc873b14db4376c59c3dc111a51a23b3bc97b",
+            "case": "an evidence file whose audit finding carries curly quotes, with a failing linux section written; the proof says the audit object's text is exactly what it was; the changed code writes the curly quotes as raw characters where the file held \\u escapes, so the audit text differs",
             "file": "scripts/run/evidence.py",
-            "line": 613,
+            "line": 699,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-55: the test writes a file with a `windows` section, a passing `linux` section and a quoted audit, writes a failing `linux` section, and compares the `linux` section read back from disk with the failing one, which is the failure the proof names.",
-          "PROOF-55: the unchanged text of the `windows` section and the `audit` object is left to the helper `_kept_as_bytes`, whose source is not shown, so whether it compares the file's text or only the parsed values cannot be read here.",
-          "PROOF-55: the planted change keeps every parsed value equal and alters only how the curly quotes are written, so it is caught only if the helper compares text.",
-          "PROOF-55: the failing section is the same object the writer merges, so a change the writer makes to it in place would also show in the expected value the `linux` comparison uses.",
-          "Findings: none were reported by the spot tests, and the test does hold an assertion on the `linux` section that can fail."
+          "PROOF-55: the test puts a file with a `windows` section, a passing `linux` section and the quoted audit, writes a failing `linux` section, and compares the `linux` section read back with the failing one, which is the first result the proof names.",
+          "PROOF-55: the unchanged text of the `windows` section and the `audit` object is checked only inside the helper `_kept_as_bytes`, whose lines are not among the test's own, so what it compares cannot be read here.",
+          "PROOF-55: if that helper compares parsed values rather than the file's text, a change in how the curly quotes are written would still pass; if it compares text, the change is caught.",
+          "PROOF-55: the spot tests found nothing, and nothing in the test's own lines contradicts that."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -878,27 +1140,27 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-5": {
             "after": "        audit['rules'] = {rule: entry for rule, entry\n                          in audit['rules'].items()}",
             "aim": "plain",
             "before": "        audit['rules'] = {rule: entry for rule, entry\n                          in audit['rules'].items() if rule in keep}",
-            "bug_key": "ed1c1333ad6941828f072daec41790a87ee0dcb7d76a5184fc7ef80132253673",
-            "case": "windows section and audit.rules hold RULE-1 and RULE-9, a linux section is written for a spec carrying only RULE-1; the proof says audit.rules holds RULE-1 and nothing else; the changed code leaves audit.rules holding RULE-1 and RULE-9",
+            "bug_key": "76dc0c693a128caa96a33e56434435b3025729ac5302698bb4a8ca3e084e5c84",
+            "case": "a `linux` section written over a file whose `windows` section and `audit.rules` hold `RULE-1` and `RULE-9`, for a spec carrying only `RULE-1`; the proof says `audit.rules` holds `RULE-1` and nothing else; the changed code leaves `RULE-9` in `audit.rules`",
             "file": "scripts/run/evidence.py",
-            "line": 607,
+            "line": 693,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-5: the test writes a `linux` section over a file prepared by a helper, then reads the file back and compares the `rules` of both the `windows` and `linux` sections and `audit.rules` with exactly `RULE-1`, which is the result the proof names.",
-          "PROOF-5: the starting file and the spec come from the helpers `_with_a_dropped_rule`, `_info` and `_section`, whose source is not shown, so the test's own lines do not show that `RULE-9` was in the `windows` section and in `audit.rules` before the write.",
-          "PROOF-5: the spot tests found nothing, and the test's own lines give them nothing to flag: the three comparisons are against literals and each can fail."
+          "PROOF-5: the test writes a `linux` section over a file prepared with a dropped rule, reads the file back, and compares the sorted rule ids of every platform section and of `audit.rules` with exactly `RULE-1`, which is each of the three results the proof names.",
+          "PROOF-5: the test also checks that the file holds the `linux` and `windows` sections and no other, so a write that lost the `windows` section would not pass unnoticed.",
+          "PROOF-5: the starting file and the section written come from helpers whose source is not shown, so whether the `windows` section and `audit.rules` hold `RULE-9` before the write, as the proof says, cannot be read from the test's own lines."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -909,24 +1171,29 @@
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-05T14:37:04Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-6": {
-            "after": "REMOVED = 'Removed %s: no spec defines %s.json.'",
-            "aim": "past the test",
-            "before": "REMOVED = 'Removed %s: no spec defines %s.'",
-            "bug_key": "1c48baa9b32312f2948242411518ef61207bb061b746c45f6be5137cdf022a56",
-            "case": "evidence for `gone` under local/ and ci/ with only spec `feat`; the proof says each line reads `Removed <path>: no spec defines gone.`; the changed code prints `Removed <path>: no spec defines gone.json.`",
+            "after": "            if feature in features or source == 'ci':",
+            "aim": "plain",
+            "before": "            if feature in features:",
+            "bug_key": "da6bae56b870f34a2c8084578d284421078a016cfb0d0c739bfb6d6c5962b8c2",
+            "case": "a project whose only spec is feat, holding evidence for gone under local/ and ci/, after a --all --test run; the proof says both files are deleted and a Removed line is printed for each; the changed code leaves .purlin/evidence/ci/gone.json in place and prints no Removed line for it",
             "file": "scripts/run/evidence.py",
-            "line": 70,
+            "line": 764,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "ba35bfddd7e030e77dc03e516626df76274b0d56",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-6: the test builds a project whose only spec is feat, puts evidence for gone under both local/ and ci/, runs `--all --test`, and reads the exit code, the absence of both gone.json files, the presence of local/feat.json and both exact `Removed` lines among the printed lines.",
+          "PROOF-6: each result the proof names is compared against a literal written in the test, so a change that keeps either file or drops or rewords either line fails it.",
+          "PROOF-6: the test does not check that feat's ci/ file or any other evidence is left alone, which the proof does not name.",
+          "Findings: none, and the test's assertions can each fail."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -936,13 +1203,13 @@
         "verdict": "strong"
       },
       "RULE-9": {
-        "at": "2026-10-05T14:32:26Z",
+        "at": "2026-10-07T18:43:49Z",
         "bugs": {
           "PROOF-9": {
             "after": "WRITTEN_ONE = 'Evidence saved to %s.'",
             "aim": "plain",
             "before": "WRITTEN_ONE = 'Evidence written to %s.'",
-            "bug_key": "44c3e9885406f966d69f06eb46e6babf6df0665f8f10b9d5f4224616487ffd1e",
+            "bug_key": "3167225bf35bcfae3b483a383757506d6d497f3a0ee52d5b604f72da30c84fd8",
             "case": "a `--all --test` run in a git checkout with one spec, `feat`; the proof says it prints `Evidence written to .purlin/evidence/local/feat.json.`; the changed code prints `Evidence saved to .purlin/evidence/local/feat.json.`",
             "file": "scripts/run/evidence.py",
             "line": 64,
@@ -950,14 +1217,16 @@
             "why": ""
           }
         },
-        "code_hash": "1f2d6189070fc3cd5ce6e9b2ac00e44d390988982b49a9477bf0f7f4ce3d31de",
-        "commit": "efa9fd204f2e0abe552d3c980b6a1ab247585af1",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "19e2d5c105ab3b657ae2335700822158624a26c605a0b984b731d6d7269a1ce9",
+        "commit": "e3530eb922971088cd9ceb3f49e97eb2f1db5fb0",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-9: the test runs `--all --test` in a git checkout with one spec and reads the exit code, the exact printed sentence with its path and full stop, HEAD before and after, and the `??` line git status gives for `.purlin/evidence/local/feat.json`, so each of the three results the proof names is compared with a literal or with a value taken from git before the run.",
-          "PROOF-9: the test looks for the file's whole path as untracked, which is narrower than the proof's \"a file under `.purlin/evidence/`\" and would fail if the file were written elsewhere or committed.",
-          "PROOF-9: the spot tests found nothing, and that holds, since the printed sentence appears in the test as a literal and the HEAD comparison uses a value git gave before the run, not one the code under test computes.",
-          "PROOF-9: the rule also names `--audit` and the line printed where several features ran, and this proof and its test observe neither, so a wrong `for <n> features` line or an audit run that commits would still pass here."
+          "PROOF-9: the test builds a git checkout with one spec, runs `--all --test`, and looks for the whole sentence `Evidence written to .purlin/evidence/local/feat.json.` in the output, so a changed wording, path or full stop fails it.",
+          "PROOF-9: the test reads HEAD before and after the run and compares the two, so a run that commits anything fails it.",
+          "PROOF-9: the test reads `git status --porcelain --untracked-files=all` and looks for `?? .purlin/evidence/local/feat.json`, so an evidence file that is missing, ignored or committed fails it.",
+          "PROOF-9: the test checks each of the three results the proof names with a literal or a value taken before the run, so the plainest change to the printed sentence was made.",
+          "PROOF-9: the rule also names `--audit` and the line for several features, and this proof and its test observe neither.",
+          "Findings: the spot tests found nothing, and the test's assertions can each fail on the proof's own values."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
