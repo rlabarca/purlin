@@ -318,6 +318,11 @@ def test_the_data_file_carries_an_anchor_whose_pin_is_behind(tmp_path):
         warnings = _data(made.root)['warnings']
         assert line in warnings, warnings
         assert 'Anchors:' not in warnings, warnings
+        # No line reads `Anchors:` with a space after it either, or opens
+        # with it: the pin line is all the warnings hold.
+        assert [warning for warning in warnings
+                if warning.strip().startswith('Anchors')] == [], warnings
+        assert warnings == [line], warnings
     finally:
         made.close()
 
