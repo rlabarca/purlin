@@ -5,10 +5,8 @@ in `dev/skill_checks.py`; a copy of the skill with one name taken out is read
 through `copy_without`, and the file on disk is never touched.
 """
 
-import re
-
 from skill_checks import (copy_without, flat, must_name, not_named, read,
-                          skill_path)
+                          skill_path, under_heading)
 
 SKILL = skill_path('audit')
 
@@ -37,17 +35,6 @@ def test_a_copy_without_the_criteria_is_reported():
 CRITERIA = 'references/review_criteria.md'
 SETTLE_LINES = ('the test now catches the bug it missed at',
                 'did not break what the proof says. A new bug was planted.')
-
-
-def under_heading(text, heading):
-    """The part of a Markdown text under the heading `heading`, up to the
-    next heading of the same or a higher level; empty where there is none."""
-    found = re.search(r'^(#+) %s\n' % re.escape(heading), text, re.M)
-    if not found:
-        return ''
-    rest = text[found.end():]
-    end = re.search(r'^#{1,%d} ' % len(found.group(1)), rest, re.M)
-    return rest[:end.start()] if end else rest
 
 
 # purlin: skill_audit PROOF-60
@@ -79,3 +66,13 @@ def test_the_skill_and_the_criteria_hold_the_line_for_a_bug_planted_again():
     assert not_named(read(SKILL), (STILL_PASSES,)) == []
     section = under_heading(read(CRITERIA), 'The planted bug')
     assert not_named(section, (STILL_PASSES,)) == []
+
+
+WRONG_OUTPUT = ('For an AI proof the planted bug is a wrong output, and '
+                '`<file>` is a file of that output, as in `PROOF-4: the test '
+                'still passes when reply.md:12 reads "Refund approved."`')
+
+
+# purlin: skill_audit PROOF-63
+def test_the_skill_says_what_is_planted_for_an_ai_proof():
+    assert WRONG_OUTPUT in flat(read(SKILL))
