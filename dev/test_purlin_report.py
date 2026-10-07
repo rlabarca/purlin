@@ -197,6 +197,53 @@ def rule_ids(page):
     return texts(page, '.rule .rid')
 
 
+# Each piece of text under the elements `selector` names that a person does
+# not see: its element, or one around it, is not displayed, is hidden, is
+# drawn through an opacity, is clipped, has no room, is cut off by a box
+# that hides what runs past it, or is set in no size or in no colour.
+UNDRAWN = r"""(selector) => {
+  const drawn = el => {
+    let through = 1;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const s = getComputedStyle(n);
+      if (s.display === 'none' || s.visibility !== 'visible') return false;
+      if (s.clipPath !== 'none') return false;
+      through *= Number(s.opacity);
+      const r = n.getBoundingClientRect();
+      if (r.width <= 1 || r.height <= 1) return false;
+      if ((s.overflowX === 'hidden' || s.overflowX === 'clip')
+          && n.scrollWidth > n.clientWidth + 1) return false;
+      if ((s.overflowY === 'hidden' || s.overflowY === 'clip')
+          && n.scrollHeight > n.clientHeight + 1) return false;
+    }
+    const s = getComputedStyle(el);
+    if (parseFloat(s.fontSize) < 1) return false;
+    if (s.color === 'transparent' || /^rgba\(.*, 0\)$/.test(s.color)) {
+      return false;
+    }
+    return through === 1;
+  };
+  const out = [];
+  document.querySelectorAll(selector).forEach(root => {
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+      if (node.textContent.trim() && !drawn(node.parentElement)) {
+        out.push(node.textContent);
+      }
+    }
+  });
+  return out;
+}"""
+# The two marks a notice keeps for a reader of the page's text and does not
+# draw: the one after its name and the one after its kind.
+NOT_DRAWN_IN_A_NOTICE = (': ', '. ')
+
+
+def undrawn(page, selector):
+    """Each piece of text under `selector` that is not drawn."""
+    return page.evaluate(UNDRAWN, selector)
+
+
 def boxes(page):
     """Each box on the strip: its label, its count and the colour it is in."""
     return page.eval_on_selector_all(
@@ -263,29 +310,85 @@ def test_the_page_at_the_project_root_is_the_built_page(page_text):
     assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))
     built = read(os.path.join(ROOT, *'scripts/report/purlin-report.html'.split('/')))
     assert read(os.path.join(ROOT, 'purlin-report.html')) == built == page_text
+    # Character for character, the ends of the lines included: the two
+    # files hold the same bytes.
+    with open(os.path.join(ROOT, 'purlin-report.html'), 'rb') as handle:
+        at_root = handle.read()
+    with open(os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html'),
+              'rb') as handle:
+        assert at_root == handle.read()
 
 
 # purlin: purlin_report PROOF-3
-def test_no_colour_is_written_as_hex_outside_the_token_block():
+def test_no_colour_is_written_as_hex_outside_the_token_block(browser,
+                                                             tmp_path):
     inside, outside = token_block(build_page())
     assert re.search(r'--canvas\s*:', inside)
     assert re.findall(r'#[0-9a-fA-F]{3,8}\b', outside) == []
     # A script can write a colour in two halves, `'#' + 'C0793F'`: read the
-    # page again with each join of two quoted strings closed up.
-    joined = re.sub(r'''(['"])\s*\+\s*\1''', '', outside)
+    # page again with each join of two quoted strings closed up, whichever
+    # quotation mark each half is in.
+    joined = re.sub(r'''['"]\s*\+\s*['"]''', '', outside)
     assert re.findall(r'#[0-9a-fA-F]{3,8}\b', joined) == []
+    # However a script puts one together, a colour it writes is on the page
+    # once the page is drawn: each sample's board, every spec open, holds
+    # none outside the token block either.
+    for name in WALKED:
+        page = open_board(browser, tmp_path / name, payload_named(name))
+        for spec in feature_names(page):
+            page.click('[data-act="feature"][data-feature="%s"]' % spec)
+        drawn = page.evaluate(
+            "() => { const copy = document.documentElement.cloneNode(true);"
+            " copy.querySelectorAll('#purlin-tokens, script').forEach("
+            "e => e.remove()); return copy.outerHTML; }")
+        page.close()
+        assert len(drawn) > 1000, name
+        assert re.findall(r'#[0-9a-fA-F]{3,8}\b', drawn) == [], name
 
 
 # purlin: purlin_report PROOF-4
-def test_no_shadow_and_no_gradient(page_text):
+def test_no_shadow_and_no_gradient(page_text, browser, tmp_path):
     _inside, outside = token_block(page_text)
     # A stylesheet reads a property at any casing, so the page is read so too.
     assert 'box-shadow' not in outside.lower()
     assert 'gradient' not in page_text.lower()
+    # A stylesheet also reads a name written with an escape, `box\-shadow`:
+    # the page is read as the browser read it. No style rule outside the
+    # token block sets a shadow or holds a gradient, and no element's own
+    # style does.
+    assert 'box-shadow' not in outside.lower().replace('\\', '')
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    rules, found = page.evaluate("""() => {
+      const found = [];
+      let count = 0;
+      const read = rules => { for (const rule of rules) {
+        if (rule.cssRules) { read(rule.cssRules); }
+        if (!rule.style) { continue; }
+        count += 1;
+        if (rule.style.getPropertyValue('box-shadow')
+            || /gradient/i.test(rule.cssText)) { found.push(rule.cssText); }
+      } };
+      for (const sheet of document.styleSheets) {
+        if (sheet.ownerNode && sheet.ownerNode.id === 'purlin-tokens') {
+          continue;
+        }
+        read(sheet.cssRules);
+      }
+      document.querySelectorAll('[style]').forEach(e => {
+        if (e.style.boxShadow || /gradient/i.test(e.getAttribute('style'))) {
+          found.push(e.outerHTML.slice(0, 120));
+        }
+      });
+      return [count, found];
+    }""")
+    page.close()
+    assert rules > 50, rules
+    assert found == []
 
 
 # purlin: purlin_report PROOF-5
-def test_no_request_to_anything_outside_the_page(page_text):
+def test_no_request_to_anything_outside_the_page(page_text, browser,
+                                                 tmp_path):
     """The page opens from a disk with no network behind it."""
     # Nothing is fetched: no stylesheet link, no remote script or image, no
     # request of any kind. The page is the whole page.
@@ -295,6 +398,32 @@ def test_no_request_to_anything_outside_the_page(page_text):
     # An address in double quotes, in single quotes or in none, at any casing.
     assert re.findall(r'''(?:src|href)\s*=\s*["']?\s*https?:''', page_text,
                       re.I) == []
+    # An address a script sets is one the page asks for once it is open:
+    # opened beside its data, the page asks for nothing but files on the
+    # disk, and no element it drew holds an address on another host.
+    root = str(tmp_path)
+    shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
+    os.makedirs(os.path.join(root, '.purlin'))
+    with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
+              encoding='utf-8') as handle:
+        handle.write('const PURLIN_DATA = '
+                     + json.dumps(payload_named('regulated')) + ';\n')
+    page = browser.new_page()
+    asked = []
+    page.on('request', lambda request: asked.append(request.url))
+    page.route(re.compile(r'^(?!file:|data:)'), lambda route: route.abort())
+    page.goto('file://' + os.path.join(root, 'purlin-report.html'))
+    page.wait_for_selector('.topbar', timeout=10000)
+    page.wait_for_timeout(500)
+    addresses = page.evaluate(
+        "() => [...document.querySelectorAll('[src], [href]')].map("
+        "e => e.getAttribute('src') || e.getAttribute('href'))")
+    page.close()
+    assert [url for url in asked if url.startswith('file:')] != [], asked
+    assert [url for url in asked
+            if not url.startswith(('file:', 'data:'))] == [], asked
+    assert [address for address in addresses
+            if re.match(r'\s*(?:https?:|//)', address, re.I)] == []
 
 
 # The characters a page could draw as an affordance: arrows, geometric
@@ -318,7 +447,8 @@ def glyphs_in(text):
 
 
 # purlin: purlin_report PROOF-6
-def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
+def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text, browser,
+                                                        tmp_path):
     """The system ships no icon set, so the page draws none, and the glyphs
     it draws are the six the design allows."""
     found = glyphs_in(page_text)
@@ -327,6 +457,19 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
     # A browser reads a tag at any casing, so `<SVG` is an element too.
     assert page_text.lower().count('<svg') == 0
     assert 'icon' not in page_text.lower()
+    # A script can make a character from its number, so the page is read as
+    # it is drawn too: each sample's board, with every spec closed and then
+    # every spec open, draws no shape but the six.
+    for name in WALKED:
+        page = open_board(browser, tmp_path / name, payload_named(name))
+        drawn = page.evaluate('document.body.innerText')
+        for spec in feature_names(page):
+            page.click('[data-act="feature"][data-feature="%s"]' % spec)
+        drawn += page.evaluate('document.body.innerText')
+        page.close()
+        assert u'\u25b6' in drawn and u'\u25bc' in drawn, name
+        assert glyphs_in(drawn) - set(ALLOWED_GLYPHS) == set(), (
+            name, glyphs_in(drawn))
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +564,10 @@ def test_the_theme_button_swaps_to_light(browser, tmp_path, process):
     assert [bool(tile.bounding_box()) and tile.bounding_box()['width'] > 0
             and tile.bounding_box()['height'] > 0 for tile in tiles] == [
                 True] * TILES[process]
+    # And seen: no part of a box, its label or its count is drawn through an
+    # opacity, clipped or cut off.
+    assert undrawn(page, '.tile') == []
+    assert len(texts(page, '.tile .tile-v')) == TILES[process]
     page.close()
 
 
@@ -558,6 +705,14 @@ def test_the_passing_box_carries_the_total(browser, tmp_path):
     total = page.query_selector('.tile-t')
     label = total.evaluate_handle('el => el.previousElementSibling')
     assert label.evaluate(LOOK) == total.evaluate(LOOK)
+    # The face is the family and how it is set: upright or italic, its
+    # weight, its width, its variant and any line through or under it.
+    face = ("el => { const s = getComputedStyle(el); return [s.fontFamily,"
+            " s.fontStyle, s.fontWeight, s.fontStretch, s.fontVariant,"
+            " s.textDecorationLine, s.fontSize, s.color]; }")
+    assert label.evaluate(face) == total.evaluate(face)
+    assert label.evaluate(face)[1] == 'normal'
+    assert undrawn(page, '.tile-l') == []
     # The colour as it is seen: neither line is drawn through an opacity.
     through = ("el => { let o = 1; for (let n = el; n && n.nodeType === 1;"
                " n = n.parentElement) { o *= Number(getComputedStyle(n)"
@@ -1138,6 +1293,13 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
     assert page.query_selector_all('.tbl') == []
+    # Nothing else is drawn under the top bar: the notice is all the page's
+    # body reads, with no row of a table and no spec's name beside it.
+    assert page.inner_text('.wrap').strip() == (
+        'This data was written for schema 3 and this page reads schema 20. '
+        'Run purlin:status to write it again.')
+    assert page.query_selector_all('.tr, .th, .rule, table') == []
+    assert undrawn(page, '.notice') == []
     page.close()
 
 
@@ -1151,6 +1313,11 @@ def test_no_data_at_all_names_the_command_that_writes_it(browser, tmp_path):
     assert page.inner_text('.empty') == (
         'No board data yet. Run purlin:status to write '
         '.purlin/report-data.js, then reload this page.')
+    # The empty screen reads that sentence and nothing more.
+    assert page.inner_text('body').strip() == (
+        'No board data yet. Run purlin:status to write '
+        '.purlin/report-data.js, then reload this page.')
+    assert undrawn(page, '.empty') == []
     page.close()
 
 
@@ -1163,6 +1330,12 @@ def test_each_warning_is_a_notice_after_the_working_tree_one(browser,
     assert texts(page, '.notice-text') == [
         'working tree: changes not committed. This board is not what a '
         'commit would carry. Commit them, then run purlin:status.', warning]
+    # Each line is drawn whole: nothing of a notice is cut off or hidden
+    # but the two marks a notice never draws.
+    assert [piece for piece in undrawn(page, '.notice')
+            if piece not in NOT_DRAWN_IN_A_NOTICE] == []
+    assert [notice.is_visible()
+            for notice in page.query_selector_all('.notice')] == [True, True]
     found = page.evaluate(STACK)
     page.close()
     assert found['tiles'] <= found['notices'][0], found
@@ -1258,6 +1431,12 @@ def test_thirty_three_warnings_of_one_kind_are_one_notice(browser, tmp_path):
     assert texts(page, '.notice-text') == [
         'proof line not read: 33 specs, piano_roll, sample_voice and 31 '
         'more. Run purlin:status for each.', other]
+    # On screen, each whole: both are drawn, and nothing of either is
+    # hidden but the two marks a notice never draws.
+    assert [notice.is_visible()
+            for notice in page.query_selector_all('.notice')] == [True, True]
+    assert [piece for piece in undrawn(page, '.notice')
+            if piece not in NOT_DRAWN_IN_A_NOTICE] == []
     assert notice_hovers(page) == ['\n'.join(names), None]
     rows = [page.query_selector('[data-table="%s"] .tr' % table).bounding_box()
             for table in ('anchors', 'specs')]
@@ -1289,6 +1468,15 @@ def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
         'signed/0.2.0: tag not in this checkout',
         'signed/0.1.0: tag not in this checkout'], shown
     assert notice_hovers(page) == [None] * 5
+    # On screen, each whole: all 5 are drawn, its name with each, and
+    # nothing of any is hidden but the two marks a notice never draws.
+    assert [notice.is_visible()
+            for notice in page.query_selector_all('.notice')] == [True] * 5
+    assert [piece for piece in undrawn(page, '.notice')
+            if piece not in NOT_DRAWN_IN_A_NOTICE] == []
+    assert [' '.join(text.split())[:13] for text in page.eval_on_selector_all(
+        '.notice', 'els => els.map(e => e.innerText)')][2:] == [
+            'signed/0.3.0 ', 'signed/0.2.0 ', 'signed/0.1.0 ']
     # No part of a notice has a hover either.
     assert page.eval_on_selector_all(
         '.notice, .notice *',
@@ -1347,8 +1535,14 @@ def test_lines_of_information_group_in_the_neutral_tone(browser, tmp_path):
         'purlin:status for each.']
     assert notice_hovers(page) == ['\n'.join(names)]
     dot = page.eval_on_selector('.notice .dot', 'e => e.getAttribute("style")')
+    # The tone as it is drawn: the dot is filled with the neutral colour.
+    filled = page.eval_on_selector(
+        '.notice .dot', 'e => getComputedStyle(e).backgroundColor')
+    neutral = page.evaluate(RESOLVE_TOKEN, '--state-neutral')
+    warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
     page.close()
     assert dot == 'color:var(--state-neutral)'
+    assert filled == neutral and neutral != warn, (filled, neutral, warn)
 
 
 # purlin: purlin_report PROOF-275
@@ -1369,7 +1563,14 @@ def test_rules_with_nothing_to_check_group_in_the_neutral_tone(browser,
     found = texts(page, '.notice-text')
     dots = page.eval_on_selector_all(
         '.notice .dot', 'els => els.map(e => e.getAttribute("style"))')
+    # The tone as it is drawn: each dot is filled with the neutral colour.
+    filled = page.eval_on_selector_all(
+        '.notice .dot',
+        'els => els.map(e => getComputedStyle(e).backgroundColor)')
+    neutral = page.evaluate(RESOLVE_TOKEN, '--state-neutral')
+    warn = page.evaluate(RESOLVE_TOKEN, '--state-warn')
     page.close()
+    assert filled == [neutral] * 2 and neutral != warn, (filled, neutral)
     assert found == [
         'nothing to check here: checkout_design, in 3 places. Run '
         'purlin:status checkout_design.', incomplete], found
@@ -1434,6 +1635,11 @@ def test_every_kind_of_warning_about_a_spec_groups_under_its_own_words(
     assert texts(page, '.notice-text') == [
         '%s: 3 specs, export, invoice and 1 more. Run purlin:status for each.'
         % what for what, _line in kinds[0]]
+    # On screen: each of the 10 is drawn with its kind's words, and nothing
+    # of any is hidden but the mark after the kind, which is never drawn.
+    assert [notice.is_visible()
+            for notice in page.query_selector_all('.notice')] == [True] * 10
+    assert undrawn(page, '.notice') == [': '] * 10
     assert [what for what, _line in kinds[0]] == [
         'test comment to correct', 'spec to repair',
         'rule line with no number', 'two specs with one name',
@@ -1452,6 +1658,14 @@ def test_a_rule_screen_draws_no_notice(browser, tmp_path):
     open_rule(page, 'login', 'RULE-1')
     assert 'RULE-1' in page.inner_text('h1')
     assert len(page.query_selector_all('.notice')) == 0
+    # No notice in any other dress either: the rule's screen reads neither
+    # notice's line, in whole or from its label on.
+    screen = ' '.join(page.inner_text('body').split())
+    assert [entry['label'] for entry in payload['notices']] == [
+        'changes not committed', 'rule line with no number']
+    assert [entry for entry in payload['notices']
+            if entry['rest'] in screen or entry['label'] in screen] == []
+    assert 'This board is not what a commit would carry' not in screen
     page.close()
 
 
@@ -1777,10 +1991,31 @@ def test_a_project_no_audit_read_never_reads_strong_or_audit(browser,
     assert payload['summary']['audit'] == {
         'strong': 0, 'weak': 0, 'spot_checked': 0, 'out_of_date': 0,
         'not_audited': 2}
-    found, statuses = words_shown(browser, tmp_path, payload, AUDIT_WORDS)
+    found, statuses = words_shown(browser, tmp_path / 'wide', payload,
+                                  AUDIT_WORDS)
     assert found == [], found
     assert len(statuses) == 5, statuses
     assert set(statuses) <= set(STATUSES), statuses
+    # A label the stylesheet draws beside a value is text a person reads:
+    # at the width of a phone, of a tablet and of a desk, with every spec
+    # open and in both themes, what the page draws before and after each
+    # element holds neither word, and neither does its text or a hover.
+    drawn_by_style = """() => [...document.querySelectorAll('body *')]
+      .flatMap(e => ['::before', '::after'].map(
+        part => getComputedStyle(e, part).content))
+      .filter(text => text && text !== 'none' && text !== 'normal')"""
+    for width in (390, 768, 1440):
+        page = open_board(browser, tmp_path / str(width), payload,
+                          viewport={'width': width, 'height': 900})
+        for name in feature_names(page):
+            page.click('[data-act="feature"][data-feature="%s"]' % name)
+        seen = page.evaluate(SEEN) + page.evaluate(drawn_by_style)
+        page.click('[data-act="theme"]')
+        seen += page.evaluate(SEEN) + page.evaluate(drawn_by_style)
+        page.close()
+        assert len(seen) > 5, (width, seen)
+        assert sorted({match.group(0) for text in seen if text
+                       for match in AUDIT_WORDS.finditer(text)}) == [], width
 
 
 # purlin: purlin_report PROOF-103
@@ -2208,6 +2443,16 @@ def test_an_uncommitted_tree_is_named_on_the_board(browser, tmp_path):
     assert ('working tree: changes not committed. This board is not what a '
             'commit would carry. Commit them, then run '
             'purlin:status.') in texts(page, '.notice-text')
+    # The notice is drawn, its line whole: it is the first on the board, a
+    # person sees it, and nothing of it is hidden but the two marks a
+    # notice never draws.
+    first = page.query_selector_all('.notice')[0]
+    assert first.is_visible()
+    assert first.query_selector('.notice-text').text_content().strip() == (
+        'working tree: changes not committed. This board is not what a '
+        'commit would carry. Commit them, then run purlin:status.')
+    assert [piece for piece in undrawn(page, '.notice')
+            if piece not in NOT_DRAWN_IN_A_NOTICE] == []
     page.close()
 
 
@@ -2884,7 +3129,15 @@ def test_a_failing_test_shows_what_its_tool_reported(browser, tmp_path):
     page = open_board(browser, tmp_path, payload)
     open_rule(page, 'login', 'RULE-1')
     panels = page.evaluate(FAILURE_PANELS)
+    # The six lines as they are drawn, one under another: the panel keeps
+    # each end of a line and the spaces that open one.
+    drawn = page.eval_on_selector_all(
+        '.ptests pre.failure, .tests pre.failure',
+        'els => els.map(e => e.innerText)')
+    hidden = undrawn(page, 'pre.failure')
     page.close()
+    assert drawn == [FAILURE_TEXT], drawn
+    assert hidden == []
     assert [panel['text'] for panel in panels] == [FAILURE_TEXT], panels
     assert panels[0]['before'].replace(' ', '') == (
         '%s::%s' % (file, name)).replace(' ', ''), panels
@@ -2977,11 +3230,34 @@ def test_a_notice_sets_its_name_in_the_machine_typeface_and_its_kind_as_a_label(
         'Run purlin:build login.')
     page = open_board(browser, tmp_path, payload)
     (found,) = page.evaluate(NOTICE_PARTS)
+    # The rest, piece by piece: no word after the name is in Courier New,
+    # whatever element it stands in, and every piece of the name is.
+    fonts = page.evaluate("""() => {
+      const out = {name: [], rest: []};
+      const root = document.querySelector('.notice .notice-text');
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+        if (!node.textContent.trim()) { continue; }
+        const part = node.parentElement.closest('.notice-name')
+          ? 'name' : 'rest';
+        out[part].push([node.textContent.trim(),
+          getComputedStyle(node.parentElement).fontFamily]);
+      }
+      return out;
+    }""")
     page.close()
     assert found['text'] == line, found
     assert found['name'] == 'login PROOF-1 (RULE-1)', found
     assert found['nameFont'].startswith('"Courier New"'), found
     assert not found['restFont'].startswith('"Courier New"'), found
+    assert ' '.join(text for text, _font in fonts['name']) == (
+        'login PROOF-1 (RULE-1)'), fonts
+    assert [text for text, font in fonts['name']
+            if not font.startswith('"Courier New"')] == [], fonts
+    assert 'tests/test_login.py:12' in ' '.join(
+        text for text, _font in fonts['rest']), fonts
+    assert [text for text, font in fonts['rest']
+            if 'Courier' in font] == [], fonts
     assert found['kind'] == 'test comment to correct', found
     assert found['kindBorder'] == '1px', found
 
@@ -3041,10 +3317,29 @@ def test_a_name_the_page_has_no_rule_for_is_not_a_link(browser, tmp_path):
         unread_proof_line('login')])
     page = open_board(browser, tmp_path, payload)
     found = page.evaluate(NOTICE_PARTS)
+    # Neither name is a link of any kind: neither is inside one or holds
+    # one, and nothing about either can be pressed.
+    linked = page.evaluate("""() => {
+      const marks = 'a, [href], [role="link"], [data-act], [tabindex], '
+        + '[onclick], button';
+      return [...document.querySelectorAll('.notice .notice-name')].map(
+        name => [!!name.closest(marks), name.querySelectorAll(marks).length,
+                 getComputedStyle(name).cursor]);
+    }""")
+    before = page.inner_text('.wrap')
     page.click('.notice-name')
     still = len(page.query_selector_all('.notice'))
     tables = len(page.query_selector_all('.tbl'))
+    # Pressing either changes nothing on the board: no spec opens, and no
+    # rule's screen.
+    after_first = page.inner_text('.wrap')
+    page.locator('.notice-name').nth(1).click()
+    after_second = page.inner_text('.wrap')
+    opened = len(page.query_selector_all('.rule, h1'))
     page.close()
+    assert linked == [[False, 0, 'auto'], [False, 0, 'auto']], linked
+    assert after_first == before and after_second == before
+    assert opened == 0
     assert [(item['name'], item['link']) for item in found] == [
         ('nosuch PROOF-1', False), ('login', False)], found
     assert still == 2 and tables >= 1
@@ -3275,7 +3570,18 @@ def test_a_model_not_reached_is_a_notice_like_any_other(browser, tmp_path):
         notices.entries(built, 'warn')), payload['notices']
     page = open_board(browser, tmp_path, payload)
     (found,) = page.evaluate(NOTICE_PARTS)
+    # No link of any kind: the name is not inside one, holds none, and
+    # nothing about it can be pressed or reached by the keyboard.
+    linked = page.evaluate("""() => {
+      const name = document.querySelector('.notice .notice-name');
+      const marks = 'a, [href], [role="link"], [data-act], [tabindex], '
+        + '[onclick], button';
+      return [!!name.closest(marks), name.querySelectorAll(marks).length,
+              getComputedStyle(name).cursor,
+              getComputedStyle(name).textDecorationLine];
+    }""")
     page.close()
+    assert linked == [False, 0, 'auto', 'none'], linked
     assert found['text'] == line, found
     assert (found['name'], found['link']) == ('claude-sonnet-5-5', False), found
     assert found['nameFont'].startswith('"Courier New"'), found

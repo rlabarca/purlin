@@ -2,158 +2,268 @@
   "audit": {
     "rules": {
       "RULE-12": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-17": {
-            "after": "Nothing waits on it. [audit.md](Audit.md) says what it checks and why.",
+            "after": "[The table of tags](specs-and-anchors.md#rules)",
             "aim": "past the test",
-            "before": "Nothing waits on it. [audit.md](audit.md) says what it checks and why.",
-            "bug_key": "34c8e65b97a65125d3f7e8560a897960d1c26b4747a39cb086538cc669b3fccb",
-            "case": "the link to the audit guide on docs/getting-started.md, followed from docs/; the proof says it names a file the repository holds; the changed page links to Audit.md, and the repository holds only audit.md",
-            "file": "docs/getting-started.md",
-            "line": 260,
+            "before": "[The table of tags](specs-and-anchors.md#five-tags-say-how-when-and-where-a-proof-is-shown)",
+            "bug_key": "a722315be7472a3b85748ff4bd68b50be1add64637ad5e474edd0596fe3b8604",
+            "case": "the link \"The table of tags\" on docs/testing-ai.md, followed to docs/specs-and-anchors.md; the proof says its `#` part matches a heading of that file as the git host spells its anchor; the changed page links to `#rules`, which is only a `## Rules` line inside a code sample and no heading the git hos",
+            "file": "docs/testing-ai.md",
+            "line": 34,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-17: the test follows every relative link on the real pages under `docs/` through `broken_links` and expects an empty list, so a link to a missing file or to an anchor the helper does not know fails it.",
+          "PROOF-17: the test also checks each path segment against its folder's listing letter for letter, and checks that one made-up missing page and one made-up missing heading are reported while a real link out of `docs/` is not.",
+          "PROOF-17: which lines of a file count as headings is decided inside the helper, which the test does not show, so the test never shows that a `#` line inside a fenced code sample is refused as an anchor, nor that the anchor is spelled as the git host spells it for headings with punctuation or repeats.",
+          "PROOF-17: the floors of `9` pages and `40` followed links guard against an empty scan and do not compare which links were followed."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a3b2f36f8a51804569000e8750f4430db74f577c977f01e0dd73d14afb401ae6",
         "rule_hash": "ce5d0cd5d0bb23c40996cee62bec0d025708d428393fb11bfdc8a459f5aa2e98",
-        "test_hash": "906044041cf11ca73d40561fddb29acc81fa68f86029897c481fce75db434bec",
+        "test_hash": "3580610cf6cb16f8820643fa2e62702acfc2df03ff43cda7b70be47888636efc",
         "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:39:05Z",
         "bugs": {
           "PROOF-21": {
-            "after": "  ([Foster et al., FSE 2025](http://arxiv.org/pdf/2501.12862), section 3.) Of 381 bugs read by",
+            "after": "([Just et al., FSE 2014](http://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf),",
             "aim": "plain",
-            "before": "  ([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862), section 3.) Of 381 bugs read by",
-            "bug_key": "79d2c7cf757ea699a5cd48f7d4a3db75ff3434e8c8e19ca0ce0138bc71fe1941",
-            "case": "the text of docs/audit.md cites Foster et al., FSE 2025; the proof says as a link starting `https://`; the changed page gives that paper only as a link starting `http://`",
-            "file": "docs/audit.md",
-            "line": 180,
+            "before": "([Just et al., FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf),",
+            "bug_key": "0f401065b4d8033b2448a1c4f60aaaabfb27a222029ada9af3f6c59e3027ef7c",
+            "case": "the research page's citation of Just et al., FSE 2014; the proof says it is a link starting `https://`; the changed page gives it as a link starting `http://`",
+            "file": "docs/audit-research.md",
+            "line": 193,
             "result": "caught",
             "why": ""
           },
           "PROOF-22": {
-            "after": "[Atil et al., 2025](https://arxiv.org/pdf/2408.0466)). Purlin keeps a proof's result until its",
+            "after": "Atil et al., 2025, <https://arxiv.org/abs/2408.04667>). Purlin keeps a proof's result until its",
             "aim": "past the test",
             "before": "[Atil et al., 2025](https://arxiv.org/pdf/2408.04667)). Purlin keeps a proof's result until its",
-            "bug_key": "6c2bd1b7866d53e5189592a9985ba8d196c7b75c447bb5712d23cc0ba96808de",
-            "case": "the Atil et al. link the text gives before `Sources`; the proof says it appears again in the list under `Sources`; the changed page gives https://arxiv.org/pdf/2408.0466 before the heading, which the list does not hold",
-            "file": "docs/audit.md",
-            "line": 259,
+            "bug_key": "fc16f997a184d0921ca5b572e081e31a3027fc3ad83b6396886f6176e6b4e518",
+            "case": "the research page's link for Atil et al. before `Sources`; the proof says every such link appears again in the list under `Sources`; the changed page gives the link <https://arxiv.org/abs/2408.04667> in angle brackets, and the list holds only https://arxiv.org/pdf/2408.04667",
+            "file": "docs/audit-research.md",
+            "line": 145,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [
-          "PROOF-21: the test reads the page before `Sources` and asserts that no one of the five papers is left uncited, so a paper whose only full-name link is not `https://` should fail it.",
-          "PROOF-21: the sample text shows the helper refusing a paper named in plain words and one linked by `http://`, with literal expected names, so the helper's own strictness is checked for those two forms.",
-          "PROOF-22: the test asserts that the real page leaves no link unlisted and holds at least 10 links before `Sources`, so a page whose links are not read at all cannot pass it.",
-          "PROOF-22: the sample text holds two unrelated `https://` links, so it does not show whether a link is compared whole or found as part of a longer listed link, nor whether a relative link is read.",
-          "No spot test fired, and the source of the helpers `papers_not_cited`, `links_not_listed`, `targets` and `around_sources` is not in the request, so how they match is not read here."
-        ],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-21 names five papers in one sentence, which is five results from one reading of the page."
-        ],
-        "proof_hash": "a18395fa7c1fde20ecaaa44ab9b4bdc7856ccdbffc91db9fd19749638ad0edc9",
-        "rule_hash": "0d9336293eb4db2d21f5204ee7cddba0c5a4ca087994362289d704a31da48e3f",
-        "test_hash": "7e1ee95a8a7551436548304c3feabd0c1b34fc3947075b851ee20c028e3daf2c",
+        "proof_hash": "6dcf6c47cefc4378b2ad469fdfb589d6e082751529fd9712bf37eca642756367",
+        "rule_hash": "3d4c72258e5f58752f30d5ef371819f98ade85c938431f54f511bd81257f73a7",
+        "test_hash": "f49c18d933a06c60edd907863a35441bc880a121abce998062c2f7fe40e3d500",
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-06T15:53:26Z",
+        "at": "2026-10-07T18:39:05Z",
         "bugs": {
           "PROOF-24": {
-            "after": "Each checkout of a repository, a worktree included, has its own results, its own status and never its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
+            "after": "Each checkout of a repository, a worktree included, nowhere has its own results, its own status and",
             "aim": "past the test",
-            "before": "Each checkout of a repository, a worktree included, has its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
-            "bug_key": "a0c75b9bfc29e75973421c3b0df0d6089599aa85c122f24c6d0138ce3339bba5",
-            "case": "the one paragraph of docs/working-together.md that names a worktree; the proof says its `Each checkout` sentence says each checkout has its own results and its own dashboard; the changed sentence says each checkout has never its own dashboard",
+            "before": "Each checkout of a repository, a worktree included, has its own results, its own status and",
+            "bug_key": "ac35c3d099361231610ea5e43e4e22516719ec1ab6eb146133b603bcf8952331",
+            "case": "the more-than-one-checkout paragraph of docs/working-together.md; the proof says the `Each checkout` sentence says, with no word of denial before `has`, that it has its own results and its own dashboard; the changed page reads \"nowhere has its own results\", which denies it",
             "file": "docs/working-together.md",
-            "line": 160,
+            "line": 94,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "4850aeaf33fc08b43bb36f4221963c6d8e98471d",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "442ec2de74fe4721ec63b7c4cfaafa9f78fc914f1b2197b16ac315cef3a49ccd",
         "rule_hash": "1f3f502cd01fce46fb61442e9e0e4206945004ba4eff4951f20dcbf3def99ac0",
-        "test_hash": "528c48d19aa325152503f814ed9be91ab7941661a373dc50f5821fd43fb7f7c1",
+        "test_hash": "447d4026ac2aab47d27663ee8732d28976110c2fec7139866d1f3564efb90897",
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:39:05Z",
         "bugs": {
           "PROOF-25": {
-            "after": "* Auditing again does not clear a finding. If the code changes and the test does not,",
+            "after": "The share of strong rules\n-------------------------\n\nEvery audit ends on the share of rules it found strong, such as",
             "aim": "past the test",
-            "before": "Auditing again does not clear a finding. If the code changes and the test does not,",
-            "bug_key": "0394e933609e9d01c038faccf9c258d1fdc46ce47bfacf5c89335c298b0c13e6",
-            "case": "the part under `What to do with a finding` in docs/audit.md; the proof says exactly 6 bullets; the changed page holds 7, the seventh written with a `*` marker",
+            "before": "Every audit ends on the share of rules it found strong, such as",
+            "bug_key": "a6353f3934498d84bd618e1ecc977b9dd6f5875992be43ff4ef77084f7ae5676",
+            "case": "docs/audit.md read for the heading after `How it works`; the proof says the next heading is `What to do with a finding`; the changed page has an underlined heading `The share of strong rules` between them",
             "file": "docs/audit.md",
-            "line": 61,
+            "line": 45,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b3845bf19f9ae3c3704dadb40d07a6de94cd5e9c810623617d6c13aa19b015d0",
         "rule_hash": "18624330ceb13d4e6f959c601624a56f0ed98507b11ea23e96ab9cfa677d8fb1",
-        "test_hash": "814d6d7800ed7b8098ffc463ef0a2b604988fe9c839d24ac2c6aee1e6c057f38",
+        "test_hash": "5d56fa486f22f8444294b84e881b5cd2015a99a1651e62d8490727957a1be4aa",
         "verdict": "strong"
       },
       "RULE-18": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:39:05Z",
         "bugs": {
           "PROOF-26": {
-            "after": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\" || git clone --depth 1 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
+            "after": "        run: git clone --depth 1 --branch signed/0.10.0 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
             "aim": "past the test",
             "before": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
-            "bug_key": "e9aec9337237759d76fe0b2aa0c94c2cb3588356e411e45d136032008db26dbf",
-            "case": "the clones of the purlin repository on docs/running-and-evidence.md that name a branch; the proof says exactly 1, naming `signed/` plus the `VERSION` content; the changed page holds 2, the second naming `main` with `-b`",
+            "bug_key": "6fd3f73e5edfdef86eb0cf82a61bf7e8e84ce4e6397a3eef85fbee30ef76ee78",
+            "case": "the Windows workflow example's clone of purlin; the proof says the branch it names is `signed/` followed by the VERSION file's content; the changed page's clone also names `-b main` after it, so the command names a second branch and git clones `main`",
             "file": "docs/running-and-evidence.md",
-            "line": 635,
+            "line": 270,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "d75f07512091ddaacd81b40b67d529c54a59cfdfa4aec7f49f57be57a4f00e69",
         "rule_hash": "6778b6cf1d3d4a498737621b2f6676109f96f91b6877fef7e230ca6188771600",
-        "test_hash": "7f49b1d78448ea2e6f20285f33701b42badeb5d6e7df7c288e8bb97edd3edbb6",
+        "test_hash": "6bfae3717684516ea118a6bc593e60f8fa595ac09c97255deac179a0c317519e",
+        "verdict": "strong"
+      },
+      "RULE-19": {
+        "at": "2026-10-07T18:35:37Z",
+        "bugs": {
+          "PROOF-27": {
+            "after": "| [The audit](audit.md), with [its research](audit-research.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |",
+            "aim": "past the test",
+            "before": "| [The audit](audit.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |",
+            "bug_key": "72fb597469c0387746f64de4b86d2925393c3d4d61fd8fb40ec4db245e702912",
+            "case": "the table of guides in docs/index.md; the proof says each first cell links one page and every page is linked exactly 1 time; the changed page's first cell for the audit links two pages, so audit-research.md is linked 2 times",
+            "file": "docs/index.md",
+            "line": 25,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-27: the test compares the sorted list of what the first cells link with every page under docs/ but index.md, so a page left out, a page listed twice in two rows and a row that links nothing each fail it.",
+          "PROOF-27: the test compares the count with the literal 13 and the line under the title with the literal sentence the proof names, so neither value is taken from the page alone.",
+          "PROOF-27: the second comparison of the line under the title builds its expected value from the count of pages, which adds nothing beyond the literal comparison above it.",
+          "PROOF-27: the test reads the rows through a helper whose source is not shown, and its sample holds no first cell with two links, so a cell that links a second page may be read as one link and still pass.",
+          "PROOF-27: the sample text checks the helper on a made-up page, which shows that the helper reports duplicates and unlinked rows but observes nothing about docs/index.md itself."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e1a883d54c16a22c517aefcf5cdf64e943c20ed6ad3b66ca3662e15e1aee25f9",
+        "rule_hash": "b635fc43a4cc7b222e583063c6946e3a300d856844721e174ef8a637fd72d51c",
+        "test_hash": "14c9f546445fe15119ee4d0719199fe81e65ec9575728959d1e0e8f5b2f64262",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-07T18:39:05Z",
+        "bugs": {
+          "PROOF-28": {
+            "after": "[testing-ai.md](testing-ai.md) and `[graded-by-ai.md](graded-by-ai.md)` say what stands behind",
+            "aim": "past the test",
+            "before": "[testing-ai.md](testing-ai.md) and [graded-by-ai.md](graded-by-ai.md) say what stands behind",
+            "bug_key": "ecf06383190b2d1d179ed04d5915d4c6c0b8d058a3cce63cc751eb3372afb847",
+            "case": "`docs/sign-off.md` read for its links; the proof says it holds a link to `graded-by-ai.md`; the changed page holds only a code span showing link text, so it links to `testing-ai.md` alone",
+            "file": "docs/sign-off.md",
+            "line": 131,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "35e8c7ae81a121fdc5879dae33266a3c2d3736846395599c5bf8125d23f9ca83",
+        "rule_hash": "5183e888476ac6f6b5a348b0c0e55d335c641dc8cf2609ab96607b635bbe52c0",
+        "test_hash": "81820819993162a5570ba5dd02254a7bc7ec3b4c75d4b32b3adc1fb84d40afc9",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-07T18:39:05Z",
+        "bugs": {
+          "PROOF-29": {
+            "after": "    G -->|\"reject, with one reason\"| F([failed])",
+            "aim": "past the test",
+            "before": "    G -->|\"reject, with one reason\"| F([\"<b>failed</b>\"])",
+            "bug_key": "4942640b88a73e4c377df176d184e81a720f67f28d919b7a8679c11e73473a9b",
+            "case": "the flow diagram of docs/graded-by-ai.md; the proof says the label of every box opens `<b>`; the changed page has a box whose label is `failed`, written without quotation marks and without bold",
+            "file": "docs/graded-by-ai.md",
+            "line": 15,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4540c3b6de4a57873a933a9a391a4b067799023155481ad05d7760c576339629",
+        "rule_hash": "d9ace3b9c12c42ef44602edfeca301f1e8ca16d5dd627491d66127cc70f71426",
+        "test_hash": "2f6627aab6daec5eb9ce088785b33097f5a5d0c402889856a397b32e9c0f183c",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-07T18:39:05Z",
+        "bugs": {
+          "PROOF-30": {
+            "after": "([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The six spot tests",
+            "aim": "past the test",
+            "before": "([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The spot tests",
+            "bug_key": "c947fd3954e0b5beaf93e56b46ce08671bceeff1de38c17d1e73ba7f211f1a40",
+            "case": "docs/audit-research.md read for its counts of the checks; the proof says it holds `The seven checks are in` once and no other count of checks; the changed page also says there are six spot tests",
+            "file": "docs/audit-research.md",
+            "line": 228,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e8ec1d7b0381e85b4aec933310838e53f3c14bf94662737b2f0d154eb534f8ee",
+        "rule_hash": "49fac34fc1b263657ba924d4ae6fedcd780f31c1063884a395448c537e632a0a",
+        "test_hash": "062e9257df6513161424ad93ba27722a36fd48f58358ea5e8d690c1b6531721e",
         "verdict": "strong"
       }
     }
@@ -161,14 +271,14 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:14Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:38:49Z",
+      "commit": "98b4e5828fc23b34ab623ccdbae8f1256cfaafb1",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
         "spec": "8869713f04652aae963578b9b31b60f1ce90b611bea1639a93d36be5e4b30413",
-        "tests": "0063f3f4eadeb64bfa2134ffe947923d73250ac4d2dd3e4a2e5c729e8f8063c7"
+        "tests": "96b21d9bc7b20ae256750c6bfd77225f5eac12cd1dda098471374a317d5ed574"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -187,7 +297,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -209,7 +319,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -224,14 +334,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_every_link_of_the_research_page_appears_again_under_sources",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -253,7 +363,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -275,7 +385,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -297,7 +407,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -319,7 +429,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -341,7 +451,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -363,7 +473,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",
@@ -378,14 +488,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_audit_pages_count_the_spot_tests_as_the_reference_does",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "fd0d8b60adaebb637b3e4bedcf80ec828ab010e2b290dfc34711343943b7d6ad"
             }
           },
           "result": "pass",

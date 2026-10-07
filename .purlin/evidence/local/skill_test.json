@@ -2,38 +2,40 @@
   "audit": {
     "rules": {
       "RULE-23": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-52": {
-            "after": "The run writes this operating system's section of `.purlin/evidence/local/<feature-name>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test.\n\nIt prints `Evidence written to .purlin/evidence/local/<feature-name>.json.`, or the folder and a count",
+            "after": "The run writes this operating system's section of `.purlin/evidence/<feature>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test;\n- what the suite's report holds for each test: its name there, its outcome, how long it took\n  and, where it failed or was skipped, the whole text the tool reported.\n\nThe run also keeps each report file it read under `.purlin/runtime/kept/`, which git ignores, so\n`purlin:sign` can commit it with the evidence package. Nothing changes in how a test is written.\n\nIt prints `Evidence written to .purlin/evidence/<feature>.json.`, or the folder and a count",
             "aim": "plain",
-            "before": "The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test.\n\nIt prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count",
-            "bug_key": "571274bcf64eb146c01626113b8eab2c619614b80b32e545cc601b66fec3bffe",
-            "case": "a copy with every `references/evidence_and_signoff.md` taken out; the proof says the report is `test does not name references/evidence_and_signoff.md` alone; the changed file also lacks `.purlin/evidence/local/<feature>.json`, so a second line is reported beside it",
+            "before": "The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test;\n- what the suite's report holds for each test: its name there, its outcome, how long it took\n  and, where it failed or was skipped, the whole text the tool reported.\n\nThe run also keeps each report file it read under `.purlin/runtime/kept/`, which git ignores, so\n`purlin:sign` can commit it with the evidence package. Nothing changes in how a test is written.\n\nIt prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count",
+            "bug_key": "eea256f9ed78fa1c597965a9c5b281470ebb031960cb4fde642e11672119f660",
+            "case": "a copy of the skill file with every `references/evidence_and_signoff.md` taken out; the proof says it is reported as `test does not name references/evidence_and_signoff.md` alone; the changed file also lacks `.purlin/evidence/local/<feature>.json`, so the report holds a second line, `test does not n",
             "file": "skills/test/SKILL.md",
-            "line": 101,
+            "line": 113,
             "result": "caught",
             "why": ""
           },
           "PROOF-55": {
-            "after": "The run writes this operating system's section of `.purlin/evidence/local/<name>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test.\n\nIt prints `Evidence written to .purlin/evidence/local/<name>.json.`, or the folder and a count",
-            "aim": "plain",
-            "before": "The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test.\n\nIt prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count",
-            "bug_key": "1ca9a0142d502f39e33f97fba17270e7c5a5e0c532c1b187d9ddbe55a2afaf87",
-            "case": "checking the shipped skill file for the command and four paths; the proof says nothing is reported; the changed file no longer names `.purlin/evidence/local/<feature>.json`, so `test does not name .purlin/evidence/local/<feature>.json` is reported",
+            "after": "The run writes this operating system's section of `.purlin/evidence/local/<name>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test;\n- what the suite's report holds for each test: its name there, its outcome, how long it took\n  and, where it failed or was skipped, the whole text the tool reported.\n\nThe run also keeps each report file it read under `.purlin/runtime/kept/`, which git ignores, so\n`purlin:sign` can commit it with the evidence package. Nothing changes in how a test is written.\n\nIt prints `Evidence written to .purlin/evidence/local/<name>.json.`, or the folder and a count",
+            "aim": "past the test",
+            "before": "The run writes this operating system's section of `.purlin/evidence/local/<feature>.json`. The\nsection holds:\n\n- the commit of the code it describes, and the time;\n- who ran it, and on which machine;\n- the fingerprint of the spec, code and tests it saw;\n- each rule's word, and each proof's result and test;\n- what the suite's report holds for each test: its name there, its outcome, how long it took\n  and, where it failed or was skipped, the whole text the tool reported.\n\nThe run also keeps each report file it read under `.purlin/runtime/kept/`, which git ignores, so\n`purlin:sign` can commit it with the evidence package. Nothing changes in how a test is written.\n\nIt prints `Evidence written to .purlin/evidence/local/<feature>.json.`, or the folder and a count",
+            "bug_key": "a8b13910bd1de1570d24053ee9e857b15e23d218b0770ee1fdf674ea7a05e2b6",
+            "case": "checking the shipped skill file for the command and the four paths; the proof says it reports nothing; the changed file no longer holds `.purlin/evidence/local/<feature>.json`, so the check reports `test does not name .purlin/evidence/local/<feature>.json`",
             "file": "skills/test/SKILL.md",
-            "line": 101,
+            "line": 113,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "adb996492c4df8d077adcb8dfb67c449766ef446b6feedb32ee4a74a08cc25cf",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "c68e2119e65744234d2755344efd030193c9ac06490d08278726f9442645f62d",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-55: the test runs the check on the shipped skill file and compares the whole report with the empty list, so any missing command or path fails it, provided `COMMANDS` and `PATHS`, which are defined outside the shown test, hold the command and the four paths the proof names.",
-          "PROOF-52: the test runs the check on a copy without `references/evidence_and_signoff.md` and compares the whole report with the one sentence the proof names, so a missing, different or extra line fails it.",
-          "No spot test fired, and both tests compare the full result with a literal, so the planted changes are the plainest ones that break each case."
+          "PROOF-55: the test runs the check on the shipped skill file and compares the whole report with an empty list, so any reported problem fails it.",
+          "PROOF-55: the command and the four paths come from the constants COMMANDS and PATHS, which the test's own lines do not show, so a name missing from those constants would go unchecked.",
+          "PROOF-52: the test takes every `references/evidence_and_signoff.md` out of a copy, runs the same check and compares the whole report with the one sentence the proof names, so a missing, different or extra line fails it.",
+          "PROOF-52: the test relies on the helper copy_without, defined outside its own lines, to remove every occurrence and to put the file back.",
+          "The spot tests found nothing, and both tests compare an exact expected value that does not come from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -44,14 +46,14 @@
         "verdict": "strong"
       },
       "RULE-24": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-56": {
             "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --all --project-root .",
             "aim": "plain",
             "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --all --commit --project-root .",
-            "bug_key": "5b14f6acbf757f4e991a9d8b647aee3b9905de58a6694915fb91cb6f78f04f15",
-            "case": "the skill file as shipped is checked for one line holding the run script, `--test`, `--all` and `--commit`; the proof says nothing is reported; the changed file is reported as having no single line carrying all four",
+            "bug_key": "5b4fc0481c759576eca6bed4009bdebe3cc457bfe5d636d8cfeed0799289f922",
+            "case": "the skill file as shipped checked for one line holding the script, `--test`, `--all` and `--commit`; the proof says nothing is reported; the changed file has no such line, so the missing-line problem is reported",
             "file": "skills/test/SKILL.md",
             "line": 45,
             "result": "caught",
@@ -61,23 +63,24 @@
             "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --commit --all --project-root .",
             "aim": "plain",
             "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --all --commit --project-root .",
-            "bug_key": "606ae7d72460464c87ebbbc60081ced637ac8ca2c6cadb36086a5516735d9dec",
-            "case": "a copy of the skill file with every `--test --all --commit` taken out; the proof says it is reported as having no single line carrying all four; the changed file's copy still holds the hand-off line with all four, so nothing is reported",
+            "bug_key": "8947a94d05cc741c7a444f75665fae1bcab1f2b7715e023b797bb632da5aebcb",
+            "case": "a copy of the skill file with every `--test --all --commit` taken out; the proof says the missing-line problem is reported; the changed file keeps a line with all four after the removal, so nothing is reported",
             "file": "skills/test/SKILL.md",
             "line": 45,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "adb996492c4df8d077adcb8dfb67c449766ef446b6feedb32ee4a74a08cc25cf",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "c68e2119e65744234d2755344efd030193c9ac06490d08278726f9442645f62d",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-56: the test checks the shipped skill file for one line holding the four values and compares the problems with an empty list, so any reported problem fails it.",
-          "PROOF-57: the test takes every `--test --all --commit` out of a copy and compares the whole list of problems with the one exact message the proof names, so a missing or differently worded report fails it.",
-          "PROOF-56: the four values the test looks for come from `HAND_OFF`, defined outside the test shown, so the test's source alone does not show that they are the four the proof names.",
-          "PROOF-57: the expected message is written out as a literal in the test and matches the proof's text, so it does not come from the code under test.",
-          "Findings: the spot tests found nothing, and both tests hold a failable comparison against a literal."
+          "PROOF-56: the test runs the same-line check on the shipped skill file and compares the problems with an empty list, which is the \"reports nothing\" the proof names.",
+          "PROOF-56: only the hand-off command line in the file holds all four values, so dropping any one of them from that line should fail the test.",
+          "PROOF-57: the test removes every `--test --all --commit` from a copy, runs the same check and compares the whole problem list with the exact sentence the proof names.",
+          "PROOF-57: the comparison is against a literal written in the test, so a changed message, an extra problem or an empty list each fail it.",
+          "PROOF-57: the planted change reorders the flags so the removal finds nothing to take out; the test should fail, because the check then reports nothing or the copy helper refuses.",
+          "The spot tests found nothing; both tests assert a literal result on the proof's own case, and the helpers they call are not shown here."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -86,14 +89,58 @@
         "rule_hash": "e284cfd7cc27f030e9f9ea40079617dfddc41ef05fc24bfcfda466f85742e633",
         "test_hash": "8c322d5213bd52f8fb7859948b6d1102d79b7e1736d3a585ba0a4a9f6e50f3a1",
         "verdict": "strong"
+      },
+      "RULE-25": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-58": {
+            "after": "| `<n> rules to run on <model>: purlin:test --all` | Under `Left to do`: those rules have an AI proof with no result on that model, or fewer than are asked now. `\u2192 Run: purlin:test --all` |",
+            "aim": "plain",
+            "before": "| `<n> rules to test on <model>: purlin:test --all` | Under `Left to do`: those rules have an AI proof with no result on that model, or fewer than are asked now. `\u2192 Run: purlin:test --all` |",
+            "bug_key": "d776007646228cc9b37b33a0d5ecf66e3f25929d89c0d913c8662f0abf9bacf7",
+            "case": "the text of skills/test/SKILL.md; the proof says it holds the line `<n> rules to test on <model>: purlin:test --all`; the changed file holds `<n> rules to run on <model>: purlin:test --all` in its place",
+            "file": "skills/test/SKILL.md",
+            "line": 179,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-59": {
+            "after": "| `<model>: model not reached. <why>. Run purlin:test --all.` | The model, or the proof's grader, gave no answer, so the proof reads `not run` on that model and nothing more was started on it. Check that `claude` is logged in and that the proof's tag spells the model's name as the model is named, then run `purlin:test --all` again. It is never a failure: never change the code or the test for it, and never rewrite the proof. |",
+            "aim": "plain",
+            "before": "| `<model>: model not reached. <why>. Run purlin:test --all.` | The model, or the proof's grader, gave no answer, so the proof reads `not run` on that model and nothing more was started on it. Check that `claude` is logged in and that the proof's tag spells the model's name as the model is named, then run `purlin:test --all` again. It is never a failure: never change the code or the test for it, and never reword the proof. |",
+            "bug_key": "47858520a74263b2d18997e67a3e07915c98bcfbc64c9c48f5d4f09c106f16fa",
+            "case": "the text of skills/test/SKILL.md; the proof says it holds the sentence ending `and never reword the proof.`; the changed file ends that sentence `and never rewrite the proof.`",
+            "file": "skills/test/SKILL.md",
+            "line": 178,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "c68e2119e65744234d2755344efd030193c9ac06490d08278726f9442645f62d",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-58: the test reads the skill's text with whitespace flattened and asserts that each entry of AI_LINES stands there inside backticks, so it observes the three lines only if AI_LINES holds them as the proof writes them, and that list is defined outside the lines shown.",
+          "PROOF-58: the line `Running <feature> <PROOF-N> on <model>, <i> of <n>` stands twice in the file, in Step 1 and in the Step 4 table, so removing one of them leaves both the proof and the test satisfied.",
+          "PROOF-59: the test asserts that each entry of NOT_REACHED is in the flattened text, so it observes the two sentences only if NOT_REACHED holds them word for word, and that list is defined outside the lines shown.",
+          "PROOF-58 and PROOF-59: each proof reads the text of a file with nothing done before the observation, so the tests show the wording is present and not that a run prints those lines.",
+          "Findings: the spot tests found nothing, which fits tests that each hold one failable assertion and a file that names the proofs' values."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4c2ad931993c038539a91543c2659aec42cb87639b816a6159d1fd13d075f1bb",
+        "rule_hash": "aa7cb6b0a4a22c7d2cf5ca0dea95eb675d6bce5a07bb5a2c83901ef9af9bf865",
+        "test_hash": "6bbc082f2749284798cf6dfee7e00b0eda9f0e49d1f1e47c9e1e5c3cd17f68f3",
+        "verdict": "strong"
       }
     }
   },
   "feature": "skill_test",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -118,7 +165,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -140,7 +187,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -162,7 +209,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -184,7 +231,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -206,7 +253,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -221,14 +268,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_skill_says_what_to_do_about_a_model_not_reached",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",

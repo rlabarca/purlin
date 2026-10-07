@@ -66,6 +66,19 @@ def test_every_path_a_skill_or_the_agent_definition_names_exists():
     for rel in files:
         assert named_paths(read(rel)), '%s names no path' % rel
     assert _found(files, absent_paths) == {}
+    # Each path is in the repository under the very name the file gives it,
+    # letter for letter: a file system that ignores case finds
+    # `references/Glossary.md` where the repository holds `glossary.md`.
+    misspelt = []
+    for rel in files:
+        for path in named_paths(read(rel)):
+            folder = str(ROOT)
+            for part in path.split('/'):
+                if part not in os.listdir(folder):
+                    misspelt.append((rel, path))
+                    break
+                folder = os.path.join(folder, part)
+    assert misspelt == []
     sign = read(skill_path('sign'))
     assert 'scripts/review/sign.py' in sign
     copy = sign.replace('scripts/review/sign.py', 'scripts/review/signoff.py')
@@ -195,6 +208,11 @@ SETTLE = 'purlin:audit <feature> RULE-N --settle'
 def test_the_command_reference_and_the_glossary_name_the_settle_command():
     assert not_named(read('references/purlin_commands.md'), (SETTLE,)) == []
     assert not_named(read('references/glossary.md'), (SETTLE,)) == []
+    # The command as it is typed, one space between its words: only the end
+    # of a wrapped line may stand for a space.
+    for rel in ('references/purlin_commands.md', 'references/glossary.md'):
+        joined = re.sub(r'[ \t]*\n[ \t]*', ' ', read(rel))
+        assert SETTLE in joined, rel
 
 
 AI_PROOF = ('AI proof', '@ai(<model>)', 'references/spec_quality_guide.md',

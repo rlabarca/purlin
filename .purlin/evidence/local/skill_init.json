@@ -2,128 +2,169 @@
   "audit": {
     "rules": {
       "RULE-87": {
-        "at": "2026-10-06T15:53:00Z",
+        "at": "2026-10-07T18:47:25Z",
         "bugs": {
           "PROOF-2": {
             "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"",
-            "aim": "past the test",
+            "aim": "plain",
             "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --project-root .",
-            "bug_key": "832b80c10b4bf3aee5dc51aab0d17539a19432beeca04fc585d52078d3fea93c",
-            "case": "a reader looks for the line that runs setup through the lookup with `--project-root`; the proof says that line passes `--project-root`; the changed skill's setup line runs the script with no `--project-root`, and only the `--update` lines still carry it",
+            "bug_key": "c33b60144bf7de2485be81b60068a047d06ee6da34ec7e8fb7fd720ec7d6a0fc",
+            "case": "a reader looks for the one line that runs setup; the proof says it runs the script through the lookup with `--project-root`; the changed skill's setup line passes no `--project-root`",
             "file": "skills/init/SKILL.md",
             "line": 26,
             "result": "caught",
             "why": ""
           },
           "PROOF-24": {
-            "after": "   `purlin:init --update --project-root . --force`.",
+            "after": "   `--update --project-root . --yes -force`.",
             "aim": "past the test",
             "before": "   `--update --project-root . --yes`.",
-            "bug_key": "5a087ec6b999a6aeeff7fadabcd7521ae34906f2be0fdaabba7ca4c4ecc7ad93",
-            "case": "the skill's restore step hands the reader a quoted run of flags for the setup script; the proof says every flag handed is one the usage lists; the changed skill hands `--force`, which the usage does not list",
+            "bug_key": "aeb92e12345eec8c435a3750337ad21180b9754f219d1630f22ba5accf1850a3",
+            "case": "the quoted run of flags in the restore step; the proof says every flag handed is one the usage lists; the changed skill hands `-force`, which the usage does not list",
             "file": "skills/init/SKILL.md",
-            "line": 161,
+            "line": 164,
             "result": "caught",
             "why": ""
           },
           "PROOF-42": {
-            "after": "`references/formats/marker_format.mdx` is the contract. Read and change the file with the",
-            "aim": "past the test",
-            "before": "`references/formats/marker_format.md` is the contract. Read and change the file with the",
-            "bug_key": "56d66a09522c26a9ca6a39406304097a320a144ad3be4cc156edc45b997bc56b",
-            "case": "a reader looks for the reference `references/formats/marker_format.md`; the proof says the skill names it; the changed skill names `references/formats/marker_format.mdx`, a different file",
+            "after": "agrees. `references/frameworks.md` shows every entry, and",
+            "aim": "plain",
+            "before": "agrees. `references/supported_frameworks.md` shows every entry, and",
+            "bug_key": "7d3514eedd306fda81cf7138dbb85ef84c77f862615a711e246dcd97c9f7a09e",
+            "case": "a reader looks for the two references; the proof says the skill names `references/supported_frameworks.md`; the changed skill names `references/frameworks.md` in its place",
             "file": "skills/init/SKILL.md",
-            "line": 63,
+            "line": 62,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
-        "commit": "3bce95710201086414502bd88d399e91ce53e258",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "5f3369759b83b66e019254742b02810fb43f10b2952fccea984fd2c13caf7f4b",
+        "commit": "9b451349cb9ae540ee2fd179c2ea4387fe5cbdf5",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "8513c458f541ef5011878f9ea3af9f90a91ecef9182b9c0f36d25478098e2c76",
         "rule_hash": "52d955a1e4d4f98549109474c930d3066157e3ad24621fae0e80e661c824b50d",
-        "test_hash": "f1ebe6bed4f139ab2a3cdb62ca0219af8b8fd6df64f60e6a1d7ec8081e4b4801",
+        "test_hash": "ef550bb2f1805dc5f72db6727303c268413bdac1c2f0ff2d24d4bfd75610fad5",
         "verdict": "strong"
       },
       "RULE-88": {
-        "at": "2026-10-05T18:48:23Z",
+        "at": "2026-10-07T18:47:25Z",
         "bugs": {
           "PROOF-100": {
-            "after": "   sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id> --test-command pytest \"<command>\"",
-            "aim": "past the test",
+            "after": "   sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id>",
+            "aim": "plain",
             "before": "   sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --update --project-root . --apply <id>,<id> --test-command \"pytest=<command>\"",
-            "bug_key": "a69ef346036356180767223e26e0100f12affdbff6d09ed5c86bb55e99620d82",
-            "case": "the setup script run with --update --apply evidence and --test-command as the skill's line gives them on a 0.9.5 project; the proof says it asks nothing and applies the migration named alone; the changed line gives the tool and the command as two arguments, so the script refuses them and applies not",
+            "bug_key": "13b5c11c2777ff1205e60b72a63aa9ad50c113dbc979d87dc1555a8df75c5a38",
+            "case": "the setup script run with the flags the skill's apply line gives; the proof says the line gives `--update`, `--apply` and `--test-command`; the changed line gives no `--test-command`, so the run it describes passes no command",
             "file": "skills/init/SKILL.md",
-            "line": 103,
+            "line": 107,
             "result": "caught",
             "why": ""
           },
           "PROOF-99": {
-            "after": "2. **Stop and ask** the person about each migration listed and the first proposed test command:",
+            "after": "2. **Stop and ask** the person about each migration listed, never about each proposed test command:",
             "aim": "past the test",
             "before": "2. **Stop and ask** the person about each migration listed and each proposed test command:",
-            "bug_key": "a3fa52947fcbbaec321e62c6787a9141127fec449ebd653d5dcc0737a09d0611",
-            "case": "a reader of the part on bringing a 0.9.5 project forward; the proof says the Stop and ask step names each migration and each proposed test command; the changed skill asks about each migration and only the first proposed test command",
+            "bug_key": "22869d1183e86aed9ace24651dd2e06ff4925aa3e553e4b1627beb670c6834f8",
+            "case": "the init skill's part on bringing a 0.9.5 project forward; the proof says the `Stop and ask` step names each migration and each proposed test command as things to ask about; the changed step asks about each migration and tells the agent not to ask about the test commands",
             "file": "skills/init/SKILL.md",
-            "line": 96,
+            "line": 100,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
-        "commit": "0d35461e10ec49d264be49b7deb0274ac0baa9e7",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "5f3369759b83b66e019254742b02810fb43f10b2952fccea984fd2c13caf7f4b",
+        "commit": "9b451349cb9ae540ee2fd179c2ea4387fe5cbdf5",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "626177f25b6667b233b56808a8374fa880374ab2778fe004dbbc69d8d3ee8a34",
         "rule_hash": "c25747d3bfc656d14b27fa433beb6eaa1b953d23319039d5dee374d6e7d07040",
-        "test_hash": "d6b0ad9a3150e13b50d2d32119b051735c086b8d9e1dfb726b12b03077d8d6c4",
+        "test_hash": "b655dece2401ec4b6cfdac80f68532c55735bdab03347ebd7620a3d7811589b9",
         "verdict": "strong"
       },
       "RULE-89": {
-        "at": "2026-10-05T18:48:23Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-101": {
-            "after": "setup writes is to restore: Purlin's lines in `.gitignore`, `.purlin/evidence/README.md`, the\nversion in the settings file, or the dashboard page at the project root. The same script\nrestores it, and none of the part above applies. Two steps:\n\n1. **List.** Run the line of step 1 above, which reads `.purlin/config.json`. It prints `<n> files to restore in <folder>:` and one",
-            "aim": "past the test",
-            "before": "setup writes is to restore: Purlin's lines in `.gitignore`, `.purlin/evidence/README.md`, the\n`version` in `.purlin/config.json`, or the dashboard page at the project root. The same script\nrestores it, and none of the part above applies. Two steps:\n\n1. **List.** Run the line of step 1 above. It prints `<n> files to restore in <folder>:` and one",
-            "bug_key": "896aae8f606b2b3974ca669ce3a64557c2f593322f09d823cbbc020da886819d",
-            "case": "a reader of the restoring part; the proof says the four files are named before the `List` step; the changed part names `.purlin/config.json` only inside the `List` step",
+            "after": "   `--update --project-root .`.",
+            "aim": "plain",
+            "before": "   `--update --project-root . --yes`.",
+            "bug_key": "bdd7eb994385a9da836925e3d1947e0b0f14adac7b325e2ef9f4b5304ac71f1e",
+            "case": "the init skill's part on restoring a file setup writes; the proof says a line naming `--update` and `--yes` follows the `Stop and ask` step; the changed part names `--update` there with no `--yes`",
             "file": "skills/init/SKILL.md",
-            "line": 154,
+            "line": 164,
             "result": "caught",
             "why": ""
           },
           "PROOF-102": {
-            "after": "It prints `Restoring <n> files: <files>.`, one line `restored <file>` for",
+            "after": "It prints `Restored <n> files: <files>.`, one line `restored <file>: <what the file is for>` for",
             "aim": "plain",
             "before": "It prints `Restoring <n> files: <files>.`, one line `restored <file>: <what the file is for>` for",
-            "bug_key": "fa7ad32f0499bd3414bd35f0038ddbd05b5fba98eda1b92b79f409d98ac6b489",
-            "case": "the restoring part's quoted lines; the proof says it quotes `restored <file>: <what the file is for>`; the changed part quotes `restored <file>` with nothing after it",
+            "bug_key": "3f8ffb849a27647b127347e1f09c9c33833066d4adf75659fb5af1c5fdda4f4a",
+            "case": "the init skill's part on restoring a file setup writes; the proof says it quotes `Restoring <n> files: <files>.`; the changed part quotes `Restored <n> files: <files>.` in its place",
             "file": "skills/init/SKILL.md",
-            "line": 163,
+            "line": 166,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "e7255d0a68d4b6be66eed8d337e0a14c187c89c476ce34b5885581c505aa210f",
-        "commit": "0d35461e10ec49d264be49b7deb0274ac0baa9e7",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "5f3369759b83b66e019254742b02810fb43f10b2952fccea984fd2c13caf7f4b",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-101: the test reads the restoring part, looks for each of the four names before the `List` step, and requires the `List` line, a `Stop and ask` line holding `restore` and a line holding both `--update` and `--yes` in that order, which is what the proof names.",
+          "PROOF-101: the test takes the word `restore` on the `Stop and ask` line as naming the restoring, so a line that holds the word in another sense would still pass.",
+          "PROOF-102: the test looks for each of the five quoted lines, backticks included, in the restoring part, so a changed quote fails it.",
+          "PROOF-102: the test runs the setup script twice on a sample project and compares the first and last lines of the listing and the first, third and fourth lines of the restoring run with the literals the proof names.",
+          "PROOF-102: the test ties the quotes to the script's output only through those literals, so the quoted `<file>: <what the file is for>` listing line and the second line of the restoring run are compared with nothing."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-102 is longer than 60 words and holds more than one case: what the part quotes, the listing run and the run with `--yes`."
+        ],
         "proof_hash": "ee5d8e6aaff91d2af4b6fc8742f5523c42db374e58a13afb4db982637e90a6a6",
         "rule_hash": "9e5432dd448ee001e94a68f65b08d85ddef446384b025fceb56a45c0b0bf4bbb",
         "test_hash": "ed6b79ffe816a66828651e8a0c0a3b9ed9fceb7b5948fb436c62aac471366e35",
+        "verdict": "strong"
+      },
+      "RULE-90": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-103": {
+            "after": "than 5, write it with the `purlin_config` tool.",
+            "aim": "past the test",
+            "before": "than 3, write it with the `purlin_config` tool.",
+            "bug_key": "2777b27853174f27dfabeadbea2c200c987b71db4b4c1bb2e990ec1f748a4a27",
+            "case": "a reader of the init skill; the proof says the sentence reads \"where a project wants another count than 3, write it with the `purlin_config` tool.\"; the changed skill reads \"another count than 5\"",
+            "file": "skills/init/SKILL.md",
+            "line": 69,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "5f3369759b83b66e019254742b02810fb43f10b2952fccea984fd2c13caf7f4b",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-103: the test flattens the skill's text and asserts that two constants, TAGS_THAT_STAY and NO_RUNS, are found in it, which is the reading the proof describes.",
+          "PROOF-103: the values of the two constants are defined outside the test's own lines and are not shown, so whether they hold the proof's two quoted strings in full cannot be read from the test.",
+          "PROOF-103: the planted change alters the count at the end of the `runs` sentence, which the test catches only if NO_RUNS holds the whole sentence rather than its opening words.",
+          "PROOF-103: the spot tests found nothing, and nothing in the test's own lines contradicts that."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e0c0511635a4db46005ff0b8264f99a9449881828cdbb1b0045fe4093f8b126e",
+        "rule_hash": "333dd4312644090be91acb248ee3233143d3995f54b13812a083daa00565f34c",
+        "test_hash": "ea163e552daa0272d9107c33246be47e08cba15bb7d049d10f20e8c461981c06",
         "verdict": "strong"
       }
     }
@@ -131,14 +172,14 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
-      "dirty": false,
+      "at": "2026-10-07T18:47:14Z",
+      "commit": "9b451349cb9ae540ee2fd179c2ea4387fe5cbdf5",
+      "dirty": true,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "5f3369759b83b66e019254742b02810fb43f10b2952fccea984fd2c13caf7f4b",
         "spec": "737cef3db582eaa77bee146a5853e81597660afea03d24f0dcbb186c1302ee57",
-        "tests": "c349640d3683df8fe1ded87c55e7bdb629494dcd007532f0ddb93b0c37a9766c"
+        "tests": "7d7803aa26bf2246825f9ec1100c837ba6b03a8f69ba73a39b12f6290ddcd620"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -157,7 +198,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -172,14 +213,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.085,
+                "duration": 0.054,
                 "name": "test_every_flag_handed_is_one_the_usage_lists",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -201,7 +242,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -223,7 +264,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -238,14 +279,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.366,
+                "duration": 0.426,
                 "name": "test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -260,14 +301,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_restoring_part_names_the_files_then_lists_asks_and_restores",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -282,14 +323,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 1.243,
+                "duration": 1.359,
                 "name": "test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",
@@ -304,14 +345,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_a_reader_finds_the_tags_that_stay_and_who_writes_runs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "3be96ff6436da8c8ed2ee9bcd19350d90f307121daee797ec6bf3f78f3406695"
             }
           },
           "result": "pass",

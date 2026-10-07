@@ -374,6 +374,31 @@ class TestPython39:
         if hasattr(tokenize, 'FSTRING_START'):
             assert f_strings_later_than_39(str(tmp_path), ['quoted.py']) == [
                 'quoted.py:2']
+        # Where the machine has a Python 3.9, its own compiler reads each
+        # file: it refuses what a later Python's parser lets through under
+        # a 3.9 setting, such as an assignment expression written without
+        # parentheses as an index.
+        python = python_39()
+        if python is not None:
+            (tmp_path / 'index.py').write_text(
+                'row = [1]\nfirst = row[at := 0]\n', encoding='utf-8')
+            reader = (
+                'import sys\n'
+                'for path in sys.argv[1:]:\n'
+                '    with open(path, encoding="utf-8") as handle:\n'
+                '        source = handle.read()\n'
+                '    try:\n'
+                '        compile(source, path, "exec")\n'
+                '    except SyntaxError:\n'
+                '        print(path)\n')
+            scripts = [rel for rel in rels if rel.endswith('.py')]
+            refused = subprocess.run(
+                python + ['-c', reader, *scripts,
+                          str(tmp_path / 'index.py')],
+                cwd=ROOT, capture_output=True, text=True, timeout=300)
+            assert refused.returncode == 0, refused.stderr
+            assert refused.stdout.splitlines() == [
+                str(tmp_path / 'index.py')], refused.stdout
 
     # purlin: purlin_output PROOF-4
     def test_a_test_run_runs_on_39(self, tmp_path):
@@ -395,7 +420,8 @@ class TestPython39:
         done = status(python, root)
         assert done.returncode == 0, done.stdout + done.stderr
         text = status_text(done)
-        assert re.search(r'^app +1 +1 ', text, re.M), text
+        # The whole row: one rule, one proof, and no rule passing yet.
+        assert 'app   1      1       0 of 1' in text.splitlines(), text
 
 
 # --- No process left behind -------------------------------------------------
@@ -474,6 +500,62 @@ def processes_carrying(mark):
     return rows
 
 
+# Loaded by every Python a command starts, through `PYTHONPATH`: it writes the
+# process id of each process that Python starts into the file the variable
+# `PURLIN_TEST_STARTED_LOG` names, then loads the `sitecustomize` it stands in
+# front of, where there is one. The process that starts another writes the
+# line, so a process started with an empty environment, in a session of its
+# own, is written down all the same.
+STARTED_RECORD = '''import os
+import subprocess
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_LOG = os.environ.get('PURLIN_TEST_STARTED_LOG')
+
+
+def _note(pid):
+    try:
+        with open(_LOG, 'a') as handle:
+            handle.write('%d\\n' % pid)
+    except OSError:
+        pass
+
+
+if _LOG:
+    _init = subprocess.Popen.__init__
+
+    def _noted_init(self, *args, **kwargs):
+        _init(self, *args, **kwargs)
+        _note(self.pid)
+
+    subprocess.Popen.__init__ = _noted_init
+
+    def _noting(call):
+        def noted(*args, **kwargs):
+            made = call(*args, **kwargs)
+            pid = made[0] if isinstance(made, tuple) else made
+            if pid:
+                _note(pid)
+            return made
+        return noted
+
+    for _name in ('fork', 'forkpty', 'posix_spawn', 'posix_spawnp'):
+        if hasattr(os, _name):
+            setattr(os, _name, _noting(getattr(os, _name)))
+
+for _entry in sys.path:
+    _next = os.path.join(_entry or os.curdir, 'sitecustomize.py')
+    if os.path.abspath(_entry or os.curdir) != _HERE and os.path.isfile(_next):
+        import importlib.util
+        _spec = importlib.util.spec_from_file_location(
+            '_sitecustomize_behind', _next)
+        _module = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_module)
+        break
+'''
+
+
 def stop(rows):
     for pid, _, _ in rows:
         try:
@@ -496,12 +578,39 @@ class TestNoProcessLeft:
         # Each command starts a process group of its own, so a process it
         # leaves behind is found by its group even when its command line
         # names nothing of the project.
+        # Every Python a command starts writes down each process it starts,
+        # by its process id: whatever session, environment and command line
+        # that process is given, it is on the list.
+        record = tmp_path / 'record'
+        record.mkdir()
+        (record / 'sitecustomize.py').write_text(STARTED_RECORD,
+                                                 encoding='utf-8')
+        monkeypatch.setenv('PURLIN_TEST_STARTED_LOG',
+                           str(record / 'started.txt'))
+        monkeypatch.setenv('PYTHONPATH', os.pathsep.join(
+            [str(record)] + [entry for entry in os.environ.get(
+                'PYTHONPATH', '').split(os.pathsep) if entry]))
         ran = [set_up(python, root, new_session=True)]
         give_it_a_spec(root)
         ran.append(a_test_run(python, root, '--commit', new_session=True))
         ran.append(status(python, root, new_session=True))
         for done in ran:
             assert done.returncode == 0, done.stdout + done.stderr
+        # The test run starts the project's tests and git, so the list is
+        # not empty; none of the processes on it is still running.
+        listed = {int(line) for line in (record / 'started.txt').read_text(
+            encoding='utf-8').split()}
+        assert len(listed) >= 3, listed
+        still = []
+        for _ in range(3):
+            still = [row for row in processes() if row[0] in listed]
+            if not still:
+                break
+            time.sleep(0.5)
+        try:
+            assert still == [], 'a process a command started still runs'
+        finally:
+            stop(still)
         leftover = left_running(root, {done.pid for done in ran})
         try:
             assert leftover == []

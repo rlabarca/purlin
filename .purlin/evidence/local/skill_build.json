@@ -2,28 +2,29 @@
   "audit": {
     "rules": {
       "RULE-21": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-51": {
-            "after": "  `\u2192 Run: purlin:test --commit --all`, after which a person may sign with `purlin:sign`",
+            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/words.py\" --project-root .",
             "aim": "past the test",
-            "before": "  `\u2192 Run: purlin:test --all --commit`, after which a person may sign with `purlin:sign`",
-            "bug_key": "6823ba60dc669d72a7edb2825308a508fa553e9c4901e90e43c976d375470ec2",
-            "case": "the text of skills/build/SKILL.md is searched for `purlin:test --all --commit`; the proof says none is missing; the changed text holds `purlin:test --commit --all` and `purlin:test --all --commit` is missing",
+            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/wording.py\" --project-root .",
+            "bug_key": "04e8436e176530309d28a2898907871f820a451d974c32fe370bff9d9b57b961",
+            "case": "the text of skills/build/SKILL.md; the proof says it holds `scripts/mcp/purlin/wording.py` and none is missing; the changed text names scripts/mcp/purlin/words.py and holds wording.py nowhere",
             "file": "skills/build/SKILL.md",
-            "line": 221,
+            "line": 128,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "8707183d934f16f45e09a13658906527b7334e097d7e8842fbeb1967215f10d3",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-51: the test reads the skill's text and asserts that no name in the lists COMMANDS and FILES is missing from it, which is the observation the proof names.",
-          "PROOF-51: the test confirms only that `purlin:audit <feature> RULE-N --settle` and `references/review_criteria.md` are in those lists, so the other eight names the proof gives are checked only if the lists, which are defined outside the test's own lines, hold them.",
-          "PROOF-51: the second check, through `must_name`, reads the same two lists, so it adds no name the first check lacks.",
-          "PROOF-51: the spot tests found nothing, and the test does hold an assertion that can fail, on values written in its file rather than taken from the skill's text."
+          "PROOF-51: the test reads the skill's text and asserts that no name in the lists COMMANDS and FILES is missing from it, then asks must_name for the same lists and expects no missing name.",
+          "PROOF-51: the test asserts that only two of the proof's ten names, `purlin:audit <feature> RULE-N --settle` and `references/review_criteria.md`, are in those lists, so the other eight are checked only if the lists, which are defined outside the test's own lines, hold them.",
+          "PROOF-51: the planted change removes the one occurrence of `scripts/mcp/purlin/wording.py`, one of the eight names the test does not itself pin to the lists, so it is caught only where FILES holds that path.",
+          "PROOF-51: `purlin:test` and `purlin:spec` are each part of longer names the text holds, such as `purlin:test --all` and `purlin:spec-from-code`, so the test's substring check would pass for them with the bare command gone.",
+          "Findings: the spot tests found nothing, and the test does hold assertions that can fail and the two values it names from the proof."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -34,30 +35,29 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-52": {
-            "after": "   pass it for a test you did not read, and never to get past a refusal.",
+            "after": "   `purlin:audit <name> RULE-N --settle --sound PROOF-N`. A settle is refused for a proof",
             "aim": "past the test",
-            "before": "   pass it for a test you did not read against its proof, and never to get past a refusal.",
-            "bug_key": "a755fdceb20d227bddc97a4a3f8f1cbe552a6a3ee0cb55c68be7b5f1e71520a6",
-            "case": "the text under `Strengthening a weak rule` in skills/build/SKILL.md; the proof says it holds `Never pass it for a test you did not read against its proof`; the changed text reads `Never pass it for a test you did not read, and never to get past a refusal`",
+            "before": "   `purlin:audit <feature> RULE-N --settle --sound PROOF-N`. A settle is refused for a proof",
+            "bug_key": "ae6573619e9eacd5fb37930534adb292a59367bee908f8a3a0d22a1931b7d88b",
+            "case": "the text under `Strengthening a weak rule`; the proof says it holds `purlin:audit <feature> RULE-N --settle --sound PROOF-N`; the changed text holds `purlin:audit <name> RULE-N --settle --sound PROOF-N` and the proof's command nowhere",
             "file": "skills/build/SKILL.md",
-            "line": 178,
+            "line": 205,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "8707183d934f16f45e09a13658906527b7334e097d7e8842fbeb1967215f10d3",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-52: the test reads the text under the heading `Strengthening a weak rule`, asserts it is not empty, and asserts that `not_named(section, SOUND)` returns an empty list.",
-          "PROOF-52: the two strings the proof names appear nowhere in the test's own lines; they would have to be in the constant `SOUND`, which is defined outside the test shown, so the test's lines alone do not show that both are compared.",
-          "PROOF-52: if `SOUND` holds only the command `purlin:audit <feature> RULE-N --settle --sound PROOF-N`, removing the words `against its proof` from the \"Never pass it\" sentence would leave the test passing.",
-          "PROOF-52: the sentence the proof names runs across a line break in the file, so the test can match it only if `not_named` joins lines before it compares, which the shown source does not show.",
-          "PROOF-52: the proof reads a fixed text with nothing done before the observation, and it names a file path and a heading where it could name what a reader of the skill sees.",
-          "Findings: the spot tests found nothing; the test has assertions that can fail, and whether the proof's values are in the test's file cannot be seen from the lines shown."
+          "PROOF-52: the test reads the section under `Strengthening a weak rule`, asserts it is not empty and asserts that nothing in the constant `SOUND` is missing from it.",
+          "PROOF-52: the two strings the proof names are not written in the test's own lines, and the constant `SOUND` is not shown, so whether the test compares the whole command or only a part of it such as `--sound PROOF-N` cannot be read from here.",
+          "PROOF-52: the planted change alters only the `<feature>` word of the command, which a check on a shorter part of the command would miss.",
+          "PROOF-52: the sentence `Never pass it for a test you did not read against its proof` runs across a line break in the file, so the test meets it only if its helper joins lines before comparing.",
+          "Findings: the spot tests found nothing, and the test does hold an assertion that can fail when a string of `SOUND` is absent."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -66,14 +66,113 @@
         "rule_hash": "297c214de5f0a7e3616eac781dbadbd41073756cb83c2bd78daf38f192a6b2b3",
         "test_hash": "609e02081db7e92455abc855e633074e5589ea3a59ac388e104ec6a3d8dc99a1",
         "verdict": "strong"
+      },
+      "RULE-23": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-53": {
+            "after": "`PURLIN_AI`, and asserts on the folder the helper prints. `references/commands.md`,",
+            "aim": "past the test",
+            "before": "`PURLIN_AI`, and asserts on the folder the helper prints. `references/purlin_commands.md`,",
+            "bug_key": "f0f4d8f23b1c0aa4b074b584097d3ce1c6f47dc1c02569cce80c20bbcab2e241",
+            "case": "the part under `The test of an AI proof`; the proof says it holds `references/purlin_commands.md`; the changed part names `references/commands.md` there, and the old path is left only under `Running them`",
+            "file": "skills/build/SKILL.md",
+            "line": 93,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-54": {
+            "after": "on each model the tag names, several times on each. Run `purlin:test` once the test is",
+            "aim": "past the test",
+            "before": "on each model the tag names, several times on each. Run `purlin:test --all` once the test is",
+            "bug_key": "57a8316b1463b6a84f5f50d3cacaa20a52a974f2d5e5334d592f1b1d3cd6040a",
+            "case": "the part under `The test of an AI proof`; the proof says it holds the sentence opening ``Run `purlin:test --all` once the test is written``; the changed part reads ``Run `purlin:test` once the test is written``",
+            "file": "skills/build/SKILL.md",
+            "line": 110,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-53: the test takes the text under the heading, asserts it is not empty and asserts that `not_named(section, AI_TEST)` is an empty list, so it observes the part the proof names.",
+          "PROOF-53: `AI_TEST`, `not_named` and `under_heading` are defined outside the test's own lines, so those lines do not show whether all five of the proof's values are compared or where the part is taken to end.",
+          "PROOF-53: a part that ran on past the next heading would still hold `references/purlin_commands.md` from `Running them`, and the test would pass with that value gone from the part the proof names.",
+          "PROOF-54: the test asserts `SAYS_FIRST` is in the flattened text of the same part, which matches the proof if the constant holds the whole sentence.",
+          "PROOF-54: `SAYS_FIRST` is defined outside the test's own lines, so a constant holding only the second half of the sentence would leave the `--all` in the first half unchecked.",
+          "PROOF-53: the proof names a source file path and a heading, which fits here only because the skill's text is itself what the reader of the skill sees.",
+          "Findings: the spot tests found nothing, and both tests hold an assertion that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4f94e344877dd40fb3a828d9a5bef674ba7e461b9d17aec32fe72d5756fcad8e",
+        "rule_hash": "36aa39ed0b12e40e3442a9fe807d7e1b26a490b34a457e79aaee98e3443331d8",
+        "test_hash": "4eda702dfd9931122f67aeb0a0ed600d7f7f138ae5915d762dc7cc8e7d83dc79",
+        "verdict": "strong"
+      },
+      "RULE-24": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {},
+        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-55: the test first confirms the sample lab's test of `PROOF-5` does not match the age pattern, then hands the session the strengthen request and reads the files the session changed.",
+          "PROOF-55: it checks that `tests/test_intake.py` is among the changed files and that its test of `PROOF-5` matches the age pattern, which is defined outside the test's own lines and is taken here to stand for the proof's `25`.",
+          "PROOF-55: it checks that no changed file is under `specs/`, that the evidence file is among the changed files, and that its `RULE-3` entry reads `strong` with the bug of `PROOF-5` as `caught`, so each result the proof names is compared.",
+          "PROOF-55: the test reads the number `25` as text in the test of `PROOF-5` and reads the evidence as written, so an output where `25` sits in that test without being asserted, or where the evidence was written without the settle having run, would still pass.",
+          "PROOF-55: the starting state the proof names, `RULE-3` reading `weak` with a bug that survived, is left to the sample lab helper; the test's own lines check only that `25` is absent beforehand.",
+          "Findings: the spot tests found nothing, which fits a test that asserts on each value the proof names; whether those assertions are tight enough is left to the wrong output."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No wrong output was planted: this machine keeps no passing output of PROOF-55. Run purlin:test --clean to take one here."
+        ],
+        "notes": [
+          "PROOF-55 is longer than 60 words and holds several results from one session: the changed test, the untouched specs and the evidence entry."
+        ],
+        "proof_hash": "e81fff362f2b9f182304d172c617989f59c918fbdc17ad15d1dc68a778b205a9",
+        "rule_hash": "a32721f73e6adb460a8d2c3a2c47b31e2460f167fbc9d019ddb9f8cd9fbfc4de",
+        "test_hash": "5190f319d32570e961a1e1d87026825aa6bf5832259b8218f0e5e81f05f31bf1",
+        "verdict": "spot-checked"
+      },
+      "RULE-25": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {},
+        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-56: the test runs the session on the sample lab and compares the files it changed under `specs`, `tests` and `src` with three empty lists, which is the proof's \"changes no file under `specs/`, `tests/` or `src/`\".",
+          "PROOF-56: the test itself reads no word of the reply, so the three things the proof says the reply holds (that `PROOF-5` names too little, a sharper sentence naming a collection time, a receipt time and the age in hours, and `purlin:spec`) are observed only through the grader's return code of 0.",
+          "PROOF-56: the grade call is given the feature and proof names and not the session's output, so which output the grader reads is settled in a helper in another file and cannot be seen from the test's own lines.",
+          "PROOF-56: the starting situation, the lab with the loose `PROOF-5` and `RULE-3` audited as `weak`, and the prompt sent are set by a helper called with `loose=True` and by the constant `STRENGTHEN`, neither of which is shown, so the test's own lines do not show that `RULE-3` reads `weak` before the session starts.",
+          "The spot tests found nothing: the test asserts twice, calls grade for its graded proof, and takes neither expected value from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No wrong output was planted: this machine keeps no passing output of PROOF-56. Run purlin:test --clean to take one here."
+        ],
+        "notes": [
+          "PROOF-56 is longer than 60 words."
+        ],
+        "proof_hash": "2f85a34e0be4d3da39916545856c13378a24e7998765029fba5f7f893566d1e6",
+        "rule_hash": "e9ea7a6be90277e3b3566b2e381f1d7d4cd451e46b19c53d9689b50923785406",
+        "test_hash": "ba470b378e33d03ea904a58d29aadb0d8446f17182b1eefdbbf80f21bb27994b",
+        "verdict": "spot-checked"
       }
     }
   },
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -91,14 +190,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.001,
+                "duration": 0.003,
                 "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -113,14 +212,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_build_skill_says_how_a_test_left_alone_is_settled",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -142,7 +241,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -164,7 +263,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -172,11 +271,23 @@
           "test": "dev/test_skill_build.py::test_the_build_skill_runs_the_full_run_and_says_so_first"
         },
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
           "models": [
             {
+              "carried": {
+                "at": "2026-10-07T17:50:15Z",
+                "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+                "email": "rich.labarca@gmail.com",
+                "machine": "Richs-MacBook-Pro.local"
+              },
               "graded": false,
               "model": "claude-opus-5-5",
               "of": 3,
@@ -247,11 +358,23 @@
           "test": "dev/test_skill_build.py::test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it"
         },
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
           "models": [
             {
+              "carried": {
+                "at": "2026-10-07T17:50:15Z",
+                "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+                "email": "rich.labarca@gmail.com",
+                "machine": "Richs-MacBook-Pro.local"
+              },
               "graded": true,
               "model": "claude-opus-5-5",
               "of": 3,

@@ -101,6 +101,16 @@ def test_a_copied_package_reports_the_version_file_beside_it(tmp_path):
     mcp_dir = copied_package(tmp_path, '9.8.7')
     reported = reported_versions(tmp_path, mcp_dir)
     assert reported == ['9.8.7', '9.8.7'], reported
+    # What the server reports is what it answers when it is asked: the
+    # version on its handshake, started there in a fresh process.
+    hello = subprocess.run(
+        [sys.executable, str(mcp_dir / 'purlin' / 'server.py')],
+        input=json.dumps({'jsonrpc': '2.0', 'id': 1,
+                          'method': 'initialize', 'params': {}}) + '\n',
+        capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
+    assert hello.returncode == 0, hello.stderr
+    answered = json.loads(hello.stdout.splitlines()[0])
+    assert answered['result']['serverInfo']['version'] == '9.8.7', answered
 
 
 # purlin: purlin_version PROOF-16
