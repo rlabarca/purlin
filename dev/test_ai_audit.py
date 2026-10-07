@@ -565,6 +565,15 @@ class TestTheCall:
             ['The test reads the status.']], answers
         assert [started_now for started_now, _kwargs in seen] == [started]
         assert seen[0][1]['timeout'] == 300
+        # There too the request is the whole of its standard input, to its
+        # last character.
+        asked = audit_module.model_prompt(
+            project.root, read(project, 'RULE-2'),
+            audit_module.criteria_text(project.root))
+        assert seen[0][1]['input'] == asked
+        assert 'stdin' not in seen[0][1]
+        with open(stdin, 'rb') as handle:
+            assert handle.read().decode('utf-8').replace('\r\n', '\n') == asked
 
     # purlin: ai_audit PROOF-112
     def test_claude_is_started_in_an_empty_folder_outside_the_project(
@@ -1414,8 +1423,14 @@ class TestTheCommandLine:
         with open(config, 'w', encoding='utf-8') as handle:
             handle.write(TRAILING_COMMA)
         before = files_under_purlin(project.root)
-        code, printed = command(project, capsys, '--feature', 'login')
+        capsys.readouterr()
+        code = audit_module.main(['--feature', 'login', '--project-root',
+                                  project.root])
+        shown = capsys.readouterr()
+        printed = shown.out
         assert code == 1
+        # Only that line: nothing on standard error either.
+        assert shown.err == ''
         # The JSON reader's own words and line, which differ by Python version.
         with pytest.raises(ValueError) as reader:
             json.loads(TRAILING_COMMA)
@@ -1589,6 +1604,8 @@ class TestTheBugAimedPastTheTest:
         assert entry['verdict'] == 'weak', entry
         assert 'sample_intake RULE-3   weak' in lab.first['lines']
         assert entry['findings'][0] == SURVIVED_5, entry
+        # The finding is printed under the rule, first.
+        assert lab.under(lab.first, 'RULE-3')[0] == '  ' + SURVIVED_5
 
     # purlin: ai_audit PROOF-132
     def test_the_case_the_ai_named_is_printed_on_the_line_after_the_finding(
@@ -2585,6 +2602,10 @@ class TestASettleReadsTheSpotTestsAgain:
     def test_the_audit_names_the_test_the_spot_tests_now_pass(
             self, spot_finding_fixed):
         made = spot_finding_fixed
+        assert made.rule_lines('RULE-7') == [
+            'sample_intake RULE-7   spot-checked'], made.lines
+        assert made.lines[made.lines.index(
+            'sample_intake RULE-7   spot-checked') + 1] == NOW_FIND_NOTHING_11
         assert made.under('RULE-7')[0] == NOW_FIND_NOTHING_11, made.lines
         assert NOW_FIND_NOTHING_11.strip() not in made.text
 
@@ -2867,6 +2888,15 @@ class TestAWrongOutput:
         assert audit_module.kept_output(root, proof) == (
             passed, '.purlin/runtime/ai/note/PROOF-1/claude-opus-5-5/2')
         assert audit_module.kept_output(root, dict(proof, ai=[])) is None
+        # The audit's own reading of the rule chooses that output too.
+        payload = {'features': [{'name': 'note', 'rules': [{
+            'feature': 'note', 'id': 'RULE-1', 'text': 'The note names it',
+            'proofs': [dict(proof, id='PROOF-1', text='the reply names it')]}]}]}
+        reading = audit_module.reading_for(root, payload, 'note', 'RULE-1')
+        assert [(p['id'], p['ai'], p['output'], p['folder'])
+                for p in reading['proofs']] == [(
+            'PROOF-1', ['claude-opus-5-5', 'claude-sonnet-5-5'], passed,
+            '.purlin/runtime/ai/note/PROOF-1/claude-opus-5-5/2')]
 
     # purlin: ai_audit PROOF-202
     def test_a_run_whose_folder_is_gone_is_passed_over(self, tmp_path):
