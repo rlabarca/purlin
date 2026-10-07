@@ -55,6 +55,19 @@ Signing 0.1.0 at 1cf829e.
 The audit's findings: 1 weak.
 ```
 
+Where the package holds AI proofs, the opening also names each model they ran on, one line per
+model, and the overview counts the proofs an AI graded, one line per grader:
+
+```
+AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.
+Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.
+```
+
+Show both as printed. A graded proof was judged by a model against one sentence, and it reads
+`graded`, never `passed`; the list of the audit's findings can open each with its grader and
+the grader's reason. The model is part of what the person signs: results on one model say
+nothing of another.
+
 There is one `Tests run by` line per run the results come from, this machine's first. Results
 `purlin:test --all` carried forward have a line of their own, `Carried forward from earlier runs
 by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.` The audit's

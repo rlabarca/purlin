@@ -26,3 +26,13 @@ def test_the_sign_skill_holds_each_path_it_must_name():
     text = flat(read(SKILL))
     assert [name for name in PATHS if name not in text] == []
     assert must_name('sign', paths=PATHS) == []
+
+
+AI_LINES = ('AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.',
+            'Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.')
+
+
+# purlin: skill_sign PROOF-66
+def test_the_sign_skill_shows_the_two_lines_about_ai_proofs():
+    lines = [line.strip() for line in read(SKILL).splitlines()]
+    assert [line for line in AI_LINES if line not in lines] == []
