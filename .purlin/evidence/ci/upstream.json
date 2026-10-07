@@ -2,14 +2,14 @@
   "feature": "upstream",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T21:21:40Z",
-      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
+      "at": "2026-10-07T01:44:10Z",
+      "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "spec": "a2fb76a1a53b3991a69e89e1d34863ef8b6a8dac85e2515ebb48b26a5a72fbf8",
-        "tests": "78a5cbeb3a3ff972b6f9103aceb355b6732fd0d83ec12ff9a8babeecebafde71"
+        "code": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "spec": "11eaa1082f896615753f5ef894bb96e28befe75443c8098e39bb5ebc3953a2e1",
+        "tests": "07cf79e9d157831f7b8512c4596104fb598688c7fe52a0908caef78538d5e256"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.045,
+                "duration": 1.09,
                 "name": "test_an_added_anchor_keeps_the_author_text_under_source_and_pin",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.521,
+                "duration": 1.512,
                 "name": "test_check_when_behind_reports_and_changes_no_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
@@ -65,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.675,
+                "duration": 1.587,
                 "name": "test_sync_advances_the_pin_and_names_the_rule_delta",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",

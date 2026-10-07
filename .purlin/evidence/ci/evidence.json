@@ -2,14 +2,14 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T21:21:40Z",
-      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
+      "at": "2026-10-07T01:44:09Z",
+      "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "371d9f31d2964228b9d68a40e533b16273cf3f1862bab8acbda0547ec8625258",
-        "spec": "35fd3d9d78c5b7589e2142c0b6176c70e2c53318b54ec76c5d75d76414ec6711",
-        "tests": "f340ffd01e920f7ce94f3d717e24981d504b30c61ac3b5fe429de236294aa0a7"
+        "code": "d727cb9679a31b145ac4ea5c4596cd694ad4aedf012ab0113b6fad0bcb171272",
+        "spec": "be169df72cbe5de889dccffd8a8203bcd1e322efd6cc0cf6603504d79f82b978",
+        "tests": "0327e87f75b1a11e1e61560934b9e0dc0ad23fca8e572b1e1323bb9d8bed3986"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.37,
+                "duration": 0.809,
                 "name": "test_a_crlf_checkout_takes_the_code_part_of_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 2.839,
+                "duration": 0.822,
                 "name": "test_an_anchors_code_part_is_the_blob_ids_the_commit_holds",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
@@ -65,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_on_windows_the_reader_names_its_own_machine_windows",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",

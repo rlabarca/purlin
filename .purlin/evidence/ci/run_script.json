@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T21:21:40Z",
-      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
+      "at": "2026-10-07T01:44:09Z",
+      "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "95e1521bd7a74455f9836797f9f724ff342ad2bf3e6322c87286a1f3dcce9e3f",
-        "spec": "f3824c211d3e639bb99069c50b76ec479943f91c51230df1c2b3d89d74ad3da4",
-        "tests": "29f0cddecc6ae00bbab83879d8a8f6255352e3c04bb5d6f648273aa1d128c6d1"
+        "code": "0c2dd1ad5b9296b40e8d52df1d10003b65998bda1a1394959c83879d7235eac5",
+        "spec": "d9fd8344dd8706a14f86dbb1d132c358f1ca2516ce245a2ff2e984a2c1cf0c86",
+        "tests": "a012b88383fae1d914c1ed33893debde6edcad3e47b81cee4d90e61d7e69c45c"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestNoTestCommand",
-                "duration": 0.073,
+                "duration": 0.129,
                 "name": "test_a_windows_machine_is_suggested_the_launcher",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestTheConsoleCodecNeverEndsTheRun",
-                "duration": 0.661,
+                "duration": 1.077,
                 "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",

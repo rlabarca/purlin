@@ -2,14 +2,14 @@
   "feature": "package",
   "platforms": {
     "windows": {
-      "at": "2026-10-06T21:21:40Z",
-      "commit": "d782144ba3dea8ef8ec49d377ad0315d136461f6",
+      "at": "2026-10-07T01:44:09Z",
+      "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "9f291cc385e8583473d513efe7c19590b02434223e4300e2df3a76eb64b1ea84",
         "spec": "8cf775b737ec6426d2d6a19cf96913d3758708bf90fa25f02515eb4741b32fbc",
-        "tests": "39908170f4995a4d594c76be5f932ae314b0e993202afed80280f3cbbdb504a5"
+        "tests": "cf2cd04cdeaf547927e7ef541aaecabba1d69200af31eb79e6fc23db0ff0173d"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_export.TestTheBytes",
-                "duration": 4.195,
+                "duration": 6.94,
                 "name": "test_on_windows_two_clones_give_the_same_bytes",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1fb532057e5d66b63a347de8cb42019a3a5953dc92c3db545659787074679d91"
+              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
             }
           },
           "result": "pass",
