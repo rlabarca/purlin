@@ -19,10 +19,27 @@ other page points here rather than defining it again.
   test.
   **`@env(<os>)`**: a proof that can only be shown on `windows`, `macos` or `linux`.
 - **slow proof**: a proof tagged `@slow`, whose test takes a long time, like an integration
-  test or an acceptance test. It is a proof like any other, with one test and its comment; the tag changes only when
+  test or an acceptance test, or an AI proof, which is one without the tag. It is a proof like any other, with one test and its comment; the tag changes only when
   the test starts. `purlin:test` never starts it and `purlin:test --all` does. Until it has
   passed on the spec, code and tests as they stand it reads `not run`, and it is left to do as
   `1 slow proof to run: purlin:test --all`. An anchor's proof may be one.
+- **AI proof**: a proof tagged `@ai(<model>, ...)`, about what an AI does with a prompt or a
+  skill. It is a proof like any other, with one marked test, and a slow proof.
+  `purlin:test --all` starts its test several times on each model the tag names. It passes on a
+  model when every model run passed, and it passes when it passes on every model it names.
+  **model**: an AI model, by the name a proof's tag gives it, such as `claude-opus-5-5`. A proof
+  names its own; no setting names one.
+  **model run**: one start of an AI proof's test on one model. The `runs` setting and a tag's
+  `runs=<n>` count model runs, 3 on each model where neither says. It is not a run.
+  **output**: what the AI produced in one model run, kept as one folder: `reply.md`,
+  `transcript.jsonl`, `files/` and the helper's record, `purlin.json`.
+  **helper**: `scripts/ai/purlin_ai.py`, the program an AI proof's test starts to make an
+  output, to hand one over, or to have one graded.
+- **graded**: said of an AI proof with `@graded(<grader>)` beside its `@ai`: a second model,
+  the **grader**, judges the output against the proof's own sentence and nothing else. It is
+  also the word such a proof reads where it passes, and the word a rule's passed cell reads
+  where the rule passes and one of its proofs is graded, in place of `passed`. It counts as
+  passing.
 - **system**: an operating system. A spec, the evidence and the package store it as `windows`,
   `macos` or `linux`, and every system that is not Windows or macOS is `linux`. A person reads
   it as `Windows`, `macOS` or `Linux/Unix`, and in the dashboard's small boxes as `Win`, `Mac`
@@ -36,7 +53,8 @@ other page points here rather than defining it again.
   the setting empty; the first test run suggests an entry for each test tool it recognises, and
   they are written together once a person confirms them.
 - **settings**: `.purlin/config.json`, which holds `version`, the Purlin version that set the
-  project up, and `tests`, and nothing else.
+  project up, `tests`, and `runs`, how many model runs an AI proof's test gets on each model, 3
+  where it is not set, and nothing else.
 - **the two facts**: what every surface shows first. **the tests**: `met` when every rule passes
   its tests on the committed evidence, else `not met`. **the sign-off**, as a fact:
   `signed <version> at <sha7>`, `signed <version>, <n> commits since` or `not signed`.
@@ -48,12 +66,14 @@ other page points here rather than defining it again.
 - **summary**: the sentence every run, every audit and `purlin:status` end on:
   `40 rules. 35 pass their tests.`, and, where the audit has read a rule that passes,
   `40 rules. 35 pass their tests. The audit found 30 of 35 rules strong (85%): 30 strong, 2 weak, 3 spot-checked.` The share counts no rule of an anchor. A rule is counted
-  once, under the spec that owns it.
+  once, under the spec that owns it. Where a rule that passes reads `graded`, the count says so:
+  `40 rules. 40 pass their tests, 6 of them graded by an AI.`
 - **Left to do**: the list under the summary, one line per kind of remaining work, in the order
   the work is done, each with its count and the command that does it; a kind at zero is left
   out. It lists only work. The first line is the next step. The kinds, as printed:
   `to repair`, `to write a proof for`, `to correct`, `to fix`, `to write a test for`, `to test`,
-  `slow proofs to run`, `to test on <systems>`, `whose results are not committed` and
+  `slow proofs to run`, `to test on <model>`, `to test on <systems>`,
+  `whose results are not committed` and
   `to strengthen`.
   `references/evidence_and_signoff.md` says when each applies and which stop the tests being met.
 - **test comment to correct**: a marker naming nothing a spec has, or naming a proof whose
@@ -61,7 +81,8 @@ other page points here rather than defining it again.
   clears once the test itself changes.
 - **information**: a line the status and the dashboard print that asks for nothing to be fixed,
   such as a spec whose scope names files not written yet.
-- **run**: one execution of the project's suites by `purlin:test` or `purlin:audit`.
+- **run**: one execution of the project's suites by `purlin:test` or `purlin:audit`. One start
+  of an AI proof's test on one model is a model run, and a run with `--all` holds several.
 - **hand-off**: what a developer does before a sign-off: `purlin:test --all --commit`, and
   the project's own run for the proofs tagged for another system.
 - **evidence**: what runs saw, one file per feature per source,
@@ -96,7 +117,8 @@ other page points here rather than defining it again.
 - **planted bug**: the one small change to the code that breaks the case a proof names and that
   the proof's test is most likely to miss, written by an AI and made in a copy of the project to
   see whether the proof's own test catches it. Where the test leaves no way past, the bug is a
-  plain one.
+  plain one. For an AI proof the planted bug is a wrong output: the change is made in a copy of
+  a kept output, and the proof's test reads that copy in place of asking the model again.
 - **finding**: one line saying what a spot test flagged or which planted bug a test did not
   catch. A surviving bug adds a second line, the case the AI says it breaks. A finding makes
   the rule `weak`. A weak rule is left to do as `to strengthen`, and stops nothing.
@@ -131,7 +153,7 @@ other page points here rather than defining it again.
   a spec reads `failed` with the reason, and a sign-off is refused until it is fixed.
 - **evidence package**: one data file describing one version of the code,
   `.purlin/evidence/package/<version>.json`: every rule's words, proofs, tests, results and what
-  the audit found, who ran the tests, what the test tool reported for each test, who wrote and last changed
+  the audit found, who ran the tests, what the test tool reported for each test, each AI proof's result on each model, who wrote and last changed
   each rule, proof and test with the co-authors git names, the hand checks, the counts, what is left, and a fingerprint of its own bytes. `purlin:sign` builds
   it from the committed evidence and commits it with the first sign-off. It is what a person
   hands to a regulated document and sign-off system.
@@ -162,7 +184,7 @@ For one rule, top to bottom. Each row is a cell, and every rule has both.
 
 | Cell | Met when | Words the cell can read |
 |------|----------|-------------------------|
-| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `partial`, `failed`, `no test`, `not run`, `out of date`, `checked at sign-off` |
+| passed | every proof of the rule, or the rule itself where it has no proof, has a test in a current section, and every test tied to it ran and passed, each current section answering for the proofs it lists | `passed`, `graded`, `partial`, `failed`, `no test`, `not run`, `out of date`, `checked at sign-off` |
 | strong | passed, the spot tests found nothing and a planted bug was caught; nothing waits on it | `strong`, `weak`, `spot-checked`, `out of date`, `waiting`, `not audited`, `checked at sign-off`, `no proof` |
 
 A rule with neither a proof nor a marked test reads `no test` with the reason
@@ -171,20 +193,24 @@ A rule with neither a proof nor a marked test reads `no test` with the reason
 `checked at sign-off` in both cells until a sign-off that counts notes it, and `passed` and
 `checked at sign-off` once one has.
 
+`graded` is `passed` with one of the rule's proofs graded by an AI: every count of the rules
+that pass takes it in. A rule whose AI proof passed on one model and has no result on another
+reads `not run`, and one that failed on any model reads `failed`.
+
 ## Where each is defined
 
 | Word | Where the authority lives |
 |------|---------------------------|
-| spec, rule, proof, scope | `references/formats/spec_format.md` |
+| spec, rule, proof, scope, AI proof, model, graded | `references/formats/spec_format.md` |
 | marker, suite, report | `references/formats/marker_format.md` |
 | anchor, remote anchor | `references/formats/anchor_format.md` |
-| evidence, source, section, machine, fingerprint | `references/formats/evidence_format.md` |
+| evidence, source, section, machine, fingerprint, what is kept of a model run | `references/formats/evidence_format.md` |
 | sign-off, note | `references/formats/signature_format.md` |
 | evidence package | `references/formats/package_format.md` |
 | the two facts, the summary, `Left to do`, which evidence counts for a sign-off, when a sign-off counts, what `signed/<version>` means | `references/evidence_and_signoff.md` |
 | drift, where its range starts, its one view | `references/drift_criteria.md` |
 | the heuristic spot tests, the planted bug, what the model is sent | `references/review_criteria.md` |
-| a good rule, a good proof | `references/spec_quality_guide.md` |
-| every command's syntax and purpose sentence, and the exit codes | `references/purlin_commands.md` |
+| a good rule, a good proof, the three kinds of check for what an AI does | `references/spec_quality_guide.md` |
+| every command's syntax and purpose sentence, the exit codes, the helper and the output | `references/purlin_commands.md` |
 | every commit message shape | `references/commit_conventions.md` |
 | how Purlin writes, and the words for each system | `references/writing_style.md` |

@@ -16,7 +16,7 @@ the `git push origin` command, and pushing is your act.
 `purlin:test` runs the tests and writes what it saw. Which tests a run starts:
 
 - `purlin:test`, with or without a feature named, never starts the test of a slow proof, one
-  tagged `@slow`. It prints `Left out <n> slow proofs`, naming each, and keeps the result a slow
+  tagged `@slow` or `@ai`. It prints `Left out <n> slow proofs`, naming each, and keeps the result a slow
   proof already has while that result still counts.
 - `purlin:test --all` covers every feature: it starts every test, slow ones included, of each
   feature that changed or does not pass and of every anchor, and carries every other feature's
@@ -24,13 +24,22 @@ the `git push origin` command, and pushing is your act.
   again, with no model asked.
 - `purlin:test --clean` starts every test of every feature, slow ones included, and carries no
   result forward. It reads an audited anchor's rules again as `--all` does.
+- `purlin:test --all` and `purlin:test --clean` start the test of each AI proof they reach
+  alone, after the suites, once per model run on each model the proof's tag names, and print
+  `Running <feature> <PROOF-N> on <model>, <i> of <n>` as each starts. This takes minutes and
+  reaches a real model. `--all` keeps a model's result that passed every model run asked on
+  the spec, code and tests as they stand, and starts the rest; `--clean` starts them all. A
+  model that gives no answer is named once,
+  `<model>: model not reached. <why>. Run purlin:test --all.`, its proof reads `not run` on
+  that model, never `failed`, and no other test is started on that model in that run.
+  `references/formats/evidence_format.md`, "The models of an AI proof", says what is recorded.
 - A test that also carries the comment of a proof that is not slow is started all the same. So
   is a slow test a suite's command cannot leave out, which the run names;
   `references/supported_frameworks.md` says how each test tool leaves a test out.
 
 `purlin:audit` runs the tests the same way and adds what the audit found, a tool nothing waits
 on. `purlin:audit <feature> RULE-N --settle` also starts the tests of the slow proofs of the
-rules it names, and leaves every other slow test out.
+rules it names, an AI proof's on each model included, and leaves every other slow test out.
 
 The hand-off is `purlin:test --all --commit`, and the project's own run for the proofs tagged
 for another system (`references/evidence_and_signoff.md`, "A run on another system"). That run
@@ -55,6 +64,8 @@ home of the two names and the two scripts.
 | `sync_status` | `mcp__plugin_purlin_purlin__sync_status` | `scripts/run/purlin_status.py [--project-root DIR] [--spec NAME]` |
 | `drift` | `mcp__plugin_purlin_purlin__drift` | `scripts/run/purlin_drift.py [--project-root DIR] [--since N-or-date] [--json]` |
 | `purlin_config` | `mcp__plugin_purlin_purlin__purlin_config` | none |
+
+`purlin_config` reads `.purlin/config.json` and writes its `tests` or its `runs` setting.
 
 Where the session lists a tool as a deferred tool, load it with ToolSearch first. Where the
 session does not have it, run the script.
@@ -82,6 +93,50 @@ login: no spec of this checkout has that name. Run purlin:status to see its spec
 
 `purlin_drift.py` prints the view's lines, one per line, and exits 0. `--json` prints the tool's
 answer. A `--since` drift refuses prints the reason and exits 2.
+
+## The helper
+
+`scripts/ai/purlin_ai.py` is the program the test of an AI proof starts. The test reads its
+full path from the variable `PURLIN_AI` and starts it with the project's own Python. This
+section is the one home of its command line.
+
+```
+purlin_ai.py run --skill <folder> | --plugin <folder> | --instructions <file>...
+                 [--project <sample folder>] --input <file> | --say "<text>"
+purlin_ai.py record --from <folder> [--model <name>]
+purlin_ai.py grade --feature <name> --proof PROOF-N
+```
+
+| Command | Purpose | Writes | Prints |
+|---------|---------|--------|--------|
+| `run` | Ask the model for one output. `--skill` or `--plugin` starts a real Claude Code session with that one skill or plugin loaded, in a copy of `--project`. `--instructions` sends those files as the system prompt of one call with no tools, which is how a prompt or a Claude project's instructions are tested. The message is `--input <file>` or `--say "<text>"` | The output folder: `reply.md`, the last thing the AI said; `transcript.jsonl`, what the session did; `files/`, each file the session wrote or changed in the copy; and `purlin.json`, the helper's own record | The folder's path, alone |
+| `record` | Hand over an output the test made its own way, with its own key or another tool. The test reads `PURLIN_AI_MODEL` to know which model to ask | The same folder, copied from `--from <folder>`, where only `reply.md` is required, and recorded as made by the project's own test on the model `--model` names, or `PURLIN_AI_MODEL` | The folder's path, alone |
+| `grade` | Have the grader the proof's `@graded(...)` names judge the output of this test against the proof's own sentence, read from the spec. The grader is shown the sentence, `reply.md` and the files under `files/`, and nothing else: not the input, not the instructions | The grade, in the folder's `purlin.json` | `accept: <one reason>` or `reject: <one reason>` |
+
+One test makes one output: a second `run` or `record` in the same test is refused. Every other
+line the helper prints goes to standard error and opens `purlin_ai.py: `.
+
+A run sets the variables: `references/formats/marker_format.md`, "The test of an AI proof",
+gives `PURLIN_AI`, `PURLIN_AI_MODEL` and `PURLIN_AI_OUT`. The audit also sets
+`PURLIN_AI_REPLAY`, a folder holding a kept output: `run` and `record` then ask no model and
+print that folder, and `grade` grades it. A test reads `PURLIN_AI`, and `PURLIN_AI_MODEL` where
+it makes the output its own way, and no other.
+
+Started by hand, with no `PURLIN_AI_OUT`, the helper writes to `.purlin/runtime/ai/by-hand/`,
+emptied first. With no `PURLIN_AI_MODEL`, `run` exits 2 and says to set it.
+
+Its limits:
+
+- A session started with `--skill` or `--plugin` runs with its permission checks off, for 1800
+  seconds at most, with none of the person's settings or connectors. It can write outside its
+  copy of the sample, and with `--plugin` that includes the project's own plugin folder.
+- `files/` holds what changed in the copy alone. A file the session deleted, or wrote anywhere
+  else, leaves no trace there.
+- `--instructions` gets 300 seconds. On Windows a long system prompt rides on the command line,
+  which holds about 32,000 characters.
+- The grader is shown at most 50 files, each cut to 20,000 characters.
+- A claude.ai project cannot be driven from outside. Its instructions are tested with
+  `--instructions`; what claude.ai itself adds to them is not.
 
 ## Stops
 
@@ -181,9 +236,9 @@ Purlin
 |---------|--------|
 | `purlin:spec`, `purlin:spec-from-code` | `specs/<category>/<name>.md` |
 | `purlin:build` | Code, test files with a marker comment above each test, the repairs to marker comments it asked about, and the commit carrying the changeset |
-| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry once you answer yes, or with `--write-tests`, and commits `.purlin/config.json` alone. |
+| `purlin:test` | Each suite's report under `.purlin/runtime/reports/`, which is not committed, with `--all` or `--clean` the output of each model run under `.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`, which is not committed either, and this system's section of `.purlin/evidence/local/<feature>.json`. `--commit` makes two commits: the specs of the features run, the test files carrying their markers and `.purlin/config.json` as `purlin: specs, tests and settings for <feature>, ...`, then the evidence as `purlin: evidence at <sha7>`; it never pushes. On the first run it writes the `tests` entry once you answer yes, or with `--write-tests`, and commits `.purlin/config.json` alone. |
 | `purlin:audit` | The same section, plus what the audit found under `audit`, in `.purlin/evidence/local/<feature>.json`, which `--commit` commits in the same two commits; it never pushes. A planted bug is made in a copy of the project and nowhere else |
-| `purlin:sign` | Once the signer answers yes, or types their address where the agent asks, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json`, `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json` and, under `.purlin/evidence/package/<version>.outputs/`, each test report the package lists that the machine keeps, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
+| `purlin:sign` | Once the signer answers yes, or types their address where the agent asks, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json`, `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json` and, under `.purlin/evidence/package/<version>.outputs/`, each test report and each output of a model run the package lists that the machine keeps, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` holding `version` and an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, and `purlin-report.html` at the project root. It commits the files it wrote in one commit, `chore(init): set up Purlin`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
 | `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, and `purlin-report.html`, its page, where the project's copy is missing or differs from the plugin's; git ignores both. `purlin:test`, `purlin:audit` and `purlin:sign` write the same two when they finish |
@@ -197,6 +252,7 @@ Purlin
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
 | `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, a test still carrying a marker from Purlin 0.9.5, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not recorded on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, a stop with no answer in the answers file, or a commit signed with another key than the one the checkout names; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
+| `scripts/ai/purlin_ai.py` | `run`, `record`: the folder was printed; `grade`: the grader accepted | `run`, `record`: the folder already holds an output; `grade`: the grader rejected | the model gave no answer, or a bad command line. `purlin.json` tells the two apart, never the code: it holds `reached` false, or a `grade` whose `accepted` is null, where the model gave no answer, and a bad command line writes nothing |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
 | `scripts/init/update.py` | nothing pending, or applied | the settings file cannot be read | no project, a name after `--apply` that is no migration, or a `--test-command` not written `<tool>=<command>` |
 | `scripts/mcp/purlin/markers.py --near-misses` | always | never | a bad command line |
@@ -224,6 +280,8 @@ A run names each rule where it reports the problem:
 - `<feature> <RULE-N>: rule to write a test for. Run purlin:build <feature>.`, where the rule
   has no proof and no test.
 - `<feature> <ID>: test comment to correct. <file>:<line> names it, and no spec has it. Run purlin:build.`
+- `<model>: model not reached. <why>. Run purlin:test --all.`, where a model an AI proof names,
+  or its grader, gave no answer. It is no failure of the rule.
 
 `scripts/review/ai_audit.py --rule` names a rule no spec has:
 `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`

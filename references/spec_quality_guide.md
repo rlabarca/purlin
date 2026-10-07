@@ -158,9 +158,10 @@ A proof a test carries out is pass or fail: the test checks an exact result, lik
 `Account locked`.
 
 A judgment call is not. "It looks good" and "it is easy to use" are for a person to decide; a
-test cannot decide them, and neither can an AI. Tag such a proof `@manual`: no test runs for
+test cannot decide them. Tag such a proof `@manual`: no test runs for
 it, `purlin:sign` stops there, and a person checks it and writes what they saw. Or leave it
-out: not everything needs a rule.
+out: not everything needs a rule. Where the thing judged is what an AI produced, a second
+model may grade it, marked as that: "A proof about what an AI does", below.
 
 A test may ask a model a question with one right answer, such as which commands it offers
 after an install.
@@ -328,6 +329,54 @@ what. Tag a proof slow when its test is slow enough that you would stop running 
 between edits, and not before: a slow proof is checked less often, so a fast test of the same
 claim is the better proof. An anchor's check across the whole project is a natural one to tag.
 `@slow` may stand with `@env(...)`, and never with `@manual`, which has no test to leave out.
+An AI proof is a slow proof without the tag.
+
+### A proof about what an AI does
+
+A rule about a prompt, a skill, an agent definition or a Claude project's instructions says
+what the AI must do or produce with them. Its proof is an AI proof, tagged `@ai(<model>)`: its
+test hands a sample input to the AI on that model, several times, and checks each output.
+`references/formats/spec_format.md`, "The AI tags", is the syntax, and
+`references/purlin_commands.md`, "The helper", is how the test makes the output.
+
+Such a sentence can be checked three ways:
+
+| Check | Tag | Who decides | Example |
+|---|---|---|---|
+| Exact | `@ai(<model>)` | The test, which looks for a value in the output | `With the sample report, the reply names the three findings by their ids @ai(claude-opus-5-5)` |
+| Graded | `@ai(<model>) @graded(<grader>)` | A second model, which reads the output against the proof's sentence | `Asked for a refund over the limit, the reply refuses and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)` |
+| By hand | `@manual` | A person, in the sign-off walk | `Read the reply to a refund over the limit against the brand voice guide @manual` |
+
+Choose exact wherever the proof can name the thing to look for in the output: an id, a
+phrase, a file written, a line that must be absent. Choose graded where the sentence needs
+judgment a test cannot hold and an AI's opinion is enough. Choose by hand where a person must
+look. One rule may take an exact proof and a graded one.
+
+The model is part of what is shown. A person names it, in the tag: a proof says nothing about
+a model it does not name, and a new model is a new tag.
+
+A good AI proof names a sample input and the exact thing to check in the output.
+
+- Poor: "The triage prompt handles reports well @ai(claude-opus-5-5)"
+- Good: "With the sample report of three findings, the reply names `F-101`, `F-102` and
+  `F-103` and no other id @ai(claude-opus-5-5)"
+
+A graded proof's sentence is the whole criterion, so it stands alone. The grader is shown the
+sentence, the reply and the files the session wrote, and nothing else: not the sample input,
+not the instructions, not a guide the sentence points at. Write what must be true of the
+output in words a reader of the output alone can judge.
+
+- Poor: "The reply follows the tone guide @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)"
+- Good: "Asked for a refund over the limit, the reply refuses, gives the limit as the reason
+  and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)"
+
+What an AI proof shows, and what it does not:
+
+- Three passes of three show the behaviour held three times. They do not show it always holds.
+- It passes on the models it names and says nothing about any other.
+- A grade is an AI's opinion against one sentence. It reads `graded` everywhere, never
+  `passed`, and a person may ask for a hand check on top.
+- A rule read from instructions says what they ask for. Only its test shows what the AI does.
 
 ## Manual proofs
 
@@ -361,6 +410,9 @@ whose row says what moves both.
 | passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" resolves the conflict where both sides only added lines, and moves the line from the branch not yet merged when you say yes. |
 | passed | `not run` | The rule's tests have no result in a current section. | Run `purlin:test`. |
 | passed | `not run`, with `slow: runs with purlin:test --all` | A proof of the rule is tagged `@slow`, and no run that starts its test has passed it on the spec, code and tests as they stand. `Left to do` counts it under `slow proofs to run`. | Run `purlin:test --all`. |
+| passed | `not run`, with `<model>: no run yet` or `<model>: 2 of 3 run` | An AI proof of the rule has no result on that model, or fewer model runs than are asked now: the model was added to the tag, was not reached, or `runs` went up. `Left to do` counts the rule under `rules to test on <model>`. | Run `purlin:test --all`. |
+| passed | `failed`, with `<model>: 2 of 3 passed` | A model run of an AI proof failed on that model. One failure fails the proof. | Read the output of the failed model run under `.purlin/runtime/ai/`, then fix the prompt or the skill, or the test. See the next section. |
+| passed | `graded` | The rule passes, and one of its proofs was graded by an AI. It counts as passing. | Nothing. |
 | passed | `not run`, with `<System>: no run yet` | A proof carries `@env` for an operating system that has not run the rule's tests: no current section comes from it. | Run `purlin:test` on that system, or start the project's own run there, or drop the `@env` tag if any operating system could show it. |
 | passed | `not run`, with `<PROOF-N>: <reason>` | The proof's every test skipped with `nothing to check: <reason>`, and the rule is a feature's own. Only an anchor's rule passes that way. | Give the test something to check, or move the rule to an anchor if it holds across the whole project. |
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
@@ -396,3 +448,6 @@ weaker test is not a fix: it lowers the claim instead of strengthening the evide
 and on a remote anchor's rule it is never allowed, because the anchor is an
 upstream-owned contract. Silently changing an assertion to match actual behaviour is
 the most common way an agent introduces a correctness bug.
+
+For an AI proof the code is the prompt or the skill. One failed model run of three is a
+failure, not noise: never change `runs` to get past it, and never loosen the proof.

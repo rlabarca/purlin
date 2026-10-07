@@ -1,6 +1,6 @@
 # Rule examples from real projects
 
-Bad-to-good rule rewrites collected from spec reviews and from what the audit observed. Organized by the five coverage categories in the [spec quality guide](spec_quality_guide.md), "Coverage". This file grows over time: when a bad rule is caught and rewritten, add the pair here.
+Bad-to-good rule rewrites collected from spec reviews and from what the audit observed. Organized by the five coverage categories in the [spec quality guide](spec_quality_guide.md), "Coverage", then worked proofs about what an AI does. This file grows over time: when a bad rule is caught and rewritten, add the pair here.
 
 ---
 
@@ -103,6 +103,116 @@ Bad:  "Uses feature flags"
 Good: "Feature flag 'ai_chat_enabled' controls AI chat widget visibility; evaluated at render time via Split SDK"
 Why:  Flag name and evaluation timing matter: wrong flag name means wrong feature toggling.
 ```
+
+## AI proofs
+
+Worked proofs about what an AI does, each with the outline of its test. The three kinds of
+check are in the [spec quality guide](spec_quality_guide.md), "A proof about what an AI does",
+and the helper's commands are in [purlin_commands.md](purlin_commands.md), "The helper". The
+tests are pytest; a test in any language starts the helper the same way.
+
+Every test below shares one opening. It skips where `PURLIN_AI` is not set, so the suite's own
+pass and a developer's own run reach no model:
+
+```python
+import os
+import re
+import subprocess
+import sys
+
+import pytest
+
+HELPER = os.environ.get('PURLIN_AI')
+HERE = os.path.dirname(os.path.abspath(__file__))
+needs_the_helper = pytest.mark.skipif(
+    not HELPER, reason='an AI proof: purlin:test --all starts it')
+
+
+def helper(*arguments):
+    return subprocess.run([sys.executable, HELPER] + list(arguments),
+                          capture_output=True, text=True, encoding='utf-8')
+
+
+def output(*arguments):
+    """The folder `run` or `record` printed."""
+    ran = helper(*arguments)
+    assert ran.returncode == 0, ran.stderr
+    return ran.stdout.strip()
+
+
+def reply(folder):
+    with open(os.path.join(folder, 'reply.md'), encoding='utf-8') as handle:
+        return handle.read()
+```
+
+### An exact check of a prompt
+
+```
+- RULE-2: The triage prompt's reply names every finding of the report by its id
+- PROOF-4 (RULE-2): With the sample report of three findings, the reply names `F-101`, `F-102` and `F-103` and no other id @ai(claude-opus-5-5)
+```
+
+```python
+# purlin: triage_prompt PROOF-4
+@needs_the_helper
+def test_the_reply_names_the_three_findings_and_no_other():
+    folder = output('run',
+                    '--instructions', os.path.join(HERE, '..', 'prompts', 'triage.md'),
+                    '--input', os.path.join(HERE, 'samples', 'report.md'))
+    assert sorted(set(re.findall(r'F-\d+', reply(folder)))) == [
+        'F-101', 'F-102', 'F-103']
+```
+
+Why: the proof names the sample and the three ids, so the test holds the whole set. A test
+that looked for one id would pass on a reply that dropped two.
+
+### A graded check of a skill
+
+```
+- RULE-3: The refund skill refuses a refund over the limit without blaming the customer
+- PROOF-5 (RULE-3): Asked for a refund of 900.00 with the limit at 500.00, the reply refuses and names `500.00` @ai(claude-opus-5-5)
+- PROOF-6 (RULE-3): Asked for a refund over the limit, the reply refuses, gives the limit as the reason and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+```
+
+```python
+# purlin: refund_skill PROOF-6
+@needs_the_helper
+def test_the_refusal_blames_nobody():
+    output('run',
+           '--skill', os.path.join(HERE, '..', 'skills', 'refund'),
+           '--project', os.path.join(HERE, 'samples', 'shop'),
+           '--say', 'Refund order 1042 in full: 900.00.')
+    graded = helper('grade', '--feature', 'refund_skill', '--proof', 'PROOF-6')
+    assert graded.returncode == 0, graded.stdout + graded.stderr
+```
+
+Why: the amount is a value, so PROOF-5 checks it exactly, in a test of its own. Who is blamed
+needs judgment, so PROOF-6 is graded, and its sentence says all the grader needs: it is shown
+the reply and the files the session wrote, not the request. The test makes one output, then
+asserts `grade` exits 0.
+
+### An output the project makes its own way
+
+```
+- RULE-4: The summary the service returns is at most three sentences
+- PROOF-7 (RULE-4): With the sample ticket, the summary the service returns holds at most 3 sentences @ai(claude-sonnet-5-5)
+```
+
+```python
+# purlin: summary_service PROOF-7
+@needs_the_helper
+def test_the_summary_is_at_most_three_sentences(tmp_path):
+    summary = summarise(ticket('samples/ticket.md'),
+                        model=os.environ['PURLIN_AI_MODEL'])
+    (tmp_path / 'reply.md').write_text(summary, encoding='utf-8')
+    folder = output('record', '--from', str(tmp_path))
+    assert len(re.findall(r'[.!?](?:\s|$)', reply(folder))) <= 3
+```
+
+Why: the project builds its prompt in code and calls the model with its own key, so the test
+makes the output and hands it over with `record`. It reads `PURLIN_AI_MODEL` to ask the model
+the proof names, and asserts on the folder `record` printed, never on its own copy, so the
+audit can hand it a wrong output.
 
 ## Implementation details are not rules
 
