@@ -1,15 +1,1799 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "    'Usage: purlin_ai.py run --skill <folder> | --plugin <dir> | '",
+            "aim": "past the test",
+            "before": "    'Usage: purlin_ai.py run --skill <folder> | --plugin <folder> | '",
+            "bug_key": "0d8f89f26da7debf05770f90dd24d0320be4baa218e143b1c7a88445f27d5ea0",
+            "case": "`run --say hello` with no way named; the proof says the usage text opens `Usage: purlin_ai.py run --skill <folder> | --plugin <folder> | --instructions <file>...`; the changed code opens it `Usage: purlin_ai.py run --skill <folder> | --plugin <dir> | --instructions <file>...`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 129,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-2": {
+            "after": "    '--say <text>\\n'",
+            "aim": "past the test",
+            "before": "    '--say \"<text>\"\\n'",
+            "bug_key": "765d9928ee8a9651530d450c30a6d7f4e1ae0cfb44659b9aa1385209eec2b1b4",
+            "case": "`run --instructions prompts/system.md --input sample/report.md --say hello`; the proof says it prints the usage text, whose second line ends `--say \"<text>\"`; the changed code prints a usage text whose second line ends `--say <text>`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 132,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "    '                        [--project <folder>] --input <file> | '",
+            "aim": "past the test",
+            "before": "    '                        [--project <sample folder>] --input <file> | '",
+            "bug_key": "47ffcd60eab990ab15cea05acfb44e67a48cce6cf7a405c06ed5b4ebfc36bfd1",
+            "case": "`run --instructions prompts/system.md --project sample --say hello`; the proof says it prints the usage text, which names `[--project <sample folder>]`; the changed code prints a usage text naming `[--project <folder>]`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 131,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-1: the test compares the exit code `2`, an empty standard output, the whole of standard error, the missing folder and the absence of any `claude` call, which is every result the proof names.",
+          "PROOF-1: the usage text is compared through a name `USAGE` whose definition is not shown, so if it is taken from the helper, a change to the usage text's wording or its four lines still passes.",
+          "PROOF-2: the test compares the exit code, the whole of standard error against `USAGE` plus the literal line about `--input` and `--say`, and the absence of any `claude` call; it also checks that no folder was written, which the proof does not name.",
+          "PROOF-2: the same `USAGE` name stands for the usage text, so only the one-line message is certainly checked against a value written in the test.",
+          "PROOF-3: the test compares the exit code, the whole of standard error against `USAGE` plus the literal line about `--project`, and the absence of any `claude` call.",
+          "PROOF-3: the test reads neither standard output nor the output folder, so the rule's \"writes nothing\" is not observed for this case, and the proof does not name it either.",
+          "PROOF-2 and PROOF-3: the command lines the proofs name are built by a helper `made.prompt` that is not shown, so the `--instructions prompts/system.md` part is not visible in the tests' own lines.",
+          "No finding of the spot tests is listed, and each test holds failable comparisons against the exit code and the message line."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-1 is longer than 60 words."
+        ],
+        "proof_hash": "0a352dfe578531fb510afc4c6ab82d53477ad7a5476076151b442fb683c1adf3",
+        "rule_hash": "58c8b0c869fdcdf0f962caf2888cba2c3a24bf4e119ef7a9faee5118d8d745ba",
+        "test_hash": "8c61d66f97d3286150e1073861fc2686e63ea625ead86fc889b3932f6dd554c9",
+        "verdict": "strong"
+      },
+      "RULE-10": {
+        "at": "2026-10-07T19:23:36Z",
+        "bugs": {
+          "PROOF-15": {
+            "after": "    shutil.copytree(skill, os.path.join(plugin, 'skills', name),\n                    copy_function=lambda source, target: _write(\n                        target, _text_of(source)\n                        if os.path.basename(source) == SKILL_FILE else ''))",
+            "aim": "past the test",
+            "before": "    shutil.copytree(skill, os.path.join(plugin, 'skills', name))",
+            "bug_key": "7ea4dd46270f2cc333fd9194d09d9f6a3fdf7c273392f6ae2b669b931f57c59b",
+            "case": "the skill `skills/summarize` with `SKILL.md` and `notes/style.md`; the proof says the plugin holds the skill's file `skills/summarize/notes/style.md`; the changed code writes that file empty, without the skill's text",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 529,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "6dac087718403ad121b49ea8a15b6a9039cb7a25e3b8da545228158a4dfee5e9",
+        "rule_hash": "71505b6df434c8cbf8fbd97f78758bd129832e67478854fe476f30d62a5400d6",
+        "test_hash": "635b3c97b23195be13b12a0beba439ec55989cbde1c360dc8022bbb53799c267",
+        "verdict": "strong"
+      },
+      "RULE-11": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-16": {
+            "after": "        if project:\n            copy = project",
+            "aim": "plain",
+            "before": "        if project:\n            shutil.copytree(project, copy, symlinks=True)",
+            "bug_key": "4da5b8ee71adf34280b8163c510dbb707c20883bf98f473ae333e791eff03572",
+            "case": "a sample holding keep.md and report.md, with a session that rewrites report.md; the proof says claude starts in a folder under the system's temporary folder and not under the project, and the sample keeps its bytes; the changed code starts claude in the sample itself, so report.md is rewritten there",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 495,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-17": {
+            "after": "        else:\n            shutil.copytree(loaded, copy)",
+            "aim": "plain",
+            "before": "        else:\n            os.makedirs(copy)",
+            "bug_key": "b1a8250952d50c50987855d7fbb8609c403e3783b1df10e384631424fe91099b",
+            "case": "run --skill skills/summarize --say \"Go.\" with no --project; the proof says claude starts in a folder that holds no file; the changed code starts it in a copy of the skill's folder, which holds SKILL.md",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 497,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-16: the test has the session rewrite report.md, then checks everything the proof names: the folder's listing is exactly keep.md and report.md, it is outside the project and under the system's temporary folder, it is gone afterwards, and the sample's tree is unchanged.",
+          "PROOF-16: the listing is compared by name, so whether the copied files hold the sample's bytes when the session starts is not observed.",
+          "PROOF-17: the test runs the proof's command with no --project and checks the three things the proof names: the listing is empty, the folder is outside the project, and it is gone afterwards.",
+          "PROOF-17: neither the proof nor its test says the empty folder is under the system's temporary folder, which the rule states, so an empty folder made elsewhere outside the project would pass.",
+          "No spot test fired, and neither test leaves an evident way past it for the case its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "dd7a85c298578d1d3920f4dac2d88273055eeac9dcfd8b8aec6971cce1655b7f",
+        "rule_hash": "56d8c231da659e483fd6b1276445c7d5e4912c3b3a046b1a5a4d9ba4f38b1ca6",
+        "test_hash": "9a63a573c3e7da2e435bc6c9bab413f94ac21bc09c2918b6f240a924393ba7b4",
+        "verdict": "strong"
+      },
+      "RULE-12": {
+        "at": "2026-10-07T19:23:36Z",
+        "bugs": {
+          "PROOF-18": {
+            "after": "        _write(os.path.join(folder, outputs.TRANSCRIPT), ''.join(\n            json.dumps({key: value for key, value in json.loads(line).items()\n                        if key in ('type', 'result')}) + '\\n'\n            for line in printed.splitlines()))",
+            "aim": "past the test",
+            "before": "        _write(os.path.join(folder, outputs.TRANSCRIPT),\n               printed if printed.endswith('\\n') else printed + '\\n')",
+            "bug_key": "c4c364b8b2b88fcdd5184efdf7d188e9b21cb6c6e41cf4df246bb1b912ddbcce",
+            "case": "a session printing a system, an assistant and a result line; the proof says transcript.jsonl holds those three lines as printed; the changed code writes each line with only its type and result, dropping every other field",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 507,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c1d87dcdfedd5e81ffc0dd4557f33462fc75d69dd684c1b453410f5e82b002ee",
+        "rule_hash": "bc98ab3a526b4bef851b996dd79944875857ef538cf4cfb97fc230ca016eb480",
+        "test_hash": "205aa591205a5bce0aaa0a04bc3dc5380c9a1c5304faf98623f06ebb60fd75a5",
+        "verdict": "strong"
+      },
+      "RULE-13": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-19": {
+            "after": "        if before is not None and before != _bytes(os.path.join(\n                copy, *rel.split('/'))):",
+            "aim": "plain",
+            "before": "        if before is None or before != _bytes(os.path.join(\n                copy, *rel.split('/'))):",
+            "bug_key": "c1c4180a8bb646c1c6956e45afe0de5a77a8f29077f423d932d56fe5d17555e8",
+            "case": "the sample holds report.md and keep.md and the session writes a new out/summary.md, a changed report.md and an unchanged keep.md; the proof says files/ holds exactly out/summary.md and report.md; the changed code gives report.md alone",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 580,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-20": {
+            "after": "        for rel in _changed(project, copy):\n            _copy(os.path.join(copy, *rel.split('/')),\n                  os.path.join(kept, *rel.split('/')))\n        if project:\n            for rel in _files_under(project, {GIT_FOLDER}):\n                if not os.path.exists(os.path.join(copy, *rel.split('/'))):\n                    _write(os.path.join(kept, *rel.split('/')), '')",
+            "aim": "plain",
+            "before": "        for rel in _changed(project, copy):\n            _copy(os.path.join(copy, *rel.split('/')),\n                  os.path.join(kept, *rel.split('/')))",
+            "bug_key": "201aa56fd8d242d5bde41501656a2bb3a3b61213dc85d01d009dee23b2155c35",
+            "case": "the session deletes keep.md from its copy and writes nothing; the proof says files/ holds no file; the changed code gives files/ holding an empty keep.md",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 514,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-19: the test has a stand-in session write the three files the proof names, then compares the whole of files/, paths and bytes, with exactly out/summary.md and report.md, so a missing, extra or altered file fails it.",
+          "PROOF-19: the sample's report.md reading F-1 and keep.md reading kept come from the fixture and are not visible in the test's own lines, so the test shows keep.md as unchanged only if the fixture holds those bytes.",
+          "PROOF-20: the test has the stand-in session remove keep.md and write nothing, then compares the whole of files/ with an empty tree, so any file left there fails it.",
+          "PROOF-20: the comparison uses a helper outside the test's own lines, so whether a missing files/ folder would also read as empty cannot be seen here.",
+          "Findings: the spot tests found nothing, and both tests assert literal expected values that the code does not supply."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "c7b7aa4943d762c61452f8de4336727a7669f000ec6a70673900a5fa87c098d7",
+        "rule_hash": "c85bae7fc980a864ff40ba6d528c5cc630c92918bc1b90ab8fd09b8138c8f62d",
+        "test_hash": "4aa67d5c68127b6559107f22277d56265c9a602cbd84e050afb0641f77bbe18b",
+        "verdict": "strong"
+      },
+      "RULE-14": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-21": {
+            "after": "    skipped = set()",
+            "aim": "plain",
+            "before": "    skipped = {GIT_FOLDER}",
+            "bug_key": "be2032b50e7f79a912e64daef9113aff5f34f125f7e8058dc9df62aafff5c167",
+            "case": "a sample with no `.git` and no `.claude`, where the session writes `.claude/state.json`, `.git/index`, `notes.md` and `docs/.claude/kept.md`; the proof says `files/` holds exactly `notes.md` and `docs/.claude/kept.md`; the changed code gives `.git/index` as well",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 573,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-22": {
+            "after": "    if not (sample and os.path.isfile(os.path.join(sample, SESSION_FOLDER))):",
+            "aim": "plain",
+            "before": "    if not (sample and os.path.isdir(os.path.join(sample, SESSION_FOLDER))):",
+            "bug_key": "e7e86f8f356882c9e43d28c9820e09d3759a156f08321911b88a73aa5f29959b",
+            "case": "a sample holding `.claude/settings.json`, where the session writes a new `.claude/commands/go.md`; the proof says `files/` holds exactly `.claude/commands/go.md`; the changed code gives an empty `files/`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 574,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-21: the test has the session write the four files the proof names and compares the whole of `files/`, paths and bytes, with exactly `notes.md` and `docs/.claude/kept.md`, so a `.git/` or top `.claude/` file kept, or the nested one dropped, fails it.",
+          "PROOF-22: the test puts `.claude/settings.json` in the sample, has the session write `.claude/commands/go.md`, and compares the whole of `files/` with exactly that one file, so a `.claude/` folder left out or the unchanged settings file kept fails it.",
+          "The spot tests found nothing, and both tests assert the exit code and an exact tree taken from literals, not from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "16ab290adff45595384ef5762a96f43ea98a2b4de239fcf07edc31f8c5820b0c",
+        "rule_hash": "e45c64194d3f6a60b368994759fdc2eee9608670575aa7587e6bb990a295f17b",
+        "test_hash": "df0afa35cc6695386c9c87905147cce9be71c3ed3f20f71524822b3c2e1978cf",
+        "verdict": "strong"
+      },
+      "RULE-15": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-23": {
+            "after": "                 outputs.AI_REPLAY)",
+            "aim": "plain",
+            "before": "                 outputs.AI_REPLAY, 'PURLIN_PROJECT_ROOT')",
+            "bug_key": "9477a5b5e8f155bc9b4f1de6facd6c607c39c694c56a4bca79c1951e9acfb861",
+            "case": "the helper started with PURLIN_AI, PURLIN_AI_MODEL, PURLIN_AI_OUT and PURLIN_PROJECT_ROOT set; the proof says the session finds none of the four set; the changed code leaves PURLIN_PROJECT_ROOT set in the session",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 162,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-23: the test starts a session with PURLIN_PROJECT_ROOT set, reads the environment the started program recorded, and compares all six names the proof lists with unset, so a variable of the four that is passed on fails it.",
+          "PROOF-23: the test's own lines set only PURLIN_PROJECT_ROOT; that PURLIN_AI, PURLIN_AI_MODEL and PURLIN_AI_OUT are set at the start rests on the `made` fixture, which is not shown.",
+          "PROOF-23: neither the proof nor the test's own lines sets PURLIN_AI_REPLAY or DISABLE_PROMPT_CACHING before the session starts, so finding them unset would hold whether or not the helper removes them; the helper's code removes PURLIN_AI_REPLAY and does not remove DISABLE_PROMPT_CACHING.",
+          "PROOF-23: the test drops ENABLE_CLAUDEAI_MCP_SERVERS from the recorded environment without comparing its value, which the proof does not name.",
+          "Findings: the spot tests found nothing, and the test's one comparison is against literal values that the code cannot influence."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e3359feb4620ff63c1ab60b2f835649b5872007200fcbd4a26e09d00c23b1e52",
+        "rule_hash": "f695f71728759ba1c48e9313d2c6d12480907a77cf160ab09deb9aacfd0bef86",
+        "test_hash": "1e3b6eac7f3f180a52b719711c98b5a7d36a9d41c5633224e80296ffe22ba03a",
+        "verdict": "strong"
+      },
+      "RULE-16": {
+        "at": "2026-10-07T19:24:38Z",
+        "bugs": {
+          "PROOF-24": {
+            "after": "SESSION_TIMEOUT = 180",
+            "aim": "plain",
+            "before": "SESSION_TIMEOUT = 1800",
+            "bug_key": "0aaab9ac0453699a3c2f772a7e655df9c5b2df07027d3e1732b43d71a44689a0",
+            "case": "`run --skill skills/summarize --say \"Go.\"` starts its one session; the proof says a limit of exactly 1800 seconds; the changed code starts it with a limit of 180 seconds",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 151,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "82529b7bb118f042788f5ff17babf9ff07763685",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-24: the test replaces the process call the helper makes, runs the proof's exact command, and compares the list of limits handed to every started process with `[1800]`, so both a different limit and a second session fail it.",
+          "PROOF-24: the expected value is the literal 1800 written in the test, not the helper's own constant, so a change to that constant cannot move the expected value with it.",
+          "PROOF-24: the test also requires the command to exit 0, so a session that is never started fails it as well.",
+          "Findings: the spot tests found nothing, and the test's comparison is one that can fail on the proof's own value."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "86b01940a40bbf9555d4c22b6f19fa82a283e00e24939ec0b64b5150a874188c",
+        "rule_hash": "9167882062d8043ca685d5c86afebac5b72eadb597ec13f6f9c15e04d12b106c",
+        "test_hash": "581e309a2686d2b19e0dcd3291b80acd76caacffeb126fc8a0db45a3bfa5dc53",
+        "verdict": "strong"
+      },
+      "RULE-17": {
+        "at": "2026-10-07T19:23:36Z",
+        "bugs": {
+          "PROOF-25": {
+            "after": "    _record(folder, outputs.MADE_BY_PROJECT, model, why)",
+            "aim": "past the test",
+            "before": "    _record(folder, outputs.MADE_BY_HELPER, model, why)",
+            "bug_key": "3dc338399927e34462d5007a5691d5f466b1c3cbd71f456bb11fdf621b1c9eaa",
+            "case": "`run --instructions prompts/system.md --say \"Summarise it.\"` with the path set to an empty folder; the proof says `purlin.json` reads `made` `helper`; the changed code writes `made` as the project's own test",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 430,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-26": {
+            "after": "    if not command:\n        print(folder)\n        return ai_audit.NOT_ON_PATH",
+            "aim": "past the test",
+            "before": "    if not command:\n        return ai_audit.NOT_ON_PATH",
+            "bug_key": "b2f8da6538939f02e6bc06978cdf6e805e14b9632d4bb2c4811bd20a559b8550",
+            "case": "`run --skill skills/summarize --project sample --say \"Summarise it.\"` with the path set to an empty folder; the proof says it exits 2 with the one line on standard error; the changed code also prints the output folder's path on standard output",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 490,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "580b39cb19b9762cb402b45739c110c2061f2043532144474543347638db12f6",
+        "rule_hash": "2b5e5f3ab9b83412baf7434b5acc0375176c875b613b79d7e189acad721da842",
+        "test_hash": "2551cf817e8d3cc14790d87ccdd5993741122c6337c39f3985b999367ffbd163",
+        "verdict": "strong"
+      },
+      "RULE-18": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-27": {
+            "after": "        return None, printed, _why(ai_audit.NO_ANSWER, said)",
+            "aim": "plain",
+            "before": "        return None, printed, _why(ai_audit.EXITED, said)",
+            "bug_key": "37bc10d6eb03fa02e64420b08b2746f98c12244812a4a704e80b27108ba718ea",
+            "case": "a session that writes out/summary.md, prints a result and exits 3; the proof says `why` and standard error read `claude exited with an error`; the changed code gives `claude gave no answer`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 562,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-28": {
+            "after": "        return None, printed, _why(ai_audit.EXITED, said)",
+            "aim": "plain",
+            "before": "        return None, printed, _why(ai_audit.NO_ANSWER, said)",
+            "bug_key": "396f3a7735f243d1b42cedbe6ab698cb89c7310774b734c972841ef20800da8f",
+            "case": "a session that exits 0 with a system line, an assistant line and no result line; the proof says `why` and the message read `claude gave no answer`; the changed code gives `claude exited with an error`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 565,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-29": {
+            "after": "                                  'reached': why != ai_audit.NOT_ON_PATH,\n                                  'why': why})",
+            "aim": "past the test",
+            "before": "                                  'reached': why is None, 'why': why})",
+            "bug_key": "bee171eda571aded3a296786006fdefb49e5c8d54c934f842b6d16a485b6989a",
+            "case": "a bare call where claude exits 0 and prints nothing; the proof says purlin.json reads `reached` false; the changed code writes `reached` true with `why` `claude gave no answer`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 366,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-27: the test makes a session that writes out/summary.md and exits 3, and compares the exit code 2, the empty standard output and the exact line on standard error, so each of those values the proof names is observed in the test's own lines.",
+          "PROOF-27: that the folder holds `purlin.json` alone with the `why` the proof names is left to the helper `_alone`, whose lines are not shown, so what it compares cannot be read here.",
+          "PROOF-28: the test makes a session that prints no result, and compares the exit code 2 and the exact line on standard error; the folder's contents and `why` are again left to `_alone`.",
+          "PROOF-29: the test makes a bare call that prints nothing, and compares the exit code 2 in its own lines; `reached` false is named by the proof and appears nowhere in the test's own lines, so it is checked only if `_alone` reads it.",
+          "The rule also names a `claude` that reports an error as reading `claude gave no answer`, and no proof of the rule names that case.",
+          "Findings: none were reported by the spot tests, and each test holds failable assertions against literals the proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "474dc044c4612f1ee020b0755f251372d8014c327bf8a4289b9b8d64155c4e02",
+        "rule_hash": "6bee9e2ab822efe3c52344a99fb9f117c823f67c0742291b8011a039581e4f4c",
+        "test_hash": "e6105ee07bc1d85d9417e764a0140c8c1135e630ac48f462948b23379d3d12e6",
+        "verdict": "strong"
+      },
+      "RULE-19": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-30": {
+            "after": "        _say(NO_ANSWER_FROM % (model, why))",
+            "aim": "past the test",
+            "before": "        shutil.rmtree(os.path.join(folder, outputs.INPUT),\n                      ignore_errors=True)\n        _say(NO_ANSWER_FROM % (model, why))",
+            "bug_key": "f9b60aa5af6c21859eeb3a235457edcadbccdcfd4af3ce3e364ccb0d7d51d1ae",
+            "case": "a session limited to 1 second with a claude that takes 3 seconds; the proof says the output folder holds purlin.json alone; the changed code leaves input/message.md in the folder beside purlin.json",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 432,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-30: the test lowers the session limit to 1 second, has the fake claude sleep 3 seconds, and compares the exit code with 2, standard output with the empty string and standard error with the exact sentence the proof names.",
+          "PROOF-30: what the folder holds and what `why` reads are checked only inside the helper `_alone`, whose source is not shown, so the test's own lines do not show whether a file left beside `purlin.json` would fail it.",
+          "PROOF-30: the test passes `claude timed out after 1 s` to `_alone` as a literal, so the expected `why` comes from the proof and not from the code.",
+          "PROOF-30: the spot tests found nothing, and the test's own lines hold three failable comparisons against literals the proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-30 is 61 words long, over the 60 a proof holds."
+        ],
+        "proof_hash": "8321f12bac0444450339c811e27e2503156793f2110b40980f9d8d2f844302a7",
+        "rule_hash": "20ca14bbcb44502c44572b31fef8846b461302cc69912189ff0d34ac729d9b95",
+        "test_hash": "6a19e00ea7c9b4b7c13a7d1271ad0e5ea843a36bca58102f57d3b969dba66a23",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "    '       purlin_ai.py record --from <folder>\\n'",
+            "aim": "past the test",
+            "before": "    '       purlin_ai.py record --from <folder> [--model <name>]\\n'",
+            "bug_key": "19f0e602e0d683719d82ffa118c186df736235ea07575e650b53adadbe4242f1",
+            "case": "`record --form sample`; the proof says the usage text is printed before the unexpected-argument line; the changed code prints a usage text whose record line no longer shows `[--model <name>]`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 133,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-4: the test starts `record --form sample` and compares the exit code with 2, the whole of standard error with the usage text followed by `purlin_ai.py: unexpected argument --form`, and checks the output folder does not exist, which are the three results the proof names.",
+          "PROOF-4: the expected usage text is the name `USAGE`, whose definition is not in the test's own lines, so if it is taken from the helper a change to the usage text itself passes unnoticed.",
+          "PROOF-4: the test reads nothing from standard output, so a line printed there by mistake would still pass.",
+          "Findings: the spot tests found nothing, and the test's three assertions can each fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4aaa5e2a91f5c9aca5288ff4849e570436521399790522292a8554fad1729708",
+        "rule_hash": "8ff0b75b4f3e72d2c93cb1aeb3ebc221c419586c827cb53425ea62315ccaabbe",
+        "test_hash": "93772b5d31ce84809a3698b22145adc3350241ca922765746d7f045affb7e909",
+        "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-31": {
+            "after": "    detail = lines[0].strip() if lines else ''",
+            "aim": "plain",
+            "before": "    detail = notices.first_sentence(lines[0]) if lines else ''",
+            "bug_key": "fda68b0e46ff63c127fb57090543b63043ae6d6cdcc25fc2c84ac683e947c8e6",
+            "case": "claude exits 1 for claude-nope with the two-sentence result; the proof says `why` reads `claude exited with an error: There's an issue with the selected model (claude-nope)`; the changed code gives that followed by `. It may not exist or you may not have access to it.`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 385,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-32": {
+            "after": "        return None, printed, ai_audit.NO_ANSWER",
+            "aim": "plain",
+            "before": "        return None, printed, _why(ai_audit.NO_ANSWER, said)",
+            "bug_key": "90c190dbc02c24bcd8a0c81a06da528473bd3c5fd4bc67bcc0a4f8751d97eb60",
+            "case": "a session exits 0 with an error result reading `Invalid API key \u00b7 Please run /login`; the proof says `why` reads `claude gave no answer: Invalid API key \u00b7 Please run /login`; the changed code gives `claude gave no answer`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 565,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-33": {
+            "after": "        return None, printed, ai_audit.EXITED",
+            "aim": "plain",
+            "before": "        return None, printed, _why(ai_audit.EXITED, said)",
+            "bug_key": "5c8d64b2470d3cc3f2648e05b5abf2a24cf3e7953fe00d1028f014509241666d",
+            "case": "a session exits 1, prints nothing and writes two lines to standard error; the proof says `why` reads `claude exited with an error: error: unknown option '--plugin-dir'`; the changed code gives `claude exited with an error`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 562,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-31: the test feeds the two-sentence error result with exit 1 and compares the whole record, `why` included, and the whole standard error line with the proof's text, so a `why` carrying more or less than the first sentence fails it.",
+          "PROOF-32: the test feeds an error result with exit 0 and hands the proof's exact `why` to the `_alone` helper, whose body is not shown, so whether `why` and the folder holding `purlin.json` alone are compared rests on that helper.",
+          "PROOF-33: the test feeds exit 1, no output and the two standard error lines, and hands the proof's exact `why` to `_alone`, so the check that only the first line is carried rests on that helper too.",
+          "The spot tests found nothing, and each test names its proof's expected value as a literal rather than taking it from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-31 is longer than 60 words."
+        ],
+        "proof_hash": "68ec794ebc2139c07c55952937e2f660507edcef1c069e7540179a9cd95b02fe",
+        "rule_hash": "e27ab9118347d3a014e7c4c7fbcdc385ef7a0f6b49e36be1c2475796363873a2",
+        "test_hash": "cb5a8f18d8585f4719acd16ef74a25790b2a8a772a129d7a20f60230d443b189",
+        "verdict": "strong"
+      },
+      "RULE-21": {
+        "at": "2026-10-07T19:23:36Z",
+        "bugs": {
+          "PROOF-34": {
+            "after": "            raise _Stop(EXIT_NO_ANSWER, SECOND_OUTPUT % folder)",
+            "aim": "plain",
+            "before": "            raise _Stop(EXIT_REFUSED, SECOND_OUTPUT % folder)",
+            "bug_key": "d6d4e7ee9770838990f5830caa768dc4bef89d61fdac266b3b0685bf55848685",
+            "case": "a second `run` into a folder whose first `run` wrote `First.`; the proof says it exits 1; the changed code exits 2",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 337,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-35": {
+            "after": "    print(source)\n    folder = _output_folder(keep=source)",
+            "aim": "past the test",
+            "before": "    folder = _output_folder(keep=source)",
+            "bug_key": "1b2a7151c6511de04d7dc622d17e638187fa7c76c6953c10da79c1b387c815d8",
+            "case": "`record --from mine` into a folder a `run` wrote an output to; the proof says it exits 1 with the one line on standard error; the changed code also prints the path of `mine` on standard output before that line",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 628,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-36": {
+            "after": "        if os.path.isfile(os.path.join(folder, outputs.REPLY)) and (\n                not _same(folder, keep) and _holds_output(folder)):",
+            "aim": "plain",
+            "before": "        if os.path.isfile(os.path.join(folder, outputs.RECORD)) or (\n                not _same(folder, keep) and _holds_output(folder)):",
+            "bug_key": "59210bdac636830034ee6e983c45c31c36d6e90e4a5a81e8f68b9415eccdbc71",
+            "case": "a second `run` into a folder whose first `run` got no answer from `claude`; the proof says it exits 1, `claude` started once and `reached` false; the changed code starts `claude` again, exits 0 and writes `reached` true",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 335,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "8fd4965ae0427e0ff30d17315fdaffb3186734bf74a6a9bb944b51776e9d9e3e",
+        "rule_hash": "42b3c29621c82b550316979356cbfec525d2e8a2b849fd7e67dbe2af4c7d9d69",
+        "test_hash": "ace24ff2c1fc14884deca34a51f2cb60f8404400b4d9cec238d7686521062815",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-37": {
+            "after": "        raise _wrong(PROJECT_GOES_WITH)\n    replay = _replay()\n    if replay:\n        print(os.path.basename(replay))",
+            "aim": "plain",
+            "before": "        raise _wrong(PROJECT_GOES_WITH)\n    replay = _replay()\n    if replay:\n        print(replay)",
+            "bug_key": "9b5620e24611783428beff2a077b10c1e4d2f2da35340845329300bf409f82e1",
+            "case": "run --skill skills/summarize --project sample --say \"Summarise it.\" under PURLIN_AI_REPLAY; the proof says it prints the replay folder's path alone; the changed code prints only the folder's last name",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 406,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-38": {
+            "after": "        raise _wrong(RECORD_NEEDS)\n    replay = _replay()\n    if replay:\n        print(_output_folder())",
+            "aim": "plain",
+            "before": "        raise _wrong(RECORD_NEEDS)\n    replay = _replay()\n    if replay:\n        print(replay)",
+            "bug_key": "d0c4b8400c08ce3ed9e2b0147f3f731aea5d51b97db180b24b6e4db3dc83596b",
+            "case": "record --from mine under PURLIN_AI_REPLAY; the proof says it prints the replay folder's path and the folder PURLIN_AI_OUT names is not made; the changed code makes that folder and prints its path",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 622,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-37: the test starts a session under the replay folder and compares the exit code with 0, standard output with the replay path and a newline, standard error with the empty string, the recorded `claude` calls with an empty list, the absence of the output folder, and the replay folder's tree before and after, which is each result the proof names.",
+          "PROOF-37: the command line the proof names is given inside the `session` helper, which is not shown, so the test's own lines do not show that `--skill skills/summarize --project sample --say \"Summarise it.\"` is what runs.",
+          "PROOF-38: the test writes `mine/reply.md`, starts `record --from mine` under the replay folder and compares the exit code with 0, standard output with the replay path and a newline, the absence of the output folder, and the replay folder's tree before and after, which is each result the proof names.",
+          "PROOF-38: the test reads no standard error, and the proof names none for `record`.",
+          "Both tests take the replay folder's contents from the `tree` helper, which is not shown, so whether it compares the bytes of every file rests on that helper."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e58d765b9760214d3ad2e96395597fd3e99503c7bbf0947cea295c3c456e1dc6",
+        "rule_hash": "9fe67a4b3234ec8ffea9dbd2d03f6db06f3e87ed132cd2c42dbd5288502edb1e",
+        "test_hash": "7220f65455befe75ffbf4cbb6fcc878ddcd7d30f125e595c4db77af98194a077",
+        "verdict": "strong"
+      },
+      "RULE-23": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-39": {
+            "after": "        if _same(folder, keep):\n            shutil.rmtree(folder, ignore_errors=True)",
+            "aim": "plain",
+            "before": "        if not _same(folder, keep):\n            shutil.rmtree(folder, ignore_errors=True)",
+            "bug_key": "000e822153f50c6de797e494673bae02e421efef828c405ada4d6c3e4148ff07",
+            "case": "by-hand folder holding `old.md`, `input/old.md` and a `purlin.json` from before, run two folders below the root; the proof says the folder then holds exactly the five named files; the changed code leaves `old.md` there as a sixth",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 340,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-39: the test puts `old.md`, `input/old.md` and a `purlin.json` in the project's by-hand folder, starts the run two folders below the root with no `PURLIN_AI_OUT`, and compares the printed path with that folder, so an output written anywhere else fails it.",
+          "PROOF-39: the test compares the folder's whole list of files with the five the proof names and reads `reply.md` as `By hand.`, so a file left from before or a wrong reply fails it.",
+          "PROOF-39: the test does not read what the new `purlin.json`, `input/message.md` or `input/instructions/system.md` hold, and the proof names no content for them.",
+          "PROOF-39: the comparison is of files, so whether an empty folder left from before would be seen depends on a helper not shown here."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "223ade0a4297585380dcfcfdb586c16475e0e07d01e5f5c2cd09a16f16b42d62",
+        "rule_hash": "bf61be9fdb21477d288b296dc6b9233f04a5deda8587df5446647e5abd147163",
+        "test_hash": "987d8455bb9f95cc5de3b28afca97e6487e87885cb4865c4115cbf615059899a",
+        "verdict": "strong"
+      },
+      "RULE-24": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-40": {
+            "after": "    folder = _output_folder()\n    model = _model()",
+            "aim": "plain",
+            "before": "    model = _model()\n    folder = _output_folder()",
+            "bug_key": "8f0670e0181d271a725b59e140b795745c4df24d5575bc86d7e5f4beb9b1ae49",
+            "case": "`run --instructions prompts/system.md --say \"Summarise it.\"` with `PURLIN_AI_MODEL` not set; the proof says the output folder is not made; the changed code makes the output folder before it exits 2",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 422,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-46": {
+            "after": "        raise _wrong(NO_MODEL)",
+            "aim": "past the test",
+            "before": "        raise _Stop(EXIT_NO_ANSWER, NO_MODEL)",
+            "bug_key": "f8200dbb44026568a1f916e2c19cbf682267211608233a102a37de1835d5f6f4",
+            "case": "`record --from mine` with no `--model` and `PURLIN_AI_MODEL` not set; the proof says it exits 2 with the one line; the changed code prints the three usage lines on standard error before that line",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 372,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-40: the test starts the run with `PURLIN_AI_MODEL` removed and compares the exit code `2`, an empty standard output, the whole of standard error, the list of `claude` calls and the absence of the output folder, which is everything the proof names.",
+          "PROOF-40: the test leaves no way past it for the proof's case, so the planted bug is the plain one, making the output folder before the model is looked for.",
+          "PROOF-46: the test starts `record --from mine` with `PURLIN_AI_MODEL` removed and compares the exit code `2`, the sentence a helper `said` takes from the result, and the absence of the output folder.",
+          "PROOF-46: `said` is defined outside the test's own lines, so whether it reads all of standard error or only one line of it is not shown, and the proof's \"the one line\" may go unchecked where extra lines are printed before it.",
+          "PROOF-46: the test reads no standard output, and the proof names none for this case."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "38a654f4746c8b810f26ace63b03b484f9eb1375c38524556fce6adfdc8e3cde",
+        "rule_hash": "124795676f9c9ef2beb4a51bf0e5787e4e35c6283db0faddf6ec4dc1717560b4",
+        "test_hash": "8fae0a4af49700326a293c5895658a58fba450c5cbbffc4fbd411794784351a0",
+        "verdict": "strong"
+      },
+      "RULE-25": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-41": {
+            "after": "        for name in (outputs.REPLY,):",
+            "aim": "plain",
+            "before": "        for name in (outputs.REPLY, outputs.TRANSCRIPT):",
+            "bug_key": "55475d945b46ada923156911141eb65afb80cd421aad0eccb67f22acc5f62a72",
+            "case": "`mine` holds `reply.md`, `transcript.jsonl`, `files/a/b.txt`, two files under `input/`, `notes.txt` and a `purlin.json`; the proof says the output folder holds exactly six files, `transcript.jsonl` among them; the changed code leaves `transcript.jsonl` out, so it holds five",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 630,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-44": {
+            "after": "    _record(folder, outputs.MADE_BY_PROJECT, model)",
+            "aim": "plain",
+            "before": "    os.makedirs(os.path.join(folder, outputs.FILES), exist_ok=True)\n    _record(folder, outputs.MADE_BY_PROJECT, model)",
+            "bug_key": "d06d5f3b65ea8bb6601fbe88cc4ed142adb0a81829e48fe0700ea80921ced102",
+            "case": "`mine` holds `reply.md` alone; the proof says the output folder holds `purlin.json`, `reply.md` and an empty folder `files`; the changed code makes no folder `files`, so it holds `purlin.json` and `reply.md` only",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 638,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-41: the test builds `mine` with the seven files the proof names, runs `record --from mine`, and compares the exit code, the standard output with the output folder's path, an empty standard error, the exact sorted list of files held, the bytes of each of the five copied files and an empty list of calls, so each result the proof names is compared.",
+          "PROOF-41: the test never reads what the output's `purlin.json` holds, so it shows `notes.txt` is left out by the file list alone and does not show that the record of `mine` was replaced by the helper's own; the proof names no value for that file.",
+          "PROOF-44: the test builds `mine` with `reply.md` alone and compares the exit code, the exact list of files held, the top-level entries `files`, `purlin.json` and `reply.md`, and the emptiness of `files`, so the missing `input` folder and the empty `files` folder are both observed.",
+          "PROOF-44: the test does not read the bytes of `reply.md`, which the proof does not name either.",
+          "Findings: none were reported by the spot tests, and both tests hold assertions on literal values that the code under test does not supply."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "84c998d08cf88fc3ef02ca194268013ca9984af77a87039cf3edebf297cc9ff0",
+        "rule_hash": "9b88b8c999c9da978af97e8c9b798329339de1287b396095cd4b0a2d0af622a7",
+        "test_hash": "f4d8f2392e6040e5ccc1483c741ee43f40435d31c175bb4e275e2765a3a53012",
+        "verdict": "strong"
+      },
+      "RULE-26": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-42": {
+            "after": "    _record(folder, outputs.MADE_BY_HELPER, model)",
+            "aim": "plain",
+            "before": "    _record(folder, outputs.MADE_BY_PROJECT, model)",
+            "bug_key": "37f6318c05ef25f4e274caf01d38cff595e6938f385e871b2fd7825514888aeb",
+            "case": "`PURLIN_AI_MODEL` reading `claude-test-1` and `record --from mine`; the proof says `purlin.json` reads `made` `project`; the changed code writes `made` as the helper's own value",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 639,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-43": {
+            "after": "    model = _model()",
+            "aim": "plain",
+            "before": "    model = (given.get('--model') or '').strip() or _model()",
+            "bug_key": "4749d9ef093e37961f2820a73640b46adc66eca4c531ed090aaee364dfd41559",
+            "case": "`PURLIN_AI_MODEL` reading `claude-test-1` and `record --from mine --model gpt-x`; the proof says `model` reads `gpt-x`; the changed code writes `model` `claude-test-1`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 627,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-42: the test runs `record --from mine`, checks the exit code is 0 and compares the whole record with `made` `project`, the model constant, `reached` true and `why` null, so a wrong or extra field fails it.",
+          "PROOF-42: the expected model is the constant `MODEL`, which the test assumes the fixture sets as `PURLIN_AI_MODEL`; the value `claude-test-1` is not written in the test's own lines.",
+          "PROOF-43: the test runs `record --from mine --model gpt-x`, checks the exit code is 0 and compares the record's `model` with the literal `gpt-x`, which is all the proof names.",
+          "PROOF-43: the test relies on the fixture to set `PURLIN_AI_MODEL` to another value; if the fixture set none, the test would still pass but would not show the command line winning over the variable.",
+          "Findings: the spot tests found nothing, and both tests hold assertions on values that come from literals or a constant, not from the code under test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "82c35bb960f06ce03941551b6aeee9ffc7cd5527199d845a915b66df0b9073e5",
+        "rule_hash": "4a10e04bbc7cbef03863047dd430d375cfee422c7294c9a923dc459ee356e86c",
+        "test_hash": "c8ca8413d6a7523c5d3170bd86035009449142fc0ac64bd783f78a747432849d",
+        "verdict": "strong"
+      },
+      "RULE-27": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-45": {
+            "after": "NO_REPLY = '%s holds no reply.'",
+            "aim": "plain",
+            "before": "NO_REPLY = '%s holds no reply.md.'",
+            "bug_key": "918c839da3b65405e6f83c6642fec1d615f21fc8849e19ccc92d7efbccac4c08",
+            "case": "`mine` holds `transcript.jsonl` and no `reply.md`, then `record --from mine`; the proof says standard error reads exactly `purlin_ai.py: mine holds no reply.md.`; the changed code prints `purlin_ai.py: mine holds no reply.`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 207,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-45: the test makes `mine` with `transcript.jsonl` alone, starts `record --from mine`, and compares the exit code with 2, standard output with the empty string and standard error with the whole line the proof names, then checks the output folder does not exist.",
+          "PROOF-45: each of the four results the proof names is compared with a literal written in the test, so a change to the exit code, the message, standard output or the making of the folder fails it.",
+          "PROOF-45: the spot tests found nothing, and the test's expected values come from the proof and not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "d70e997845303c9a5cc531f7f533da8dba0c9e756f547cf18695f80e5ee84a85",
+        "rule_hash": "a412afcbe3ad9b76f9d3f9dbb502bcccb07d50fa16532176ca94ddf35856450b",
+        "test_hash": "cd3e1a5bafb1b3df8f3de4ee81aa35df8283f7f860228e89bea438ec2a52a655",
+        "verdict": "strong"
+      },
+      "RULE-28": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-47": {
+            "after": "    'You grade what an AI produced against one sentence. You have tools. '",
+            "aim": "past the test",
+            "before": "    'You grade what an AI produced against one sentence. You have no tools. '",
+            "bug_key": "690f05a6a6fbe90ef540fb44272e2709f619a920f9aeb1f7207d5842403841eb",
+            "case": "`grade --feature review --proof PROOF-2` starts claude; the proof says the system prompt opens `You grade what an AI produced against one sentence. You have no tools.`; the changed code opens it `You grade what an AI produced against one sentence. You have tools.`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 182,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-47: the test grades once with a fake `claude` and compares the call count, the whole argument list, the empty folder listing and the folder being outside the project, which covers each thing the proof names.",
+          "PROOF-47: the model name and the bare arguments are compared against the names `GRADER` and `BARE`, whose definitions are not in the test's own lines, so whether they hold the proof's literal values cannot be seen from the test shown.",
+          "PROOF-47: the system prompt is compared against the name `GRADER_PROMPT`, and where that name is taken from the helper itself, a change to the prompt's opening or ending words still passes; where it is a literal in the test file, the change is caught.",
+          "Findings: the spot tests found nothing, and the test's own lines hold assertions that can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-47 is longer than 60 words."
+        ],
+        "proof_hash": "b5f71a1e4d26d507058289da08d1e2e3f1fede4a29ba143471635f66740409ca",
+        "rule_hash": "ce8b3f5f8c38cb49f42b989aacd9a764ea54bf46689c42761e8b0305be6590e3",
+        "test_hash": "f90d9e04aa00ad2c326707038159254a1dbcfcec4e5dcb399506b59f7f4256de",
+        "verdict": "strong"
+      },
+      "RULE-29": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-48": {
+            "after": "                   key=lambda rel: rel == message)",
+            "aim": "plain",
+            "before": "                   key=lambda rel: rel != message)",
+            "bug_key": "fe96f256c92949ff3f70297c3a27a9b2cfcf3362e72f609ecd213d25f9823640",
+            "case": "an output with input/message.md, input/instructions/system.md and input/project/report.md; the proof says `=== input/message.md ===` comes first under `What the AI was given:`; the changed code puts it last, after input/project/report.md",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 700,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-63": {
+            "after": "        if not names and title == OUTPUT:\n            continue",
+            "aim": "plain",
+            "before": "        if not names:\n            continue",
+            "bug_key": "59a1bd139c60b6b4a42f54db1ceb149e7820280230b7aed61a7815a39a650b1b",
+            "case": "an output with no input/; the proof says the request goes from the sentence and a blank line straight to `The output:`; the changed code writes `What the AI was given:` and a blank line before `The output:`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 708,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-64": {
+            "after": "GIVEN = 'What the AI was shown:'",
+            "aim": "plain",
+            "before": "GIVEN = 'What the AI was given:'",
+            "bug_key": "4d4ec3a36400965f8fff005610bb801e71d3f4bb2fa2cfbfd7ecba578ba7f574",
+            "case": "an output with input/project/report.md and no input/message.md; the proof says the request holds the line `What the AI was given:`; the changed code writes `What the AI was shown:` in its place",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 226,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-48: the test writes the five named files and a transcript.jsonl, runs grade, and compares the grader's whole standard input with the literal text the proof spells out, so any change of order, title, header or content fails it.",
+          "PROOF-48: the test's own lines write no purlin.json, so whether that file is in the folder depends on a helper not shown; the whole-text comparison would still fail if any of it reached the request.",
+          "PROOF-63: the test asserts the folder holds no input/, runs grade, and compares the whole standard input with the literal text the proof names, so a stray `What the AI was given:` part fails it.",
+          "PROOF-64: the test writes reply.md and input/project/report.md alone, runs grade, and compares the whole standard input with literal text built around the SENTENCE constant of the test file, so the part for the input and its one file are checked exactly.",
+          "No spot test fired, and nothing in the three tests contradicts that: each holds a failable equality on the full request, with expected text written as literals."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-48 is longer than 60 words.",
+          "PROOF-63 is longer than 60 words."
+        ],
+        "proof_hash": "4b819eb31b7afd03a6bfd9acc0c10964f93ef728424a751c0144c2a972226fbc",
+        "rule_hash": "a2f5d0b5635dbe7aca8e80461d562bf5d604822c41d61058a7d3b19c8cf69bff",
+        "test_hash": "3ae9bea732ce2a01d0fe8d801b2da18d70a231c21aaf3307a6be496d9867a91a",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-5": {
+            "after": "            raise _Stop(EXIT_NO_ANSWER, NO_SKILL % loaded)",
+            "aim": "plain",
+            "before": "            raise _Stop(EXIT_NO_ANSWER, NO_SKILL % given[way])",
+            "bug_key": "cbe9560405ba8d4174daee63677606b379905436e55ac63b789252c1d3f013db",
+            "case": "`run --skill sample --say hello` where `sample` holds no `SKILL.md`; the proof says standard error reads exactly `purlin_ai.py: sample holds no SKILL.md.`; the changed code names the folder's absolute path in place of `sample`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 417,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-6": {
+            "after": "        raise _Stop(EXIT_REFUSED, NOT_A_FILE % path)",
+            "aim": "plain",
+            "before": "        raise _Stop(EXIT_NO_ANSWER, NOT_A_FILE % path)",
+            "bug_key": "3acda86320c33564d76fb13dd7a8d4801686f741ecebecd5f87a5abda739a716",
+            "case": "`run --instructions prompts/system.md --input sample/nope.md`, a file that is not there; the proof says the helper exits 2; the changed code exits 1",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 298,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-5: the test starts `run --skill sample --say hello` and compares the exit code with 2, standard error with the proof's exact line, the output folder's absence and an empty list of `claude` calls, so it observes every result the proof names.",
+          "PROOF-5: the test also compares standard output with the empty string, which the proof does not name.",
+          "PROOF-6: the test starts the helper with `--input sample/nope.md` through a fixture and compares the exit code with 2, standard error with the proof's exact line and an empty list of `claude` calls, so it observes every result the proof names.",
+          "PROOF-6: the `--instructions prompts/system.md` part of the proof's command comes from the fixture's `prompt` helper, which the test's own lines do not show.",
+          "PROOF-6: the test also checks that the output folder is not made, which the rule states and the proof does not name.",
+          "PROOF-5 and PROOF-6: both tests compare the whole of standard error, so usage text before the line would fail either test.",
+          "The rule also names a folder that is not there and a file that cannot be read, and neither proof names either case.",
+          "Findings: none, and the spot tests have nothing to explain on either test."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ed58f69da1adbdc422f231c9e5ef44fc1b4d80c682c497e86859484e23c58301",
+        "rule_hash": "c0ef9e17bb20da8db531914019fd690e24f68d938712db2c3d055dd1a940c269",
+        "test_hash": "89c16d826e6f7beda3a49166fcb8a8c90bfe292434f3ff4a70ac84efda89b1d7",
+        "verdict": "strong"
+      },
+      "RULE-30": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-49": {
+            "after": "    return EXIT_REFUSED",
+            "aim": "plain",
+            "before": "    return EXIT_OK if accepted else EXIT_REFUSED",
+            "bug_key": "23585738832501affc43f4a4b72cbf54adf40888daa55c4f064e4e5fbdcea00d",
+            "case": "the grader answers `accept: it holds F-1 alone`; the proof says `grade` exits 0; the changed code exits 1",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 683,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-50": {
+            "after": "    record['grade'] = {'model': grader, 'accepted': True,",
+            "aim": "plain",
+            "before": "    record['grade'] = {'model': grader, 'accepted': accepted,",
+            "bug_key": "b19d2f4d97f0424ad9179277dd396c9868e38f6dbfc8a2859fe4369fd93dcd56",
+            "case": "the grader answers `reject: it names F-9, which is not there`; the proof says the record's `grade` reads `accepted` false; the changed code records `accepted` true",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 679,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-49: the test has the grader answer `accept: it holds F-1 alone` and compares the exit code with 0, standard output with that exact line, standard error with the empty string and the whole record with a literal holding the four run keys and the `grade` the proof names, so each result the proof names is observed.",
+          "PROOF-49: the grader's model is compared through the constant `GRADER` and the run's model through `MODEL`, both defined outside the lines shown, so the reading cannot confirm from the test alone that `GRADER` is `claude-haiku-4-5-20251001`.",
+          "PROOF-50: the test has the grader answer `reject: it names F-9, which is not there` and compares the exit code with 1, standard output with that exact line and the record's `grade` with a literal holding `accepted` false and the reason, so each result the proof names is observed.",
+          "PROOF-50: the test reads only the `grade` key of the record, which is all the proof names for this case, and also checks an empty standard error, which the proof does not name.",
+          "The spot tests found nothing, and both tests take their expected values from literals rather than from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e84f8dc0f4ae9b9f8e84ebccf5268ed6622fd644f866c17bc34eb0d65f77fe10",
+        "rule_hash": "22fcd406c603408fd60d4c8a8899fdefd76f90250ad87bfdfb6a838fef92ed17",
+        "test_hash": "6d6890b1221c3c7ee3727da23286e9b9c354929dc9badd212abf97445f061240",
+        "verdict": "strong"
+      },
+      "RULE-31": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-51": {
+            "after": "    record['grade'] = {'model': grader, 'accepted': accepted,\n                       'reason': reason}\n    outputs.write_record(folder, record)\n    with open(os.path.join(folder, outputs.REPLY), 'a',\n              encoding='utf-8') as handle:\n        handle.write('\\n%s: %s\\n' % (found.group(1), reason))",
+            "aim": "plain",
+            "before": "    record['grade'] = {'model': grader, 'accepted': accepted,\n                       'reason': reason}\n    outputs.write_record(folder, record)",
+            "bug_key": "169457c897f8f2c583e941a069756647580fd1b5a4b7e7b83e04a0bfdf3e5184",
+            "case": "an output folder fingerprinted before and after grade accepts it; the proof says the two fingerprints are the same 64 characters; the changed code appends the grader's line to reply.md, so the second fingerprint differs",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 682,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-51: the test takes the folder's fingerprint, has a fake grader accept the output, checks grade exits 0, then compares the fingerprint taken after with the one before and checks it is 64 characters long, which is the proof's case and its result.",
+          "PROOF-51: the test leaves no way past it for the accept case, so the planted change is the plainest one, a write to reply.md when a grade is recorded.",
+          "PROOF-51: the spot tests found nothing, and nothing in the test contradicts that: both fingerprints come from the same library function, but they are taken at two different times around the grade, so the comparison can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "97c98c7430d5cf953a961f16c6fcceb8d556d6070791a44f8d62301b9a837f8b",
+        "rule_hash": "34689afe597632b2f9e2c2529383a959e5c1acfce7defd2729f9be1992da81d7",
+        "test_hash": "edb55d9b8f13514979c4f2a9a99e830f5be6bb7366313f20b161a168528e626d",
+        "verdict": "strong"
+      },
+      "RULE-32": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-52": {
+            "after": "NEITHER = 'the grader answered with neither accept or reject'",
+            "aim": "plain",
+            "before": "NEITHER = 'the grader answered with neither accept nor reject'",
+            "bug_key": "4f0076b8622c8131a555ed99e83fc23d69f3b5a18ccdc1c88f1e4a7fb7956986",
+            "case": "the grader answers `It looks fine to me.`; the proof says the reason and the standard error line read `the grader answered with neither accept nor reject`; the changed code gives `the grader answered with neither accept or reject` in both",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 220,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-53": {
+            "after": "    found = None if why else _VERDICT.match(called['answer'].strip())",
+            "aim": "plain",
+            "before": "    found = None if why else _VERDICT.fullmatch(called['answer'].strip())",
+            "bug_key": "58b884f803d9a9a76d378c27fa5918e4fc6bed0debb3b773f537e8f496c7d8b3",
+            "case": "the grader answers the two lines `accept: it is fine` and `reject: or not`; the proof says exit 2 with the no-answer line and `accepted` null; the changed code reads the first line alone, exits 0, prints `accept: it is fine` and records `accepted` true",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 669,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-54": {
+            "after": "        record['grade'] = {'model': record.get('model'), 'accepted': None, 'reason': why}",
+            "aim": "plain",
+            "before": "        record['grade'] = {'model': grader, 'accepted': None, 'reason': why}",
+            "bug_key": "0a45cde72420796ef80fb2123c1b80e4d666fb63dae9d92d14e3fa82fb7e2c6e",
+            "case": "`claude` exits with the code 1 when the grader is asked; the proof says the record's `grade` reads `model` `claude-haiku-4-5-20251001`; the changed code records the model of the run that made the output in its place",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 674,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-52: the test compares the exit code, the empty standard output, the standard error line and the whole record with literal values, so each result the proof names is observed, the record's other keys included.",
+          "PROOF-52: the standard error line is compared with `self.NEITHER`, whose source is not shown, while the record's reason is compared with a literal, so a changed reason is still seen there.",
+          "PROOF-53: the test compares the exit code, the standard error line and `accepted` being null, which is all the proof names; it reads neither standard output nor the recorded reason, and the proof names neither.",
+          "PROOF-53: the standard error line is compared with `self.NEITHER` alone, so if that value is taken from the code a changed message would not be seen by this test.",
+          "PROOF-54: the test compares the exit code, the empty standard output, the standard error line as a literal, the whole `grade` entry and the sorted list of the folder's files, so each result the proof names is observed.",
+          "The spot tests found nothing, and each test asserts on literal values after the grader's answer is faked, so nothing here shows a check that cannot fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "34c278d41c853526cf176117f2dbaa06ce81d33b62c241380e7d524012fb4f48",
+        "rule_hash": "9ea73f196dc95b375773487fcc687d5eaa2b109045ed05c5fe067ec4bb74001b",
+        "test_hash": "6691feb7911437ba5a74037c172c58c5b850b47ba46fed8928a8a693c7f3022f",
+        "verdict": "strong"
+      },
+      "RULE-33": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-55": {
+            "after": "    return (os.path.abspath(named) if named else _replay() or _by_hand())",
+            "aim": "plain",
+            "before": "    return _replay() or (os.path.abspath(named) if named else _by_hand())",
+            "bug_key": "044617b15a840b452e4f2ff201886122034010395462d8dd8035bab01a31170a",
+            "case": "PURLIN_AI_OUT names a folder whose reply names F-1 and PURLIN_AI_REPLAY names one whose reply reads The report holds F-9.; the proof says the grader is shown the F-9 reply and nothing naming F-1, and the replay folder's purlin.json gains the grade with the other folder untouched; the changed code sh",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 350,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-78": {
+            "after": "    for title, names in ((OUTPUT, made),):",
+            "aim": "plain",
+            "before": "    for title, names in ((GIVEN, given), (OUTPUT, made)):",
+            "bug_key": "6c28e2942fb28228f66baaa755c01d474727133ea4306894170ad5d374905081",
+            "case": "the replay folder holds input/message.md reading Summarise the earlier one.; the proof says the grader's request holds the lines === input/message.md === and Summarise the earlier one.; the changed code's request holds neither line, only the sentence and the output",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 707,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-55: the test runs grade with both folders set and compares the exit code 1, the grader's request for the F-9 reply and the absence of F-1, the replay record's whole grade entry, and the other folder's tree before and after, which is each result the proof names.",
+          "PROOF-55: the test compares only the `grade` entry of the replay folder's record, so a change to another field of that record would pass, which the proof does not speak of.",
+          "PROOF-78: the test gives the two folders different input messages and checks that the grader's request holds the heading line followed by `Summarise the earlier one.` and holds no `Summarise it.`, which is what the proof names.",
+          "PROOF-78: the test also asserts the exit code 1, which the proof does not name.",
+          "Findings: the spot tests found nothing, and each test's expected values are literals written in the test, not taken from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-55 is longer than 60 words."
+        ],
+        "proof_hash": "03da914550d6527576754e4f3a73d6417f00880edd46ddd52c170a7b991db161",
+        "rule_hash": "eae18312f7b2f842b4e9558fc8481561473b367e63473ac321995a4d70a4b41c",
+        "test_hash": "d9e24df6cb4ee7f1c9d7845f896820ad69366fd942692cd9a0cfbe62ed5677d6",
+        "verdict": "strong"
+      },
+      "RULE-34": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-56": {
+            "after": "        raise _Stop(EXIT_REFUSED, NO_GRADER % (feature, proof_id))",
+            "aim": "plain",
+            "before": "        raise _Stop(EXIT_NO_ANSWER, NO_GRADER % (feature, proof_id))",
+            "bug_key": "980c0ab0f18b9f6fdc1a5e7dccca205c086bf8275a6305a00a6193c1a2eb0c51",
+            "case": "`grade --feature review --proof PROOF-1` where PROOF-1 carries no `@graded`; the proof says it exits 2; the changed code exits 1",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 661,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-57": {
+            "after": "        raise _Stop(EXIT_REFUSED, NOT_A_PROOF % (feature, proof_id,",
+            "aim": "plain",
+            "before": "        raise _Stop(EXIT_NO_ANSWER, NOT_A_PROOF % (feature, proof_id,",
+            "bug_key": "291ca8080883bdd5b48542d0d9765f6246253c56aaff1ea83b79affc7fde6429",
+            "case": "`grade --feature review --proof PROOF-9`, a proof the spec does not have; the proof says it exits 2; the changed code exits 1",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 657,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-58": {
+            "after": "        raise _Stop(EXIT_REFUSED, NOTHING_TO_GRADE % folder)",
+            "aim": "plain",
+            "before": "        raise _Stop(EXIT_NO_ANSWER, NOTHING_TO_GRADE % folder)",
+            "bug_key": "11711310f9559ff2db9208139b8a2c3cfdc860b4d1ef8dccc69258a403b28405",
+            "case": "`grade --feature review --proof PROOF-2` on a folder holding `purlin.json` and no `reply.md`; the proof says it exits 2; the changed code exits 1",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 664,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-56: the test grades PROOF-1 and compares the exit code with 2, standard output with the empty string, standard error with the whole sentence the proof names, the recorded `claude` calls with none and the output folder's files with what they were before, so each result the proof names is observed.",
+          "PROOF-57: the test grades PROOF-9 and compares the exit code with 2, standard error with the whole sentence the proof names and the recorded `claude` calls with none, which is all the proof names.",
+          "PROOF-57: the test reads neither standard output nor the output folder after the call, so the rule's \"changes no file\" is not observed for a proof no spec has, and the proof does not name it either.",
+          "PROOF-58: the test writes the record of a run no model answered, grades the default proof and compares the exit code with 2, standard error with the sentence holding the folder's path, the recorded `claude` calls with none and the folder's files with what they were before.",
+          "PROOF-58: the proof number the test grades comes from a helper's default that the test's own lines do not show, so whether it is PROOF-2 cannot be read from the test alone.",
+          "Findings: the spot tests found nothing, and each test holds failable comparisons against literals its proof names."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "707202a0b030a86ff8b40a40bbee24b006862166b671fde8bf6caf72a0da95bd",
+        "rule_hash": "e4ff512223bcc6867ec90ccded38baf54a3946d5bf8651931b2a9eaf8fd9127f",
+        "test_hash": "0d9214594dad5c5923ce67d8ee988ea7d4b8353ed0f7c51d58e61c6ff6563372",
+        "verdict": "strong"
+      },
+      "RULE-35": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-59": {
+            "after": "    return text.rstrip('\\n')",
+            "aim": "plain",
+            "before": "    return reports.cut_text(text)[0].rstrip('\\n')",
+            "bug_key": "e1ba78654474981cb4c7047db6b122783d48ecbd18101995e4a5ee4e83ee923b",
+            "case": "files/long.txt holds 10,000 a, 5,000 b and 10,000 c; the proof says the request ends with the 10,000 a, the line [... 5000 characters cut ...] and the 10,000 c; the changed code shows all 25,000 characters with no cut line",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 728,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-60": {
+            "after": "NOT_TEXT = '[not text, %d bytes]'",
+            "aim": "plain",
+            "before": "NOT_TEXT = '[not text: %d bytes]'",
+            "bug_key": "85719db37ac62ffd8205dbd94f1e5691caa77b39a5d5aee6a68518ada84f173d",
+            "case": "files/image.png holds 6 bytes that are not UTF-8 text; the proof says the request ends with the line [not text: 6 bytes]; the changed code ends with [not text, 6 bytes]",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 221,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-61": {
+            "after": "GRADE_FILES = 51",
+            "aim": "plain",
+            "before": "GRADE_FILES = 50",
+            "bug_key": "bd6af639bed76383c1ccf4f4e960e0be56ad1d51a7969c566193919251180ac0",
+            "case": "files/ holds f01.txt to f52.txt; the proof says the request ends with f50.txt's text, then 2 more files, not shown: naming f51.txt and f52.txt, with nothing of f51.txt's text; the changed code shows f51.txt with text 51 and ends with 1 more file, not shown: files/f52.txt",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 189,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-76": {
+            "after": "    shown = set(always) | set([rel for rel in given + made",
+            "aim": "plain",
+            "before": "    shown = set(always) | set([rel for rel in made + given",
+            "bug_key": "bef45ae65ff924aca43a7f677589803be1fd772149bc772206bbe73878d7bc5c",
+            "case": "49 files under files/ and p1.txt to p3.txt under input/project/; the proof says p1.txt is shown, p2.txt and p3.txt are named alone and the request ends with files/f49.txt and text 49; the changed code shows all three input files with given 2 and ends by naming files/f48.txt and files/f49.txt as not ",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 704,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-77": {
+            "after": "NOT_SHOWN_ONE = '1 more files, not shown:'",
+            "aim": "plain",
+            "before": "NOT_SHOWN_ONE = '1 more file, not shown:'",
+            "bug_key": "7899ff045aafc493df92db920c0e73b219bc01bd02045a0a5e6581fc8c2a27e9",
+            "case": "input/project/p1.txt beside files/f01.txt to files/f52.txt; the proof says the given part holds the line 1 more file, not shown: above input/project/p1.txt; the changed code writes 1 more files, not shown: there",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 223,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-59: the test builds the 25,000 character file the proof names and compares the end of the grader's request with the heading, the 10,000 a, the cut line and the 10,000 c, so it observes every value the proof names.",
+          "PROOF-60: the test writes 6 bytes that are not UTF-8 text and compares the end of the request with the heading and the line `[not text: 6 bytes]`, as the proof names.",
+          "PROOF-61: the test writes the 52 files and compares the end of the request with `f50.txt`, its text, the blank line, the count line and the two paths, and checks that `text 51` is nowhere in the request, which is all the proof names.",
+          "PROOF-76: the test compares the whole given part up to `The output:` as one block, the end of the request with `files/f49.txt` and `text 49`, and the absence of `given 2`, and it also counts one `more file` line, which the proof does not name.",
+          "PROOF-77: the test compares the given part with the singular line and `input/project/p1.txt`, and the end of the request with the plural line and the two paths, and it also checks that `given 1` is absent, which the proof does not name.",
+          "No proof of the rule names a text of exactly 20,000 characters, so the boundary at which a text starts to be cut is not shown.",
+          "No proof of the rule names exactly 50 other files, so the case where nothing is left unnamed is not shown."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-76 is longer than 60 words."
+        ],
+        "proof_hash": "7912b7e0fe243fb3487d64b5576fdbad44521667742bcc12135a0db07a9e3cc3",
+        "rule_hash": "9816e48bbf66274c026937755562eb3eb38efb882de7f4610e58b490db6bafde",
+        "test_hash": "e148f9a653df7e17463dc42b6b712ad7eaddcd0c9cb650236e912399d128b475",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-62": {
+            "after": "SESSION_ENVIRONMENT = {'ENABLE_CLAUDEAI_MCP_SERVERS': 'true'}",
+            "aim": "plain",
+            "before": "SESSION_ENVIRONMENT = {'ENABLE_CLAUDEAI_MCP_SERVERS': 'false'}",
+            "bug_key": "6c493bd2c2a8a7211a03d0eba1ee683415b6356cd14474b04cb7e40492b5fee4",
+            "case": "the helper is started with ENABLE_CLAUDEAI_MCP_SERVERS set to true; the proof says the session finds it set to false; the changed code hands the session true",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 148,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-62: the test starts the helper with `ENABLE_CLAUDEAI_MCP_SERVERS` set to `true`, reads the environment and arguments of the first recorded session call, and compares the variable with `false` exactly, so the proof's case and its first result are checked directly.",
+          "PROOF-62: the test looks for `--strict-mcp-config` as a whole argument of that call, which is what the proof names, so a session started with that flag fails it.",
+          "PROOF-62: the test reads only the first recorded call, which is the one session the case starts, and the spot tests found nothing because both of the proof's values are compared against literals."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "5de98a396b2f927e33cbfd2c0dec60c6613a8e649ef76cddc64ec96d8554d56b",
+        "rule_hash": "1daf0575f605e4027d79b5da5f05a9a9db749cdc92ee5522944b27bd67a20334",
+        "test_hash": "3054aad7cbefe850e4a24ea917ce7cb0d0f28e3050ad8a16042810d7f0d57217",
+        "verdict": "strong"
+      },
+      "RULE-37": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-65": {
+            "after": "    _write(os.path.join(kept, MESSAGE), message + '\\n')",
+            "aim": "plain",
+            "before": "    _write(os.path.join(kept, MESSAGE), message)",
+            "bug_key": "ba0dce9df47b1aa0714c298027e731be204a1b8536e5cfe12c006ec7595fa803",
+            "case": "`run --instructions prompts/system.md --say \"Summarise caf\u00e9 \u2192 \u65e5\u672c, please.\"` answered by the model; the proof says `input/message.md` holds exactly that sentence; the changed code leaves it holding the sentence followed by a line feed",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 446,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-66": {
+            "after": "               else _text_of(given['--input']).rstrip('\\n'))",
+            "aim": "plain",
+            "before": "               else _text_of(given['--input']))",
+            "bug_key": "d95110d357ae18a392fc2f36e95fb35e0234b4fb5c7d24c21096aaeabea25df3",
+            "case": "`ask.md` holding the two lines, each ending in a line feed, run with `--skill skills/summarize --project sample --input ask.md`; the proof says `input/message.md` holds the bytes `ask.md` holds; the changed code leaves it without the last line feed",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 421,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-65: the test runs with `--say` and the proof's sentence, compares the bytes of `input/message.md` with that sentence in UTF-8, and compares what the stand-in `claude` was sent with it too, so both halves of the proof are observed.",
+          "PROOF-65: the comparison is of whole bytes, so an added, dropped or re-encoded character in the kept message fails the test.",
+          "PROOF-66: the test writes `ask.md` with the two lines the proof names, runs with `--input ask.md`, and compares the bytes of `input/message.md` with the bytes read back from `ask.md` and with the literal text, so a lost line feed or a changed character fails it.",
+          "PROOF-66: the expected value comes from the file on disk and from a literal, not from the helper, so the code cannot influence it.",
+          "PROOF-66: the test does not read what `claude` was sent on its standard input, which the proof does not name for this case.",
+          "The spot tests found nothing, and both tests assert the values their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9825e4430e014048948706b31770c04040f133322f90f745d5a9b5bc24bf064b",
+        "rule_hash": "e58a7dcbe55b5b24feb172518e2cd647a507d7e38ce3c92272e82a7c1a6f0a39",
+        "test_hash": "be24af76de057880b4330d25b81a1e7c111f816f6f15be7188d2497c64b7f003",
+        "verdict": "strong"
+      },
+      "RULE-38": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-67": {
+            "after": "        _write(os.path.join(kept, INSTRUCTIONS, name),\n               _text_of(path).strip('\\r\\n'))",
+            "aim": "plain",
+            "before": "        _copy(path, os.path.join(kept, INSTRUCTIONS, name))",
+            "bug_key": "fa87fd359bda9a182bf331dd054a074bb976a1da858677171aac419d6fcc13a9",
+            "case": "`prompts/tone.md` reading `Be brief.` and two blank lines, given to `--instructions`; the proof says `input/instructions/tone.md` holds the bytes the project's file holds, blank lines included; the changed code writes `Be brief.` with the blank lines and the line ending removed",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 455,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-68": {
+            "after": "        while name in taken:",
+            "aim": "plain",
+            "before": "        while name.lower() in taken:",
+            "bug_key": "e735cbc641ed536384ae0d1360c67133186ec2a9518d3852466687602db246b5",
+            "case": "`prompts/system.md` then `other/System.md` reading `Second.` given to `--instructions`; the proof says the second is kept as `System-2.md`; the changed code keeps it as `System.md`, and `third/system.md` becomes `system-2.md` in place of `system-3.md`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 451,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-67: the test writes `prompts/tone.md` with two blank lines, starts `run` with both instruction files and `--say`, and compares the whole `input` folder, every path and every byte, with the three files the proof names, so a missing, extra, renamed or altered file fails it.",
+          "PROOF-67: the bytes of `instructions/system.md` are compared with a literal the test's fixture is assumed to write, which is not among the test's own lines.",
+          "PROOF-68: the test writes the three further files, gives the four to `--instructions` in the proof's order and compares the whole `input/instructions` folder with the four names and texts the proof names, so a wrong number, a wrong letter case or a wrong text fails it.",
+          "Both tests take their expected values from literals, not from the helper, and the spot tests found nothing."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "559aed395807201874fe7995c8b0c5a984f762c844e44c86a0a8c6ada6149e18",
+        "rule_hash": "15ae5d2ba9768b4b6d78e6d9dbb0dd74c4e6eb0171634e3dcaa430b4bbf9ea97",
+        "test_hash": "414a9a81d9f3a3f2179d4468f24a6c038a4eb4da19fe06d6830bf416958e183c",
+        "verdict": "strong"
+      },
+      "RULE-39": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-69": {
+            "after": "        for rel in _files_under(project, {SESSION_FOLDER}, but=folder):",
+            "aim": "plain",
+            "before": "        for rel in _files_under(project, {GIT_FOLDER}, but=folder):",
+            "bug_key": "2c7e4c37afc13afdf412d17fd6e1555b4ca5e66284a3810494ffdd30b4ea2ccb",
+            "case": "the sample with `.claude/settings.json` and `.git/HEAD`; the proof says `input/project/` holds exactly `.claude/settings.json`, `docs/.git/kept.md`, `keep.md` and `report.md`; the changed code leaves out `.claude/settings.json` and keeps `.git/HEAD`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 457,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-70": {
+            "after": "        project = _folder_named(given.get('--project', given[way]))",
+            "aim": "plain",
+            "before": "        if '--project' in given:\n            project = _folder_named(given['--project'])",
+            "bug_key": "35f2cbe3547768233d3c02db3d934ff6b317631e8b3eb9cd382cd0ee8e629e70",
+            "case": "`run --skill skills/summarize --say \"Go.\"` with no `--project`; the proof says `input/` holds `message.md` alone; the changed code also keeps the skill's files under `input/project/`, such as `project/SKILL.md`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 418,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-71": {
+            "after": "            if not os.path.isfile(path):",
+            "aim": "plain",
+            "before": "            if os.path.islink(path) or not os.path.isfile(path):",
+            "bug_key": "52fe156a881404c1d6ffa6c66baa825af7e38b1bd5007d083c810e7c8ca38f51",
+            "case": "the sample holding `report.md` and a symbolic link `link.md` to it; the proof says `input/project/` holds `report.md` alone; the changed code keeps `link.md` as well, with the bytes of `report.md`",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 598,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-69: the test builds the sample the proof names, has the session rewrite `report.md`, add `out/summary.md` and delete `keep.md`, and compares the whole of `input/` with the exact paths and bytes the proof names, so an extra, missing or changed file fails it.",
+          "PROOF-69: the bytes of `docs/.git/kept.md` and `.claude/settings.json` are fixed by the test itself, and those of `keep.md` and `report.md` come from the fixture and match the proof's `kept` and `F-1`.",
+          "PROOF-70: the test runs the skill with no `--project` and compares all of `input/` with `message.md` alone, then runs the plugin with `--project sample` and compares all of `input/` with exactly `message.md`, `project/keep.md` and `project/report.md`, so a kept skill or plugin file fails it.",
+          "PROOF-70: the directory listing in the first half also fails on an empty `project/` folder, which the tree comparison alone might not see.",
+          "PROOF-71: the test removes `keep.md`, adds the link `link.md` to `report.md`, and compares all of `input/project/` with `report.md` alone, so a kept link fails it.",
+          "PROOF-71: on a system that cannot make a symbolic link the test is skipped and observes nothing.",
+          "No spot test fired, and each test names its proof's values and compares the whole folder, which leaves no way past any of the three."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-70 holds two cases, a skill run with no `--project` and a plugin run with `--project sample`."
+        ],
+        "proof_hash": "91f2ff493f8bdc2ee6906fe18744e0a50e503f2be790dab027a222f121dc7839",
+        "rule_hash": "8ddaaced1ac7502637051d95409305396d5e23a75f569f58d7712723f54a694e",
+        "test_hash": "faa33c84f58c3d60568ca2439a8a39eca6f8f3109d72059e4cf82f7c3ceec452",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-7": {
+            "after": "        system = '\\n'.join(_text_of(path).strip('\\r\\n')",
+            "aim": "plain",
+            "before": "        system = '\\n\\n'.join(_text_of(path).strip('\\r\\n')",
+            "bug_key": "8c930fc9754c9cb7465ebc5cda857183e86b7490a81a3f6e43b0c697f5fbeef1",
+            "case": "system.md reading `You summarise reports.` and tone.md reading `Be brief.` with two blank lines; the proof says the system prompt is `You summarise reports.`, a blank line, `Be brief.`; the changed code gives `You summarise reports.` and `Be brief.` on adjoining lines with no blank line between",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 411,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "    tempfile.tempdir = os.path.abspath(config_engine.find_project_root())\n    called = ai_audit.ask_model(message, model=model, system=system)",
+            "aim": "plain",
+            "before": "    called = ai_audit.ask_model(message, model=model, system=system)",
+            "bug_key": "d647219a4c6cc87d8aa877acf7223c061aff1d4df05b3248081229718fe38f81",
+            "case": "a run with --instructions; the proof says claude starts in a folder that is neither the project nor under it; the changed code makes that folder under the project's root",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 470,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-7: the test writes `tone.md` with two trailing blank lines, runs the proof's command, and compares the number of calls with 1 and the whole argument list with the bare arguments, the model and the joined text, so it observes every value the proof names.",
+          "PROOF-7: the bare arguments come from a constant `BARE` and the text of `system.md` from a fixture, both outside the test's own lines, so the test is only as exact as those two are.",
+          "PROOF-8: the test reads the folder's listing as empty, the folder as not inside the project, the folder as gone after the helper ends and `DISABLE_PROMPT_CACHING` as `1`, which are the four things the proof names.",
+          "PROOF-8: the run is started through a helper `made.prompt()` outside the test's own lines, so that the run uses `--instructions` is not visible in the test itself.",
+          "PROOF-8: the folder and the environment are set in `ai_audit.ask_model`, whose file is not shown, so the planted bug assumes that function makes its folder through Python's default temporary folder; if it does not, the bug leaves the proof's case as it was.",
+          "No spot test fired, and nothing in the tests' own lines contradicts that."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-7 is longer than 60 words."
+        ],
+        "proof_hash": "7fd11e2f59aa010da8ac8d2afdb55c163c82af714a90d50aab1448a339490149",
+        "rule_hash": "866893241e9a906d52aea6bf3467a610aa4e895507c6a802371705ae4711ebdc",
+        "test_hash": "7005c1510118ce85a96b8b905f1bb6be3b9c02a51e4b85ee40e9b0f29d111337",
+        "verdict": "strong"
+      },
+      "RULE-40": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-72": {
+            "after": "        if way == '--instructions':\n            shutil.rmtree(os.path.join(folder, outputs.INPUT),\n                          ignore_errors=True)",
+            "aim": "plain",
+            "before": "        shutil.rmtree(os.path.join(folder, outputs.INPUT),\n                      ignore_errors=True)",
+            "bug_key": "596643fb1e193ae599ef1afd90711e34b01b6b3632b7f37ed9ffbb4686ad3119",
+            "case": "a session with `--project sample` whose program writes `out/summary.md`, prints a result and exits with the code 3; the proof says the output folder holds no folder `input`; the changed code leaves `input` in the output folder",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 432,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-73": {
+            "after": "        if way != '--instructions':\n            shutil.rmtree(os.path.join(folder, outputs.INPUT),\n                          ignore_errors=True)",
+            "aim": "plain",
+            "before": "        shutil.rmtree(os.path.join(folder, outputs.INPUT),\n                      ignore_errors=True)",
+            "bug_key": "0555da52439a6648226d810372ead5e4430c59245079a1729fbc76f20b4dcfb5",
+            "case": "`run --instructions prompts/system.md --say \"Summarise it.\"` with the path set to an empty folder; the proof says the output folder holds no folder `input`; the changed code leaves `input` in the output folder",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 432,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-72: the test has the fake program write `out/summary.md`, say a result and exit 3, then compares the output folder's whole listing with `['purlin.json']`, so a folder `input` left behind fails it.",
+          "PROOF-72: the test also compares the helper's exit code with 2, which the proof does not name; the proof's code 3 is the session program's and is set in the test's arrangement.",
+          "PROOF-73: the test sets the path to an empty folder, makes the bare call and compares the output folder's whole listing with `['purlin.json']`, so a folder `input` left behind fails it.",
+          "PROOF-73: the command line the proof names is made by a helper in another part of the file not shown, so whether the test sends `--instructions prompts/system.md --say \"Summarise it.\"` cannot be read from the test's own lines.",
+          "Neither test has a spot-test finding, and both compare the exact listing rather than only checking that `input` is absent."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "18694f83e2a19bb563088b73f307e70b793c8e799706b42bfcfa9a4ae3b49030",
+        "rule_hash": "9b4b2b9c545732a91314ca35ad80f5536e31e54cac28d40a096d324c5743aa6b",
+        "test_hash": "9dc3e53b13862ca9d3650a0cc66dd7b48628cc1ef408a03c3b86bdb2dbbfd395",
+        "verdict": "strong"
+      },
+      "RULE-41": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-74": {
+            "after": "GIVEN_PROJECT = 'sample'",
+            "aim": "plain",
+            "before": "GIVEN_PROJECT = 'project'",
+            "bug_key": "5acf8bbc904d9ff1a124315d31d63f4ae1cb773075509bb594043e1e1d2a3767",
+            "case": "run --skill skills/summarize --project sample --say \"Summarise it.\"; the proof says the sha256 is over exactly input/message.md, input/project/keep.md, input/project/report.md, reply.md and transcript.jsonl; the changed code keeps the sample under input/sample/, so the sha256 is over input/sample/ke",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 173,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-74: the test runs the session, reads every file the folder holds and asserts the set is exactly the five named paths plus purlin.json, so a file kept under another path or left out fails it.",
+          "PROOF-74: the test builds the expected sha256 itself with hashlib, from one `<sha256 of its bytes>  <path>` line and a line feed per file in the proof's order, and compares it with the folder's sha256, so the expected value does not come from the code under test.",
+          "PROOF-74: the test then rewrites input/message.md as `Summarise them.` and asserts the new sha256 is 64 characters long and differs from the first, which is the proof's second observation.",
+          "PROOF-74: the only file shown for the bug holds the code that writes the folder and not the code that takes its sha256, so the change is to which paths are written, and the test's check of the exact set leaves no way past it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-74 holds a second case: the sha256 after input/message.md is rewritten, beside the sha256 of the folder as the run left it."
+        ],
+        "proof_hash": "f75ee1f5aff749083695cb43f76f7e36e03d8af46cb12555e009ed3c63857ac3",
+        "rule_hash": "ba5c9d192a7db94188231fb93dfb962a015264f63d40a79a701838b8d639d6d0",
+        "test_hash": "8cb71a6991f7ddf88a2a6a9291f6a1ff135885c70e8946f3079d204d859e9208",
+        "verdict": "strong"
+      },
+      "RULE-42": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-75": {
+            "after": "    'you. What the AI was given is there to compare the output against: it is '",
+            "aim": "plain",
+            "before": "    'you. What the AI was given is there to check the output against: it is '",
+            "bug_key": "289d6523818cbd6311ab883ef939db616ca3ba75dc22c75c456a3eb44fa19900",
+            "case": "grade --feature review --proof PROOF-2; the proof says claude is started with --system-prompt followed by exactly the grader's text, with \"What the AI was given is there to check the output against\"; the changed code sends \"there to compare the output against\"",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 184,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-75: the test runs grade against a fake claude, reads the last two arguments of the first call and compares them with `--system-prompt` and the whole prompt written out as a literal, so any change to the prompt's wording fails it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-75 is longer than 60 words, since it quotes the whole system prompt."
+        ],
+        "proof_hash": "d5f1f9b167071d96400fd02058b01a0ba08fbfcb5ee0ee8ae979008a452308d5",
+        "rule_hash": "d2556fa92a2a0575b37f5119459ae1524377250d0c635f96d7e5b3282cf28657",
+        "test_hash": "3acc9a9e94de070839ab94df6adfcbe0f4a701b262a843b865d565f667d98c36",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-10": {
+            "after": "            command, ['--model', model, '--plugin-dir', plugin, message], message,",
+            "aim": "plain",
+            "before": "            command, ['--model', model, '--plugin-dir', plugin], message,",
+            "bug_key": "02884ea27164099a9e9c183f3b943ab61e7be46e5cc467f8590364b7cc12b120",
+            "case": "run --skill skills/summarize --project sample --input ask.md; the proof says no argument of claude holds \"Name each finding\"; the changed code adds the whole message as a last argument of claude",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 502,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "    called = ai_audit.ask_model(message[:-1], model=model, system=system)",
+            "aim": "plain",
+            "before": "    called = ai_audit.ask_model(message, model=model, system=system)",
+            "bug_key": "e864506aaa77e1243d4a7631fdf9fec21572229ea5f6ff297a9080c5dbf49748",
+            "case": "run --instructions prompts/system.md --say \"Summarise caf\u00e9 \u2192 \u65e5\u672c, please.\"; the proof says claude gets exactly that sentence on its standard input; the changed code gives the sentence without its final full stop",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 470,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-9: the test sends the proof's sentence with `--say`, compares what the recorded call read on standard input with the whole sentence, and looks in every argument for the sentence and for `caf`, which is what the proof names.",
+          "PROOF-9: the test never passes `--instructions prompts/system.md` itself and leaves that to the fixture's `prompt` helper, which is not shown.",
+          "PROOF-10: the test writes `ask.md` with the two lines, runs a session with `--input ask.md`, compares the recorded standard input with both lines exactly, and looks in every argument for `Name each finding`, which is what the proof names.",
+          "PROOF-10: the test looks in the arguments for the second line only, as the proof does, so a first line leaked into an argument would be seen by neither.",
+          "PROOF-10: the test never passes `--skill skills/summarize --project sample` itself and leaves that to the fixture's `session` helper, which is not shown.",
+          "Both tests read only the first recorded call, so a second call of `claude` that carried the message in an argument would not be seen.",
+          "The spot tests found nothing, and each test compares literal values taken from its proof and not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "356c2147d1d354ae664b60c9def4b007f0fd069334a4c2fce155b2c062ca1def",
+        "rule_hash": "9cc752dec4bdb02ba370bc862be079b5912e6d5377d4c528dee9d05bbd2973cf",
+        "test_hash": "688c72ab46f814d08c2bcd7d9b21c4437b865f5c94fdfd2520c9f94ba28e14ea",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-11": {
+            "after": "    _write(os.path.join(folder, outputs.TRANSCRIPT), printed + '\\n')",
+            "aim": "plain",
+            "before": "    _write(os.path.join(folder, outputs.TRANSCRIPT), printed + '\\n')\n    os.makedirs(os.path.join(folder, outputs.FILES), exist_ok=True)",
+            "bug_key": "5af761efa45f3b1eb79ad409eb524b91a7a638fd1e2fb2c1aa479f963a5528b9",
+            "case": "the bare call `run --instructions prompts/system.md --say \"Summarise it.\"` answered with the two lines; the proof says the folder `files` is there and empty; the changed code makes no `files` folder",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 479,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-11: the test makes the bare call with the two-line answer and compares the sorted list of files held with the five paths the proof names, so a missing or extra file fails it.",
+          "PROOF-11: the test compares `reply.md` byte for byte with the two lines, and checks that `transcript.jsonl` ends in its only newline and parses to the whole JSON object the fake program printed.",
+          "PROOF-11: the test lists the folder `files` and compares the listing with an empty one, so a missing folder or a file in it fails the test.",
+          "PROOF-11: the test reads no contents of `input/instructions/system.md`, `input/message.md` or `purlin.json`, and the proof names none, so a wrong copy of what the AI was given would still pass.",
+          "Findings: the spot tests found nothing, and the test checks each value the proof names against a literal."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "075c7c3ab955279ead60d42892988d6e36548dedf279fd17ec992fd5306b498d",
+        "rule_hash": "bd8d893d4e4cbc52ea167e85b68e589a76413325ad409b2e7eda04378fe2f5db",
+        "test_hash": "c3022a5f5545c66653d3dd6532d8ea399d8b4798b20be63877e56ba4fa90e783",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-12": {
+            "after": "        _say(NO_ANSWER_FROM % (model, why))\n        return EXIT_NO_ANSWER\n    print(os.path.join(folder, outputs.REPLY))",
+            "aim": "plain",
+            "before": "        _say(NO_ANSWER_FROM % (model, why))\n        return EXIT_NO_ANSWER\n    print(folder)",
+            "bug_key": "51d3845896b72cab429686ec3aff43d6e86c3ce51da771501f6d917a10907c30",
+            "case": "a `run` with `--instructions` that the model answers; the proof says standard output holds the path `PURLIN_AI_OUT` names and a line feed, and nothing else; the changed code prints the path of `reply.md` inside that folder",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 436,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-12: the test starts a `run` with instructions and compares the exit code with 0, the whole of standard output with the output folder's path and a line feed, and the whole of standard error with the empty string, which are the three results the proof names.",
+          "PROOF-12: both streams are compared whole and not searched, so an extra line, a different path or a missing line feed fails the test, and no change to the proof's case gets past it.",
+          "PROOF-12: the expected path is read from the fixture `made`, which is not shown, so the test holds only if `made.out` is the folder `PURLIN_AI_OUT` was set to and not a value taken from the helper's own output.",
+          "The spot tests found nothing, and the test asserts on values the code under test does not supply, as far as its own lines show."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fd23f608580db27bebd82cd4b90ef00aa35f93f858dbc39da77d6a5d142716f9",
+        "rule_hash": "2a252ae63b41d2cac58c89469df1d6e0ac413c6021204c00434a05c100504029",
+        "test_hash": "51d5e37e444199791624ecd0eb48bdb36143b974d8e9e15ae481241acf909acf",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-07T19:23:36Z",
+        "bugs": {
+          "PROOF-13": {
+            "after": "    _record(folder, outputs.MADE_BY_HELPER if way == '--instructions'\n            else outputs.MADE_BY_PROJECT, model, why)",
+            "aim": "past the test",
+            "before": "    _record(folder, outputs.MADE_BY_HELPER, model, why)",
+            "bug_key": "81e251da202f7bb6e3c66d379fd77d9856df4d896c6636df3782f1b9a64d77a1",
+            "case": "a `run` with `--skill` on the model `claude-test-1` that the model answers; the proof says `purlin.json` reads `made` `helper`; the changed code gives `made` as the project's own mark",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 430,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "7a6a119edb0963ab5be46f26a881b0ec3eb6b85132db1c7d44419dd931519c3c",
+        "rule_hash": "54622cad98b91317a49d6346b79454ad86a71c67109c04180c4b4a2fb49f3d76",
+        "test_hash": "d6d62475a06d3e48a20934ca6483501f8096bb5870fcf47256f59a4b04c4269a",
+        "verdict": "strong"
+      },
+      "RULE-9": {
+        "at": "2026-10-07T18:51:37Z",
+        "bugs": {
+          "PROOF-14": {
+            "after": "           '--setting-sources', '',",
+            "aim": "plain",
+            "before": "           '--setting-sources', '', '--no-session-persistence',",
+            "bug_key": "168ffe86f9bcc7c992d5a0dde338a5e9af40eb8b394607c42245770c1dacc731",
+            "case": "`run --plugin tool --say \"Go.\"` with the model claude-test-1; the proof says claude is started with exactly `-p --output-format stream-json --verbose --setting-sources \"\" --no-session-persistence --dangerously-skip-permissions --model claude-test-1 --plugin-dir <full path of tool>`; the changed code",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 146,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
+        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-14: the test makes the plugin `tool` in the project, starts `run --plugin tool --say \"Go.\"`, and compares the number of recorded `claude` calls with 1 and the whole argument list with the literal list the proof names, ending in the full path of `tool`.",
+          "PROOF-14: the expected arguments are written out in the test and not taken from the helper's own constant, so a dropped, added, reordered or altered argument, a wrong model or a wrong plugin folder each fail the comparison.",
+          "PROOF-14: the spot tests found nothing, and the test leaves no way past it for the proof's case, so the planted change is the plain one."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "18d193226cf3137ce5ab290d93a5079916100a95254f7e7cb15ce043f6d61f1b",
+        "rule_hash": "4fdbad5f17d0c13a2727831ace3f5c14d6ac19ae9538efbdfb8e847d97b19d5d",
+        "test_hash": "2a0e93ac6a7e8184446766fcc037976f09c9702e8a5d8a0732325e6e27dcbb6d",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "ai_helper",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:13Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T19:23:18Z",
+      "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
         "spec": "a7f933160931e511c3e4013e7fbd152af8727c1831c589d77615b812ec5abac8",
-        "tests": "0c45cbbc1af11d6c1320f8420ed5ead32ef9797c58fc80734ade0fbfc11f8f9c"
+        "tests": "3604acddbaba34718f665b697c5a25d757727ca98791a6fc5e970b8bfba23677"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -21,14 +1805,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.058,
+                "duration": 0.075,
                 "name": "test_a_run_with_no_way_named_prints_the_usage",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -43,14 +1827,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.069,
+                "duration": 0.061,
                 "name": "test_a_run_with_two_messages_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -65,14 +1849,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.064,
+                "duration": 0.071,
                 "name": "test_a_sample_with_instructions_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -87,14 +1871,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.069,
+                "duration": 0.066,
                 "name": "test_an_option_it_does_not_have_is_named",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -109,14 +1893,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.068,
+                "duration": 0.06,
                 "name": "test_a_skill_folder_with_no_skill_file_is_named",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -131,14 +1915,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheCommandLine",
-                "duration": 0.074,
+                "duration": 0.061,
                 "name": "test_a_message_file_that_is_not_there_is_named",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -153,14 +1937,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.234,
+                "duration": 0.326,
                 "name": "test_the_call_is_the_bare_one_with_the_model_and_the_files",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -175,14 +1959,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.204,
+                "duration": 0.19,
                 "name": "test_the_call_starts_in_an_empty_folder_outside_the_project",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -197,14 +1981,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.195,
+                "duration": 0.186,
                 "name": "test_what_is_said_is_the_whole_of_standard_input",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -219,14 +2003,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.217,
+                "duration": 0.189,
                 "name": "test_what_is_said_reaches_a_session_on_standard_input",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -241,14 +2025,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.192,
+                "duration": 0.187,
                 "name": "test_the_folder_holds_the_reply_the_json_and_the_record",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -263,14 +2047,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.191,
+                "duration": 0.209,
                 "name": "test_the_folder_is_all_it_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -285,14 +2069,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestInstructions",
-                "duration": 0.184,
+                "duration": 0.272,
                 "name": "test_the_record_of_an_answered_run",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -307,14 +2091,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.195,
+                "duration": 0.199,
                 "name": "test_a_plugin_is_loaded_from_its_own_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -329,14 +2113,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.219,
+                "duration": 0.189,
                 "name": "test_a_skill_is_loaded_as_a_plugin_of_its_own",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -351,14 +2135,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.252,
+                "duration": 0.2,
                 "name": "test_the_session_starts_in_a_copy_outside_the_project",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -373,14 +2157,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.185,
+                "duration": 0.186,
                 "name": "test_with_no_sample_the_session_starts_in_an_empty_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -395,14 +2179,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.228,
+                "duration": 0.179,
                 "name": "test_the_reply_is_the_result_and_the_transcript_every_line",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -417,14 +2201,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.205,
+                "duration": 0.187,
                 "name": "test_files_holds_what_is_new_or_changed_and_nothing_else",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -439,14 +2223,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.203,
+                "duration": 0.2,
                 "name": "test_a_deleted_file_leaves_no_trace",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -461,14 +2245,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.224,
+                "duration": 0.189,
                 "name": "test_the_sessions_own_folder_and_gits_are_left_out",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -483,14 +2267,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.19,
+                "duration": 0.186,
                 "name": "test_a_claude_folder_the_sample_holds_is_compared",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -505,14 +2289,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.217,
+                "duration": 0.185,
                 "name": "test_the_session_is_not_told_what_the_run_set",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -527,14 +2311,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.006,
+                "duration": 0.004,
                 "name": "test_a_session_is_given_1800_seconds",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -549,14 +2333,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.066,
+                "duration": 0.077,
                 "name": "test_no_claude_on_the_path",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -571,14 +2355,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.063,
+                "duration": 0.061,
                 "name": "test_a_session_with_no_claude_on_the_path",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -593,14 +2377,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.223,
+                "duration": 0.215,
                 "name": "test_a_session_that_exits_with_an_error",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -615,14 +2399,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.226,
+                "duration": 0.19,
                 "name": "test_a_session_that_prints_no_result",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -637,14 +2421,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.232,
+                "duration": 0.18,
                 "name": "test_a_bare_call_that_prints_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -659,14 +2443,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 1.013,
+                "duration": 1.008,
                 "name": "test_a_session_past_its_limit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -681,14 +2465,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.252,
+                "duration": 0.342,
                 "name": "test_an_unknown_model_is_named_in_the_programs_own_words",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -703,14 +2487,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.198,
+                "duration": 0.48,
                 "name": "test_a_login_that_expired_is_named_by_a_session",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -725,14 +2509,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestAModelThatGivesNoAnswer",
-                "duration": 0.2,
+                "duration": 0.421,
                 "name": "test_what_a_session_wrote_to_standard_error_is_carried",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -747,14 +2531,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.257,
+                "duration": 0.374,
                 "name": "test_a_second_run_into_the_folder_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -769,14 +2553,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.283,
+                "duration": 0.407,
                 "name": "test_a_record_into_a_folder_that_holds_one_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -791,14 +2575,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.257,
+                "duration": 0.269,
                 "name": "test_a_run_after_a_model_gave_no_answer_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -813,14 +2597,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.056,
+                "duration": 0.061,
                 "name": "test_under_replay_a_run_hands_back_the_earlier_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -835,14 +2619,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.061,
+                "duration": 0.062,
                 "name": "test_under_replay_a_record_hands_back_the_earlier_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -857,14 +2641,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.211,
+                "duration": 0.204,
                 "name": "test_by_hand_the_folder_is_the_projects_and_emptied_first",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -879,14 +2663,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheFolder",
-                "duration": 0.057,
+                "duration": 0.061,
                 "name": "test_a_run_with_no_model_named_says_to_set_it",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -901,14 +2685,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestRecord",
-                "duration": 0.061,
+                "duration": 0.079,
                 "name": "test_a_record_with_no_model_named_anywhere_says_to_set_it",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -923,14 +2707,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestRecord",
-                "duration": 0.064,
+                "duration": 0.062,
                 "name": "test_it_copies_the_four_parts_and_no_other_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -945,14 +2729,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestRecord",
-                "duration": 0.057,
+                "duration": 0.064,
                 "name": "test_a_reply_alone_is_enough",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -967,14 +2751,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestRecord",
-                "duration": 0.068,
+                "duration": 0.058,
                 "name": "test_the_record_says_the_projects_own_test_made_it",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -996,7 +2780,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1011,14 +2795,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestRecord",
-                "duration": 0.058,
+                "duration": 0.088,
                 "name": "test_a_folder_with_no_reply_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1033,14 +2817,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.228,
+                "duration": 0.218,
                 "name": "test_the_grader_is_the_model_the_proof_names_started_bare",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1055,14 +2839,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.191,
+                "duration": 0.204,
                 "name": "test_the_grader_is_shown_the_sentence_the_input_and_the_output",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1077,14 +2861,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.192,
+                "duration": 0.216,
                 "name": "test_with_no_input_kept_the_request_is_the_sentence_and_the_output",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1099,14 +2883,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.187,
+                "duration": 0.193,
                 "name": "test_an_input_with_no_message_is_shown_by_the_files_it_holds",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1121,14 +2905,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.183,
+                "duration": 0.227,
                 "name": "test_an_accept_is_printed_and_recorded",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1143,14 +2927,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.191,
+                "duration": 0.206,
                 "name": "test_a_reject_exits_1",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1165,14 +2949,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.191,
+                "duration": 0.185,
                 "name": "test_grading_leaves_the_outputs_fingerprint_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1187,14 +2971,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.196,
+                "duration": 0.241,
                 "name": "test_an_answer_in_neither_shape_is_no_answer",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1209,14 +2993,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.185,
+                "duration": 0.256,
                 "name": "test_an_answer_of_two_lines_is_no_answer",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1231,14 +3015,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.21,
+                "duration": 0.211,
                 "name": "test_a_grader_that_cannot_be_reached_is_recorded",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1253,14 +3037,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.203,
+                "duration": 0.212,
                 "name": "test_under_replay_the_earlier_folder_is_graded",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1275,14 +3059,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.188,
+                "duration": 0.198,
                 "name": "test_under_replay_the_earlier_folders_input_is_shown",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1304,7 +3088,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1319,14 +3103,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.059,
+                "duration": 0.06,
                 "name": "test_a_proof_no_spec_has_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1341,14 +3125,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.054,
+                "duration": 0.061,
                 "name": "test_a_folder_with_no_reply_is_not_graded",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1363,14 +3147,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.222,
+                "duration": 0.211,
                 "name": "test_a_long_file_is_shown_by_its_two_ends",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1385,14 +3169,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.19,
+                "duration": 0.196,
                 "name": "test_a_file_that_is_not_text_is_shown_by_its_size",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1407,14 +3191,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.199,
+                "duration": 0.203,
                 "name": "test_files_after_the_fiftieth_are_named_and_not_shown",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1436,7 +3220,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1451,14 +3235,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.203,
+                "duration": 0.195,
                 "name": "test_each_part_names_the_files_it_does_not_show",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1473,14 +3257,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestASession",
-                "duration": 0.206,
+                "duration": 0.189,
                 "name": "test_the_session_is_told_to_leave_the_persons_connectors_out",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1495,14 +3279,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.196,
+                "duration": 0.189,
                 "name": "test_the_message_said_is_kept_as_it_was_sent",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1517,14 +3301,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.186,
+                "duration": 0.188,
                 "name": "test_the_message_file_is_kept_byte_for_byte",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1546,7 +3330,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1561,14 +3345,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.187,
+                "duration": 0.196,
                 "name": "test_a_second_file_of_one_name_is_numbered",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1583,14 +3367,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.195,
+                "duration": 0.214,
                 "name": "test_the_sample_is_kept_as_it_was_given",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1605,14 +3389,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.269,
+                "duration": 0.262,
                 "name": "test_no_sample_and_no_skill_or_plugin_is_kept",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1627,14 +3411,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.198,
+                "duration": 0.197,
                 "name": "test_a_symbolic_link_in_the_sample_is_not_kept",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1649,14 +3433,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.195,
+                "duration": 0.2,
                 "name": "test_a_session_no_model_answered_keeps_no_input",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1671,14 +3455,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.071,
+                "duration": 0.061,
                 "name": "test_a_bare_call_no_model_answered_keeps_no_input",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1693,14 +3477,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestTheInput",
-                "duration": 0.233,
+                "duration": 0.215,
                 "name": "test_the_input_is_part_of_the_folders_sha256",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",
@@ -1715,14 +3499,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_helper.TestGrade",
-                "duration": 0.195,
+                "duration": 0.193,
                 "name": "test_the_graders_system_prompt_whole",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "690661a73f28bd5b7885dacff3606c2a3cfb497052fe4c2e19d9e03fdcd118aa"
             }
           },
           "result": "pass",

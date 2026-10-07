@@ -1172,7 +1172,7 @@ def test_a_test_left_out_or_tied_to_another_systems_proof_holds_none():
     assert entry['result'] == 'not run' and 'reported' not in entry
     # A test with no case in any report was handed nothing to keep.
     (entry,) = _listed({'PROOF-1': PLAIN}, {'PROOF-1': [_seen('pass')]})
-    assert 'reported' not in entry
+    assert entry['result'] == 'pass' and 'reported' not in entry
 
 
 # purlin: evidence_writer PROOF-102
@@ -1243,9 +1243,14 @@ def test_an_ai_proofs_entry_holds_its_models_as_handed_over():
     models = [_model()]
     (entry,) = _listed({'PROOF-1': dict(PLAIN)}, {'PROOF-1': [
         dict(_seen('pass'), models=models)]})
+    # Written out, so a change to what was handed over cannot hide.
     assert entry == {'id': 'PROOF-1', 'rule': 'RULE-1', 'env': None,
                      'manual': False, 'result': 'pass',
-                     'test': 'tests/a.py::test_a', 'models': models}
+                     'test': 'tests/a.py::test_a', 'models': [
+                         {'model': 'model-a', 'passed': 1, 'of': 1,
+                          'graded': False, 'runs': [
+                              {'result': 'pass', 'made': 'helper',
+                               'output': 'c' * 64}]}]}
 
 
 # purlin: evidence_writer PROOF-106
@@ -1254,10 +1259,17 @@ def test_an_entry_no_model_passed_keeps_its_models_and_who_took_them():
     (entry,) = _listed({'PROOF-1': dict(PLAIN)}, {'PROOF-1': [
         dict(_seen('not run'), held=True, models=models,
              carried=dict(EARLIER), reported=_reported())]})
+    # Written out, so a change to what was handed over cannot hide.
+    carried = {'commit': 'd' * 40, 'at': '2026-08-01T00:00:00Z',
+               'machine': 'build-0', 'email': 'pat@example.com'}
     assert entry == {'id': 'PROOF-1', 'rule': 'RULE-1', 'env': None,
                      'manual': False, 'result': 'not run',
-                     'test': 'tests/a.py::test_a', 'models': models,
-                     'carried': EARLIER}
+                     'test': 'tests/a.py::test_a', 'models': [
+                         {'model': 'model-a', 'passed': 0, 'of': 1,
+                          'graded': False, 'carried': carried, 'runs': [
+                              {'result': 'not run', 'made': 'helper',
+                               'why': 'The login expired.'}]}],
+                     'carried': carried}
 
 
 # purlin: evidence_writer PROOF-107

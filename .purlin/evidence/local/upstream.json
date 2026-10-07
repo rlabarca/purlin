@@ -2,31 +2,29 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-1": {
             "after": "           compose_copy(content, source_line, head[:7]))",
             "aim": "plain",
             "before": "           compose_copy(content, source_line, head))",
-            "bug_key": "4e9793f4016e44893f22b3f9608e028dc20a9fb7a19d9663b5b55594b9e1bc78",
-            "case": "the anchor no_eval added from specs/no_eval.md of another repository; the proof says the line reads `> Pinned: <the published sha>`; the changed code writes only the first 7 characters of that sha",
+            "bug_key": "24d0ea84b048ea983bb6adcee09d259785817fae82f26db6d9cdc1fd87f27c03",
+            "case": "the anchor no_eval added from specs/no_eval.md of another repository; the proof says the second line after the title is `> Pinned: <the published sha>`; the changed code writes only the first 7 characters of that sha",
             "file": "scripts/anchor/upstream.py",
             "line": 349,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-1: the test adds the anchor and compares the status with `added`, the rules with `RULE-1` and `RULE-2`, the first line with the title, and the third and fourth lines with the `> Source:` and `> Pinned:` lines built from the repository and its first sha.",
-          "PROOF-1: the test removes those two lines and one blank line from the copy and compares the rest with the author's text exactly, so a change to the body, the source line or the pin fails it.",
-          "PROOF-1: the expected source, sha and author text come from the test's own workspace and a constant, not from the code under test.",
-          "PROOF-1: the test reads the tracking lines one blank line below the title, where the proof says \"the two lines after the copy's title\", so the blank line is asserted by the test and not named by the proof.",
-          "PROOF-46: the same test checks the status, the `> Source:` and `> Pinned:` lines, and that no file is left under the runtime folder, which is what the proof names.",
-          "PROOF-46: on a machine that is not Windows the downloaded files are removed without the read-only retry, so the test passing there does not show the Windows removal.",
-          "Findings: the spot tests found nothing, and the test holds failable comparisons against every value both proofs name."
+          "PROOF-1: the test adds the anchor from the other repository and compares the answer's status with `added` and its rules with `RULE-1` and `RULE-2`.",
+          "PROOF-1: the test compares the two lines after the title's blank line with the full `> Source:` and `> Pinned:` lines, built from the workspace's repository and its first sha, not from the code.",
+          "PROOF-1: the test takes those two lines out and compares the rest with the author's text held as a constant, so a changed body, source or pin fails it.",
+          "PROOF-46: the same test asserts that no file is left in the runtime folder and that the source and pin lines name the repository and sha, which is what the proof names; whether it runs on Windows is not visible in the test's own lines.",
+          "The spot tests found nothing, and the test's lines give no reason to expect otherwise: every expected value is a literal or comes from the workspace fixture."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -39,24 +37,29 @@
         "verdict": "strong"
       },
       "RULE-10": {
-        "at": "2026-10-06T15:55:54Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-33": {
-            "after": "            'behind': bool(behind), 'errors': len(errors)}",
-            "aim": "past the test",
-            "before": "            'behind': len(behind), 'errors': len(errors)}",
-            "bug_key": "615410eded98151a9e14b577991a65ee8dd4e8f31be7f6da4a058857563345e9",
-            "case": "one pinned anchor with a new version published, `sync --check --json`; the proof says `behind` is 1; the changed code prints `behind` as true",
+            "after": "    row['remote_sha'] = info.get('pinned')",
+            "aim": "plain",
+            "before": "    row['remote_sha'] = head",
+            "bug_key": "a05ad7505e91e2de9a7499753645874253df33b1734f1743b99c39b7d323dcfb",
+            "case": "an anchor pinned at the first sha with a new version published, then `sync --check --json`; the proof says the row's `remote_sha` is the new sha; the changed code gives the first sha as `remote_sha`",
             "file": "scripts/anchor/upstream.py",
-            "line": 406,
+            "line": 421,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-33: the test pins an anchor, publishes a new version, runs `sync --check --json`, and compares the exit code with 1, `checked` with true, `behind` with the integer 1, the number of rows with 1, `pinned` with the first sha and `remote_sha` with the new sha, which is every value the proof names.",
+          "PROOF-33: the output is parsed as a single JSON document, so a second object or stray text on the output would fail the test, as the rule's \"one JSON object\" requires.",
+          "PROOF-33: the expected shas come from the test's own workspace and its publishing step, not from the command's output, so the code cannot influence them.",
+          "PROOF-33: the spot tests found nothing, and the test leaves no value of the proof unchecked, so the planted bug is the plain one."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -66,13 +69,13 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-11": {
             "after": "    row.update({'status': 'synced', 'pinned': head, 'previous': head,",
             "aim": "plain",
             "before": "    row.update({'status': 'synced', 'pinned': head, 'previous': pinned,",
-            "bug_key": "57ec9cccab9a2fefb956b131ad415b9597b8cdb299b1ec911182206bfa1ff23e",
+            "bug_key": "9a5ea4a04b75e3d9cb8e02f3c5cd1bfb5566a9affcb8349b323b4004b8974a71",
             "case": "a new version of no_eval rewords RULE-2 and adds RULE-3 and sync no_eval runs; the proof says previous reads the old sha; the changed code gives the new sha as previous",
             "file": "scripts/anchor/upstream.py",
             "line": 445,
@@ -80,25 +83,26 @@
             "why": ""
           },
           "PROOF-12": {
-            "after": "    return ', '.join(parts) or 'no changes'",
+            "after": "    return ', '.join(parts) or 'no rule change'",
             "aim": "plain",
             "before": "    return ', '.join(parts) or 'no rule changes'",
-            "bug_key": "1aa3b1d7b2f997306daac3292e249afe5e0380a58e99e2d36c2ee2b86ab59082",
-            "case": "a new version of no_eval changes only a sentence of its description and sync no_eval runs; the proof says the summary reads no rule changes; the changed code gives no changes",
+            "bug_key": "28183fd07f3bf8bc64b551b7c4bf3c4fdf117d369cd3aacd48db8e608bd7b59f",
+            "case": "a new version of no_eval changes only a sentence of its description and sync no_eval runs; the proof says the summary reads no rule changes; the changed code gives no rule change",
             "file": "scripts/anchor/upstream.py",
             "line": 261,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-11: the test runs sync on a source that rewords RULE-2 and adds RULE-3, and compares the status, the previous and new sha, the added, removed and changed ids, the summary, and the copy's pin line and RULE-3 line against the values the proof names, so each named result is checked.",
-          "PROOF-12: the test runs sync on a source whose description alone changed, and compares the summary with `no rule changes`, the three id lists with empty lists, and the row's pin and the copy's pin line with the new sha, so each named result is checked.",
-          "PROOF-50: the same test reads the copy as bytes and checks that the pin line ends in a line feed and that the file holds no carriage return, alongside the status and the summary the proof names.",
-          "No proof of the rule names a rule that was removed, so the removed ids of the delta are only ever compared with an empty list."
+          "PROOF-11: the test adds the anchor, advances the source, runs sync and compares the status, the previous sha, the new pin, the rule changes, the summary, the copy's pin line and its RULE-3 line, each value the proof names.",
+          "PROOF-12: the test rewords one sentence of the description, runs sync and compares the summary with `no rule changes`, the three empty lists, the row's pin and the copy's pin line, each value the proof names.",
+          "PROOF-50: it shares the test of PROOF-11, which reads the copy as bytes and checks the pin line ends in a line feed and that no carriage return is in the file, so on Windows it observes what the proof names.",
+          "No proof of the rule names a rule that was removed, so the removed part of the delta is compared only as an empty list.",
+          "The spot tests found nothing, and each test compares literal values and shas taken from the workspace, not from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -111,24 +115,28 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-06T15:55:54Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-2": {
-            "after": "           compose_copy(content, source_line, head[:12]))",
-            "aim": "past the test",
+            "after": "           compose_copy(content, source_line, head[:14]))",
+            "aim": "plain",
             "before": "           compose_copy(content, source_line, head))",
-            "bug_key": "d3a711a5c455d689bb91e85e3afc45dc0c7ae306547c6f44f2179f9f4391f183",
-            "case": "an anchor added from a repository whose head is on `main`; the proof says the pin is the head commit's full 40-character sha; the changed code writes a 12-character pin on the copy's `> Pinned:` line while the returned answer still holds 40",
+            "bug_key": "361cfd9f35ce0ad0587cbaeeeb2479f149f0e9b523753ffdd92fd7f9dfb1aacc",
+            "case": "an anchor added from a repository whose head is on main; the proof says the pin is the head commit's full 40-character sha; the changed code writes a 14-character pin into the copy",
             "file": "scripts/anchor/upstream.py",
             "line": 349,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-2: the test adds an anchor, takes the head sha from git itself rather than from the code, and compares it with both the returned pin and the copy's single `> Pinned:` line, so a shortened or wrong pin in either place fails.",
+          "PROOF-2: the test asserts the head and the returned pin are each 40 characters long and that the text above `## Rules` holds no `main`, which covers both results the proof names.",
+          "PROOF-2: the no-branch check looks only for the word `main`, the branch the proof names, so it leaves no way past for this case and the planted change is the plain one."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -138,51 +146,51 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-06T16:42:21Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-22": {
-            "after": "    target = os.path.join(project_root, os.pardir, RUNTIME_DIR,\n                          _checkout_name(url) + '.src')",
+            "after": "    target = os.path.join(os.path.dirname(project_root), RUNTIME_DIR,\n                          _checkout_name(url) + '.src')",
             "aim": "plain",
             "before": "    target = os.path.join(project_root, RUNTIME_DIR,\n                          _checkout_name(url) + '.src')",
-            "bug_key": "a847f18f8ffe928750297dd3c85f1c63688b8009b89536d6cdbca26f0589b67a",
-            "case": "an anchor is added, a new version is published and the anchor is synced; the proof says the folder around the project holds exactly `policies.git`, `policies_work`, `project` and `project.git`; the changed code leaves a fifth entry, `.purlin`, there",
+            "bug_key": "361ea358c17670a0f1de2a1b73635f47d850ee1f1bfe26e5fe05ba2e07f62d4a",
+            "case": "an anchor is added, a new version is published and the anchor is synced; the proof says the folder around the project holds exactly `policies.git`, `policies_work`, `project` and `project.git`; the changed code leaves a fifth entry, `.purlin`, in that folder",
             "file": "scripts/anchor/upstream.py",
             "line": 135,
             "result": "caught",
             "why": ""
           },
           "PROOF-61": {
-            "after": "    if not _NAME_RE.search(name):",
+            "after": "    if not name:",
             "aim": "plain",
             "before": "    if not _NAME_RE.fullmatch(name):",
-            "bug_key": "af58e56b17d608f65a5d0912e64aa209d9b40c7ea2d2e9b5109d7ed56fceb3e2",
-            "case": "the published anchor is added with `--name ../../outside`; the proof says exit 2, an answer reading `error` and no `outside.md` written; the changed code exits 0, answers `added` and writes `outside.md` at the project root",
+            "bug_key": "f25583af6e7d7ae3aef089cfed90dfab4232203c3641a9ab5a4eddefa42641da",
+            "case": "the published anchor is added with `--name ../../outside`; the proof says it exits 2, the answer reads `error` and no `outside.md` exists; the changed code exits 0, answers `added` and writes `outside.md` at the project root",
             "file": "scripts/anchor/upstream.py",
             "line": 310,
             "result": "caught",
             "why": ""
           },
           "PROOF-65": {
-            "after": "    _write(anchor_path(project_root, name.replace('-', '_')),\n           compose_copy(content, source_line, head))",
+            "after": "    name = (name or _default_name(source, path)).replace('-', '_')",
             "aim": "plain",
-            "before": "    _write(anchor_path(project_root, name),\n           compose_copy(content, source_line, head))",
-            "bug_key": "b513ce4648d9a7b2ab77e8d8dc999737ab2c9f503634b083d139d6c4750acc5d",
-            "case": "the published anchor added with --name sample-age; the proof says exit 0 and specs/_anchors/sample-age.md holds its rules; the changed code exits 0 and writes specs/_anchors/sample_age.md, so sample-age.md does not exist",
+            "before": "    name = name or _default_name(source, path)",
+            "bug_key": "a0535cfd691a4383cb1322e5d39161de0d665460fce2bf4e442e30b208ac6e2b",
+            "case": "the published anchor is added with `--name sample-age`; the proof says `specs/_anchors/sample-age.md` holds its rules; the changed code writes `specs/_anchors/sample_age.md` and no `sample-age.md` exists",
             "file": "scripts/anchor/upstream.py",
-            "line": 348,
+            "line": 307,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "645df44794b1a8d8ed38f617361319e07d789f8e",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-22: the test adds, advances the source and syncs, then compares the sorted listing of the folder around the project with the four entries the proof names, so a file written beside the project fails it; a file written deeper inside `policies_work` or another of those four folders would not be seen.",
-          "PROOF-61: the test reads the exit code `2`, the status `error` and the exact refusal message, checks that the anchor folder is empty and walks the folder around the project for any `outside.md`, which is everything the proof names.",
-          "PROOF-65: the test reads exit `0`, the name and path in the answer, the anchor folder holding only `sample-age.md`, and the file's two rule lines against literals, so it observes both results the proof names and leaves no way past it for a change to where or what `add` writes.",
-          "PROOF-65: the proof says the file \"holds its rules\" without naming them; the test supplies the two rule texts as literals of its own rather than taking them from the code.",
-          "Findings: none were reported, and nothing in the three tests matches a spot test's pattern."
+          "PROOF-22: the test adds, publishes and syncs, then compares the sorted listing of the folder around the project with the four names the proof gives, so any new entry there fails it.",
+          "PROOF-22: the test reads only the top level of that folder, so a file written inside `policies_work`, or anywhere else on the disk outside the project, would not be seen; the proof names no more than that listing either.",
+          "PROOF-61: the test runs the command with `--name ../../outside` and compares the exit code `2`, the status `error`, the whole refusal message, the empty anchors folder and a walk of the folder around the project for `outside.md`, which is every result the proof names.",
+          "PROOF-65: the test runs the command with `--name sample-age` and compares the exit code `0`, the name and path in the answer, the one file held in `specs/_anchors/` and the two rule lines read from `sample-age.md`, which is what the proof names.",
+          "Findings: none, and each test holds the values its proof marks in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -193,28 +201,28 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-23": {
-            "after": "    for text in reversed(note or ()):",
+            "after": "    for text in (note or ())[:1]:",
             "aim": "plain",
             "before": "    for text in note or ():",
-            "bug_key": "440bb5c786aa4f97762129c495f62f9ff821b33f65960ab56e7e09ac550ab3f0",
-            "case": "a copy carrying the notes `run the setup script first` then `the pin moves on each release` is synced after a new version; the proof says both `> Note:` lines once and in that order; the changed code writes them in the reverse order",
+            "bug_key": "38968792ecf672f97c81d0b0747350ffd7d5d97cd6de4fc4057d4ccce9f6419d",
+            "case": "a copy carrying the notes `run the setup script first` and `the pin moves on each release` is synced after a new version; the proof says both `> Note:` lines are kept, each once and in that order; the changed code keeps only `> Note: run the setup script first`",
             "file": "scripts/anchor/upstream.py",
             "line": 223,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-23: the test writes both notes under the copy's `> Pinned:` line, publishes a new version, syncs, and then compares the copy's `> Note:` lines with the exact two-line list the proof names, so a dropped, repeated or reordered note fails it.",
-          "PROOF-23: the test also asserts the line `> Pinned: <new sha>` is in the copy, so a sync that kept the notes but did not advance the pin fails it.",
-          "PROOF-23: the test only gathers lines that start with `> Note:`, so a note written in another form, such as `>Note:` or indented, would not be counted.",
-          "Findings: none were reported, and the test's expected values are literals taken from the proof and not from the code."
+          "PROOF-23: the test writes both notes under the copy's `> Pinned:` line, publishes a new version, syncs the anchor, and then checks that the copy holds the new pin line and that its `> Note:` lines equal the two named notes exactly, so a dropped, repeated, reordered or reworded note fails it.",
+          "PROOF-23: the expected note lines are written as literals in the test and the new pin comes from the version the test published, so neither expected value comes from the code under test.",
+          "PROOF-23: the test does not check where in the copy the note lines stand, which the proof's result does not name either.",
+          "Findings: the spot tests found nothing, and the test asserts the values the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -225,64 +233,71 @@
         "verdict": "strong"
       },
       "RULE-25": {
-        "at": "2026-10-06T15:55:54Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-43": {
-            "after": "    if result['errors']:\n        return 1",
+            "after": "    if result['errors'] and not result['checked']:\n        return 2",
             "aim": "plain",
             "before": "    if result['errors']:\n        return 2",
-            "bug_key": "4e145acfb090049b22839a1d0433dc926b38a53913fa8ed37357371db44741c5",
-            "case": "`refunds` carries `> Source: policy.txt` and `sync --check` is run; the proof says it exits 2; the changed code exits 1",
+            "bug_key": "5d66f37b48d5d517432d16c30b97ac678cae4df1458d6260cb4311cd8102a392",
+            "case": "`refunds` carries `> Source: policy.txt` and `sync --check` runs; the proof says it exits 2; the changed code exits 0",
             "file": "scripts/anchor/upstream.py",
-            "line": 506,
+            "line": 497,
             "result": "caught",
             "why": ""
           },
           "PROOF-45": {
-            "after": "        if status == 'current' or (row.get('not_a_spec') and not result['checked']):",
-            "aim": "past the test",
-            "before": "        if status == 'current':",
-            "bug_key": "dd784dfa8d8b8b97faa271537015c89ff4912cf082171067165f354aacca248f",
-            "case": "two remote anchors and `refunds` from `policy.txt`, `sync` with no name printed as text; the proof says `refunds` reads `error`; the changed code prints `refunds: the pin is current.`",
+            "after": "    if result['errors'] and result['checked']:\n        return 2",
+            "aim": "plain",
+            "before": "    if result['errors']:\n        return 2",
+            "bug_key": "109a892fdf4fb0645cbaef3bbc70ad326e7a380dac7f7b7c2e5bb70f539148f4",
+            "case": "two remote anchors and `refunds` from `policy.txt`, a new version published, `sync` with no name; the proof says it exits 2; the changed code exits 0",
             "file": "scripts/anchor/upstream.py",
-            "line": 470,
+            "line": 497,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-43: the test runs `sync --check` on an anchor whose source is `policy.txt` and compares the exit code with 2, the whole output with one expected line, the started processes with an empty list and the project's files with those before the run, so each result the proof names is observed.",
+          "PROOF-43: the expected line comes from the helper `_not_a_spec`, whose source is not shown, so if it builds the line from the product's own code rather than a literal, a change to the line's wording would still pass.",
+          "PROOF-45: the test runs `sync` with no name and compares the exit code with 2, the three printed lines in full and the bytes of the `refunds` copy.",
+          "PROOF-45: it then runs the sync again as JSON and compares the three statuses with `synced`, `synced` and `error`, checks that no started process names `policy.txt` across both runs, and checks the copy's bytes again, so each result the proof names is observed.",
+          "PROOF-45: the test checks only that no process names `policy.txt`, as the proof says, so a process started for `refunds` that does not name the file would pass, while the rule says no process is started for it.",
+          "Findings: the spot tests found nothing, and both tests hold failable assertions with literal expected values for the exit code and statuses."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "3b2895246ee9ada1ab8ccd8f41764daaf738e1c78535b72e1879d750e4c6bbe9",
-        "rule_hash": "59a9c09a01470a05d70e4017e7aca17a85a237aa2fd73e8ddaa5ca9eca0cb116",
+        "rule_hash": "90809d53fc2e623bb1574ac5febd559251b5898ac09321c179fdf9d5489511f8",
         "test_hash": "db95133508fe5f3bac8166932bb9fb365350efd701d3cb73d7b65662e81f0c63",
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-3": {
             "after": "    return _slug(base) or 'anchor'",
             "aim": "plain",
             "before": "    return _slug(base).replace('-', '_') or 'anchor'",
-            "bug_key": "59c376cffd83d2fd65e99f40b79a92c26891bf97031147ad8012a87704a3e938",
-            "case": "an anchor added from specs/no_secrets.md with no name; the proof says it is named no_secrets and specs/_anchors/ holds no_secrets.md alone; the changed code names it no-secrets and writes no-secrets.md",
+            "bug_key": "d450ec431aa4586f3ed3744e64796b5151974f71cdd1cb7d2446d07aeaa77c15",
+            "case": "an anchor added from specs/no_secrets.md with no name given; the proof says the answer names it no_secrets and specs/_anchors/ holds no_secrets.md alone; the changed code names it no-secrets and writes no-secrets.md",
             "file": "scripts/anchor/upstream.py",
             "line": 300,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-3: the test adds an anchor from `specs/no_secrets.md` with no name and compares the answer's name with `no_secrets` and the held anchors with `no_secrets.md` alone, which are both results the proof names.",
-          "PROOF-3: the spot tests found nothing, and the test leaves no value of the proof's case unchecked, so the bug is the plain one."
+          "PROOF-3: the test adds an anchor from `specs/no_secrets.md` with no name and compares the answer's name with `no_secrets` and the files held under `specs/_anchors/` with `no_secrets.md` alone, which is the case and both results the proof names.",
+          "PROOF-3: the spot tests found nothing, and the test compares both values the proof names against literals, so a change to the default name has no way past it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -293,27 +308,27 @@
         "verdict": "strong"
       },
       "RULE-35": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-59": {
-            "after": "    _write(anchor_path(project_root, name),\n           compose_copy(content, source_line.strip(), head,\n                        note=local_notes(project_root, name)))\n    _git(['commit', '-q', '-m', 'anchor(%s): sync' % name, '--',\n          anchor_path(project_root, name)], cwd=project_root)",
+            "after": "                        note=local_notes(project_root, name)))\n    _git(['commit', '-q', '-m', 'anchor(%s): sync' % name, '--',\n          anchor_path(project_root, name)], cwd=project_root)",
             "aim": "plain",
-            "before": "    _write(anchor_path(project_root, name),\n           compose_copy(content, source_line.strip(), head,\n                        note=local_notes(project_root, name)))",
-            "bug_key": "78b6068306a3e66af5678958dc359564646bd6be7f3f61c350951f32e0c8e2ae",
-            "case": "`no_eval` is added and committed, a new version is published, and `sync no_eval` advances the pin; the proof says HEAD is the commit it was before and the anchor copy is changed and not committed; the changed code gives a new HEAD commit holding the copy, and git reads the copy as unchanged",
+            "before": "                        note=local_notes(project_root, name)))",
+            "bug_key": "52519e264679aac51afcdff44fb931bf56f752e094a06bf72551ac191beb0953",
+            "case": "`no_eval` is added and committed, a new version is published, and `sync no_eval` advances the pin; the proof says HEAD is the commit it was before and the anchor copy reads as changed and not committed; the changed code commits the copy, so HEAD moves to a new commit and git reads the copy as clean",
             "file": "scripts/anchor/upstream.py",
             "line": 445,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-59: the test commits the added anchor, records HEAD, publishes a new version and syncs `no_eval`, then compares HEAD with the recorded commit and the git status of `specs` with the exact line for a changed, unstaged `specs/_anchors/no_eval.md`, so it observes both results the proof names.",
-          "PROOF-59: the test also checks that the sync reports `synced`, so a sync that advanced nothing would not pass as \"no commit\".",
-          "PROOF-59: the spot tests found nothing, and the test leaves no way past it for a change that commits or leaves the copy unchanged; a commit made on another ref with HEAD unmoved would break the rule but not the two results the proof names."
+          "PROOF-59: the test commits the added `no_eval`, records HEAD, publishes a new version and syncs, then asserts the row reads `synced`, HEAD equals the recorded commit, and git's short status of `specs` is exactly the one line for a modified, unstaged `specs/_anchors/no_eval.md`.",
+          "PROOF-59: both results the proof names are compared with values the code under test does not supply, so a sync that commits fails the HEAD check and the status check, and one that only stages the copy fails the status check on its spacing.",
+          "The spot tests found nothing, and the test leaves no way past it for the proof's case, so the bug is the plainest one: a commit of the anchor copy after it is written."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -324,51 +339,49 @@
         "verdict": "strong"
       },
       "RULE-36": {
-        "at": "2026-10-06T15:55:54Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-60": {
-            "after": null,
+            "after": "           compose_copy(content, source_line, head[:6]))",
             "aim": "plain",
-            "before": null,
-            "bug_key": "29b5f44f1c3e4cc2132c3a88f92d56c1fb34af9f077c3d73449110442e223356",
-            "case": "",
-            "file": null,
-            "line": null,
-            "result": "not made",
-            "test_unchanged": true,
-            "why": "two planted bugs left the proof's check passing"
+            "before": "           compose_copy(content, source_line, head))",
+            "bug_key": "80fc8d64efd143832375b58e8d89fad28afb102be1047f1340f81dd023b35955",
+            "case": "no_eval is pinned, a new version is published and the status is read; the proof says the line names the pin as <first sha7>; the changed code pins six characters, so the line names a six-character pin",
+            "file": "scripts/anchor/upstream.py",
+            "line": 349,
+            "result": "caught",
+            "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-60: the test adds no_eval, reads the copy's bytes, publishes a new version, reads the status and asserts the exact line with the first and new seven-character shas is among its lines, then asserts the copy's bytes equal those read before, so it observes both results the proof names.",
-          "PROOF-60: the spot tests found nothing, and the test leaves no value of the proof uncompared; the expected shas come from the test's own workspace and not from the status under test.",
-          "PROOF-60: the test covers the pin that is behind only, so the rule's other half, a current pin leaving the copy as it was, rests on another proof."
+          "PROOF-60: the test pins no_eval, publishes a new version, reads the status and looks for the whole line the proof names, built from the first sha and the new sha at seven characters each, so a wrong pin, a wrong head or different wording fails it.",
+          "PROOF-60: the test reads the anchor copy as bytes before the status is read and compares it with the bytes after, which is the proof's \"byte for byte as it was\".",
+          "PROOF-60: the expected line is written out in the test and its two shas come from the test's own setup, not from the status, so the status cannot influence the expected value.",
+          "PROOF-60: the spot tests found nothing, and the test asserts both results the proof names, so the planted change is the plain one.",
+          "PROOF-60: the rule also covers drift and a pin that is current, and this proof shows only the status with a pin behind."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was caught for PROOF-60: two planted bugs left the proof's check passing.",
-          "PROOF-60 was settled with its test unchanged: it was judged to assert what the proof names."
-        ],
-        "proof_hash": "2a541a255c9b62e82f2a23b49b7661334a46a290cb9b49fdfb7ea2f81c75df3e",
+        "no_bug": [],
+        "proof_hash": "08482cd4f723564dd5b616cca567dddfa310fb03ca6363ab7fac163b2f74d3ee",
         "rule_hash": "5b271bc47a233a4d44dc4b34823226c75f2f5489c35a8d33931aaea8d02727b5",
-        "test_hash": "e1b5e336fb770d2b3b733607646faa8accd66c1f714584b4e297b093713795ce",
-        "verdict": "spot-checked"
+        "test_hash": "4b294e69c0e180a111510e521c01a8cb6edd7d62c9f8be17ddc98a100803b03d",
+        "verdict": "strong"
       },
       "RULE-37": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-30": {
-            "after": "    return 0",
+            "after": "    behind = [r for r in rows if r['status'] == 'synced']",
             "aim": "plain",
-            "before": "    return 1 if result['checked'] and result['behind'] else 0",
-            "bug_key": "3b294513208ad4acd435ad01b1f4a9f73bf1cc99d10d89f7035c568b31770bcd",
-            "case": "an anchor pinned and a new version published, the script run as `sync --check`; the proof says exit 1; the changed code exits 0",
+            "before": "    behind = [r for r in rows if r['status'] in ('behind', 'synced')]",
+            "bug_key": "2e5c50acd151632ee155be6f7dc4ac3354081a3a8dfb3d7d3360e99ad5547397",
+            "case": "an anchor pinned and a new version published, the script run as `sync --check`; the proof says exit 1; the changed code counts no pin as behind and exits 0",
             "file": "scripts/anchor/upstream.py",
-            "line": 507,
+            "line": 403,
             "result": "caught",
             "why": ""
           },
@@ -376,10 +389,10 @@
             "after": "    if result['errors']:\n        return 1",
             "aim": "plain",
             "before": "    if result['errors']:\n        return 2",
-            "bug_key": "fb63d3e81b0627e41da4e8bd036f675d9cb806accf6a2fcbbab0bd5f9e7c8d5a",
-            "case": "an anchor pinned and its source repository deleted, `sync --check --json`; the proof says exit 2 with the row reading `error`; the changed code exits 1",
+            "bug_key": "2ccea14497fd115da41de52263fee0a92e27f402b782bdf31b1fad3c8b32b32c",
+            "case": "an anchor pinned and its source repository deleted, `sync --check --json`; the proof says exit 2 and a row reading `error`; the changed code exits 1 with the row still reading `error`",
             "file": "scripts/anchor/upstream.py",
-            "line": 506,
+            "line": 498,
             "result": "caught",
             "why": ""
           },
@@ -387,23 +400,23 @@
             "after": "            lines.append('%s: the pin is up to date. Run purlin:status %s to see '",
             "aim": "plain",
             "before": "            lines.append('%s: the pin is current. Run purlin:status %s to see '",
-            "bug_key": "25018819895d1449d219e2e770781cb7d766ee29ac70784b961b5839f621f249",
-            "case": "an anchor pinned to its source's head, `sync --check`; the proof says exit 0 and the line `no_eval: the pin is current. Run purlin:status no_eval to see its rules.`; the changed code prints `no_eval: the pin is up to date. Run purlin:status no_eval to see its rules.`",
+            "bug_key": "c50eefecfbd91971f5a7470cfbe89c8bc7dd206b75c9675c00f6e90bfbf42e9f",
+            "case": "an anchor pinned to its source's head, `sync --check`; the proof says exit 0 and the one line `no_eval: the pin is current. Run purlin:status no_eval to see its rules.`; the changed code prints `no_eval: the pin is up to date. Run purlin:status no_eval to see its rules.`",
             "file": "scripts/anchor/upstream.py",
             "line": 471,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-9: the test pins an anchor to its source's head, runs `sync --check`, and compares the exit code with 0 and the whole output with the one line the proof names, so both the code and the wording are observed.",
-          "PROOF-30: the test pins an anchor, publishes a new version, runs the script as a separate process, and compares its exit code with 1, which is the only result the proof names.",
-          "PROOF-32: the test pins an anchor, deletes its source repository, runs `sync --check --json`, and compares the exit code with 2 and the first row's status with `error`, as the proof names.",
-          "The spot tests found nothing, and each test compares the values its proof names against literals written in the test.",
-          "The rule also says exit 2 when a named anchor does not exist, and none of the three proofs names that case, so that half of the rule is not observed here."
+          "PROOF-9: the test pins an anchor at its source's head, runs `sync --check`, and compares the exit code with 0 and the whole output with the one line the proof names, so both values the proof names are checked.",
+          "PROOF-30: the test pins an anchor, publishes a new version, runs the script as a child process, and compares the exit code with 1, which is the only value the proof names; it reads no output, and the proof names none.",
+          "PROOF-32: the test pins an anchor, deletes its source repository, runs `sync --check --json`, and compares the exit code with 2 and the first row's status with `error`, which are the two values the proof names.",
+          "The spot tests found nothing, and each test holds a failable comparison against a literal its proof names.",
+          "The rule also says exit 2 when a named anchor does not exist, and none of the three proofs names that case, so no test shown here checks it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -414,63 +427,71 @@
         "verdict": "strong"
       },
       "RULE-38": {
-        "at": "2026-10-06T15:55:54Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-34": {
-            "after": "    return 0",
+            "after": "    return 0 if result['checked'] and result['behind'] else 0",
             "aim": "plain",
             "before": "    return 1 if result['checked'] and result['behind'] else 0",
-            "bug_key": "750069699735c17047e36edc30a1850d821771b208101f4058688d80fe37584d",
-            "case": "an anchor is pinned and a new version is published; the proof says `sync --check` exits 1 with the one behind line; the changed code prints the line and exits 0",
+            "bug_key": "edbc38c731cf9c98fc21f27d1755977fcade47e487ff3b4633ce7c12fe046460",
+            "case": "an anchor pinned and a new version published, then `sync --check`; the proof says it exits 1 with the one \"anchor pin behind\" line; the changed code prints the line and exits 0",
             "file": "scripts/anchor/upstream.py",
-            "line": 507,
+            "line": 499,
             "result": "caught",
             "why": ""
           },
           "PROOF-55": {
-            "after": "            lines.append('%s: names a source and no pin. Run purlin:anchor add '",
+            "after": "        if status in ('current', 'unpinned'):",
             "aim": "plain",
-            "before": "            lines.append('%s: names a source and no pin. Run purlin:anchor sync '",
-            "bug_key": "d4065626bccd85cfffc50b0c245e9fbd981745ddb8073b4d48af25f7737c2c70",
-            "case": "anchor `loose` names a source and no pin; the proof says the line ends `Run purlin:anchor sync loose.`; the changed code prints `loose: names a source and no pin. Run purlin:anchor add loose.`",
+            "before": "        if status == 'current':",
+            "bug_key": "3266755344009682abec5bb1e801aa9704f78a63106316ccf83df4b5fe4a3fac",
+            "case": "the anchor `loose` with a source and no pin, then `sync --check`; the proof says the one line `loose: anchor with no pin. It names a source and no pin. Run purlin:anchor sync loose.`; the changed code prints `loose: the pin is current. Run purlin:status loose to see its rules.`",
             "file": "scripts/anchor/upstream.py",
-            "line": 479,
+            "line": 470,
             "result": "caught",
             "why": ""
           },
           "PROOF-57": {
-            "after": "    if remote.get('error'):\n        return None, 'git failed'",
-            "aim": "past the test",
-            "before": "    if remote.get('error'):\n        return None, remote['error']",
-            "bug_key": "8e5b9734bf7f80db57d8913ba78f6515e205aa78c89c6eb19d3ebf5d2c7a4ecd",
-            "case": "an anchor is pinned and its source repository is deleted; the proof says the line holds git's message in the brackets; the changed code prints `no_eval: the source could not be read (git failed). Check its > Source: line, then run purlin:anchor sync no_eval.`",
+            "after": "    if result['errors']:\n        return 1",
+            "aim": "plain",
+            "before": "    if result['errors']:\n        return 2",
+            "bug_key": "3b1351f4eb76ae1d0de12f64bcc04099242f490c997a4e67f43382d61b25669e",
+            "case": "an anchor pinned and its source repository deleted, then `sync --check`; the proof says it exits 2 with the one \"anchor source not read\" line; the changed code prints the line and exits 1",
             "file": "scripts/anchor/upstream.py",
-            "line": 117,
+            "line": 498,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "8dfe20579b5b7fb1d779055e1fb80d9452c30cfe",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-34: the test pins an anchor, publishes a new version, and compares the exit code with 1 and the whole output with the one line built from the first and new sha7, so both the code and every word of the line are checked.",
+          "PROOF-34: the two sha values come from the test's own workspace and not from the command's output, so a wrong pin or a wrong new version in the line would fail it.",
+          "PROOF-55: the test writes `loose` with a source line and no pin and compares the whole output with the one literal line the proof names; it reads no exit code, and the proof names none.",
+          "PROOF-57: the test deletes the source, asks git itself for its message, and compares the exit code with 2 and the whole output with the line built from that message's first sentence cut at 80 characters.",
+          "PROOF-57: the expected message comes from a separate `git ls-remote` run and not from the code under test, and the test asserts the sentence is longer than 80 characters, so the cut is exercised.",
+          "No spot test fired, and each test compares the full printed output, so a change to any other anchor's line or an extra line would also fail.",
+          "The rule says each anchor gets one line naming its state, and none of these three proofs shows the line of an anchor that is current."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "494f26281a89add82827f8c8e48454986afe74aae4c90f5803e5f1582b126b51",
+        "proof_hash": "e346a0c13810538c0ddfd9d9d8b191ece9412750f11f50d57208cb33485874dc",
         "rule_hash": "4a0d2a785cc20b7eee673343131d08206b2748b1ad4b82ecf3ed8ba6a9378b09",
-        "test_hash": "d1dec51118ee5ae39c2605c642ce1935b0bdf060272153da89e5e0c1601b145d",
+        "test_hash": "f5121909b36df116cc34f012808af3492de40125de8c61252ce7bad5f72ef1a3",
         "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-42": {
-            "after": "              \"repository. Run purlin:anchor add %s to write its rules in \"",
+            "after": "              \"repository. Run purlin:anchor new %s to write its rules in \"",
             "aim": "past the test",
             "before": "              \"repository. Run purlin:anchor create %s to write its rules in \"",
-            "bug_key": "0d95566fb221eaba6d45135d1da71138f7b83347c58e1feec6f6c736e6f22565",
-            "case": "`refunds` added from `docs/refunds.md`, prose with no rule; the proof says it prints `... Run purlin:anchor create refunds to write its rules in this project.`; the changed code prints `... Run purlin:anchor add refunds to write its rules in this project.`",
+            "bug_key": "c3d3c2f72fd413d2cc53c06a9aaa29ec380aafd70211ffa02ba61f9b9d64656f",
+            "case": "`refunds` added from `docs/refunds.md`, prose with no rule; the proof says the line ends `Run purlin:anchor create refunds to write its rules in this project.`; the changed code prints `Run purlin:anchor new refunds to write its rules in this project.`",
             "file": "scripts/anchor/upstream.py",
             "line": 271,
             "result": "caught",
@@ -480,7 +501,7 @@
             "after": "        return None, '%s is not in the repository' % path",
             "aim": "plain",
             "before": "        return None, '%s is not in the source' % path",
-            "bug_key": "586330231a2c17788348cb1a158e37e97ac18e6c4f7bfb1913809b9f6b75c0f5",
+            "bug_key": "d6f72a0de3e14b8c6f4760be2b1fc12db8980b65cd45f28726a230cbc47b972c",
             "case": "an anchor added from `specs/absent.md`, which the repository does not hold; the proof says the message is `specs/absent.md is not in the source`; the changed code gives `specs/absent.md is not in the repository`",
             "file": "scripts/anchor/upstream.py",
             "line": 165,
@@ -488,26 +509,26 @@
             "why": ""
           },
           "PROOF-54": {
-            "after": "        return None, 'no path into the source; pass --name'",
+            "after": "        return None, 'no path into the source'",
             "aim": "plain",
             "before": "        return None, 'no path into the source; pass --path'",
-            "bug_key": "2d9d9ee91787cfd84b205c0ef5ed2dd8417ac59a1f7ce7878eb0129d2742e0c3",
-            "case": "the published repository added as `no_eval` with no `--path`; the proof says it prints `no_eval: no path into the source; pass --path`; the changed code prints `no_eval: no path into the source; pass --name`",
+            "bug_key": "129dcc276154acccb612500fbcc9d3d9664dc16636b5fb496ff353928ce3f7a2",
+            "case": "the published repository added as `no_eval` with no `--path`; the proof says it prints `no_eval: no path into the source; pass --path`; the changed code prints `no_eval: no path into the source`",
             "file": "scripts/anchor/upstream.py",
             "line": 158,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-54: the test runs `add` with no `--path` and compares the exit code with 2, the whole output with the literal line the proof names, and the anchors held with an empty list, so it observes each result the proof names.",
-          "PROOF-5: the test adds from `specs/absent.md` and compares the status with `error`, the message with the literal `specs/absent.md is not in the source`, and the anchors held with an empty list, so it observes each result the proof names.",
-          "PROOF-42: the test publishes a prose file, runs `add` on it and checks the exit code 2, that `specs/_anchors` does not exist and that the runtime folder holds no file, which are the results the proof names.",
-          "PROOF-42: the expected line comes from `_refused('docs/refunds.md')`, a helper not shown here; if it builds the line from the code's own message, a change to that wording still passes.",
-          "The spot tests found nothing, and each of the three tests holds failable comparisons against the exit code, the output and the folders."
+          "PROOF-54: the test runs `add` with no `--path` and compares the exit code with 2, the whole output with the proof's line as a literal, and the anchors held with an empty list, so it observes all three results the proof names.",
+          "PROOF-5: the test adds from `specs/absent.md` and compares the status with `error`, the message with the proof's literal, and the anchors held with an empty list, so it observes each result the proof names.",
+          "PROOF-42: the test publishes a prose file, removes the anchor folder, runs `add`, and checks exit code 2, that `specs/_anchors` does not exist, and that the runtime folder holds no file, as the proof names.",
+          "PROOF-42: the expected line comes from the helper `_refused`, whose source is not shown, so if it builds the sentence from the code's own message a changed wording still passes.",
+          "The rule also names a file on disk and a description in words as refused sources, and none of these three proofs gives either as the source."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -518,29 +539,29 @@
         "verdict": "strong"
       },
       "RULE-4": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-4": {
-            "after": "_TRACKING_RE = re.compile(r'^>[ \\t]*(?:Source|Path):.*\\n?', re.MULTILINE)",
+            "after": "_TRACKING_RE = re.compile(r'^>[ \\t]*(?:Path|Pinned):.*\\n?', re.MULTILINE)",
             "aim": "plain",
             "before": "_TRACKING_RE = re.compile(r'^>[ \\t]*(?:Source|Path|Pinned):.*\\n?', re.MULTILINE)",
-            "bug_key": "652d3d606818d851bf5786ed63c6df10e91c258669923ae6c885105cc08bcc18",
-            "case": "a published anchor carrying `> Source: git@example.com:other.git a.md` and `> Pinned: deadbeef` is added; the proof says one `> Pinned:` line naming the published sha and no `deadbeef`; the changed code gives two `> Pinned:` lines, one reading `deadbeef`",
+            "bug_key": "413cc134361f8ab991047bc97e313ac0b460f47ce62edfa496bc696936222828",
+            "case": "a published anchor carrying `> Source: git@example.com:other.git a.md` and `> Pinned: deadbeef` is added; the proof says the copy holds one `> Source:` line, this project's; the changed code leaves the carried line in, so the copy holds two `> Source:` lines",
             "file": "scripts/anchor/upstream.py",
             "line": 60,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-4: the test publishes an anchor whose text carries `> Source: git@example.com:other.git a.md` and `> Pinned: deadbeef`, adds it, and reads the copy's lines, which is the proof's case done through a real publish and add.",
-          "PROOF-4: the test compares the full list of `> Source:` lines with one line built from the workspace's own source and path, so a second `> Source:` line or a wrong source fails it.",
-          "PROOF-4: the test compares the full list of `> Pinned:` lines with one line built from the sha the publish returned, not from the code under test, so a second `> Pinned:` line or a wrong pin fails it.",
-          "PROOF-4: the test asserts `deadbeef` is in no line of the copy, so each of the three results the proof names is checked and the planted change has no way past it.",
-          "PROOF-4: the spot tests found nothing, and the test holds assertions that can fail, takes no expected value from the code and mocks nothing."
+          "PROOF-4: the test publishes an anchor whose text carries the foreign `> Source:` and `> Pinned: deadbeef` lines, adds it, and reads the written copy line by line.",
+          "PROOF-4: it compares the full list of `> Source:` lines with one line built from the workspace's own repo and path, so a second line or a wrong source fails it.",
+          "PROOF-4: it compares the full list of `> Pinned:` lines with one line built from the sha the publish step returned, a value the code under test does not supply, and it asserts `deadbeef` is in no line.",
+          "PROOF-4: the test checks every result the proof names for its case, so the planted change is the plainest one that breaks it.",
+          "Findings: the spot tests found nothing, and the test asserts on values the proof names in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -551,27 +572,27 @@
         "verdict": "strong"
       },
       "RULE-40": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-62": {
             "after": "    if os.path.isdir(anchor_path(project_root, name)):",
             "aim": "plain",
             "before": "    if os.path.lexists(anchor_path(project_root, name)):",
-            "bug_key": "f09a7f5fa78ad77d16bcc80174caf598e5e7adfcdcc8d3f75e637fdc9130f376",
-            "case": "the published anchor is added as no_eval while specs/_anchors/no_eval.md holds the project's own rule; the proof says exit 2, an answer of error and the file as it was; the changed code exits 0, answers added and overwrites the file with the published anchor",
+            "bug_key": "fb378c88792a9901bf6e16c8e8483004a3f56d72054ad218020044e4b36d59b9",
+            "case": "the published anchor added as `no_eval` while specs/_anchors/no_eval.md holds the project's own rule; the proof says exit 2, the answer `error` and the file as it was; the changed code exits 0, answers `added` and overwrites the file",
             "file": "scripts/anchor/upstream.py",
             "line": 314,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-62: the test writes the project's own anchor at specs/_anchors/no_eval.md, runs add with the name no_eval, and compares the exit code with 2, the answer's status with error and the file's text with what was written before, so each result the proof names is checked against a literal the code cannot influence.",
-          "PROOF-62: the test also compares the whole refusal message, which names purlin:anchor sync no_eval, so the part of the rule the proof leaves unnamed is checked too.",
-          "PROOF-62: the spot tests found nothing, and the test leaves no way past it for the proof's case, so the planted bug is the plain one that lets the add go through."
+          "PROOF-62: the test writes the project's own anchor at specs/_anchors/no_eval.md, adds the published anchor under that name, and compares the exit code with 2, the status with `error` and the file's text with what it wrote, so each result the proof names is observed.",
+          "PROOF-62: the test also compares the whole error message, which carries the `purlin:anchor sync no_eval` wording the rule asks for although the proof does not name it.",
+          "PROOF-62: the spot tests found nothing, and the test leaves no way past it for the proof's case, so the planted change is the plain one of letting the add go through."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -582,14 +603,14 @@
         "verdict": "strong"
       },
       "RULE-41": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-63": {
             "after": "        result.update({'status': 'refused', 'error': PATH_REFUSED % name})",
             "aim": "plain",
             "before": "        result.update({'status': 'error', 'error': PATH_REFUSED % name})",
-            "bug_key": "39497045341ecfa6172058285328edd0dd8b76c500d28d023e3efc522e2aed5e",
-            "case": "the anchor is added with --path ../../../../../private_notes.md; the proof says it exits 2 and the answer reads error; the changed code exits 0 and the answer reads refused",
+            "bug_key": "ea119a154b2e0d54d6c3715a2a17de93b63942c3099fcd2b7e0a221086ae2d58",
+            "case": "the published anchor added with --path ../../../../../private_notes.md; the proof says it exits 2 and the answer reads error; the changed code exits 0 and the answer reads refused",
             "file": "scripts/anchor/upstream.py",
             "line": 320,
             "result": "caught",
@@ -599,24 +620,24 @@
             "after": "    return (bool(re.match(r'[A-Za-z]:', path))",
             "aim": "plain",
             "before": "    return (path.startswith('/') or bool(re.match(r'[A-Za-z]:', path))",
-            "bug_key": "51c3b9d1355e3d7ccfb1afaffaca93ec1b2b27b33afa4e82bd2dbabec7cc9451",
-            "case": "the anchor is added with --path naming private_notes.md by its absolute path; the proof says the error reads \"not added. --path takes a path inside the source, with no .. and no leading /. ...\"; the changed code fetches the source and the error reads \"<absolute path> is not in the source\"",
+            "bug_key": "7c43fc9593db7202186f5c7fc57661515812f52760a44b69b11d3112c86649ac",
+            "case": "the published anchor added with --path naming private_notes.md by its absolute path; the proof says the error reads `not added. --path takes a path inside the source, with no .. and no leading /. ...`; the changed code fetches the source and the error reads `<absolute path> is not in the source`",
             "file": "scripts/anchor/upstream.py",
             "line": 151,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-63: the test first confirms the path resolves from the fetched source to the private file, then adds the anchor and compares the exit code `2`, the status `error` and an empty `specs/_anchors/`, which are the three results the proof names.",
-          "PROOF-63: the test reads neither the error's text nor whether the source was fetched, so a refusal that came only after the fetch, with \"is not in the source\", would pass it; the proof names neither value.",
-          "PROOF-64: the test adds the anchor with the absolute path and compares the exit code `2`, the status `error`, the whole error sentence and an empty `specs/_anchors/`, which is everything the proof names.",
-          "PROOF-64: the exact error sentence belongs to the refusal made before the fetch, so this test tells that refusal apart from the later \"is not in the source\" one.",
-          "The spot tests found nothing: both tests assert literal values taken from the proofs, and neither mocks the code nor swallows an error.",
-          "The rule also speaks of `sync` and of a path that leads out of the source by a link; neither PROOF-63 nor PROOF-64 covers those cases."
+          "PROOF-63: the test first confirms the path resolves from the fetched folder to the private file, then runs add and compares the exit code `2`, the status `error` and an empty `specs/_anchors/`, which are the three results the proof names.",
+          "PROOF-63: the test never reads the error's words, so it cannot tell a refusal made before the fetch from the later \"is not in the source\" refusal made after it; the proof names neither, and only the rule says \"before anything is fetched\".",
+          "PROOF-64: the test passes the absolute path of the private file and compares the exit code `2`, the status `error`, the whole error sentence and an empty `specs/_anchors/`, so each value the proof names is checked.",
+          "PROOF-64: the exact error sentence is what separates the early refusal from the later \"is not in the source\" one, so this test does observe that the path was refused by the `--path` check.",
+          "Neither proof shown covers the rule's `sync` half or a path that leads out of the source by a link.",
+          "The spot tests found nothing, and both tests assert literals that the code under test does not supply."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -627,16 +648,16 @@
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-26": {
-            "after": "        result.update({'status': 'error', 'error': 'source rejected: %s' % reason.replace('names an', 'names the')})",
+            "after": "    safe, reason = drift_module.source_url_is_safe(source)\n    if not safe and 'ext::' not in source:",
             "aim": "plain",
-            "before": "        result.update({'status': 'error', 'error': 'source rejected: %s' % reason})",
-            "bug_key": "98afb1e11cee55478b4347230d439c1bc49c0623707e78cf3259cddcda88aeb2",
-            "case": "an anchor is added from the source `ext::sh -c touch% <a marker file>`; the proof says the message is `source rejected: names an ext:: transport`; the changed code gives `source rejected: names the ext:: transport`",
+            "before": "    safe, reason = drift_module.source_url_is_safe(source)\n    if not safe:",
+            "bug_key": "fd852b71a59f96079ab89abce87df3434c6cee09437735592fbce30fe9c95eb5",
+            "case": "an anchor added from the source `ext::sh -c touch% <a marker file>`; the proof says the answer reads error with the message `source rejected: names an ext:: transport`; the changed code lets the source past the refusal, so the answer carries a different message",
             "file": "scripts/anchor/upstream.py",
-            "line": 324,
+            "line": 323,
             "result": "caught",
             "why": ""
           },
@@ -644,35 +665,35 @@
             "after": "    return os.path.join(project_root, ANCHOR_DIR, name + '.markdown')",
             "aim": "plain",
             "before": "    return os.path.join(project_root, ANCHOR_DIR, name + '.md')",
-            "bug_key": "ad0b7fdfe7058618f61add92d7d999e8a794d66b0cd91e17826589fd1b6b2571",
-            "case": "the published anchor is added from its repository on disk; the proof says `specs/_anchors/` then holds `no_eval.md`; the changed code writes `no_eval.markdown` there and no `no_eval.md`",
+            "bug_key": "50d4f9bba95e90002efd9389ddf0b4b379dfa254df5a088456d496dc6c05aadb",
+            "case": "the published anchor added from its repository on disk; the proof says `specs/_anchors/` then holds `no_eval.md`; the changed code writes `no_eval.markdown` there instead",
             "file": "scripts/anchor/upstream.py",
             "line": 189,
             "result": "caught",
             "why": ""
           },
           "PROOF-6": {
-            "after": "        result.update({'status': 'error', 'error': 'source rejected: %s' % reason.replace('\"-\"', '-')})",
+            "after": "    safe, reason = drift_module.source_url_is_safe(source)\n    if not safe and not source.startswith('-'):",
             "aim": "plain",
-            "before": "        result.update({'status': 'error', 'error': 'source rejected: %s' % reason})",
-            "bug_key": "aed039d80ca8da5ebdf4f5c3979ed5d3830aac0bde18f6112bb974a2c9dc8f59",
-            "case": "an anchor is added from the source `--upload-pack=touch <a marker file>`; the proof says the message is `source rejected: begins with \"-\"`; the changed code gives `source rejected: begins with -`",
+            "before": "    safe, reason = drift_module.source_url_is_safe(source)\n    if not safe:",
+            "bug_key": "e7af823a4edf9eda26b16c2d4b537b4b2df58596cfa8cea81bb2602784e5be5a",
+            "case": "an anchor added from the source `--upload-pack=touch <a marker file>`; the proof says the answer reads error with the message `source rejected: begins with \"-\"`; the changed code lets the source past the refusal, so the answer carries a different message",
             "file": "scripts/anchor/upstream.py",
-            "line": 324,
+            "line": 323,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-6: the test adds from the `--upload-pack=touch` source and compares the status with `error`, the message with the exact string `source rejected: begins with \"-\"`, the anchors held with an empty list, the marker file's absence and the record of started processes with an empty list, which is every result the proof names.",
-          "PROOF-26: the test adds from the `ext::sh -c touch%` source and compares the status, the exact message `source rejected: names an ext:: transport`, the empty anchors folder, the missing marker file and the empty record of started processes, which is every result the proof names.",
-          "PROOF-27: the test adds the published anchor, checks the status reads `added`, that at least one started process is `git`, and that the anchors held are exactly `no_eval.md`, which is what the proof names.",
-          "PROOF-27: this test also shows the recorder of started processes does see a process, so the empty record in the tests of PROOF-6 and PROOF-26 can fail.",
-          "The spot tests found nothing, and each test asserts literal values the proof names, taken from the proof and not from the code.",
-          "PROOF-6 and PROOF-26: the test shown does not reveal how the record of started processes is kept, so a process started by a route that record does not watch would be seen only through the marker file."
+          "PROOF-6: the test adds from the dash source and compares the status, the exact message, the anchors held, the marker file and the record of started processes, which is each result the proof names.",
+          "PROOF-26: the test adds from the `ext::` source and compares the status, the exact message, the anchors held, the marker file and the record of started processes, which is each result the proof names.",
+          "PROOF-27: the test adds the published anchor, checks that a `git` process is in the record and that the anchors held are exactly `no_eval.md`, which is what the proof names.",
+          "PROOF-27: the recorder that reads empty in the two refusals is shown to see `git` start here, so an empty record in those tests is not a recorder that sees nothing.",
+          "PROOF-6 and PROOF-26: the refusal itself is decided in the drift module, which is not among the files shown, so the bugs here are planted where `add` acts on that answer.",
+          "Findings: the spot tests found nothing, and each test holds the values its proof names in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -683,30 +704,29 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:27:41Z",
         "bugs": {
           "PROOF-8": {
             "after": "    behind = [r for r in rows if r['status'] in ('synced',)]",
             "aim": "plain",
             "before": "    behind = [r for r in rows if r['status'] in ('behind', 'synced')]",
-            "bug_key": "14efe51471c7167398036c1e2759c7f8e6e0e4216d8907a16a060a3b8446b680",
-            "case": "an anchor is pinned and a new version is published, then `sync --check` runs; the proof says the row is `behind` and the count is 1 behind; the changed code gives a count of 0 behind",
+            "bug_key": "a2c12b585190a83479c1feb198a294a642a4992bd75df3c968cd0fd0b4041aaf",
+            "case": "an anchor pinned at the first sha with a new version published, then `sync --check`; the proof says it counts 1 behind; the changed code counts 0 behind",
             "file": "scripts/anchor/upstream.py",
             "line": 403,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d2839f125e83d9eb06666a38a917f0e4caf1c1db7a38c08dde11df0679718fcc",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "72efb495a44620b87908a33673bc83f9cc3d77a2b2928f7f95f33ba90dc200a2",
+        "commit": "51c4066986bb08fa51c539bbefa52514cf3c391b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-8: the test pins an anchor, publishes a new version, runs the check and compares the row's status with `behind`, `pinned` with the first sha, `remote_sha` with the new sha and the count with 1, so each value the proof names is observed.",
-          "PROOF-8: the new sha comes from the helper that publishes the version and the first sha from the workspace, so neither expected value is taken from the code under test.",
-          "PROOF-8: the test compares the project's files before and after the check through a helper whose source is not shown, so whether every file is compared byte for byte, the runtime folder included, cannot be read from the test alone.",
-          "PROOF-48: the test is the same one as PROOF-8's and holds nothing specific to Windows, so it observes the Windows case only when it is run on Windows.",
-          "PROOF-48: the proof says \"both shas\" and the test compares `pinned` and `remote_sha` with the two shas separately, so both are observed.",
-          "Findings: the spot tests found nothing, and the test's assertions can each fail on a wrong status, sha, count or changed file."
+          "PROOF-8: the test pins an anchor, publishes a new version, runs sync with check on, and compares the row's status with `behind`, its `pinned` with the first sha, its `remote_sha` with the new sha and the behind count with 1, so each value the proof names is compared.",
+          "PROOF-8: the test compares the project's files before and after the check through a helper whose source is not shown, so whether every file is compared byte for byte, or some folders are left out, cannot be read from the test's own lines.",
+          "PROOF-8: the expected shas come from the workspace fixture and the helper that publishes the new version, not from the sync function, so the expected values are not taken from the code under test.",
+          "PROOF-48: its test is the same test as PROOF-8's and its own lines hold nothing specific to Windows, so on this machine it observes the same case as PROOF-8.",
+          "Findings: the spot tests found nothing, and the test's own lines hold failable comparisons for each named value."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
