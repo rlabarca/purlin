@@ -3,8 +3,19 @@
 One test per proof of `specs/skills/skill_audit.md`. The check is `must_name`
 in `dev/skill_checks.py`; a copy of the skill with one name taken out is read
 through `copy_without`, and the file on disk is never touched.
+
+The last test is of an AI proof: it hands the sample lab of
+`dev/sample_lab.py` to a real session with this repository as its plugin,
+through the helper the run names in `PURLIN_AI`, and asserts on the folder
+the helper prints. It skips where `PURLIN_AI` is not set, so this file run
+by hand, and the sweep, reach no model.
 """
 
+import os
+
+import pytest
+
+import sample_lab
 from skill_checks import (copy_without, flat, must_name, not_named, read,
                           skill_path, under_heading)
 
@@ -76,3 +87,23 @@ WRONG_OUTPUT = ('For an AI proof the planted bug is a wrong output, and '
 # purlin: skill_audit PROOF-63
 def test_the_skill_says_what_is_planted_for_an_ai_proof():
     assert WRONG_OUTPUT in flat(read(SKILL))
+
+
+needs_the_helper = pytest.mark.skipif(not os.environ.get('PURLIN_AI'),
+                                      reason=sample_lab.NOT_STARTED)
+
+AUDIT = 'Run purlin:audit sample_intake. Work only in this folder.'
+EVIDENCE = '.purlin/evidence/local/sample_intake.json'
+
+
+# purlin: skill_audit PROOF-64
+@needs_the_helper
+def test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule(
+        tmp_path, no_real_model):
+    root = sample_lab.for_a_session(tmp_path, audit_first=False)
+    assert sample_lab.entries(root) == {}
+    output = sample_lab.session(root, AUDIT, no_real_model)
+    assert EVIDENCE in sample_lab.files_of(output)
+    rules = sample_lab.entries(os.path.join(output, 'files'))
+    assert rules['RULE-7']['verdict'] == 'weak'
+    assert 'purlin:build sample_intake' in sample_lab.reply_of(output)

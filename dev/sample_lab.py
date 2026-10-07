@@ -53,6 +53,21 @@ fake grader that accepts, `note_audit` audits it with a fake `claude`
 each grade the audit's replays ask for, and `note_settle` runs the script
 with `--settle`. `wrong_outputs` is the reply that names one wrong output
 for each proof.
+
+**The lab a real session is handed** is what the three AI proofs of
+`specs/skills/` run on. `for_a_session(folder)` builds the lab, restores
+the files `purlin:init` writes so the status names no update, audits it
+once with a fake `claude` that answers `REPLY`, and commits everything
+under an identity the repository itself holds, so a session can commit in
+its copy. `audit_first=False` leaves the lab never audited, and
+`loose=True` writes `PROOF-5` as `LOOSE_PROOF_5`, a sentence that names no
+time and no age, and audits with `LOOSE_REPLY`. The set-up reaches no real
+model. `session(root, message, fake)` then hands the project to the helper
+the run names in `PURLIN_AI`, with this repository as the plugin, the fake
+`claude` of `dev/conftest.py` off PATH and the folder of the Python that
+runs the test first on it, and `grade(feature, proof, fake)` starts the
+helper's `grade` the same way. Those two calls reach a real model, and a
+test makes them only where `PURLIN_AI` is set.
 """
 
 import io
@@ -918,3 +933,137 @@ def note_runs(root, proof):
                         if model.get('model') == MODEL
                         for made in model.get('runs') or ()]
     return []
+
+
+# ---------------------------------------------------------------------------
+# The lab a real session is handed: the three AI proofs of `specs/skills/`
+# ---------------------------------------------------------------------------
+
+UPDATE_SCRIPT = os.path.join(_ROOT, 'scripts', 'init', 'update.py')
+
+# Why a test of an AI proof skips where the run did not start it.
+NOT_STARTED = 'an AI proof: purlin:test --all starts it'
+
+# `PROOF-5` as the lab has it, and as a sentence that names too little to
+# write a check from: no collection time, no receipt time and no age.
+PROOF_5 = ('- PROOF-5 (RULE-3): A sample collected at `2026-03-01T08:00` is '
+           'received at `2026-03-02T09:30`; its age is `25` hours\n')
+LOOSE_PROOF_5 = ('- PROOF-5 (RULE-3): A sample received the day after it was '
+                 'collected has its age in whole hours\n')
+# The bug `REPLY` holds for `PROOF-5`, its case worded for a proof that
+# names no age.
+CASE_5_LOOSE = ('a sample received 25 and a half hours after it was '
+                'collected; the proof names no age; the changed code gives '
+                '26 hours where the code gave 25')
+LOOSE_REPLY = dict(REPLY, **{
+    'PROOF-5': fake_claude.change(
+        'src/intake.py', '    return int(seconds // 3600)',
+        '    return int(round(seconds / 3600))', case=CASE_5_LOOSE,
+        aim='past the test'),
+})
+QUINN = (('user.name', 'Quinn'),
+         ('user.email', 'quinn.qa@labconnect.example'),
+         ('commit.gpgsign', 'false'))
+
+
+def for_a_session(folder, audit_first=True, loose=False):
+    """Build the sample lab under `folder` as a real session is handed it,
+    and give its root.
+
+    The repository holds its own identity, the files `purlin:init` writes
+    are restored, and everything is committed. With `audit_first`, the lab
+    is audited once with a fake `claude`, so `RULE-2`, `RULE-3` and `RULE-7`
+    read `weak`, a bug kept as `survived` for `PROOF-3` and `PROOF-5`. With
+    `loose`, `PROOF-5` reads `LOOSE_PROOF_5` from the lab's first commit on.
+    No call reaches a real model.
+    """
+    folder = str(folder)
+    root = build(folder)
+    for name, value in QUINN:
+        _git(root, 'config', name, value)
+    if loose:
+        _replace(root, 'specs/intake/sample_intake.md', PROOF_5,
+                 LOOSE_PROOF_5)
+        # Into the lab's one commit, so the proof was never reworded.
+        _git(root, 'commit', '-qa', '--amend', '--no-edit')
+    for script, args in ((UPDATE_SCRIPT, ['--yes']),
+                         (RUN_SCRIPT, ['--all', '--test'])):
+        done = subprocess.run(
+            [sys.executable, script, '--project-root', root] + args,
+            capture_output=True, text=True, cwd=root)
+        assert done.returncode == 0, done.stdout + done.stderr
+    if audit_first:
+        directory = fake_claude.install(
+            os.path.join(folder, 'claude'),
+            answers=[LOOSE_REPLY if loose else REPLY])
+        previous = os.environ.get('PATH', '')
+        os.environ['PATH'] = directory + os.pathsep + previous
+        try:
+            found = shutil.which('claude')
+            assert found and os.path.realpath(found).startswith(
+                os.path.realpath(folder)), found
+            code, lines = audit(root)
+        finally:
+            os.environ['PATH'] = previous
+        assert code == 0, lines
+        assert entries(root)['RULE-3']['verdict'] == 'weak', lines
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'purlin: evidence of the sample lab')
+    assert _git(root, 'status', '--porcelain') == ''
+    return root
+
+
+def _helper(fake, *args):
+    """The helper `PURLIN_AI` names, started with `args` in this
+    repository, where the specs of the three proofs are: the process as it
+    ended. `fake`, the folder of the fake `claude` of `dev/conftest.py`, is
+    taken off PATH for the helper and for what it starts, and the folder
+    of this Python goes first, so a session's `python3` has pytest. Python
+    is told to keep no compiled file, so `files/` holds none."""
+    env = dict(os.environ)
+    env['PATH'] = os.pathsep.join(
+        [os.path.dirname(sys.executable)] + [
+            entry for entry in env.get('PATH', '').split(os.pathsep)
+            if entry and os.path.realpath(entry) != os.path.realpath(fake)])
+    env['PYTHONDONTWRITEBYTECODE'] = '1'
+    return subprocess.run(
+        [sys.executable, os.environ['PURLIN_AI']] + list(args),
+        capture_output=True, text=True, encoding='utf-8', env=env, cwd=_ROOT)
+
+
+def session(root, message, fake):
+    """Hand the project at `root` and `message` to a real session with this
+    repository as its plugin: the output folder the helper printed."""
+    done = _helper(fake, 'run', '--plugin', _ROOT, '--project', root,
+                   '--say', message)
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout.strip()
+
+
+def grade(feature, proof, fake):
+    """Have the grader of `proof` of `feature` judge the output this test
+    made: the helper's process as it ended."""
+    return _helper(fake, 'grade', '--feature', feature, '--proof', proof)
+
+
+def reply_of(output):
+    """`reply.md` of the output folder `output`."""
+    with open(os.path.join(output, 'reply.md'), encoding='utf-8') as handle:
+        return handle.read()
+
+
+def files_of(output):
+    """The `/` separated path of each file under `files/` of `output`."""
+    top = os.path.join(output, 'files')
+    return sorted(
+        os.path.relpath(os.path.join(dirpath, name), top).replace(os.sep, '/')
+        for dirpath, _dirnames, filenames in os.walk(top)
+        for name in filenames)
+
+
+def marked(text, proof):
+    """The lines of the test file `text` from the comment that marks
+    `proof` of `sample_intake` up to the next marked test."""
+    opening = '# purlin: %s %s\n' % (FEATURE, proof)
+    assert text.count(opening) == 1, proof
+    return text.split(opening)[1].split('\n# purlin: ')[0]

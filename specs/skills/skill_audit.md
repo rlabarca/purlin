@@ -4,10 +4,11 @@
 >   tests, the heuristic spot tests and one planted bug per proof, aimed past that proof's test,
 >   writes what it found into the evidence and reports the share of rules it found strong. The
 >   skill names the commands and the files a reader needs to run it and to act on what it found.
+>   This spec also holds what a session asked to audit does with the skill.
 > Scope: skills/audit/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 33
-> Highest-Proof: 63
+> Highest-Rule: 34
+> Highest-Proof: 64
 
 ## Rules
 
@@ -16,6 +17,7 @@
 - RULE-31: The audit skill shows the line that refuses a settle for a test that has not changed and the sentence a settle under `--sound` leaves, each in the words `references/review_criteria.md` gives under its heading `Settling a finding`
 - RULE-32: The audit skill shows the line an audit without `--settle` prints for a bug that survived, was planted again and still gets past its test, in the words `references/review_criteria.md` gives under its heading `The planted bug`
 - RULE-33: The audit skill says what the planted bug is for an AI proof, and shows its finding with a file of the output
+- RULE-34: A session asked to audit a feature runs the audit, which writes what it found into the evidence, and names `purlin:build <feature>` where a rule reads `weak`
 
 ## Proof
 
@@ -25,3 +27,4 @@
 - PROOF-61 (RULE-31): The audit skill and the part of `references/review_criteria.md` under the heading `Settling a finding` each hold `its test is as it was when the bug got past it. Strengthen it with purlin:build, then settle.` and `was settled with its test unchanged: it was judged to assert what the proof names.`
 - PROOF-62 (RULE-32): The audit skill and the part of `references/review_criteria.md` under the heading `The planted bug` each hold `its test is as it was and still passes with the bug it missed. Strengthen it with purlin:build.`
 - PROOF-63 (RULE-33): The text of `skills/audit/SKILL.md` holds the sentence ``For an AI proof the planted bug is a wrong output, and `<file>` is a file of that output, as in `PROOF-4: the test still passes when reply.md:12 reads "Refund approved."` ``
+- PROOF-64 (RULE-34): On the sample lab, never audited, whose test of `PROOF-11` of `sample_intake` checks nothing, a session with the plugin is given `Run purlin:audit sample_intake. Work only in this folder.`; `.purlin/evidence/local/sample_intake.json` is among the files it changed and reads `RULE-7` as `weak`, and its reply holds `purlin:build sample_intake` @ai(claude-opus-5-5)
