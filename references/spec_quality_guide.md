@@ -397,7 +397,7 @@ to read. A rule checked by hand alone reads `checked at sign-off` in both cells 
 notes it. A person looks at it in the
 sign-off walk of `purlin:sign` and may type what they saw, and the sign-off records that note;
 the rule then shows its last note, the version it was signed at and how many commits have come
-since. Use `@manual` where judgment is the only instrument.
+since. Use `@manual` where a person's judgment is the only instrument.
 
 ## When a rule is stuck
 

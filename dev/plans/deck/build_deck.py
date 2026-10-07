@@ -259,7 +259,7 @@ slide('regulated', 'Regulated work', 'Purlin supplies evidence. It does not clai
  'reaches it in the rule\'s own words.', numbers=False)
 slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
     ('A proof is pass or fail', 'A test checks an exact result, like the message %s.' % m('Account locked')),
-    ('A judgment call is not', '"It looks good." "It is easy to use." A test cannot decide these, and neither can an AI.', [
+    ('A judgment call is not', '"It looks good." "It is easy to use." A test cannot decide these.', [
         ('Tag it @manual', 'Add %s to the proof. No test runs for it.' % m('@manual')),
         ('A person signs for it', '%s stops there. A person checks it and writes what they saw.' % m('purlin:sign'))]),
 ], '<b>Not everything needs a rule.</b> Look and feel can stay outside Purlin.',

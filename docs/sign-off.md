@@ -20,8 +20,8 @@ flowchart LR
 Product, QA and developers improve rules, proofs and tests on their branches. `Left to do`
 lists only work. The sign-off is the final check, once everybody is done.
 
-A judgment call takes a proof tagged `@manual`. It is a hand check: no test runs for it, and
-the walk stops at it. [specs-and-anchors.md](specs-and-anchors.md) says when to tag one.
+A judgment call a person must make takes a proof tagged `@manual`. It is a hand check: no test
+runs for it, and the walk stops at it. [specs-and-anchors.md](specs-and-anchors.md) says when to tag one.
 
 ## Before you sign, a developer runs and commits every test
 

@@ -68,8 +68,9 @@ worth having.
 
 ## Five tags say how, when and where a proof is shown
 
-A test can check a result. Only a person can make a judgment call. A tag stands at the end of
-the proof line:
+A test can check a result. A judgment call is checked by hand, or graded by an AI where an AI
+produced the thing judged: [graded-by-ai.md](graded-by-ai.md) says how the three differ. A tag
+stands at the end of the proof line:
 
 ```
 - PROOF-5 (RULE-2): Read the error messages against the brand voice guide @manual
@@ -77,7 +78,7 @@ the proof line:
 
 | Tag | Use it for | What happens |
 |---|---|---|
-| `@manual` | A judgment call only a person can make, like "it looks good" or "it is easy to use". A test cannot decide these. | No test runs for it. `purlin:sign` stops there; a person checks it and writes what they saw. Until then the rule reads `checked at sign-off`. |
+| `@manual` | A judgment call a person must make, like "it looks good" or "it is easy to use". A test cannot decide these. | No test runs for it. `purlin:sign` stops there; a person checks it and writes what they saw. Until then the rule reads `checked at sign-off`. |
 | `@slow` | A proof whose tests take a long time, like integration tests and acceptance tests. | `purlin:test` skips it while you build. `purlin:test --all` runs it. When it is due, every status says so: `1 slow proof to run: purlin:test --all` |
 | `@env(windows)`, `@env(macos)`, `@env(linux)` | A proof that must be shown on one operating system. | Only a run on that system proves it. Anywhere else the rule reads `not run`, with the reason `Windows: no run yet`. |
 | `@ai(<model>)` | A proof about what an AI does with a prompt or a skill. The tag names each model it is shown on. | `purlin:test --all` runs its test 3 times on each model, and every run must pass. There is one result per model. |
