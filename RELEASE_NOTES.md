@@ -126,7 +126,11 @@ In more words:
   kind, what is wrong, what to run, on one line. A reworded proof shows the words that changed
   alone: `package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after dev/test_export.py:336 last changed (82c91f6). Run purlin:build package.`
   The dashboard sets the name in the machine typeface and the kind as a label, and a name that
-  is a rule or a proof opens that rule.
+  is a rule or a proof opens that rule. A test run's lines take the shape too:
+  `login RULE-2: rule to fix. tests/test_login.py::test_wrong_password fails. Run purlin:build login.`
+  Three or more of one kind fold into one line in the terminal as on the dashboard, and
+  `purlin:status <name>` prints each of that spec's lines whole. `purlin:drift` shows a changed
+  proof by the words that changed, and no line runs long because of its explanation.
 - **A spec ahead of its code is information, not a warning**:
   `login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.`
 - **Purlin runs the tests where you are.** A proof tagged `@env(<os>)` for a system your machine
