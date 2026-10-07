@@ -33,18 +33,17 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-07T18:25:02Z",
+        "at": "2026-10-07T18:27:31Z",
         "bugs": {
           "PROOF-2": {
             "after": "    return resolve_project_root(start_dir)[first := 0]",
             "aim": "past the test",
             "before": "    return resolve_project_root(start_dir)[0]",
-            "bug_key": "fb5819054a7b55eb87f15362d5419151b844d5592e6209ed25d4a7ae9f542ecc",
+            "bug_key": "a36f8d9697fb8b5a98461b4d4ad5211f4579e87db17b988c64409831c1b2bfec",
             "case": "scripts/mcp/config_engine.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file holds an assignment expression unparenthesized in an index, which 3.9 rejects and 3.10 and later accept",
             "file": "scripts/mcp/config_engine.py",
             "line": 109,
-            "result": "survived",
-            "test_key": "b9d7166ddff91c6b7688024f7c277f68f5970d2ed5917283e0a01cf60fdc5609",
+            "result": "caught",
             "why": ""
           },
           "PROOF-4": {
@@ -62,81 +61,52 @@
             "after": "    text = '%d of %d' % (rollup.get('untested') or 0, rollup.get('rules') or 0)",
             "aim": "past the test",
             "before": "    text = '%d of %d' % (passing(rollup), rollup.get('rules') or 0)",
-            "bug_key": "8a3f6c5c411fb02c4d8bf92e9e56503b9773812e75164700471be8b8b2e803bf",
+            "bug_key": "d91918c0fd96bf77cb7fa1f9c450f6984348cdc2f244b9cd3198fa1a0f5a7d0c",
             "case": "the server's status of a set-up project with the one spec app, whose rule has not passed; the proof says it answers with a table row for app; the changed row reads 1 of 1 under Tests where the rule's row reads 0 of 1",
             "file": "scripts/mcp/purlin/board.py",
             "line": 135,
-            "result": "survived",
-            "test_key": "6a5a0f0170f4669decd99e8fcffeb6d4799c98f33d1081ddf21642b046a3ce79",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
-        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "commit": "d4b92fd9c9f1b8e8c2719af467ae6bb33cacc739",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-2: the test hands every tracked Python file under scripts/ to two helpers defined outside the test and asserts both return nothing, so what counts as Python 3.9 grammar is whatever those helpers read.",
-          "PROOF-2: the test shows the helpers flag a match statement and an f-string that reuses its own quote, and shows no other construct later than 3.9 being flagged, so one a newer parser accepts under a 3.9 setting could pass.",
-          "PROOF-2: the f-string check on the made-up file runs only where the tokenizer has FSTRING_START, so on an older Python that half of the test asserts nothing about a flagged file.",
-          "PROOF-4: the test sets a project up under Python 3.9, runs the tests and asserts exit code 0 and the exact line `Markers: 1 tied to a test, 0 not tied.` in standard output, which is the proof's case and both of its results.",
-          "PROOF-4: the test is skipped where no Python 3.9 is found, so on such a machine it observes nothing.",
-          "PROOF-5: the test asserts exit code 0 and a line opening `app`, `1`, `1`, so it reads the row's name, rule count and proof count and never the Tests cell that ends the row.",
-          "PROOF-5: the test does not show that the exit follows the closing of the input, only that the process ended with 0.",
-          "No proof of the rule names a failure case, such as what a 3.9 run prints when a script holds later syntax."
-        ],
-        "findings": [
-          "PROOF-2: the test still passes when scripts/mcp/config_engine.py:109 reads \"return resolve_project_root(start_dir)[first := 0]\"",
-          "PROOF-2: the AI says this breaks: scripts/mcp/config_engine.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file holds an assignment expression unparenthesized in an index, which 3.9 rejects and 3.10 and later accept",
-          "PROOF-5: the test still passes when scripts/mcp/purlin/board.py:135 reads \"text = '%d of %d' % (rollup.get('untested') or 0, rollup.get('rules') or 0)\"",
-          "PROOF-5: the AI says this breaks: the server's status of a set-up project with the one spec app, whose rule has not passed; the proof says it answers with a table row for app; the changed row reads 1 of 1 under Tests where the rule's row reads 0 of 1"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "9595d2c89c408b9a6a252869ad680b7ed1b3aa1c8dd0d22680dddbd28da32ea9",
         "rule_hash": "83b3d888c56bb0bfb2bde8748a501a2ba2e50bcf2ace37991b81fdedf5d14d35",
-        "test_hash": "a116e46359ad787ebb3666548c4c7b172fab336c43cbc9e9f3ee24d9b15d3baf",
-        "verdict": "weak"
+        "test_hash": "f6100a24eb108e5ef0cab0b40dba0066c1d033e9c5301a0c77aedce4d6fedec7",
+        "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-07T18:25:02Z",
+        "at": "2026-10-07T18:27:31Z",
         "bugs": {
           "PROOF-6": {
             "after": "    try:\n        subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'],\n                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                         stderr=subprocess.DEVNULL, env={}, cwd=os.sep,\n                         start_new_session=True)\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
             "aim": "past the test",
             "before": "    try:\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
-            "bug_key": "6c704281d645bb2bc859dcb6ba7844cec8b5fad4d9eb9750c14b442df5422c66",
+            "bug_key": "0ec41931d661493b96fa258f1cd2650bb405561f832756cbff4bcf57f445cb3c",
             "case": "a test run with --commit and the status in a scratch project; the proof says no process either started is still running; the changed code leaves a detached process running for 600 seconds after each exits 0",
             "file": "scripts/mcp/purlin/status.py",
             "line": 638,
-            "result": "survived",
-            "test_key": "b7ca8ceba80466f5e3ce54dbe48c9590d70d304fbfb00c97a8caceb26bc14a90",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
-        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "commit": "d4b92fd9c9f1b8e8c2719af467ae6bb33cacc739",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-6: the test runs setup, a test run with `--commit` and the status in a scratch project, each in a process group of its own, and asserts that each exits 0.",
-          "PROOF-6: it then asserts that the helper which looks for leftover processes by the three commands' groups and the scratch project returns an empty list.",
-          "PROOF-6: off Windows it also asserts that no process other than the test's own carries the marker variable the test set in the environment.",
-          "PROOF-6: a process that starts a session of its own, is given an empty environment and has a command line naming nothing of the project is in none of the three groups and carries no marker, so the test as written is likely to miss it.",
-          "PROOF-6: on Windows the environment check is skipped, so only the process groups and the command line are observed there.",
-          "PROOF-6: the proof names `0` and the test compares each return code with 0, so the spot tests have nothing to find."
-        ],
-        "findings": [
-          "PROOF-6: the test still passes when scripts/mcp/purlin/status.py:638 reads \"subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'],\"",
-          "PROOF-6: the AI says this breaks: a test run with --commit and the status in a scratch project; the proof says no process either started is still running; the changed code leaves a detached process running for 600 seconds after each exits 0"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-6 holds three commands and two observations in one case, the exit codes and the leftover processes."
-        ],
         "proof_hash": "8b4a1e30c44dfe443f1533df6f8cf3c5ea0554a9c85de3f63a1b58c368b02cbc",
         "rule_hash": "7e040db3b040d335fd4d6bc9775c37a18b6041724ccadbda6fa8da3e4ce18769",
-        "test_hash": "f60b16b9397cb7d286f0954fc0906e75a0bc22dd6f720e8c6ac565a55b476086",
-        "verdict": "weak"
+        "test_hash": "f313165c7e67677d368eb406aa511b77171784764faeb5169c8bc1b2a0532ef9",
+        "verdict": "strong"
       },
       "RULE-4": {
         "at": "2026-10-07T18:25:02Z",
@@ -176,14 +146,14 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:14Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:27:09Z",
+      "commit": "d4b92fd9c9f1b8e8c2719af467ae6bb33cacc739",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
         "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
-        "tests": "789d72b36fd642dd649f875c55c7410a94a6dab69e8e63af95fef3cb43da6227"
+        "tests": "5a91c45f636331542ec0306772216d7888b14df48807bf4e14ed63aa273406c0"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -195,14 +165,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 2.527,
+                "duration": 2.577,
                 "name": "test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
@@ -217,14 +187,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.266,
+                "duration": 0.454,
                 "name": "test_every_python_file_under_scripts_parses_as_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
@@ -239,14 +209,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.876,
+                "duration": 1.285,
                 "name": "test_a_test_run_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
@@ -261,14 +231,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.642,
+                "duration": 0.674,
                 "name": "test_the_status_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
@@ -283,14 +253,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoProcessLeft",
-                "duration": 2.762,
+                "duration": 2.049,
                 "name": "test_no_command_leaves_a_process_running",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
@@ -305,14 +275,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 0.239,
+                "duration": 0.255,
                 "name": "test_no_skill_and_not_the_agent_definition_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
             }
           },
           "result": "pass",
