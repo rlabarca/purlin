@@ -11,8 +11,8 @@
 >   system it runs on. The reader never writes.
 > Scope: scripts/mcp/purlin/fingerprint.py, scripts/mcp/purlin/evidence.py
 > Stack: python/stdlib, hashlib, json, subprocess (list-only)
-> Highest-Rule: 35
-> Highest-Proof: 91
+> Highest-Rule: 39
+> Highest-Proof: 101
 
 ## Rules
 
@@ -35,6 +35,10 @@
 - RULE-18: Reading evidence writes nothing: the evidence folder holds the same files with the same bytes after a load as before it
 - RULE-20: A section's result for a proof is the worst of the entries it lists against that proof: `fail` where one failed, else `not run` where one reads `missing` or `not run`, else `pass`, so a proof has passed only when every test tied to it ran and passed
 - RULE-27: The machine the reader runs on is `windows` on Windows, `macos` on macOS, and `linux` on any other system
+- RULE-36: The `spec` part covers the models a proof's `@ai` tag names, its `runs=` and the grader its `@graded` tag names: a proof's line ends `@ai(<models>)`, the models joined by `,` with `runs=<n>` after them where the proof sets it, then `@graded(<grader>)` where it names one, so naming another model, another `runs=` or another grader changes `spec` and no other part
+- RULE-37: The `runs` setting of `.purlin/config.json` is in no part of a fingerprint and is not read as a change to the `tests` setting, so changing it leaves every section current
+- RULE-38: A model's entry under a proof's `models` reads `failed` where one of its runs reads `fail`; else `not run` where one of its runs reads `not run` or it holds fewer runs than are asked for now; else `passed`
+- RULE-39: Read against the runs asked for now, a proof entry that holds `models` gives `fail` where one model reads `failed`, else `not run` where one reads `not run` or the entry names no model, else `pass`, whatever `result` it stores
 
 ## Proof
 
@@ -82,3 +86,13 @@
 - PROOF-29 (RULE-20): A section lists `PROOF-1` twice, `missing` with one test and `fail` with another; the reader gives `PROOF-1` the result `fail`
 - PROOF-25 (RULE-27): On a system that names itself `freebsd14`, the reader gives the machine it runs on as `linux`
 - PROOF-75 (RULE-27): On Windows, with nothing simulated, the reader gives the machine it runs on as `windows` @env(windows)
+- PROOF-92 (RULE-36): The proof of `login` ends `@ai(model-a)`; it is changed to end `@ai(model-a, model-b)`, and the fingerprint of `login` differs from the one taken before in `spec` alone
+- PROOF-93 (RULE-36): The proof of `login` ends `@ai(model-a)`; it is changed to end `@ai(model-a, runs=5)`, and the fingerprint of `login` differs from the one taken before in `spec` alone
+- PROOF-94 (RULE-36): The proof of `login` ends `@ai(model-a) @graded(grader-a)`; it is changed to end `@ai(model-a) @graded(grader-b)`, and the fingerprint of `login` differs from the one taken before in `spec` alone
+- PROOF-95 (RULE-36): The line the `spec` part reads for the proof `POST /login; verify 200 @ai(model-a, model-b, runs=5) @graded(grader-a)` is `specs/auth/login.md PROOF-1 RULE-1 POST /login; verify 200 @slow @ai(model-a,model-b,runs=5) @graded(grader-a)`, and for the proof `POST /login; verify 200` it is `specs/auth/login.md PROOF-1 RULE-1 POST /login; verify 200`
+- PROOF-96 (RULE-37): The settings hold `runs` `3` and are committed; `runs` is changed to `5`, and all three parts of the fingerprint of `login` equal the ones taken before
+- PROOF-97 (RULE-37): A `local` section of `login` for this system names the commit whose settings hold `runs` `3` and stores the fingerprint taken there; `runs` is changed to `5`, and the `tests` setting does not read as changed since the evidence was taken
+- PROOF-98 (RULE-38): Asked for `3` runs, a model holding the runs `pass`, `fail`, `pass` reads `failed`, one holding `pass`, `not run` reads `not run`, one holding `pass`, `pass` reads `not run`, and one holding `pass`, `pass`, `pass` reads `passed`
+- PROOF-99 (RULE-38): A model holding the runs `pass`, `pass`, `pass` reads `passed` asked for `3` runs and `not run` asked for `5`
+- PROOF-100 (RULE-39): A section lists `PROOF-1` with `result` `pass` and one model holding three runs that each read `pass`; read with `3` runs asked for `PROOF-1`, the reader gives `PROOF-1` the result `pass`, and read with `5` it gives `not run`
+- PROOF-101 (RULE-39): A section lists `PROOF-1` with `result` `pass` and two models, the first holding three runs that read `pass`, the second the runs `pass`, `fail`, `pass`; read with `3` runs asked for `PROOF-1`, the reader gives `PROOF-1` the result `fail`

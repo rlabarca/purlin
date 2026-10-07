@@ -1217,3 +1217,98 @@ def test_another_failure_text_replaces_the_section():
     assert kept['proofs'][0]['reported']['cases'][0]['text'] == (
         'another failure')
     assert kept['proofs'][0]['reported']['report']['sha256'] == 'b' * 64
+
+
+# ---------------------------------------------------------------------------
+# The models of an AI proof
+# ---------------------------------------------------------------------------
+
+EARLIER = {'commit': 'd' * 40, 'at': '2026-08-01T00:00:00Z',
+           'machine': 'build-0', 'email': 'pat@example.com'}
+
+
+def _model(name='model-a', result='pass', output='c' * 64, **more):
+    """One model of an entry's `models`, holding one run."""
+    run = {'result': result, 'made': 'helper'}
+    if result != 'not run':
+        run['output'] = output
+    else:
+        run['why'] = 'The login expired.'
+    return dict({'model': name, 'passed': 1 if result == 'pass' else 0,
+                 'of': 1, 'graded': False, 'runs': [run]}, **more)
+
+
+# purlin: evidence_writer PROOF-105
+def test_an_ai_proofs_entry_holds_its_models_as_handed_over():
+    models = [_model()]
+    (entry,) = _listed({'PROOF-1': dict(PLAIN)}, {'PROOF-1': [
+        dict(_seen('pass'), models=models)]})
+    assert entry == {'id': 'PROOF-1', 'rule': 'RULE-1', 'env': None,
+                     'manual': False, 'result': 'pass',
+                     'test': 'tests/a.py::test_a', 'models': models}
+
+
+# purlin: evidence_writer PROOF-106
+def test_an_entry_no_model_passed_keeps_its_models_and_who_took_them():
+    models = [_model(result='not run', carried=dict(EARLIER))]
+    (entry,) = _listed({'PROOF-1': dict(PLAIN)}, {'PROOF-1': [
+        dict(_seen('not run'), held=True, models=models,
+             carried=dict(EARLIER), reported=_reported())]})
+    assert entry == {'id': 'PROOF-1', 'rule': 'RULE-1', 'env': None,
+                     'manual': False, 'result': 'not run',
+                     'test': 'tests/a.py::test_a', 'models': models,
+                     'carried': EARLIER}
+
+
+# purlin: evidence_writer PROOF-107
+def test_a_carried_section_marks_each_model_with_the_run_that_took_it():
+    section = _section()
+    section['proofs'][0]['models'] = [
+        _model(carried=dict(EARLIER)), _model('model-b')]
+    carried = writer.carry_section(section, 'b' * 40)
+    own = {'commit': 'a' * 40, 'at': '2026-09-01T00:00:00Z',
+           'machine': 'build-1', 'email': 'dev@example.com'}
+    assert [model['carried'] for model in carried['proofs'][0]['models']] == [
+        EARLIER, own]
+    assert carried['proofs'][0]['carried'] == own
+    assert carried['commit'] == 'b' * 40
+
+
+def _merged_models(kept_models, new_models):
+    """This system's section after a later run on the same machine hands in
+    `new_models` over a section holding `kept_models`."""
+    kept = _section(at='2026-09-01T00:00:00Z')
+    kept['proofs'][0]['models'] = kept_models
+    new = _section(at='2026-09-02T00:00:00Z')
+    new['proofs'][0]['models'] = new_models
+    merged = writer.merge_section(_file(platforms={HERE: kept}), 'local',
+                                  'feat', 'specs/a/feat.md', HERE, new,
+                                  ['RULE-1'])
+    return merged['platforms'][HERE]
+
+
+def _timed(model, duration, sha):
+    model['runs'][0]['reported'] = _reported(duration=duration, sha=sha)
+    return model
+
+
+# purlin: evidence_writer PROOF-108
+def test_a_carried_mark_and_another_duration_leave_the_section():
+    kept = _merged_models(
+        [_timed(_model(), 0.25, 'a' * 64)],
+        [_timed(_model(carried=dict(EARLIER)), 0.75, 'b' * 64)])
+    assert kept['at'] == '2026-09-01T00:00:00Z'
+
+
+# purlin: evidence_writer PROOF-109
+def test_another_output_replaces_the_section():
+    kept = _merged_models([_model()], [_model(output='e' * 64)])
+    assert kept['at'] == '2026-09-02T00:00:00Z'
+    assert kept['proofs'][0]['models'][0]['runs'][0]['output'] == 'e' * 64
+
+
+# purlin: evidence_writer PROOF-110
+def test_a_model_the_run_took_replaces_one_held_as_carried():
+    kept = _merged_models([_model(carried=dict(EARLIER))], [_model()])
+    assert kept['at'] == '2026-09-02T00:00:00Z'
+    assert 'carried' not in kept['proofs'][0]['models'][0]

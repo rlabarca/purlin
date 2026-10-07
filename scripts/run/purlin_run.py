@@ -59,8 +59,30 @@ says which proofs it left out, lists each as `not run`, and keeps the
 result the section it replaces holds for it where that section was taken
 over the same spec, code and tests, marked `carried` with the commit, time,
 machine and person of the run that took it (`keep_slow_results`). `--all`,
-`--clean` and `--ci` start every test of each feature they run. A slow test
-a suite's command cannot leave out is started, and the run says so.
+`--clean` and `--ci` start every test of each feature they run, an AI
+proof's apart. A slow test a suite's command cannot leave out is started,
+and the run says so.
+
+**AI proofs.** A proof tagged `@ai(<model>, ...)` is a slow proof whose test
+starts `scripts/ai/purlin_ai.py`. Every run leaves its test out of the
+suites. A run that starts slow proofs, `--all`, `--clean`, `--ci` for the
+proofs it answers for and `--settle` for the rules it names, then starts
+each such test alone (`proof_result`), for each model the tag names, as
+many times as the proof's `runs=` says, else the `runs` setting, else 3
+(`run_ai_proofs`). Before each start it empties the folder
+`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>`, prints `Running
+<feature> <PROOF-N> on <model>, <i> of <n>`, and sets `PURLIN_AI`, the path
+of the helper, `PURLIN_AI_MODEL` and `PURLIN_AI_OUT`, the folder. Every run
+is recorded under its model, pass or fail, with the sha256 of its folder,
+and the proof passes on a model where every run passed. A run whose record
+says a model gave no answer reads `not run`: the run prints one `model not
+reached` warning for that model, starts no further test on it, and exits as
+it would have without it. Outside `--clean` and `--ci`, a model that passed
+every run asked, in the section the run replaces over the same spec, code
+and tests, is kept and marked `carried`, and only the other models start.
+A run that leaves the test out keeps the whole entry the same way. What a
+suite's own pass saw of such a test, where its command cannot leave it out,
+is no result of the proof.
 
 **How the tests run.** The settings file names the project's own suites
 under `tests`, each with its command, where its report lands, the report's
@@ -668,7 +690,8 @@ class SuiteRun(object):
 
 
 def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
-              marked=None, action='test', option='', held=(), keep=False):
+              marked=None, action='test', option='', held=(), keep=False,
+              environment=None):
     """Run one suite and read what it saw. A `SuiteRun`.
 
     `files` is the test files to hand `{files}`, or empty for a suite
@@ -682,9 +705,12 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     of an `exit` suite that are not run. With `keep`, each file the report
     was read from is kept under its sha256, `outputs.keep`, for a sign-off
     to commit with the package; the sha256 is taken either way.
+    `environment` is the variables to add to what the suite's command gets
+    (`arm_environment`).
     """
     done = SuiteRun(suite)
     mark = len(log)
+    environment = arm_environment(environment)
     if suite.format == 'exit':
         paths = [path for path in list(files) or sorted(
             markers_module.test_files(project_root, [suite]))
@@ -695,7 +721,7 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
             command = [bash_command(), '-c',
                        reports_module.command_for(suite, [path])]
             ran.append(command)
-            code = _run(command, project_root, log, timeout)
+            code = _run(command, project_root, log, timeout, environment)
             if code == TIMED_OUT:
                 done.failures.append(notices.line(
                     'evidence_missing', SUITE % suite.name,
@@ -713,7 +739,8 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     reports_module.clear_report(project_root, report)
     command = [bash_command(), '-c',
                reports_module.command_for(suite, files, report, option)]
-    code, stdout = _run(command, project_root, log, timeout, keep_stdout=True)
+    code, stdout = _run(command, project_root, log, timeout, environment,
+                        keep_stdout=True)
     done.keep_log(log[mark:], [command])
     if code == TIMED_OUT:
         done.failures.append(notices.line(
@@ -883,18 +910,24 @@ class SlowPlan(object):
                                          for test in found.tests)
 
 
-def slow_plan(features, scan, suites, asked=()):
-    """The `SlowPlan` of a run that starts no slow proof's test.
+def slow_plan(features, scan, suites, asked=(), only_ai=False):
+    """The `SlowPlan` of a run: the tests its pass over the suites leaves out.
 
     A test is a slow proof's when it carries a marker and every marker it
     carries names a proof tagged `@slow`; a test that also carries another
     proof's marker is that proof's too, and runs. `asked` is the `(feature,
     proof id)` pairs a person asked for by name, the proofs of the rules a
-    settle names: their tests are started like any other.
+    settle names: their tests are started like any other. An AI proof's
+    test is left out whoever asked, since the run starts it on its own,
+    once per model and per run (`run_ai_proofs`); with `only_ai`, the plan
+    of a run that starts every slow test, it is the only kind left out.
     """
-    slow_ids = {(name, proof_id) for name, info in features.items()
-                for proof_id, proof in (info.get('proofs') or {}).items()
-                if proof.get('slow')} - set(asked)
+    proofs = {(name, proof_id): proof for name, info in features.items()
+              for proof_id, proof in (info.get('proofs') or {}).items()}
+    slow_ids = (set() if only_ai else
+                {key for key, proof in proofs.items() if proof.get('slow')}
+                - set(asked))
+    slow_ids |= {key for key, proof in proofs.items() if proof.get('ai')}
     plan = SlowPlan()
     if not slow_ids:
         return plan
@@ -938,17 +971,19 @@ def settled_proofs(features, selected, rules):
             for proof_id in by_rule.get(rule) or ()}
 
 
-def slow_lines(plan, selected, given):
+def slow_lines(plan, selected, given, started=()):
     """What a run says of the slow proofs before it starts a suite.
 
     One line naming the proofs of the features it runs whose tests it left
     out, then one per suite it starts that holds a slow test its command
     cannot leave out. `given` is `{suite name: files}` for the suites the
-    run starts, the files empty for a suite run whole.
+    run starts, the files empty for a suite run whole. `started` is the AI
+    proofs the run starts on their own after the suites: none is named as
+    left out.
     """
     lines = []
     named = ['%s %s' % key for key in sorted(plan.proofs)
-             if key[0] in selected]
+             if key[0] in selected and key not in started]
     if len(named) == 1:
         lines.append(LEFT_OUT_ONE % named[0])
     elif named:
@@ -965,6 +1000,21 @@ def slow_lines(plan, selected, given):
     return lines
 
 
+def kept_results(project_root, name, os_name, fingerprint):
+    """`({(id, test): entry}, taken)` for the feature's local section for
+    this system, where it was taken over `fingerprint`: each proof entry it
+    lists, and the `commit`, `at`, `machine` and `email` of the run that
+    wrote it. `({}, {})` where there is no such section."""
+    data = evidence_writer.read_file(project_root, 'local', name) or {}
+    kept = (data.get('platforms') or {}).get(os_name)
+    if not isinstance(kept, dict) \
+            or kept.get('fingerprint') != dict(fingerprint):
+        return {}, {}
+    return ({(listed.get('id'), listed.get('test')): listed
+             for listed in kept.get('proofs') or ()
+             if isinstance(listed, dict)}, evidence_writer.taken_by(kept))
+
+
 def keep_slow_results(project_root, name, os_name, fingerprint, entries):
     """`entries` with each held test given the result the feature's local
     section for this system already holds for it, where that section was
@@ -974,45 +1024,352 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
     change, and a run that left its test out is no reason to drop it. Each
     such entry holds `carried`, the `commit`, `at`, `machine` and `email` of
     the run that took the result: the ones the result was already carried
-    under, else that section's own.
+    under, else that section's own. An AI proof's entry is kept whatever it
+    reads, with its `models`, each marked `carried` the same way; one this
+    run started, which holds `models` already, is left as the run made it.
     """
     if not any(entry.get('held') for found in entries.values()
                for entry in found):
         return entries
-    data = evidence_writer.read_file(project_root, 'local', name) or {}
-    kept = (data.get('platforms') or {}).get(os_name)
-    if not isinstance(kept, dict) \
-            or kept.get('fingerprint') != dict(fingerprint):
-        return entries
-    taken = evidence_writer.taken_by(kept)
-    known = {}
-    for listed in kept.get('proofs') or ():
-        if isinstance(listed, dict) and listed.get('result') in (
-                reports_module.PASS, reports_module.FAIL,
-                evidence_reader.NOTHING_TO_CHECK):
-            known[(listed.get('id'), listed.get('test'))] = listed
+    known, taken = kept_results(project_root, name, os_name, fingerprint)
+    results = (reports_module.PASS, reports_module.FAIL,
+               evidence_reader.NOTHING_TO_CHECK)
     out = {}
     for marker_id, found in entries.items():
         out[marker_id] = []
         for entry in found:
             listed = known.get((marker_id, '%s::%s' % (
                 entry.get('test_file', ''), entry.get('test_name', ''))))
-            if not entry.get('held') or listed is None:
+            models = (listed or {}).get('models')
+            if not entry.get('held') or 'models' in entry or listed is None \
+                    or not (listed.get('result') in results
+                            or isinstance(models, list)):
                 out[marker_id].append(entry)
                 continue
             earlier = listed.get('carried')
             where = dict(earlier) if isinstance(earlier, dict) else dict(taken)
+            if isinstance(models, list):
+                entry = dict(entry, models=evidence_writer.carried_models(
+                    models, taken))
             if listed['result'] == evidence_reader.NOTHING_TO_CHECK:
                 out[marker_id].append(dict(
                     entry, held=False, carried=where,
                     reported=listed.get('reported'), reason='%s %s' % (
                         evidence_reader.NOTHING_TO_CHECK_PREFIX,
                         listed.get('reason') or '')))
-            else:
+            elif listed['result'] in results:
                 out[marker_id].append(dict(entry, held=False, carried=where,
                                            reported=listed.get('reported'),
                                            status=listed['result']))
+            else:
+                # An AI proof no model has passed yet: still `not run`.
+                out[marker_id].append(dict(entry, carried=where))
     return out
+
+
+# ---------------------------------------------------------------------------
+# One proof's own tests, started alone
+# ---------------------------------------------------------------------------
+
+def proof_result(project_root, feature, proof_id, tests, timeout=None,
+                 environment=None):
+    """Start one proof's own tests alone. `pass`, `fail`, `error` or `not
+    run`.
+
+    `tests` is the proof's tests as `[{file, name}]`, the name as the
+    evidence spells it; with none, every test in `project_root` carrying
+    the proof's marker. `fail` where a test of the proof's own ran and
+    failed; `error` where one reads `fail` and each that does ended in an
+    error its tool does not report as a failure; `pass` where every one
+    reads `pass` and no suite reported a failure; else `not run`.
+    `environment` is the variables to add to what each suite's command
+    gets: the run sets an AI proof's model and folder there, and the audit
+    the output to replay.
+    """
+    return proof_run(project_root, feature, proof_id, tests, timeout,
+                     environment)[0]
+
+
+def proof_run(project_root, feature, proof_id, tests, timeout=None,
+              environment=None, log=None, keep=False):
+    """`(word, entries)` for one start of one proof's own tests: what
+    `proof_result` answers, and `marker_results`' entry for each of those
+    tests, which holds what the suite's report said of it.
+
+    Each suite holding one of the tests runs its own command over their
+    files, with every other marked test of those files left out where its
+    tool can leave a test out by name (`_others_left_out`). `log` takes
+    what the commands printed, and `keep` keeps each report read
+    (`run_suite`).
+    """
+    suites, _problems = markers_module.read_suites(project_root)
+    scan = markers_module.scan(project_root, suites)
+    wanted_files = sorted({t['file'] for t in tests}) if tests else sorted(
+        path for path, found in scan.items()
+        if any(m.key() == (feature, proof_id) for m in found.markers))
+    by_suite = {}
+    for path in wanted_files:
+        suite = markers_module.suite_of(path, suites)
+        if suite is None:
+            return 'not run', []
+        by_suite.setdefault(suite.name, (suite, []))[1].append(path)
+    if not by_suite:
+        return 'not run', []
+    log = [] if log is None else log
+    runs = []
+    for name in sorted(by_suite):
+        suite, files = by_suite[name]
+        runs.append(run_suite(
+            project_root, suite, files, log,
+            timeout=timeout or ARM_TIMEOUT_DEFAULT, marked=scan,
+            action='audit', keep=keep, environment=environment,
+            option=_others_left_out(suite, files, scan, feature, proof_id,
+                                    tests)))
+    entries = marker_results(scan, suites, runs).get((feature, proof_id), [])
+    if tests:
+        named = {(t['file'], t.get('name')) for t in tests}
+        own = [e for e in entries if (e['test_file'], e['test_name']) in named]
+        files = {t['file'] for t in tests}
+        entries = own or [e for e in entries if e['test_file'] in files]
+    failed = [e for e in entries if e['status'] == 'fail']
+    if failed:
+        return ('error' if all(e.get('errored') for e in failed)
+                else 'fail'), entries
+    if entries and all(e['status'] == 'pass' for e in entries) and not any(
+            run.failures for run in runs):
+        return 'pass', entries
+    return 'not run', entries
+
+
+def _others_left_out(suite, files, scan, feature, proof_id, tests=()):
+    """The option that leaves out of one suite's run every marked test of
+    `files` that is not the proof's own, or '' where the suite's tool cannot
+    leave a test out by name: the whole file then runs. A test the tool
+    cannot leave out without one of the proof's own going with it is
+    started. Where `tests` names some of the proof's tests and not others,
+    the others are left out as well, so one test is started at a time."""
+    named = {(t['file'], t.get('name')) for t in tests or ()}
+    own, others = [], []
+    for path in files:
+        found = scan.get(path)
+        if found is None or found.whole:
+            continue
+        for test in found.tests:
+            mine = any(marker.key() == (feature, proof_id)
+                       for marker in test.markers)
+            (own if mine else others).append((path, test))
+    chosen = [(path, test) for path, test in own
+              if (path, reports_module.test_name(path, test, suite.format))
+              in named]
+    if chosen and len(chosen) < len(own):
+        others += [pair for pair in own if pair not in chosen]
+        own = chosen
+    if not own or not others:
+        return ''
+    return frameworks_module.leave_out(suite, others, own)[0]
+
+
+# ---------------------------------------------------------------------------
+# AI proofs: one start per model, per run
+# ---------------------------------------------------------------------------
+
+# The helper an AI proof's test starts, which the run names in `PURLIN_AI`.
+AI_HELPER_PATH = os.path.join(os.path.dirname(_HERE), 'ai', 'purlin_ai.py')
+
+# What the run prints, flushed, before each run of an AI proof's test: the
+# feature, the proof, the model, which run this is and how many are asked.
+AI_RUNNING = 'Running %s %s on %s, %d of %d'
+# What the warning about a model that gave no answer says where the
+# helper's record gives no reason.
+NO_ANSWER = 'It gave no answer.'
+
+
+def ai_proofs_started(features, selected, every, asked=(), foreign=(),
+                      only=None):
+    """The `(feature, proof id)` pairs of the AI proofs a run starts, sorted.
+
+    The AI proofs of the features in `selected`: all of them where `every`
+    holds, as under `--all`, `--clean` and `--ci`, else those in `asked`,
+    the proofs of the rules a settle names. A proof in `foreign`, tagged
+    for another operating system, is never started, and under `--ci` only
+    those in `only`, the proofs tagged for this machine's system, are.
+    """
+    return sorted(
+        (name, proof_id) for name in selected
+        for proof_id, proof in ((features.get(name) or {})
+                                .get('proofs') or {}).items()
+        if proof.get('ai') and (every or (name, proof_id) in asked)
+        and (name, proof_id) not in foreign
+        and (only is None or (name, proof_id) in only))
+
+
+def hold_ai_results(features, index):
+    """Take out of `index` what the pass over the suites saw of each AI
+    proof's test: every entry of an AI proof reads `not run` and `held`.
+
+    The pass leaves those tests out. One it started all the same, because
+    its suite's command cannot leave a test out or because the test
+    carries another proof's marker too, ran with no model named and no
+    folder to write, so what it did there is no result of the AI proof.
+    """
+    for (name, proof_id), entries in index.items():
+        proof = ((features.get(name) or {}).get('proofs') or {}).get(proof_id)
+        if not (proof or {}).get('ai'):
+            continue
+        for entry in entries:
+            entry.update(status=reports_module.NOT_RUN, held=True,
+                         reason=None, reported=None, errored=False,
+                         ran_as=None)
+
+
+def _sentence(text):
+    """`text` as one sentence that ends on a full stop, or `NO_ANSWER`."""
+    text = ' '.join(str(text or '').split())
+    if not text:
+        return NO_ANSWER
+    return text if text[-1] in '.!?' else text + '.'
+
+
+def ai_start(project_root, feature, proof, entry, model, run, test, timeout,
+             log):
+    """One run of one test of an AI proof on one model: `(made, silent)`.
+
+    The folder `outputs.ai_run_dir` names is emptied and made, the test is
+    started alone (`proof_run`) with `PURLIN_AI`, `PURLIN_AI_MODEL` and
+    `PURLIN_AI_OUT` set, and the helper's record is read back. `made` is
+    the run as the evidence holds it: `result`, then `output`, the folder's
+    sha256, where the run passed or failed and left a file; `made`, as the
+    record says; `why` where it reads `not run`; `reported`, what the
+    suite's report held; and `grade` where the record holds one. `silent`
+    is `(model, why)` where a model gave no answer, the model tested or the
+    grader, else None: the run then reads `not run` whatever the test did.
+    """
+    folder = os.path.join(project_root, *outputs_module.ai_run_dir(
+        feature, proof['id'], model, run, test).split('/'))
+    shutil.rmtree(folder, ignore_errors=True)
+    os.makedirs(folder, exist_ok=True)
+    word, found = proof_run(
+        project_root, feature, proof['id'],
+        [{'file': entry['test_file'], 'name': entry['test_name']}], timeout,
+        {outputs_module.AI_HELPER: AI_HELPER_PATH,
+         outputs_module.AI_MODEL: model, outputs_module.AI_OUT: folder},
+        log=log, keep=True)
+    record = outputs_module.read_record(folder)
+    grade = record.get('grade') if isinstance(record.get('grade'),
+                                              dict) else None
+    silent = None
+    if record.get('reached') is False:
+        silent = (model, _sentence(record.get('why')))
+    elif grade is not None and grade.get('accepted') is None:
+        silent = (str(proof.get('graded') or grade.get('model') or model),
+                  _sentence(grade.get('reason')))
+    if silent:
+        made = {'result': reports_module.NOT_RUN, 'why': silent[1]}
+    elif word == 'pass':
+        made = {'result': reports_module.PASS}
+    elif word in ('fail', 'error'):
+        made = {'result': reports_module.FAIL}
+    else:
+        made = {'result': reports_module.NOT_RUN,
+                'why': NO_RESULT % (entry['test_file'], entry['line'])}
+    if made['result'] != reports_module.NOT_RUN:
+        sha = outputs_module.folder_sha256(folder)
+        if sha:
+            made['output'] = sha
+    if record.get('made'):
+        made['made'] = record['made']
+    reported = found[0].get('reported') if found else None
+    if isinstance(reported, dict) and reported.get('cases'):
+        made['reported'] = reported
+    if grade is not None:
+        made['grade'] = {key: grade.get(key)
+                         for key in ('model', 'accepted', 'reason')}
+    return made, silent
+
+
+def run_ai_proofs(project_root, features, index, started, kept_for, setting,
+                  timeout, log):
+    """Start each AI proof in `started` on each model its tag names, as
+    many times as are asked, and write what happened onto its entries in
+    `index`. `(missing, files)`: the tests that left no result, as
+    `(feature, proof id, entry)`, and the test files started.
+
+    For each proof, each model in the tag's order and each run from 1, the
+    run prints `AI_RUNNING` and starts each of the proof's tests alone
+    (`ai_start`). Every run that happened is recorded, pass or fail. A
+    model that gave no answer is named once, in a `model not reached`
+    warning, and no further test is started on it, or graded by it, in
+    this run. `kept_for(feature)` is `kept_results`' answer for the section
+    this run replaces: a model that passed there every run now asked is
+    kept, marked `carried`, and not started.
+
+    Each entry then holds `models`, one per model of the tag, and reads
+    the worst of them (`evidence.models_result`): `fail`, else `not run`,
+    held as a test left out is, else `pass`.
+    """
+    silent = set()
+    missing, files = [], []
+    for name, proof_id in started:
+        entries = index.get((name, proof_id)) or []
+        proof = dict(features[name]['proofs'][proof_id], id=proof_id)
+        asked = outputs_module.runs_asked(proof, setting)
+        known, taken = kept_for(name) if entries else ({}, {})
+        listed = [known.get((proof_id, '%s::%s' % (
+            entry['test_file'], entry['test_name']))) or {}
+            for entry in entries]
+        models = [[] for _entry in entries]
+        for model in proof['ai']:
+            fresh = []
+            for at, entry in enumerate(entries):
+                held = next((
+                    kept for kept in listed[at].get('models') or ()
+                    if isinstance(kept, dict) and kept.get('model') == model
+                    and evidence_reader.model_word(kept, asked) == 'passed'),
+                    None)
+                if held is not None:
+                    models[at].extend(evidence_writer.carried_models(
+                        [held], taken))
+                    continue
+                models[at].append({'model': model, 'passed': 0, 'of': asked,
+                                   'graded': bool(proof.get('graded')),
+                                   'runs': []})
+                fresh.append(at)
+            for run in range(1, asked + 1):
+                if not fresh or {model, proof.get('graded')} & silent:
+                    break
+                print(AI_RUNNING % (name, proof_id, model, run, asked),
+                      flush=True)
+                for at in fresh:
+                    entry = entries[at]
+                    if entry['test_file'] not in files:
+                        files.append(entry['test_file'])
+                    made, gone = ai_start(project_root, name, proof, entry,
+                                          model, run, at + 1, timeout, log)
+                    models[at][-1]['runs'].append(made)
+                    if gone:
+                        if gone[0] not in silent:
+                            print(notices.line(
+                                'model_not_reached', gone[0], gone[1],
+                                notices.run('purlin:test --all')), flush=True)
+                        silent.add(gone[0])
+                        break
+                    if made['result'] == reports_module.NOT_RUN \
+                            and (name, proof_id, entry) not in missing:
+                        missing.append((name, proof_id, entry))
+        for at, entry in enumerate(entries):
+            for model in models[at]:
+                model['passed'] = sum(
+                    1 for made in model['runs']
+                    if made.get('result') == reports_module.PASS)
+            result = evidence_reader.models_result(models[at], asked)
+            entry.update(models=models[at], status=result,
+                         held=result == reports_module.NOT_RUN)
+            if all('carried' in model for model in models[at]):
+                # This run took none of it: the entry is the one kept.
+                earlier = listed[at].get('carried')
+                entry['carried'] = (dict(earlier) if isinstance(earlier, dict)
+                                    else dict(taken))
+    return missing, files
 
 
 def marked_files(scan, suite, selected, proofs=None):
@@ -1595,10 +1952,14 @@ def main(argv=None):
     # `--all`, `--clean` and `--ci` start every test of the features they
     # run; any other run leaves out the tests of the proofs tagged `@slow`.
     # A settle starts the slow proofs of the rules it names: the person
-    # asked for exactly those rules.
-    plan = (SlowPlan() if args.all or args.action == 'ci'
-            else slow_plan(features, scan, suites,
-                           settled_proofs(features, selected, args.settle)))
+    # asked for exactly those rules. An AI proof's test is left out of the
+    # suites by every run: a run that starts slow proofs starts it on its
+    # own, after the suites, once per model and per run.
+    every = args.all or args.action == 'ci'
+    settled = settled_proofs(features, selected, args.settle)
+    ai_started = ai_proofs_started(features, selected, every, settled,
+                                   foreign_ids, remote_proofs)
+    plan = slow_plan(features, scan, suites, settled, only_ai=every)
     # The code the sections describe where `--commit` makes no commit.
     started = head_commit(project_root)
 
@@ -1620,7 +1981,7 @@ def main(argv=None):
             crowded.append(TOO_MANY_FILES % (suite.name, len(files)))
             files = []
         given[suite.name] = files
-    said = crowded + slow_lines(plan, selected, given)
+    said = crowded + slow_lines(plan, selected, given, ai_started)
     for line in said:
         print(line)
     if said:
@@ -1649,6 +2010,31 @@ def main(argv=None):
     index = marker_results(scan, suites, runs, plan.held)
     ran_suites = {done.suite.name for done in runs}
     missing = []
+    hold_ai_results(features, index)
+    ai_files = []
+    if ai_started:
+        # A model that passed every run asked, in the section this run
+        # replaces, is kept; `--clean` and `--ci` start every model.
+        kept = {}
+        tracked = fingerprint_module.marker_index(project_root)
+
+        def kept_for(name):
+            if args.clean or args.action == 'ci':
+                return {}, {}
+            if name not in kept:
+                kept[name] = kept_results(
+                    project_root, name, os_name,
+                    fingerprint_module.fingerprint(project_root, name,
+                                                   features, tracked))
+            return kept[name]
+        unseen, ai_files = run_ai_proofs(
+            project_root, features, index, ai_started, kept_for,
+            outputs_module.runs_setting(project_root), args.arm_timeout, log)
+        for feature, marker_id, entry in unseen:
+            missing.append(missing_line(
+                features, feature, marker_id,
+                NO_RESULT % (entry['test_file'], entry['line']),
+                NO_RESULT_DO))
     for (feature, marker_id), entries in sorted(index.items()):
         if feature not in selected or (feature, marker_id) in foreign_ids:
             continue
@@ -1716,6 +2102,10 @@ def main(argv=None):
     # Loud failure B: a marker of a feature this run covers has no result.
     failures.extend(missing)
     ran = [done.suite.name for done in runs]
+    for path in ai_files:
+        suite = markers_module.suite_of(path, suites)
+        if suite is not None and suite.name not in ran:
+            ran.append(suite.name)
 
     print(ran_line(ran, len(selected),
                    sum(1 for row in carry if not row['run'])))
@@ -1732,8 +2122,10 @@ def main(argv=None):
     # starts a file of mixed tests whole, and only the tests tied to the
     # proofs it answers for can fail it.
     if remote_proofs is None:
-        tests_failed = bool(failures
-                            or any(done.failed_tests for done in runs))
+        tests_failed = bool(
+            failures or any(done.failed_tests for done in runs)
+            or any(entry['status'] == reports_module.FAIL
+                   for key in ai_started for entry in index.get(key) or ()))
     else:
         tests_failed = bool(failures or any(
             entry['status'] == reports_module.FAIL

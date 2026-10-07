@@ -338,3 +338,52 @@ def test_a_failing_test_outweighs_one_that_did_not_run():
     section = _listed(('missing', 'tests/a.py::test_a'),
                       ('fail', 'tests/b.py::test_b'))
     assert evidence.proof_results(section) == {'PROOF-1': {'result': 'fail'}}
+
+
+# --- RULE-38, RULE-39: the models of an AI proof -----------------------------
+
+def _model(*results, **more):
+    """One entry of a proof's `models`, holding one run per result."""
+    return dict({'model': 'model-a',
+                 'passed': sum(1 for result in results if result == 'pass'),
+                 'of': 3, 'graded': False,
+                 'runs': [{'result': result} for result in results]}, **more)
+
+
+# purlin: evidence PROOF-98
+def test_a_model_reads_the_worst_of_its_runs_and_needs_every_run_asked():
+    assert [evidence.model_word(_model(*results), 3) for results in (
+        ('pass', 'fail', 'pass'), ('pass', 'not run'), ('pass', 'pass'),
+        ('pass', 'pass', 'pass'))] == [
+        'failed', 'not run', 'not run', 'passed']
+
+
+# purlin: evidence PROOF-99
+def test_a_model_with_fewer_runs_than_are_asked_now_reads_not_run():
+    held = _model('pass', 'pass', 'pass')
+    assert evidence.model_word(held, 3) == 'passed'
+    assert evidence.model_word(held, 5) == 'not run'
+
+
+def _ai_section(*models):
+    return {'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'result': 'pass',
+                        'env': None, 'manual': False,
+                        'test': 'tests/a.py::test_a',
+                        'models': list(models)}]}
+
+
+# purlin: evidence PROOF-100
+def test_a_stored_pass_reads_not_run_once_more_runs_are_asked():
+    section = _ai_section(_model('pass', 'pass', 'pass'))
+    assert evidence.proof_results(section, {'PROOF-1': 3}) == {
+        'PROOF-1': {'result': 'pass'}}
+    assert evidence.proof_results(section, {'PROOF-1': 5}) == {
+        'PROOF-1': {'result': 'not run'}}
+
+
+# purlin: evidence PROOF-101
+def test_one_failing_model_fails_the_proof():
+    section = _ai_section(_model('pass', 'pass', 'pass'),
+                          _model('pass', 'fail', 'pass', model='model-b'))
+    assert evidence.proof_results(section, {'PROOF-1': 3}) == {
+        'PROOF-1': {'result': 'fail'}}

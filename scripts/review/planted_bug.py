@@ -367,7 +367,8 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             return _result(proof_id, 'not made', FOUND_MORE % (path, count), change)
         if old == new:
             return _result(proof_id, 'not made', NO_DIFFERENCE % path, change)
-        if _run_tests(copy, feature, proof_id, tests, timeout) != 'pass':
+        import purlin_run
+        if purlin_run.proof_result(copy, feature, proof_id, tests, timeout) != 'pass':
             return _result(proof_id, 'not made', BASELINE, change)
         at = text.index(old)
         changed = text[:at] + new + text[at + len(old):]
@@ -380,7 +381,7 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
         except (_Refused, OSError):
             return _result(proof_id, 'not made', OUTSIDE % path, change)
         line, words = _changed_line(normal, changed, at, old, new)
-        ran = _run_tests(copy, feature, proof_id, tests, timeout)
+        ran = purlin_run.proof_result(copy, feature, proof_id, tests, timeout)
         if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
                            SURVIVED % (proof_id, path, line, words))
@@ -470,73 +471,6 @@ def _copy_project(project_root, copy):
             data = handle.read()
         _write_in(copy, rel, data)
         os.chmod(_inside(copy, rel), os.stat(source).st_mode & 0o777)
-
-
-# ---------------------------------------------------------------------------
-# The proof's own tests, run in the copy
-# ---------------------------------------------------------------------------
-
-def _run_tests(copy, feature, proof_id, tests, timeout):
-    """`fail` where a test of the proof's own ran and failed; `error` where one
-    reads `fail` and each that does ended in an error its tool does not report
-    as a failure; `pass` where every one reads `pass` and no suite reported a
-    failure; else `not run`."""
-    import purlin_run
-    from purlin import markers as markers_module
-    suites, _problems = markers_module.read_suites(copy)
-    scan = markers_module.scan(copy, suites)
-    wanted_files = sorted({t['file'] for t in tests}) if tests else sorted(
-        path for path, found in scan.items()
-        if any(m.key() == (feature, proof_id) for m in found.markers))
-    by_suite = {}
-    for path in wanted_files:
-        suite = markers_module.suite_of(path, suites)
-        if suite is None:
-            return 'not run'
-        by_suite.setdefault(suite.name, (suite, []))[1].append(path)
-    if not by_suite:
-        return 'not run'
-    log = []
-    runs = []
-    for name in sorted(by_suite):
-        suite, files = by_suite[name]
-        runs.append(purlin_run.run_suite(
-            copy, suite, files, log,
-            timeout=timeout or purlin_run.ARM_TIMEOUT_DEFAULT, marked=scan, action='audit',
-            option=_others_left_out(suite, files, scan, feature, proof_id)))
-    entries = purlin_run.marker_results(scan, suites, runs).get((feature, proof_id), [])
-    if tests:
-        named = {(t['file'], t.get('name')) for t in tests}
-        own = [e for e in entries if (e['test_file'], e['test_name']) in named]
-        files = {t['file'] for t in tests}
-        entries = own or [e for e in entries if e['test_file'] in files]
-    failed = [e for e in entries if e['status'] == 'fail']
-    if failed:
-        return 'error' if all(e.get('errored') for e in failed) else 'fail'
-    if entries and all(e['status'] == 'pass' for e in entries) and not any(
-            run.failures for run in runs):
-        return 'pass'
-    return 'not run'
-
-
-def _others_left_out(suite, files, scan, feature, proof_id):
-    """The option that leaves out of one suite's run every marked test of
-    `files` that is not the proof's own, or '' where the suite's tool cannot
-    leave a test out by name: the whole file then runs. A test the tool
-    cannot leave out without one of the proof's own going with it is
-    started. Only the proof's own tests are read (planted_bug RULE-26)."""
-    from purlin import frameworks as frameworks_module
-    own, others = [], []
-    for path in files:
-        found = scan.get(path)
-        if found is None or found.whole:
-            continue
-        for test in found.tests:
-            mine = any(marker.key() == (feature, proof_id) for marker in test.markers)
-            (own if mine else others).append((path, test))
-    if not own or not others:
-        return ''
-    return frameworks_module.leave_out(suite, others, own)[0]
 
 
 # ---------------------------------------------------------------------------

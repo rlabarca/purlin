@@ -1,10 +1,11 @@
-> Format-Version: 17
+> Format-Version: 18
 
 # Evidence format
 
 The evidence is what a test run and an audit leave behind for one feature:
 each proof's result on each operating system, what the suite's report holds
-for each test, the machine the tests ran on, the commit and the time, and,
+for each test, each run of an AI proof's test on each model it names, the
+machine the tests ran on, the commit and the time, and,
 once an audit has read the feature, what the audit found for each rule.
 There is one JSON file per feature per source, and a reader parses it to
 decide every rule's cells.
@@ -138,7 +139,7 @@ first that holds gives the word:
 | `checked at sign-off` | every proof of the rule is `@manual`: no test is written for it, so no run observes it and a person checks it in the sign-off walk |
 | `failed` | a tied test of a proof that could run here failed; or a test marked with the rule's id failed |
 | `no test` | a proof of the rule that is not `@manual` has no test tied to it, whether it is tagged `@env` or not; or no proof names the rule and no test is marked with its id |
-| `not run` | a tied test did not run; or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer; or the run left out the test of a proof tagged `@slow` |
+| `not run` | a tied test did not run; or a proof of the rule is tagged `@env` for another operating system, so this machine could not answer; or the run left out the test of a proof tagged `@slow`; or an AI proof of the rule holds no passing result on one of its models |
 | `passed` | none of the rows above holds: every test tied to every proof of the rule that could run here ran and passed. For a rule with no proof, every test marked with the rule's own id passed |
 
 Where a `@manual` proof stands beside a proof that is not `@manual`, the
@@ -158,6 +159,7 @@ Each `proofs` entry:
 | `reason` | string | present only where `result` is `nothing to check`: the text after `nothing to check: ` in the reason the test's tool gave for its skip |
 | `reported` | object | optional: what the suite's report holds for the test, `{cases, report}`. See "What the report held" |
 | `carried` | object | optional: present only on an entry whose result the run that wrote the section's `commit` did not take. It names the run that took the result: `commit`, the full sha, `at`, `machine` and `email`, as that run's section held them. An entry with no `carried` was taken by the run the section names. See "Carried forward" |
+| `models` | array | present only on an entry of an AI proof, one tagged `@ai`, whose test a run has started: one entry per model the tag names, in the tag's order. See "The models of an AI proof" |
 
 A test is tied to its proof by the marker comment above it, as
 `references/formats/marker_format.md` says. Besides `pass` and `fail`, an
@@ -180,6 +182,10 @@ entry reads:
   `machine` and `email` of the section the result was taken in, or the
   `carried` that entry already held. The section's own `commit`, `at`,
   `machine` and `email` are this run's.
+- **`not run`**, with the test named, where the proof is an AI proof and one
+  of its models holds no passing result: no run has started its test, a
+  model gave no answer, or a model holds fewer runs than are asked. See
+  "The models of an AI proof".
 
 A reader counts a carried result as the result it is: a carried `pass` is a
 `pass` in every cell, and at a sign-off, where it counts like any other
@@ -258,6 +264,95 @@ package lists that the signing machine still keeps
 (`references/formats/package_format.md`, "Outputs"). A report taken on
 another machine, or removed since, is not there to commit, and the evidence
 still names it by its sha256.
+
+### The models of an AI proof
+
+An AI proof is one tagged `@ai(<model>, ...)`. Its test is started alone,
+once per run, on each model the tag names, and its entry holds what every
+run did:
+
+```json
+{"id": "PROOF-4", "rule": "RULE-2", "result": "pass", "env": null,
+ "manual": false, "test": "tests/test_report.py::test_names_findings",
+ "models": [
+   {"model": "claude-opus-5-5", "passed": 3, "of": 3, "graded": false,
+    "runs": [
+      {"result": "pass", "output": "<sha256>", "made": "helper",
+       "reported": {"cases": [{"name": "test_names_findings",
+                               "class": "tests.test_report",
+                               "outcome": "pass", "duration": 41.2}],
+                    "report": {"file": ".purlin/runtime/reports/pytest.xml",
+                               "sha256": "<sha256>"}}},
+      {"result": "pass", "output": "<sha256>", "made": "helper"},
+      {"result": "pass", "output": "<sha256>", "made": "helper"}]},
+   {"model": "claude-sonnet-5-5", "passed": 0, "of": 3, "graded": false,
+    "runs": [
+      {"result": "not run", "why": "The login expired.", "made": "helper"}]}
+ ]}
+```
+
+Each `models` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `model` | string | the model, as the proof's `@ai` tag names it |
+| `passed` | int | how many of `runs` read `pass` |
+| `of` | int | how many runs were asked for when the runs were taken: the proof's own `runs=`, else the `runs` setting, else 3 |
+| `graded` | bool | whether the proof is tagged `@graded` |
+| `runs` | array | one entry per run that happened, in order, pass or fail. A failure stops none of the runs after it. A model no test was started on holds `[]` |
+| `carried` | object | optional: present only on a model whose runs the run that wrote the section's `commit` did not take, with the same four values an entry's `carried` holds |
+
+Each `runs` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `result` | string | `pass`, `fail` or `not run` |
+| `output` | string | the sha256 of the folder the run wrote, taken over every file in it but `purlin.json`. Left out of a `not run` run, and of a run that wrote no file |
+| `made` | string | `helper` where `purlin_ai.py run` made the output, `project` where the project's own test handed it over with `purlin_ai.py record`. Left out where the folder holds no record |
+| `why` | string | present only on a `not run` run: one sentence, the reason the helper's record gave, or `The test at <file>:<line> has no result.` where the test itself did not run |
+| `reported` | object | optional: what the suite's report holds for that start of the test, as "What the report held" gives it |
+| `grade` | object | present only where the helper's record holds one: `model`, the grader, `accepted`, true, false, or null where the grader gave no answer, and `reason`, its one sentence |
+
+A run reads `not run`, whatever its test did, where the helper's record
+reads `reached` false or holds a `grade` whose `accepted` is null: a model
+gave no answer. The run starts no further test on that model, or graded by
+that grader, so the models it would have asked hold fewer runs than `of`.
+
+A reader works out three words from these fields, each against the runs
+asked for now, which a changed `runs` setting changes:
+
+- **A model** reads `failed` where one of its runs reads `fail`; else
+  `not run` where one reads `not run` or it holds fewer runs than are asked
+  now; else `passed`.
+- **The entry** reads `fail` where a model reads `failed`, else `not run`
+  where a model reads `not run`, else `pass`. The run writes that as the
+  entry's `result`, against the runs asked when it ran.
+- **The rule** reads from its proofs as any rule does.
+
+An entry of an AI proof whose test no run has started holds no `models` and
+reads `not run`.
+
+**The output folder.** Each run writes to
+`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`, `<n>` the run from 1,
+and the second and each later test of one proof to `<n>.<t>`. A character
+of the model's name that is not a letter, a digit, `.`, `_` or `-` is
+written `_`. The run empties the folder before each start. The folder holds
+`reply.md`, `transcript.jsonl`, `files/` and `purlin.json`, the helper's
+record, which is no part of the sha256. `.purlin/runtime/` is ignored by
+git, so the folder stays on the machine that ran the test, found by its
+sha256. A run removes each such folder whose sha256 no evidence file on
+disk names.
+
+**What a run keeps.** A run that does not start an AI proof, which is every
+run but `purlin:test --all`, `purlin:test --clean`, a settle of the proof's
+rule and a project's own run on another system, keeps the entry the section
+it replaces holds, `models` included, where both sections have the same
+fingerprint. The entry and each model hold `carried`. `purlin:test --all`
+and a settle keep, the same way, each model that passed every run asked for
+now, and start the test on the other models alone; each kept model holds
+`carried` and the entry holds none unless every model was kept.
+`purlin:test --clean` and a project's own run on another system start every
+model.
 
 ### The audit
 
@@ -376,7 +471,8 @@ taken now and its `dirty` is false. The run writes the section again:
 - Every `proofs` entry holds `carried`, the `commit`, `at`, `machine` and
   `email` of the run that took the result: the `carried` the entry already
   held, else the section's own four values as they stood. So a result
-  carried a second time still names the run that took it.
+  carried a second time still names the run that took it. Each model under
+  an entry's `models` holds `carried` the same way.
 - `at`, `runner`, `email`, `machine`, `dirty`, `fingerprint` and `rules`
   stay as they were: the section still says who took it, where and when.
 
@@ -396,7 +492,9 @@ run. A feature runs, and its section is replaced, where that section is
 missing, was taken over another fingerprint or with `dirty` true, or holds a
 result other than `pass` for a proof this system can run; where an untracked
 file sits under its scope or beside its tests; where its spec names no
-files; and where it is an anchor.
+files; and where it is an anchor. An AI proof's result is read there against
+the runs asked for now, so a feature runs again once the `runs` setting asks
+for more runs than a model holds.
 
 ## The fingerprint
 
@@ -406,9 +504,9 @@ so an edit counts before it is committed.
 
 | Part | What it covers |
 |---|---|
-| `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and `@env(<os>)` where the proof carries them. `> Description:` and the other metadata fields are not covered |
+| `spec` | the spec's own rule and proof lines. A rule line is `<spec> <RULE-N> <text>`; a proof line is `<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and `@env(<os>)` where the proof carries them; an AI proof's line reads `@slow` and ends `@ai(<models>)`, the models joined by `,` with `runs=<n>` after them where the proof sets it, then `@graded(<grader>)` where it names one, so another model, another count or another grader puts the section out of date. `> Description:` and the other metadata fields are not covered |
 | `code` | for a feature, the tracked files the `> Scope:` entries reach, each as `<path> <blob>`. A file names itself, a directory names every tracked file under it, and an entry holding `*`, `?` or `[` is a git glob, so `scripts/**/*.py` reaches every Python file under `scripts/`. For an anchor, every tracked file but the records Purlin writes, `.purlin/evidence/` whole, the results, the evidence package and its sign-offs, and but the settings file `.purlin/config.json`, whose `tests` setting the `tests` part covers. Any other change to the project changes it; writing a record does not, and neither does changing the settings file's `version` |
-| `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`, and, where `.purlin/config.json` holds `tests`, the line `tests-setting <sha256>`, the sha256 of that setting as JSON with sorted keys and no spaces. A test file is one a suite of the `tests` setting names. The setting is read from the working tree, so changing a suite's command puts every feature's sections out of date on `tests`; the file's layout and its other keys, `version` included, change nothing |
+| `tests` | every tracked test file carrying a marker for the feature, each as `<path> <blob>`, and, where `.purlin/config.json` holds `tests`, the line `tests-setting <sha256>`, the sha256 of that setting as JSON with sorted keys and no spaces. A test file is one a suite of the `tests` setting names. The setting is read from the working tree, so changing a suite's command puts every feature's sections out of date on `tests`; the file's layout and its other keys, `version` and `runs` included, change nothing |
 
 A file git does not track is in no part: it would change the fingerprint on
 the one machine that holds it and nowhere else. It joins the fingerprint once
@@ -435,7 +533,8 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   says. One result is carried
   from the section replaced into the new one: that of a slow proof's test
   the run left out, where both sections have the same fingerprint. Its
-  entry is marked `carried`.
+  entry is marked `carried`. An AI proof's models are carried the same way,
+  as "The models of an AI proof" says.
 - A `purlin:test --all` run writes again each section it carries forward,
   in either folder, as "Carried forward" says, and leaves every other
   section it did not take as it was.
@@ -481,6 +580,12 @@ comparison as well: they say when a run happened, not what it saw. A section
 left as it was keeps the durations and the report of the run that wrote it,
 and that report stays kept. The cases' names, outcomes and texts are
 compared, so a test that fails with another text replaces the section.
+
+An AI proof's `models` are compared the same way. A model's `carried`, and
+the `duration` and `report` of a run's `reported`, are left out. Everything
+else is compared, each run's `result`, `output`, `made`, `why` and `grade`
+included, so a run that wrote another output replaces the section. A model
+the run took itself replaces one the section on disk holds as `carried`.
 
 ## The two commits
 

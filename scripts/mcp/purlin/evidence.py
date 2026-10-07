@@ -12,7 +12,8 @@ This module reads and never writes. It answers four questions: which sections
 exist, whether each is current against a fingerprint taken now and which
 parts are out of date, which audit entry answers a rule whose rule, proof and
 test hashes are known, and which section is the newest across both sources.
-It also reads what a section says about each proof and which tests it
+It also reads what a section says about each proof, an AI proof's result
+from the runs it holds on each model, and which tests it
 lists, and which operating system this machine is, so a writer and a reader
 spell it the same way, and the words a person reads for each operating
 system.
@@ -245,21 +246,69 @@ _READ_AS = {'pass': 'pass', 'fail': 'fail', 'missing': 'not run',
             'not run': 'not run', NOTHING_TO_CHECK: NOTHING_TO_CHECK}
 
 
-def proof_results(section):
+def model_word(model, asked=None):
+    """`failed`, `not run` or `passed` for one entry of a proof's `models`.
+
+    `failed` where one of its runs reads `fail`; else `not run` where one
+    reads anything but `pass` or it holds fewer runs than `asked`, the runs
+    asked for now, its own `of` where none is given; else `passed`.
+    """
+    model = model if isinstance(model, dict) else {}
+    runs = [run.get('result') if isinstance(run, dict) else None
+            for run in model.get('runs') or ()]
+    if asked is None:
+        asked = model.get('of') if isinstance(model.get('of'), int) else 1
+    if 'fail' in runs:
+        return 'failed'
+    if any(result != 'pass' for result in runs) or len(runs) < max(asked, 1):
+        return 'not run'
+    return 'passed'
+
+
+def models_result(models, asked=None):
+    """`fail`, `not run` or `pass` for a proof entry's `models`: `fail`
+    where one model reads `failed`, else `not run` where one reads `not
+    run` or there is no model, else `pass`."""
+    words = [model_word(model, asked) for model in models or ()]
+    if 'failed' in words:
+        return 'fail'
+    if not words or 'not run' in words:
+        return 'not run'
+    return 'pass'
+
+
+def entry_result(entry, asked=None):
+    """One proof entry's `result`, an AI proof's read from its `models`.
+
+    `asked` is `{proof id: runs}`, the runs asked for now of each AI proof
+    (`outputs.asked_runs`). An entry that holds `models`, for a proof it
+    names, reads `models_result` against that many runs, so a stored `pass`
+    reads `not run` once more runs are asked for; any other entry reads the
+    `result` it stores.
+    """
+    if asked and isinstance(entry.get('models'), list) \
+            and entry.get('id') in asked \
+            and entry.get('result') in ('pass', 'fail', 'not run'):
+        return models_result(entry['models'], asked[entry['id']])
+    return entry.get('result')
+
+
+def proof_results(section, asked=None):
     """`{proof_id: {'result': ..., 'reason': ...}}` for one section.
 
     Each proof reads the worst of the entries the section lists against it:
     `fail` where one failed, else `not run` where one is `missing` or `not
     run`, else `nothing to check` where one reads so, else `pass`. A proof
     has passed only when every test tied to it ran and passed. `reason` is
-    there only where an entry gave one.
+    there only where an entry gave one. `asked` is `entry_result`'s: with
+    it, an AI proof's entries are read from their `models`.
     """
     results = {}
     for entry in (section or {}).get('proofs') or ():
         if not isinstance(entry, dict):
             continue
         proof_id = entry.get('id')
-        result = _READ_AS.get(entry.get('result'))
+        result = _READ_AS.get(entry_result(entry, asked))
         if not proof_id or result is None:
             continue
         known = results.get(proof_id)

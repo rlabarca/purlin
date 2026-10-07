@@ -12,8 +12,8 @@
 >   files a run removes, the two commits, and the audit's entries.
 > Scope: scripts/run/evidence.py, references/formats/evidence_format.md, templates/gitignore.purlin
 > Stack: python/stdlib (json, subprocess, datetime, platform), git
-> Highest-Rule: 35
-> Highest-Proof: 104
+> Highest-Rule: 38
+> Highest-Proof: 110
 
 ## Rules
 
@@ -41,6 +41,9 @@
 - RULE-33: With `--commit` a `--ci` run makes one commit, carrying the files under `.purlin/evidence/ci/` and any evidence file the run removed and nothing else, under the git identity set in that checkout, with the subject `purlin: evidence at <sha7>` naming HEAD when the run started, and prints `Evidence committed.`; where nothing is new it prints `Evidence unchanged.` and makes no commit; it never pushes
 - RULE-34: A result's entry holds `reported`, what the suite's report holds for its test, exactly as the run hands it over; an entry whose test the run left out, one whose proof is tagged for another operating system and one the run was handed nothing for hold none; and a section carried forward keeps each entry's `reported` as it was
 - RULE-35: A run that sees the same cases with the same outcomes and texts, over the same fingerprint on the same machine, leaves the section as it was, though a case took another time and was read from another report file; a case whose text differs replaces the section
+- RULE-36: An AI proof's entry holds `models`, the runs of its test on each model, exactly as the run hands it over, whatever the entry reads, and `carried` where the run handed one; an entry that reads `not run` because no model passed holds both too, and no `reported`
+- RULE-37: A section carried forward marks each model under an entry's `models` as `carried`, naming the `commit`, `at`, `machine` and `email` of the section it was taken in, and a model that already holds `carried` keeps the one it holds
+- RULE-38: A run that sees the same runs on the same models, over the same fingerprint on the same machine, leaves the section as it was, though a model is marked `carried`, a run's case took another time or was read from another report file; a run whose `output` differs replaces the section, and so does a model the run took itself where the section on disk holds it as `carried`
 
 ## Proof
 
@@ -94,3 +97,9 @@
 - PROOF-102 (RULE-34): A section whose entry holds `reported` with a duration of 0.5 seconds is carried forward onto the commit of 40 `b`s; the carried section's `commit` reads those 40 `b`s, its entry's `reported` is the same, and its `carried.commit` names the section's earlier commit
 - PROOF-103 (RULE-35): A section taken at `2026-09-01T00:00:00Z` holds a failing case with the text `boom`, 0.25 seconds, read from a report whose sha256 is 64 `a`s; a run on the same machine over the same fingerprint and commit hands in the same case at 0.75 seconds from a report of 64 `b`s; the file's section still reads `at` `2026-09-01T00:00:00Z`, 0.25 seconds and the 64 `a`s
 - PROOF-104 (RULE-35): The same section holds a failing case with the text `boom`, and the later run hands in the same case with the text `another failure`; the file's section reads `at` `2026-09-02T00:00:00Z`, the text `another failure` and the later report's sha256
+- PROOF-105 (RULE-36): A run hands over a passing test of an AI proof with `models` holding `model-a`, `passed` `1` of `1`, and one run reading `pass` with the `output` of 64 `c`s and `made` `helper`; the section's entry reads `result` `pass` and `models` exactly as handed over
+- PROOF-106 (RULE-36): A run hands over a test it left out, with `models` holding `model-a` and one run reading `not run`, `carried` naming the commit of 40 `d`s, and a `reported`; the section's entry reads `result` `not run`, holds those `models` and that `carried`, and holds no `reported`
+- PROOF-107 (RULE-37): A section taken at the commit of 40 `a`s holds an entry with two models, `model-a` marked `carried` from the commit of 40 `d`s and `model-b` not marked; carried forward onto the commit of 40 `b`s, `model-a`'s `carried.commit` still reads the 40 `d`s and `model-b`'s reads the 40 `a`s, with the section's `at`, `machine` and `email`
+- PROOF-108 (RULE-38): A section taken at `2026-09-01T00:00:00Z` holds `model-a` with one passing run whose case took 0.25 seconds, read from a report of 64 `a`s; a run on the same machine over the same fingerprint and commit hands in that model marked `carried`, its run's case at 0.75 seconds from a report of 64 `b`s; the file's section still reads `at` `2026-09-01T00:00:00Z`
+- PROOF-109 (RULE-38): The same section holds a run whose `output` is 64 `c`s, and the later run hands in that run with the `output` of 64 `e`s; the file's section reads `at` `2026-09-02T00:00:00Z` and that later `output`
+- PROOF-110 (RULE-38): The section on disk holds `model-a` marked `carried`, and the later run hands in the same model with the same run and no `carried`; the file's section reads `at` `2026-09-02T00:00:00Z`, and `model-a` holds no `carried`

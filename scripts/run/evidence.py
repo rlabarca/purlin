@@ -186,7 +186,9 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
     observed. A tied test that neither passed nor failed is `missing`, a
     proof tagged for another operating system reads `not run` whatever its
     tied test did here, and so does a slow proof's test the run left out,
-    its entry carrying `held`.
+    its entry carrying `held`. An entry's `models`, the runs of an AI
+    proof's test on each model its tag names, is written as it is given,
+    with its `carried` where the entry holds one, whatever the entry reads.
 
     A proof whose every tied test skipped with a reason starting `nothing to
     check:` reads `nothing to check`, each entry carrying the `reason` after
@@ -255,8 +257,13 @@ def build_section(info, entries_by_proof, host_os, commit, dirty, runner,
                     status if took
                     else 'not run' if entry.get('held') else unseen),
                     test=test)
-                if took:
+                models = None if foreign else entry.get('models')
+                if took or isinstance(models, list):
                     made = _with_carried(made, entry)
+                if isinstance(models, list):
+                    # An AI proof: its runs on each model, as the run
+                    # handed them.
+                    made['models'] = json.loads(json.dumps(models))
                 # A test another system's proof is tied to proves nothing
                 # here, and one the run left out gave no result.
                 listed.append(made if foreign or entry.get('held')
@@ -297,6 +304,19 @@ def _with_reported(listed, entry):
     return listed
 
 
+def carried_models(models, taken):
+    """A copy of a proof entry's `models`, each marked `carried`: the one
+    it already holds, else `taken`, the run that took its runs."""
+    out = []
+    for model in models or ():
+        if isinstance(model, dict):
+            model = dict(json.loads(json.dumps(model)), carried=(
+                dict(model['carried'])
+                if isinstance(model.get('carried'), dict) else dict(taken)))
+        out.append(model)
+    return out
+
+
 def taken_by(section):
     """What `carried` names of the run that took a section's results."""
     return {key: (section or {}).get(key) or '' for key in CARRIED_KEYS}
@@ -307,16 +327,20 @@ def carry_section(section, commit):
 
     The `commit` is the run's. Each proof entry holds `carried`, the
     `commit`, `at`, `machine` and `email` of the run that took its result:
-    the ones it already held, else the section's own. Everything else is as
+    the ones it already held, else the section's own. So does each model
+    under an AI proof's `models`. Everything else is as
     it was, `at`, `machine` and `email` included, so the section still says
     who took it and when. Returns a new dict.
     """
     carried = json.loads(json.dumps(section))
     taken = taken_by(section)
     for entry in carried.get('proofs') or ():
-        if isinstance(entry, dict) and not isinstance(entry.get('carried'),
-                                                      dict):
+        if not isinstance(entry, dict):
+            continue
+        if not isinstance(entry.get('carried'), dict):
             entry['carried'] = dict(taken)
+        if isinstance(entry.get('models'), list):
+            entry['models'] = carried_models(entry['models'], taken)
     carried['commit'] = commit or ''
     return carried
 
@@ -363,6 +387,38 @@ def _reported_seen(entry):
         for case in reported.get('cases') or ()]}
 
 
+def _entry_seen(entry):
+    """What `_same_observation` compares of one proof entry: all of it but
+    `carried`, and of `reported` the cases without their durations. Each
+    model under `models` is compared the same way, without its `carried`,
+    and so is each of its runs."""
+    if not isinstance(entry, dict):
+        return entry
+    seen = dict({key: value for key, value in entry.items()
+                 if key not in ('carried', 'reported')},
+                **_reported_seen(entry))
+    for key in ('models', 'runs'):
+        if isinstance(seen.get(key), list):
+            seen[key] = [_entry_seen(item) for item in seen[key]]
+    return seen
+
+
+def _carried_keys(section):
+    """What a section holds as carried: `(id, test)` for each such proof
+    entry, and `(id, test, model)` for each such model of one."""
+    found = set()
+    for entry in (section or {}).get('proofs') or ():
+        if not isinstance(entry, dict):
+            continue
+        key = (entry.get('id'), entry.get('test'))
+        if 'carried' in entry:
+            found.add(key)
+        for model in entry.get('models') or ():
+            if isinstance(model, dict) and 'carried' in model:
+                found.add(key + (model.get('model'),))
+    return found
+
+
 def _rule_marked_word(status, seen):
     """The word a rule with no proof reads from the tests marked with its id."""
     if status == 'fail':
@@ -387,26 +443,22 @@ def _same_observation(one, other):
     section on disk holds as carried. Of an entry's `reported`, how long
     each case took and which report file it was read from are left out as
     well: they say when the run happened. The cases, their outcomes and
-    their texts are compared.
+    their texts are compared. An AI proof's `models` are compared the same
+    way: each model without its `carried`, each run without the durations
+    and the report file of its `reported`, and everything else of it, its
+    `result`, `output`, `made`, `why` and `grade` included. A model the new
+    run took itself replaces one the section on disk holds as carried.
     """
     def seen(section):
         found = {key: value for key, value in (section or {}).items()
                  if key not in ('commit', 'at', 'email')}
         found['dirty'] = bool(found.get('dirty'))
         if isinstance(found.get('proofs'), list):
-            found['proofs'] = [
-                dict({key: value for key, value in entry.items()
-                      if key not in ('carried', 'reported')},
-                     **_reported_seen(entry))
-                if isinstance(entry, dict) else entry
-                for entry in found['proofs']]
+            found['proofs'] = [_entry_seen(entry)
+                               for entry in found['proofs']]
         return found
 
-    def carried(section):
-        return {(entry.get('id'), entry.get('test'))
-                for entry in (section or {}).get('proofs') or ()
-                if isinstance(entry, dict) and 'carried' in entry}
-    if carried(one) - carried(other):
+    if _carried_keys(one) - _carried_keys(other):
         return False
     return json.loads(json.dumps(seen(one))) == json.loads(json.dumps(
         seen(other)))

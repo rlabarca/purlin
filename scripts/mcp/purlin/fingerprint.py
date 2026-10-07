@@ -263,7 +263,10 @@ def rule_line(spec_path, rule_id, text):
 
 
 def proof_line(spec_path, proof_id, proof):
-    """`<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and `@env(<os>)`."""
+    """`<spec> <PROOF-N> <rules> <text>`, then `@manual`, `@slow` and
+    `@env(<os>)`, then, for an AI proof, `@ai(<models>)`, the models joined
+    by `,` with `runs=<n>` after them where the proof sets it, and
+    `@graded(<grader>)` where it names one."""
     parts = [spec_path, proof_id, ','.join(proof.get('rules') or ()),
              _normalise(proof.get('text'))]
     if proof.get('manual'):
@@ -272,6 +275,13 @@ def proof_line(spec_path, proof_id, proof):
         parts.append('@slow')
     if proof.get('env'):
         parts.append('@env(%s)' % proof['env'])
+    if proof.get('ai'):
+        named = list(proof['ai'])
+        if proof.get('runs'):
+            named.append('runs=%d' % proof['runs'])
+        parts.append('@ai(%s)' % ','.join(named))
+        if proof.get('graded'):
+            parts.append('@graded(%s)' % proof['graded'])
     return ' '.join(parts)
 
 
@@ -573,8 +583,10 @@ def carry_plan(project_root, features=None, os_name=None, index=None):
     operating system; one whose section there was taken over another spec,
     code or tests, or while files were changed and not committed; one whose
     section holds, for a proof this system can run, a result that is not a
-    pass; one with an untracked, non-ignored file under its scope or beside
-    one of its marker files; and one whose spec names no files.
+    pass, an AI proof's result being read against the runs asked for now
+    (`evidence.proof_results`); one with an untracked, non-ignored file
+    under its scope or beside one of its marker files; and one whose spec
+    names no files.
 
     `carry` lists `(source, os)` for each section of the feature's evidence
     that was taken over the fingerprint taken now, with nothing uncommitted,
@@ -583,12 +595,14 @@ def carry_plan(project_root, features=None, os_name=None, index=None):
     replaces it.
     """
     from purlin import evidence as evidence_module
+    from purlin import outputs as outputs_module
 
     features = _features(project_root, features)
     os_name = os_name or evidence_module.host_os()
     if index is None:
         index = marker_index(project_root)
     look_for_untracked = any_untracked(project_root)
+    setting = outputs_module.runs_setting(project_root)
     cache = {}
     out = []
     for name in sorted(features):
@@ -603,7 +617,8 @@ def carry_plan(project_root, features=None, os_name=None, index=None):
                      if entry['source'] == 'local'
                      and entry['os'] == os_name), None)
         run = bool(info.get('is_anchor')) or here is None \
-            or not _all_pass(here, os_name) \
+            or not _all_pass(here, os_name,
+                             outputs_module.asked_runs(info, setting)) \
             or bool(incomplete_reason(project_root, name, features))
         if not run and look_for_untracked:
             loose = untracked_parts(project_root, name, features, index)
@@ -616,16 +631,19 @@ def carry_plan(project_root, features=None, os_name=None, index=None):
     return out
 
 
-def _all_pass(section, os_name):
+def _all_pass(section, os_name, asked=None):
     """True where every result the section holds for a proof this system
     can run, one that is not `@manual` and not tagged for another system,
-    is a pass."""
+    is a pass. `asked` is `{proof id: runs}` for the feature's AI proofs:
+    an entry holding `models` is a pass where every model passed that many
+    runs (`evidence.entry_result`)."""
+    from purlin import evidence as evidence_module
     for entry in section.get('proofs') or ():
         if not isinstance(entry, dict) or entry.get('manual'):
             continue
         if entry.get('env') and entry.get('env') != os_name:
             continue
-        if entry.get('result') != 'pass':
+        if evidence_module.entry_result(entry, asked) != 'pass':
             return False
     return True
 

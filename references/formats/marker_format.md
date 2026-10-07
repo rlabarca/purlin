@@ -64,6 +64,26 @@ A test is declared by:
 | C# | a method carrying `[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`, `[TestCaseSource]`, `[TestMethod]`, `[DataTestMethod]`, `[SkippableFact]` or `[SkippableTheory]` |
 | Go | `func TestX(t *testing.T)` |
 
+### The test of an AI proof
+
+The test of a proof tagged `@ai` is marked like any other test. The run
+starts it alone and sets three variables for it:
+
+| Variable | What it holds |
+|----------|---------------|
+| `PURLIN_AI` | the full path of `scripts/ai/purlin_ai.py`, the helper the test starts |
+| `PURLIN_AI_MODEL` | the model this start is for, one of the models the proof's tag names |
+| `PURLIN_AI_OUT` | the full path of the folder this start writes its output to, emptied first |
+
+The test reads `PURLIN_AI` to start the helper, and the helper reads the
+other two. A test that makes the output its own way reads `PURLIN_AI_MODEL`
+to know which model to ask. `references/formats/evidence_format.md`, "The
+models of an AI proof", says what the run records of each start.
+
+A test that also carries the marker of a proof that is not an AI proof is
+started with the suites as well, with none of the three set, and what it
+does there counts for that other proof alone.
+
 ## The `tests` setting
 
 `.purlin/config.json` holds the project's suites under one key, `tests`, a

@@ -32,8 +32,9 @@ from purlin import payload as purlin_payload  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 STATUS_PY = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), 'scripts', 'run', 'purlin_status.py')
-from run_project import (RUN_SCRIPT, _project,  # noqa: E402,F401
-                         _pytest_project, _run, _spec, claude)
+from run_project import (AI_BODY, RUN_SCRIPT, _ai_plan,  # noqa: E402,F401
+                         _ai_project, _ai_starts, _project, _pytest_project,
+                         _run, _spec, claude)
 
 # The system this machine is, and a feature's one proof tagged for it: a
 # `--ci` run starts only the tests tied to proofs tagged for its system, so
@@ -3182,3 +3183,429 @@ class TestTheReportsARunKeeps:
         sha = hashlib.sha256((root / 'report.json').read_bytes()).hexdigest()
         assert entry['reported']['report'] == {'file': '-', 'sha256': sha}
         assert _kept(root) == {sha + '.json': sha}
+
+
+# ---------------------------------------------------------------------------
+# One proof's own tests, started alone
+# ---------------------------------------------------------------------------
+
+class TestProofResult:
+    """`proof_result`, which the run and the audit start one proof by."""
+
+    # purlin: run_script PROOF-346
+    def test_one_proofs_test_is_started_alone_with_the_variables_given(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import os\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_a():\n'
+            "    open('seen', 'w').write(os.environ.get('SAMPLE', 'unset'))\n\n"
+            '# purlin: feat PROOF-2\n'
+            'def test_b():\n'
+            "    open('other', 'w').close()\n"))
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', '')))
+        assert _load_run_script().proof_result(
+            str(root), 'feat', 'PROOF-1',
+            [{'file': 'tests/test_feat.py', 'name': 'test_a'}],
+            environment={'SAMPLE': 'given'}) == 'pass'
+        assert (root / 'seen').read_text(encoding='utf-8') == 'given'
+        assert not (root / 'other').exists()
+
+    # purlin: run_script PROOF-347
+    def test_a_failing_test_answers_fail_and_a_skipped_one_not_run(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '# purlin: feat PROOF-1\n'
+            'def test_a():\n'
+            '    assert 1 == 2\n\n'
+            '# purlin: feat PROOF-2\n'
+            'def test_b():\n'
+            "    pytest.skip('not today')\n"))
+        _spec(root, 'feat', rules=2, proofs=(('PROOF-1', 'RULE-1', ''),
+                                             ('PROOF-2', 'RULE-2', '')))
+        answers = [_load_run_script().proof_result(
+            str(root), 'feat', proof_id,
+            [{'file': 'tests/test_feat.py', 'name': name}])
+            for proof_id, name in (('PROOF-1', 'test_a'),
+                                   ('PROOF-2', 'test_b'))]
+        assert answers == ['fail', 'not run']
+
+
+# ---------------------------------------------------------------------------
+# AI proofs
+# ---------------------------------------------------------------------------
+
+def _reply_sha(model):
+    """The sha256 of the folder the sample test writes for `model`."""
+    import hashlib
+    reply = hashlib.sha256(('reply of %s\n' % model).encode()).hexdigest()
+    return hashlib.sha256(('%s  reply.md\n' % reply).encode()).hexdigest()
+
+
+def _ai_entry(root, proof_id='PROOF-2', source='local'):
+    """The one entry the evidence lists for an AI proof."""
+    (entry,) = [listed for listed in _evidence(root, 'feat', source)[
+        'platforms'][HERE_OS]['proofs'] if listed['id'] == proof_id]
+    return entry
+
+
+def _models(entry):
+    """The entry's `models`, each run's `reported` read as `[(case,
+    outcome)]`: how long a case took and which report held it differ from
+    run to run."""
+    models = json.loads(json.dumps(entry['models']))
+    for model in models:
+        for run in model['runs']:
+            if 'reported' in run:
+                assert sorted(run['reported']) == ['cases', 'report'], run
+                run['reported'] = [(case['name'], case['outcome'])
+                                   for case in run['reported']['cases']]
+    return models
+
+
+def _passing_run(model):
+    return {'result': 'pass', 'output': _reply_sha(model), 'made': 'helper',
+            'reported': [('test_reply', 'pass')]}
+
+
+def _passed_model(model, runs=3, **more):
+    """A model's entry where each of `runs` runs passed."""
+    return dict({'model': model, 'passed': runs, 'of': runs, 'graded': False,
+                 'runs': [_passing_run(model) for _run in range(runs)]},
+                **more)
+
+
+def _ai_lines(output):
+    """The lines a run printed as it started an AI proof's test."""
+    return [line for line in output.splitlines()
+            if line.startswith('Running feat ')]
+
+
+def _ai_checkout(tmp_path, tag='@ai(model-a, model-b)', **plan):
+    """The AI project as a git checkout that also holds `README.md`."""
+    root = _ai_project(tmp_path, tag, **plan)
+    (root / 'README.md').write_text('one\n', encoding='utf-8')
+    _git_repo(root)
+    return root
+
+
+def _another_commit(root):
+    """Change `README.md`, which no scope names, and commit it."""
+    (root / 'README.md').write_text('two\n', encoding='utf-8')
+    _git(root, 'commit', '-q', '-am', 'docs: the readme')
+
+
+def _taken(section):
+    return {key: section[key] for key in ('commit', 'at', 'machine', 'email')}
+
+
+class TestAiProofs:
+    """An AI proof's test is left out of the suites and started on its own,
+    once per model and per run."""
+
+    # purlin: run_script PROOF-348
+    def test_a_plain_run_leaves_the_ai_proofs_test_out(self, tmp_path):
+        root = _ai_project(tmp_path)
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert ('Left out 1 slow proof: feat PROOF-2. purlin:test --all runs '
+                'it when it is due.') in output.splitlines(), output
+        assert _ai_lines(output) == [] and _ai_starts(root) == [], output
+        entry = _ai_entry(root)
+        assert (entry['result'], entry['test']) == (
+            'not run', 'tests/test_feat.py::test_reply')
+        assert 'models' not in entry, entry
+
+    # purlin: run_script PROOF-349
+    def test_a_full_run_starts_the_test_per_model_and_per_run(self, tmp_path):
+        root = _ai_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        lines = output.splitlines()
+        started = [line for line in lines if line.startswith('Running ')]
+        assert started[0].startswith('Running pytest: '), output
+        assert started[1:] == [
+            'Running feat PROOF-2 on %s, %d of 3' % (model, run)
+            for model in ('model-a', 'model-b') for run in (1, 2, 3)], output
+        assert not any(line.startswith('Left out') for line in lines), output
+        assert _ai_starts(root) == [
+            '%s %d' % (model, run)
+            for model in ('model-a', 'model-b') for run in (1, 2, 3)]
+
+    # purlin: run_script PROOF-350
+    def test_the_test_is_given_the_folder_and_the_helper(self, tmp_path):
+        root = _ai_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        seen = json.loads((root / 'seen.json').read_text(encoding='utf-8'))
+        assert seen['out'] == os.path.join(
+            os.path.abspath(str(root)), '.purlin', 'runtime', 'ai', 'feat',
+            'PROOF-2', 'model-b', '3')
+        assert seen['helper'] == os.path.join(REPO, 'scripts', 'ai',
+                                              'purlin_ai.py')
+
+    # purlin: run_script PROOF-351
+    def test_the_proofs_own_runs_win_over_the_setting(self, tmp_path):
+        root = _ai_project(tmp_path, '@ai(model-a, runs=2)')
+        _config(root, runs=5)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['model-a 1', 'model-a 2']
+        assert _ai_lines(output)[-1] == (
+            'Running feat PROOF-2 on model-a, 2 of 2'), output
+
+    # purlin: run_script PROOF-352
+    def test_the_runs_setting_says_how_many_times(self, tmp_path):
+        root = _ai_project(tmp_path, '@ai(model-a)')
+        _config(root, runs=2)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['model-a 1', 'model-a 2']
+
+    # purlin: run_script PROOF-353
+    def test_the_folder_is_emptied_before_the_test_starts(self, tmp_path):
+        root = _ai_project(tmp_path, '@ai(model-a, runs=1)')
+        folder = (root / '.purlin' / 'runtime' / 'ai' / 'feat' / 'PROOF-2'
+                  / 'model-a' / '1')
+        folder.mkdir(parents=True)
+        (folder / 'stale.txt').write_text('old\n', encoding='utf-8')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        seen = json.loads((root / 'seen.json').read_text(encoding='utf-8'))
+        assert seen['held'] == []
+        assert sorted(os.listdir(str(folder))) == ['purlin.json', 'reply.md']
+
+    # purlin: run_script PROOF-354
+    def test_a_ci_run_starts_the_ai_proof_it_answers_for(self, tmp_path):
+        root = _ai_project(tmp_path, '@env(%s) @ai(model-a)' % HERE_OS)
+        code, output = _run(root, '--all', '--ci')
+        assert code == 0, output
+        assert _ai_starts(root) == ['model-a 1', 'model-a 2', 'model-a 3']
+        entry = _ai_entry(root, source='ci')
+        assert entry['result'] == 'pass', entry
+        assert _models(entry) == [_passed_model('model-a')]
+
+    # purlin: run_script PROOF-355
+    def test_a_settle_starts_the_ai_proofs_of_the_rules_it_names(
+            self, tmp_path):
+        purlin_run = _load_run_script()
+        root = _ai_project(tmp_path)
+        features = importlib.import_module('purlin.specs').scan_specs(
+            str(root))
+
+        def started(rules):
+            return purlin_run.ai_proofs_started(
+                features, ['feat'], False,
+                purlin_run.settled_proofs(features, ['feat'], rules))
+        assert started([]) == []
+        assert started(['RULE-2']) == [('feat', 'PROOF-2')]
+        assert started(['RULE-1']) == []
+
+    # purlin: run_script PROOF-356
+    def test_every_run_is_recorded_under_its_model(self, tmp_path):
+        root = _ai_project(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        entry = _ai_entry(root)
+        assert entry['result'] == 'pass', entry
+        assert _models(entry) == [_passed_model('model-a'),
+                                  _passed_model('model-b')]
+
+    # purlin: run_script PROOF-357
+    def test_one_failing_run_fails_the_proof_and_stops_no_run(self, tmp_path):
+        root = _ai_project(tmp_path, fail=['model-a 2'])
+        code, output = _run(root, '--all', '--test')
+        assert code == 1, output
+        assert len(_ai_starts(root)) == 6, _ai_starts(root)
+        assert ('feat RULE-2: rule to fix. tests/test_feat.py::test_reply '
+                'fails. Run purlin:build feat.') in output.splitlines(), output
+        entry = _ai_entry(root)
+        assert entry['result'] == 'fail', entry
+        assert _evidence(root)['platforms'][HERE_OS]['rules'][
+            'RULE-2'] == 'failed'
+        failing = dict(_passing_run('model-a'), result='fail',
+                       reported=[('test_reply', 'fail')])
+        assert _models(entry) == [
+            {'model': 'model-a', 'passed': 2, 'of': 3, 'graded': False,
+             'runs': [_passing_run('model-a'), failing,
+                      _passing_run('model-a')]},
+            _passed_model('model-b')]
+
+    # purlin: run_script PROOF-358
+    def test_a_model_that_gives_no_answer_reads_not_run_with_one_warning(
+            self, tmp_path):
+        root = _ai_project(tmp_path,
+                           unreached={'model-b': 'The login expired'})
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        lines = output.splitlines()
+        assert lines.count('model-b: model not reached. The login expired. '
+                           'Run purlin:test --all.') == 1, output
+        assert 'evidence missing' not in output, output
+        assert _ai_starts(root) == ['model-a 1', 'model-a 2', 'model-a 3',
+                                    'model-b 1']
+        entry = _ai_entry(root)
+        assert entry['result'] == 'not run', entry
+        assert _models(entry) == [
+            _passed_model('model-a'),
+            {'model': 'model-b', 'passed': 0, 'of': 3, 'graded': False,
+             'runs': [{'result': 'not run', 'why': 'The login expired.',
+                       'made': 'helper',
+                       'reported': [('test_reply', 'fail')]}]}]
+
+    # purlin: run_script PROOF-359
+    def test_no_further_test_is_started_on_a_model_not_reached(
+            self, tmp_path):
+        root = _ai_project(tmp_path, '@ai(model-b, model-a)',
+                           unreached={'model-b': 'The login expired'})
+        (root / 'tests' / 'test_feat.py').write_text(
+            AI_BODY + '\n\n# purlin: feat PROOF-3\n'
+            'def test_second():\n    _reply()\n', encoding='utf-8')
+        _spec(root, 'feat', rules=3, proofs=(
+            ('PROOF-1', 'RULE-1', ''),
+            ('PROOF-2', 'RULE-2', ' @ai(model-b, model-a)'),
+            ('PROOF-3', 'RULE-3', ' @ai(model-b, model-a)')))
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert len([line for line in output.splitlines() if line.startswith(
+            'model-b: model not reached.')]) == 1, output
+        assert _ai_starts(root) == ['model-b 1'] + [
+            'model-a %d' % run for run in (1, 2, 3)] * 2
+        third = _ai_entry(root, 'PROOF-3')
+        assert third['models'][0] == {
+            'model': 'model-b', 'passed': 0, 'of': 3, 'graded': False,
+            'runs': []}, third
+
+    # purlin: run_script PROOF-360
+    def test_a_grader_that_gives_no_answer_is_the_model_not_reached(
+            self, tmp_path):
+        grade = {'model': 'grader-a', 'accepted': None,
+                 'reason': 'The grader was overloaded'}
+        root = _ai_project(tmp_path, '@ai(model-a) @graded(grader-a)',
+                           grade=grade)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert ('grader-a: model not reached. The grader was overloaded. '
+                'Run purlin:test --all.') in output.splitlines(), output
+        assert _ai_starts(root) == ['model-a 1']
+        assert _models(_ai_entry(root)) == [
+            {'model': 'model-a', 'passed': 0, 'of': 3, 'graded': True,
+             'runs': [{'result': 'not run',
+                       'why': 'The grader was overloaded.', 'made': 'helper',
+                       'reported': [('test_reply', 'pass')],
+                       'grade': grade}]}]
+
+    # purlin: run_script PROOF-361
+    def test_a_plain_run_keeps_the_ai_proofs_models(self, tmp_path):
+        root = _ai_checkout(tmp_path)
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        taken = _evidence(root)['platforms'][HERE_OS]
+        first = _ai_entry(root)
+        (root / 'starts.log').unlink()
+        _another_commit(root)
+        code, output = _run(root, '--feature', 'feat', '--test', '--commit')
+        assert code == 0, output
+        assert _ai_starts(root) == []
+        entry = _ai_entry(root)
+        assert entry['result'] == 'pass', entry
+        assert entry['carried'] == _taken(taken), entry
+        assert entry['models'] == [dict(model, carried=_taken(taken))
+                                   for model in first['models']]
+
+    # purlin: run_script PROOF-362
+    def test_a_plain_run_keeps_a_model_that_was_not_reached(self, tmp_path):
+        root = _ai_checkout(tmp_path,
+                            unreached={'model-b': 'The login expired'})
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        taken = _evidence(root)['platforms'][HERE_OS]
+        first = _ai_entry(root)
+        _another_commit(root)
+        code, output = _run(root, '--feature', 'feat', '--test', '--commit')
+        assert code == 0, output
+        entry = _ai_entry(root)
+        assert entry['result'] == 'not run', entry
+        assert [(model['model'], [run['result'] for run in model['runs']])
+                for model in entry['models']] == [
+            ('model-a', ['pass', 'pass', 'pass']), ('model-b', ['not run'])]
+        assert entry['models'] == [dict(model, carried=_taken(taken))
+                                   for model in first['models']]
+
+    # purlin: run_script PROOF-363
+    def test_a_full_run_starts_only_the_model_with_no_passing_entry(
+            self, tmp_path):
+        root = _ai_checkout(tmp_path,
+                            unreached={'model-b': 'The login expired'})
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        taken = _evidence(root)['platforms'][HERE_OS]
+        (root / 'starts.log').unlink()
+        _ai_plan(root)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['model-b 1', 'model-b 2', 'model-b 3']
+        entry = _ai_entry(root)
+        assert entry['result'] == 'pass' and 'carried' not in entry, entry
+        assert _models(entry) == [
+            _passed_model('model-a', carried=_taken(taken)),
+            _passed_model('model-b')]
+
+    # purlin: run_script PROOF-364
+    def test_a_clean_run_starts_every_model_again(self, tmp_path):
+        root = _ai_checkout(tmp_path)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0 and len(_ai_starts(root)) == 6, output
+        code, output = _run(root, '--clean', '--test')
+        assert code == 0, output
+        assert len(_ai_starts(root)) == 12, _ai_starts(root)
+        assert _models(_ai_entry(root)) == [_passed_model('model-a'),
+                                            _passed_model('model-b')]
+
+    # purlin: run_script PROOF-365
+    def test_more_runs_asked_starts_the_model_again(self, tmp_path):
+        root = _ai_checkout(tmp_path, '@ai(model-a)')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0 and len(_ai_starts(root)) == 3, output
+        (root / 'starts.log').unlink()
+        _config(root, runs=4)
+        _git(root, 'commit', '-q', '-am', 'chore: four runs')
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['model-a %d' % run
+                                    for run in (1, 2, 3, 4)]
+        assert _models(_ai_entry(root)) == [_passed_model('model-a', runs=4)]
+
+    # purlin: run_script PROOF-366
+    def test_what_the_suites_own_pass_saw_is_no_result_of_the_ai_proof(
+            self, tmp_path):
+        runner = suites.pytest_suite(name='runner')
+        runner['run'] = '%s run.py {files} --junitxml={report}' % suites.PYTHON
+        root = _ai_project(tmp_path, '@ai(model-a)', tests=[runner])
+        (root / 'run.py').write_text(
+            'import sys\nimport pytest\n'
+            "sys.exit(pytest.main(['-q', '-p', 'no:cacheprovider']"
+            ' + sys.argv[1:]))\n', encoding='utf-8')
+        code, output = _run(root, '--feature', 'feat', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['bare']
+        assert ('Started 1 slow test in the runner suite: its command gives '
+                'Purlin no way to leave one test out.') in output.splitlines()
+        entry = _ai_entry(root)
+        assert entry == {'id': 'PROOF-2', 'rule': 'RULE-2', 'env': None,
+                         'manual': False, 'result': 'not run',
+                         'test': 'tests/test_feat.py::test_reply'}
+
+    # purlin: run_script PROOF-367
+    def test_a_graded_proofs_runs_hold_the_grade(self, tmp_path):
+        grade = {'model': 'grader-a', 'accepted': True,
+                 'reason': 'It names the three findings.'}
+        root = _ai_project(tmp_path, '@ai(model-a) @graded(grader-a)',
+                           grade=grade)
+        code, output = _run(root, '--all', '--test')
+        assert code == 0, output
+        assert _models(_ai_entry(root)) == [dict(
+            _passed_model('model-a'), graded=True,
+            runs=[dict(_passing_run('model-a'), grade=grade)] * 3)]

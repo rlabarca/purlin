@@ -400,3 +400,81 @@ def test_an_anchors_code_part_is_the_blob_ids_the_commit_holds(anchored):
     assert anchored.fp('security')['code'] == expected
 
 
+
+
+# --- RULE-36, RULE-37: the tags of an AI proof, and the `runs` setting -------
+
+def _tagged(project, tags):
+    """The `login` spec with `tags` after its one proof, committed. The
+    fingerprint taken then."""
+    project.login(proof='%s %s' % (LOGIN_PROOF, tags))
+    project.commit()
+    return project.fp('login')
+
+
+# purlin: evidence PROOF-92
+def test_another_model_in_the_ai_tag_changes_spec_alone(project):
+    first = _tagged(project, '@ai(model-a)')
+    project.login(proof=LOGIN_PROOF + ' @ai(model-a, model-b)')
+    assert _changed(first, project.fp('login')) == ['spec']
+
+
+# purlin: evidence PROOF-93
+def test_a_runs_count_in_the_ai_tag_changes_spec_alone(project):
+    first = _tagged(project, '@ai(model-a)')
+    project.login(proof=LOGIN_PROOF + ' @ai(model-a, runs=5)')
+    assert _changed(first, project.fp('login')) == ['spec']
+
+
+# purlin: evidence PROOF-94
+def test_another_grader_changes_spec_alone(project):
+    first = _tagged(project, '@ai(model-a) @graded(grader-a)')
+    project.login(proof=LOGIN_PROOF + ' @ai(model-a) @graded(grader-b)')
+    assert _changed(first, project.fp('login')) == ['spec']
+
+
+# purlin: evidence PROOF-95
+def test_a_proof_line_ends_on_its_ai_tags(project):
+    from purlin import specs
+    project.login(proof=LOGIN_PROOF
+                  + ' @ai(model-a, model-b, runs=5) @graded(grader-a)')
+    info = specs.scan_specs(project.root)['login']
+    assert fingerprint.proof_line(
+        info['spec_path'], 'PROOF-1', info['proofs']['PROOF-1']) == (
+        'specs/auth/login.md PROOF-1 RULE-1 POST /login; verify 200 @slow '
+        '@ai(model-a,model-b,runs=5) @graded(grader-a)')
+    project.login()
+    info = specs.scan_specs(project.root)['login']
+    assert fingerprint.proof_line(
+        info['spec_path'], 'PROOF-1', info['proofs']['PROOF-1']) == (
+        'specs/auth/login.md PROOF-1 RULE-1 POST /login; verify 200')
+
+
+# purlin: evidence PROOF-96
+def test_a_changed_runs_setting_changes_no_part(project):
+    _settings(project, runs=3)
+    project.commit()
+    first = project.fp('login')
+    _settings(project, runs=5)
+    assert project.fp('login') == first
+
+
+# purlin: evidence PROOF-97
+def test_a_changed_runs_setting_is_no_change_to_the_tests_setting(project):
+    from purlin import evidence
+    _settings(project, runs=3)
+    project.commit()
+    os_name = evidence.host_os()
+    project.write('.purlin/evidence/local/login.json', json.dumps({
+        'schema': evidence.SCHEMA, 'feature': 'login', 'source': 'local',
+        'spec': 'specs/auth/login.md', 'platforms': {os_name: {
+            'commit': project.git('rev-parse', 'HEAD').strip(),
+            'at': '2026-09-01T00:00:00Z',
+            'fingerprint': project.fp('login'), 'rules': {}, 'proofs': []}}}))
+    _settings(project, runs=5)
+    assert fingerprint.setting_changed(project.root, os_name=os_name) is False
+    # The same section does show a change to the `tests` setting itself.
+    held = _settings(project)
+    _settings(project, tests=[dict(held['tests'][0], run='pytest -x {files}')]
+              + held['tests'][1:])
+    assert fingerprint.setting_changed(project.root, os_name=os_name) is True
