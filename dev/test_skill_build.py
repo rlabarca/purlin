@@ -114,5 +114,13 @@ def test_a_session_stops_for_a_proof_that_names_too_little(
     changed = sample_lab.files_of(output)
     assert [under(changed, folder)
             for folder in ('specs', 'tests', 'src')] == [[], [], []]
+    # The sharper sentence names two times, the collection and the receipt,
+    # and the age in hours they give.
+    sharper = [line for line in sample_lab.reply_of(output).splitlines()
+               if 'PROOF-5 (RULE-3)' in line]
+    assert sharper, 'the reply proposes no sentence for PROOF-5'
+    times = set(re.findall(r'\d{1,2}:\d\d', sharper[-1]))
+    assert len(times) >= 2, sharper[-1]
+    assert re.search(r'\b\d+`? hours', sharper[-1]), sharper[-1]
     graded = sample_lab.grade('skill_build', 'PROOF-56', no_real_model)
     assert graded.returncode == 0, graded.stdout + graded.stderr
