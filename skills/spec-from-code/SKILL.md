@@ -109,6 +109,27 @@ in its passed cell and `purlin:build` writes the test on the next pass.
 Do not invent a proof for a rule you could not state as an observable. Drop the rule instead
 and note the behaviour in `> Description:`.
 
+## Prompts, skills and agent definitions
+
+Where the survey finds a prompt, a skill, an agent definition or a Claude project's
+instructions, the product is what an AI does with it. For each, draft:
+
+- rules that say what the AI must do or produce;
+- proofs that each name a sample input and the exact thing to check in the output, as
+  `references/spec_quality_guide.md`, "A proof about what an AI does", says;
+- the tag for each: `@ai(...)` for an exact check, `@ai(...) @graded(...)` where a second
+  model grades it, `@manual` where a person must look.
+
+List them with the taxonomy at step 3, and in that question
+**Stop and ask** which model or models each is shown on, and which model grades a graded one.
+Never pick a model yourself: the model is what is being validated.
+
+Write no test for one: `purlin:build` does. Each such rule then reads `no test`.
+
+As you hand over, say this in these words:
+`A rule read from instructions says what they ask for, not what the AI does.`
+Only its test, run with `purlin:test --all`, shows what the AI does.
+
 ## What not to do
 
 - Do not write a rule for code no caller outside the project can reach: list its files among
