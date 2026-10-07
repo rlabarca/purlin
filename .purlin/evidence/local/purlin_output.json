@@ -2,28 +2,27 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T17:31:50Z",
+        "at": "2026-10-07T18:25:02Z",
         "bugs": {
           "PROOF-1": {
-            "after": "The format is `references/formats/evidence_format.md` in the Purlin plugin. \u00a9 Purlin.",
+            "after": "ARROW = '\u2194'",
             "aim": "past the test",
-            "before": "The format is `references/formats/evidence_format.md` in the Purlin plugin.",
-            "bug_key": "571c5cf9ae6dc7bf91f247eddf53fa65fb92f7d5bdb379d65efe3aa04b4a1e8d",
-            "case": "every tracked file under scripts/ and templates/ is read; the proof says none holds an Extended_Pictographic character; templates/evidence-readme.md now holds U+00A9, which has that property",
-            "file": "templates/evidence-readme.md",
-            "line": 16,
+            "before": "ARROW = '\u2192'",
+            "bug_key": "50a4bbe1ab2e77d0bf6ec2b73b8d5670224d8df78238556aa6beb7f62d2864be",
+            "case": "every tracked file under scripts/ and templates/ is read; the proof says none holds an Extended_Pictographic character other than \u25b6; scripts/mcp/purlin/status.py now holds U+2194",
+            "file": "scripts/mcp/purlin/status.py",
+            "line": 67,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "8c57b428829b91337e957096061d8d0e7f8e2751",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-1: the test lists every tracked file, asserts that at least one is under scripts/ and one under templates/, and asserts the detector finds nothing in any of them, which is the case the proof names.",
-          "PROOF-1: the test shows the detector firing on only U+2705, U+26A0, U+1F680, U+2764 and U+FE0F in a temporary file, so a detector built on ranges that leave out lower code points with the property, such as U+00A9 or U+2122, would still pass it.",
-          "PROOF-1: the allowed glyphs are checked through the detector and the allowed set together, so the test does not show that `\u25b6` is exempt by the set and not by a gap in the detector.",
-          "Findings: none, and the test's assertions can each fail."
+          "PROOF-1: the test lists the tracked files, asserts some are under scripts/ and some under templates/, and asserts the pictograph list over all of them is empty, which is the proof's case and its result.",
+          "PROOF-1: the detection helpers are defined outside the test's own lines, and the test shows them finding only U+2705, U+26A0, U+1F680, U+2764 and U+FE0F, so a pictograph outside those blocks, such as U+2194, passes if the helper's table leaves it out.",
+          "PROOF-1: the allowed set is taken from the helper's own constant, so a character wrongly added to it beside \u25b6 would pass, except for the seven glyphs the test names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -34,104 +33,135 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-06T17:34:44Z",
+        "at": "2026-10-07T18:25:02Z",
         "bugs": {
           "PROOF-2": {
-            "after": "            lines.append(f'{name}: {row['error']}')",
+            "after": "    return resolve_project_root(start_dir)[first := 0]",
             "aim": "past the test",
-            "before": "            lines.append('%s: %s' % (name, row['error']))",
-            "bug_key": "96d2146b4f414ae167891f4b5fcb81acb5526d3442f67a0fdea3187883c9bd2e",
-            "case": "scripts/anchor/upstream.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file reuses the string's own quote inside an f-string, which 3.9 rejects as a syntax error",
-            "file": "scripts/anchor/upstream.py",
-            "line": 487,
-            "result": "caught",
+            "before": "    return resolve_project_root(start_dir)[0]",
+            "bug_key": "fb5819054a7b55eb87f15362d5419151b844d5592e6209ed25d4a7ae9f542ecc",
+            "case": "scripts/mcp/config_engine.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file holds an assignment expression unparenthesized in an index, which 3.9 rejects and 3.10 and later accept",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 109,
+            "result": "survived",
+            "test_key": "b9d7166ddff91c6b7688024f7c277f68f5970d2ed5917283e0a01cf60fdc5609",
             "why": ""
           },
           "PROOF-4": {
-            "after": "    ids.update(zip(present, lines, strict=True))",
+            "after": "        print(TIED_LINE % (tied, untied.bit_count()))",
             "aim": "plain",
-            "before": "    ids.update(zip(present, lines))",
-            "bug_key": "f3ec27ab67363995745481b55f3e523eb7fe88a233bf59bf59de958878430952",
-            "case": "under Python 3.9, a test run over a set-up project whose one proof has a passing test; the proof says exit 0; the changed code calls zip(strict=True), which 3.9 refuses with a TypeError, so the run exits 1",
-            "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 96,
+            "before": "        print(TIED_LINE % (tied, untied))",
+            "bug_key": "0e58954fdea7128e0d26257fc5a7a0bdc90cede3d0d0bcc41848e26ddf9920a4",
+            "case": "under Python 3.9, a test run over a set-up project whose one proof has a passing test; the proof says it exits 0 and prints the Markers line; the changed code stops on an AttributeError before that line and exits 1",
+            "file": "scripts/run/purlin_run.py",
+            "line": 2087,
             "result": "caught",
             "why": ""
           },
           "PROOF-5": {
-            "after": "    return '  '.join(cell.ljust(width) for cell, width\n                     in zip(cells, widths, strict=True)).rstrip()",
-            "aim": "plain",
-            "before": "    return '  '.join(cell.ljust(widths[index])\n                     for index, cell in enumerate(cells)).rstrip()",
-            "bug_key": "807d2c41837268543d1cef6c1386b4bf1faf3bbe11f8c15c2a5fc07f4f413371",
-            "case": "under Python 3.9, the server is asked for the status of a set-up project with one spec, app; the proof says a table row for app; the changed code raises a TypeError in the table, so the answer is an error line and no row",
-            "file": "scripts/mcp/purlin/status.py",
-            "line": 476,
-            "result": "caught",
+            "after": "    text = '%d of %d' % (rollup.get('untested') or 0, rollup.get('rules') or 0)",
+            "aim": "past the test",
+            "before": "    text = '%d of %d' % (passing(rollup), rollup.get('rules') or 0)",
+            "bug_key": "8a3f6c5c411fb02c4d8bf92e9e56503b9773812e75164700471be8b8b2e803bf",
+            "case": "the server's status of a set-up project with the one spec app, whose rule has not passed; the proof says it answers with a table row for app; the changed row reads 1 of 1 under Tests where the rule's row reads 0 of 1",
+            "file": "scripts/mcp/purlin/board.py",
+            "line": 135,
+            "result": "survived",
+            "test_key": "6a5a0f0170f4669decd99e8fcffeb6d4799c98f33d1081ddf21642b046a3ce79",
             "why": ""
           }
         },
-        "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "e9b5584ed9ef9bf01b8d0a1b191df932b01554de",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-2: the test hands every tracked Python file under scripts/ to two helpers defined outside the test and asserts both return nothing, so what counts as Python 3.9 grammar is whatever those helpers read.",
+          "PROOF-2: the test shows the helpers flag a match statement and an f-string that reuses its own quote, and shows no other construct later than 3.9 being flagged, so one a newer parser accepts under a 3.9 setting could pass.",
+          "PROOF-2: the f-string check on the made-up file runs only where the tokenizer has FSTRING_START, so on an older Python that half of the test asserts nothing about a flagged file.",
+          "PROOF-4: the test sets a project up under Python 3.9, runs the tests and asserts exit code 0 and the exact line `Markers: 1 tied to a test, 0 not tied.` in standard output, which is the proof's case and both of its results.",
+          "PROOF-4: the test is skipped where no Python 3.9 is found, so on such a machine it observes nothing.",
+          "PROOF-5: the test asserts exit code 0 and a line opening `app`, `1`, `1`, so it reads the row's name, rule count and proof count and never the Tests cell that ends the row.",
+          "PROOF-5: the test does not show that the exit follows the closing of the input, only that the process ended with 0.",
+          "No proof of the rule names a failure case, such as what a 3.9 run prints when a script holds later syntax."
+        ],
+        "findings": [
+          "PROOF-2: the test still passes when scripts/mcp/config_engine.py:109 reads \"return resolve_project_root(start_dir)[first := 0]\"",
+          "PROOF-2: the AI says this breaks: scripts/mcp/config_engine.py read with the grammar of Python 3.9; the proof says it is accepted; the changed file holds an assignment expression unparenthesized in an index, which 3.9 rejects and 3.10 and later accept",
+          "PROOF-5: the test still passes when scripts/mcp/purlin/board.py:135 reads \"text = '%d of %d' % (rollup.get('untested') or 0, rollup.get('rules') or 0)\"",
+          "PROOF-5: the AI says this breaks: the server's status of a set-up project with the one spec app, whose rule has not passed; the proof says it answers with a table row for app; the changed row reads 1 of 1 under Tests where the rule's row reads 0 of 1"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "9595d2c89c408b9a6a252869ad680b7ed1b3aa1c8dd0d22680dddbd28da32ea9",
         "rule_hash": "83b3d888c56bb0bfb2bde8748a501a2ba2e50bcf2ace37991b81fdedf5d14d35",
         "test_hash": "a116e46359ad787ebb3666548c4c7b172fab336c43cbc9e9f3ee24d9b15d3baf",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-3": {
-        "at": "2026-10-05T18:49:48Z",
+        "at": "2026-10-07T18:25:02Z",
         "bugs": {
           "PROOF-6": {
-            "after": "    \"\"\"`git status` lines for spec files that are not committed.\"\"\"\n    subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(300)'],\n                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                     stderr=subprocess.DEVNULL, start_new_session=True)\n    try:",
+            "after": "    try:\n        subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'],\n                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                         stderr=subprocess.DEVNULL, env={}, cwd=os.sep,\n                         start_new_session=True)\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
             "aim": "past the test",
-            "before": "    \"\"\"`git status` lines for spec files that are not committed.\"\"\"\n    try:",
-            "bug_key": "8c4e4b9e196b2fc514440fbecd169e94ad62af1de22b9365d2e474c28541dbd8",
-            "case": "setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running; the changed code leaves a detached Python process running after the test run and the status exit 0",
+            "before": "    try:\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
+            "bug_key": "6c704281d645bb2bc859dcb6ba7844cec8b5fad4d9eb9750c14b442df5422c66",
+            "case": "a test run with --commit and the status in a scratch project; the proof says no process either started is still running; the changed code leaves a detached process running for 600 seconds after each exits 0",
             "file": "scripts/mcp/purlin/status.py",
-            "line": 597,
-            "result": "caught",
+            "line": 638,
+            "result": "survived",
+            "test_key": "b7ca8ceba80466f5e3ce54dbe48c9590d70d304fbfb00c97a8caceb26bc14a90",
             "why": ""
           }
         },
-        "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "d4ce8c36eb83de1182380970fb618c7fe7ad855d",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-6: the test runs setup, a test run with `--commit` and the status in a scratch project, each in a process group of its own, and asserts that each exits 0.",
+          "PROOF-6: it then asserts that the helper which looks for leftover processes by the three commands' groups and the scratch project returns an empty list.",
+          "PROOF-6: off Windows it also asserts that no process other than the test's own carries the marker variable the test set in the environment.",
+          "PROOF-6: a process that starts a session of its own, is given an empty environment and has a command line naming nothing of the project is in none of the three groups and carries no marker, so the test as written is likely to miss it.",
+          "PROOF-6: on Windows the environment check is skipped, so only the process groups and the command line are observed there.",
+          "PROOF-6: the proof names `0` and the test compares each return code with 0, so the spot tests have nothing to find."
+        ],
+        "findings": [
+          "PROOF-6: the test still passes when scripts/mcp/purlin/status.py:638 reads \"subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'],\"",
+          "PROOF-6: the AI says this breaks: a test run with --commit and the status in a scratch project; the proof says no process either started is still running; the changed code leaves a detached process running for 600 seconds after each exits 0"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-6 holds three commands and two observations in one case, the exit codes and the leftover processes."
+        ],
         "proof_hash": "8b4a1e30c44dfe443f1533df6f8cf3c5ea0554a9c85de3f63a1b58c368b02cbc",
         "rule_hash": "7e040db3b040d335fd4d6bc9775c37a18b6041724ccadbda6fa8da3e4ce18769",
         "test_hash": "f60b16b9397cb7d286f0954fc0906e75a0bc22dd6f720e8c6ac565a55b476086",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-4": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:25:02Z",
         "bugs": {
           "PROOF-7": {
-            "after": "Purlin\u00ae cannot prove the code is right. It gives the team a paper trail.",
+            "after": "purlin:drift \u2194 purlin:spec \u2192 purlin:build \u2192 purlin:test \u2192 purlin:test --all --commit \u2192 purlin:sign",
             "aim": "past the test",
-            "before": "Purlin cannot prove the code is right. It gives the team a paper trail.",
-            "bug_key": "7faac726700d58b95221e0f319fceb46e878bdf57e3d9b1f9c4b86261378e6e7",
-            "case": "every character of agents/purlin.md is read; the proof says none has the property Extended_Pictographic other than \u25b6; the changed file holds U+00AE, which has that property",
+            "before": "purlin:drift \u2192 purlin:spec \u2192 purlin:build \u2192 purlin:test \u2192 purlin:test --all --commit \u2192 purlin:sign",
+            "bug_key": "e60bdec283774c04dafb27ca1dcadc82a1f1c6efbb17d5d7be725b2e8ae9629d",
+            "case": "every character of agents/purlin.md is read; the proof says none is Extended_Pictographic other than `\u25b6`; the changed file holds U+2194 (\u2194), which is Extended_Pictographic, in the core loop line",
             "file": "agents/purlin.md",
-            "line": 10,
+            "line": 52,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1d072420a25c78e5fb6f577e16ebfcf63113b4298ea695cea958df8800e1f05e",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-7: the test lists the real skill definitions and agents/purlin.md, checks that the list holds skills/status/SKILL.md and ends on agents/purlin.md, and asserts that no pictograph is found in them, which is the proof's case and its result.",
-          "PROOF-7: the test then writes a skill holding \u25b6, U+2705 and U+2764 with U+FE0F into a temporary folder and asserts that exactly those three are named with their lines and \u25b6 is not, so the exemption and the U+FE0F clause are both observed.",
-          "PROOF-7: the source of the two helpers that list the files and find the pictographs is not shown, so whether every Extended_Pictographic code point is covered cannot be read here; the test only exercises U+2705, U+2764 and U+FE0F, and a low code point such as U+00AE would get past a table that leaves it out.",
-          "The spot tests found nothing, and nothing in the test's text contradicts that: it asserts, swallows no error, mocks nothing and takes no expected value from the code under test."
+          "PROOF-7: the test lists the skill files and the agent definition, checks that `skills/status/SKILL.md` is among them and `agents/purlin.md` is last, and asserts that the pictographs found in them are an empty list, which is the proof's case and result.",
+          "PROOF-7: the test then writes a sample skill holding U+2705, U+2764 with U+FE0F and `\u25b6`, and asserts the exact three lines reported, so it shows the reader firing on a check mark and a heart and staying silent on `\u25b6`.",
+          "PROOF-7: the character reading is done by a helper outside the test's own lines, and the test only exercises it on characters from U+2600 to U+27BF and U+FE0F, so a pictograph outside that block, such as an arrow or a letterlike symbol, passes if the helper's table does not hold it.",
+          "PROOF-7: the test checks one skill file by name and never compares the list with every `skills/*/SKILL.md`, so a skill the lister leaves out would go unread and unnoticed.",
+          "The spot tests found nothing; the assertions compare against literals and can fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
