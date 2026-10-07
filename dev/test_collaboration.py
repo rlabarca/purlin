@@ -725,6 +725,12 @@ def test_three_people_reach_a_signed_version(tmp_path):
                           'stability RULE-2', 'stability RULE-3',
                           'stability RULE-4']
 
+    #     The one rule checked by hand is the one the package lists as a
+    #     hand check, with its `@manual` proof, and no tested rule is.
+    assert [(entry['feature'], entry['rule'], entry['proofs'])
+            for entry in package['hand_checks']] == [
+        ('sample_age', 'RULE-3', ['PROOF-3'])]
+
     #     The package describes the code under the tag: each rule with its
     #     words, each proof under the number the renumbering left it, and
     #     each test by the file and the name it has at the tag, where that
