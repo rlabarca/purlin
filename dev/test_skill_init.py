@@ -278,3 +278,16 @@ def test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints(
                           'the evidence folder holds')
     assert printed[3].endswith('as chore(update): restore .gitignore, '
                                '.purlin/evidence/README.md')
+
+
+TAGS_THAT_STAY = ('; `@manual`, `@slow`, `@env(...)`, `@ai(...)` and '
+                  '`@graded(...)` stay;')
+NO_RUNS = ('Setup writes no `runs`: where a project wants another count '
+           'than 3, write it with the `purlin_config` tool.')
+
+
+# purlin: skill_init PROOF-103
+def test_a_reader_finds_the_tags_that_stay_and_who_writes_runs():
+    text = flat(read(SKILL))
+    assert TAGS_THAT_STAY in text
+    assert NO_RUNS in text

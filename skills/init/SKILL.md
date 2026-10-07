@@ -64,6 +64,10 @@ agrees. `references/supported_frameworks.md` shows every entry, and
 `purlin_config` tool rather than by hand, so a key the installed Purlin does not read is reported
 instead of kept.
 
+The file may hold one more key, `runs`: how many model runs the test of an AI proof gets on
+each model, 3 where it is not set. Setup writes no `runs`: where a project wants another count
+than 3, write it with the `purlin_config` tool.
+
 Setup sets up no signing: `purlin:sign` checks for a key to sign with and, when there is none,
 shows the commands that set one up.
 
@@ -119,8 +123,7 @@ three steps again.
 Between them the migrations:
 
 - rewrite or remove each line 0.9.5 wrote into a spec that this version does not read, the tag
-  naming a kind of test at the end of each proof included; `@manual`, `@slow` and `@env(...)`
-  stay;
+  naming a kind of test at the end of each proof included; `@manual`, `@slow`, `@env(...)`, `@ai(...)` and `@graded(...)` stay;
 - remove the files 0.9.5 kept that this version does not use, and its two git hooks;
 - name each workflow that names a proof file. `--yes` and `--apply` remove none: each is kept and
   named, and the person removes it by hand;
