@@ -177,6 +177,50 @@ slide('audit', 'Are the tests any good?', 'The audit: would your tests catch a b
  'ESEM 2026). The full reasoning, the sources and a trial on a sample project are on the '
  'audit research page of the docs.',
  lead='A passing test is not proof that it checks anything. The audit tries to make each test fail.', width=560, pad=16)
+slide('ai', 'Prompts and skills', 'How Purlin tests and audits AI', [
+    ('Name the model', 'Tag the proof %s. Each model named gets its own result.' % m('@ai(claude-opus-5-5)')),
+    ('Get the output', 'The test starts one helper: a real session with your skill or plugin, or your prompt as the system prompt.'),
+    ('`purlin:test --all`', 'Runs the test 3 times on each model. Every run must pass.'),
+    ('Keep what it saw', 'Each run keeps what the AI was given and what it produced. The evidence names the folder by its sha256.'),
+    ('`purlin:audit`', 'Plants a wrong output in a copy of a kept one. The test still passes: the rule is %s.' % m('weak')),
+], '<b>Three passes of three show it held three times.</b> They do not show it always holds.',
+ 'A rule about a prompt, a skill, an agent definition or a Claude project\'s instructions says what '
+ 'the AI must do with it. Its proof is an AI proof: a proof like any other, with one ordinary test '
+ 'and one comment above it, tagged with the models it is shown on. A person names the model in the '
+ 'tag; no setting names one, several models are one tag, and a proof says nothing about a model it '
+ 'does not name. The test starts one helper. For a '
+ 'skill or a plugin it starts a real Claude Code session with that one skill or plugin, in a copy '
+ 'of a sample project. For a prompt it sends the files as the system prompt of one call with no '
+ 'tools. A project that builds its prompt in code makes the output its own way and hands it over. '
+ 'A plain purlin:test leaves the test out; purlin:test --all runs it, three times on each model '
+ 'unless the runs setting or the tag says otherwise. A model that cannot be reached reads not run, '
+ 'never failed. The kept folder holds the reply, what the session did, the files it wrote and what '
+ 'the AI was given; the first sign-off of a version commits it with the package, and a sign-off is '
+ 'optional. For the audit no model is asked for an output again and nothing is changed in the '
+ 'prompt or the skill: the audit tests the check, and does not show the prompt is a good one. A claude.ai project cannot be driven from '
+ 'outside, so its instructions are tested as a system prompt.',
+ lead='A prompt or a skill is tested like anything else, on the models you name.', width=560, pad=16)
+slide('graded', 'Graded by an AI', 'When an AI grades the output', [
+    ('Two tags', '%s names the model tested. %s names the grader, in the proof itself.' % (m('@ai(...)'), m('@graded(...)'))),
+    ('What the grader sees', 'The proof\'s sentence, what the AI was given and what it produced. The sentence is the only criterion.'),
+    ('What it answers', 'Accept or reject, with one reason. The sign-off lists each one.'),
+    ('How it reads', '%s, never %s. It counts as passing, and every count says how many are graded.' % (m('graded'), m('passed'))),
+    ('The audit tests the grader', 'It plants a wrong output. A grader that accepts it makes the rule %s.' % m('weak')),
+], '<b>A grade is an AI\'s opinion against one sentence.</b> Where a person must look, tag a proof %s.' % m('@manual'),
+ 'Use a graded proof where the sentence needs judgment a test cannot hold and an AI\'s opinion is '
+ 'enough, such as: asked for a refund over the limit, the reply refuses, gives the limit as the '
+ 'reason and blames nobody. Where the proof can name a value, an exact test is the better check, '
+ 'and one rule may take both. The grader is a second model, named in the proof; there is no '
+ 'default. It is shown the sentence, the message, the instructions and the sample the AI was '
+ 'given, and the reply and files it produced, and nothing else, so the sentence must stand alone: '
+ 'it may compare the output with the input, and it may not lean on a guide the grader is not '
+ 'shown. A reject fails the run. A grader that gives no answer makes the run not run, never '
+ 'failed. The status line reads PROOF-5 graded 3 of 3 on claude-opus-5-5, the rule\'s page on the '
+ 'dashboard shows the grader and its reason for each run, and the sign-off walk counts the graded '
+ 'proofs per grader and lists each graded run. A graded proof adds no stop to the walk; a second '
+ 'proof tagged manual does. What the grader is shown has bounds: fifty files at most beside the '
+ 'message and the reply, each text cut to 20,000 characters.',
+ lead='Some sentences need judgment a test cannot hold. A second model grades the output.', width=560, pad=16, numbers=False)
 slide('signoff', 'The sign-off', 'When everyone is done, a person signs the evidence once', [
     ('Run and commit', 'A developer runs %s on the version to sign. It reruns what changed and carries the rest forward.' % m('purlin:test --all --commit')),
     ('`purlin:sign`', 'Opens with who ran the tests, where and when. Stops at each hand check, shows what the audit found, and asks for one signature.', [
@@ -224,8 +268,8 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'For now the way to sign off on one is a hand check: a proof tagged manual, which the status '
  'shows as checked at sign-off, and not counted as passing, until someone signs. After a sign-off the status and the dashboard '
  'show the last note with the version it was signed at and how many commits have come since, so '
- 'a reader can judge whether it still holds. The next walk shows that note at the rule\'s stop. An AI may help a person look, but a test does not pass or fail on an AI\'s '
- 'opinion; a test may ask a model a question with one right answer.',
+ 'a reader can judge whether it still holds. The next walk shows that note at the rule\'s stop. Where an AI\'s opinion is enough, a proof about a prompt or a skill can be graded by an AI '
+ 'instead; it then reads graded, never passed.',
  lead='A test can check a result. Only a person can make a judgment call.', width=560, pad=16, numbers=False)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
     ('They can be in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
@@ -243,9 +287,9 @@ slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow',
  lead='An anchor is a set of rules for the whole project, proven by tests that run across all of it.', width=560, pad=16, numbers=False)
 deck = {"v": 4, "createdOnFiles": {"v": 1, "at": "2026-09-26T18:00:00Z"},
         "title": "Purlin workflows",
-        "order": ["why", "example", "compare", "touches", "start", "fromcode", "together", "slow", "manual", "anchors", "audit", "signoff", "remote", "regulated"],
+        "order": ["why", "example", "compare", "touches", "start", "fromcode", "together", "slow", "manual", "anchors", "audit", "ai", "graded", "signoff", "remote", "regulated"],
         "sections": {"s1": {"description": "What Purlin is for, one requirement followed from words to evidence, how little it changes in a project and a workflow, and how to start in under ten minutes or from code you already have", "start": "why"},
-                     "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, judgment calls a person signs for, anchors that carry rules for the whole project, the audit that checks the tests are any good, and the sign-off when everyone is done", "start": "together"},
+                     "s2": {"description": "Working together while the specs change, slow tests that stay out of the way, judgment calls a person signs for, anchors that carry rules for the whole project, the audit that checks the tests are any good, how Purlin tests and audits AI, what it means when an AI grades the output, and the sign-off when everyone is done", "start": "together"},
                      "s3": {"description": "How a project tests on other platforms while Purlin itself only works locally, and where Purlin stops in regulated work", "start": "remote"}},
         "faces": {}, "designSystems": []}
 with open(os.path.join(ROOT, 'deck.json'), 'w', encoding='utf-8') as h:
