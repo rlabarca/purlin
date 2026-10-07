@@ -10,8 +10,8 @@
 >   the page resolves to one block and both themes ship in the same file.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 92
-> Highest-Proof: 304
+> Highest-Rule: 93
+> Highest-Proof: 305
 
 ## Rules
 
@@ -58,6 +58,7 @@
 - RULE-90: A rule whose passed cell reads `graded` passes wherever the page counts the rules that pass: the `Passing` box, its band's `<passing> of <rules> rules pass` and the share in its spec's `Tests` cell each count it. It is drawn in the pass tone and reads `graded`, never `passed`: its row's badge is `GRADED`, its passed row and its graded proof's result read `GRADED`, the hover of each system box on its passed row reads `graded` where the run there passed, and the hover of its spec's `Tests` cell counts it as `<k> graded`, after `<k> passed` and apart from it
 - RULE-91: Where a rule's passed cell reads `graded`, the `Passing` box carries one more line under its total, `<g> GRADED BY AN AI`, `<g>` the payload's `summary.steps.graded`, in the label's face, size and colour; where no rule reads `graded` the box carries its total alone
 - RULE-92: On a rule's screen an AI proof, one whose `@ai(...)` tag names a model, shows after its result the row `Models`, one line per model in the tag's order, `<word> <p> of <n> on <model>`, set in the machine typeface, the word in its tone and `<n>` the runs asked now where they are more than the runs held. Under a model stands one line for each of its runs that failed, is `not run` or a grader read, `<i> of <n> <word> <reason>`, the word `graded` for a run that passed, the reason the grader's own or why the model gave no answer, and no line for a run that passed with no grade. A graded proof shows the row `Grader` before `Models`, naming the model its `@graded(...)` tag names. An AI proof shows no `@slow` tag, and a proof with no `@ai(...)` tag shows neither row
+- RULE-93: On a rule's screen the row of its passed cell is labelled `Tests`, the name of the board's column and of the fact box, and the row of its strong cell `Strong`, each drawn in capitals as every label of the screen is; no row is labelled `Passed`, so a rule whose word is `graded` or `failed` stands beside no other word for its result
 ## Proof
 
 - PROOF-122 (RULE-2): After a build, the page at the project root reads the same text, character for character, as the page written under `scripts/report/`
@@ -128,7 +129,7 @@
 - PROOF-167 (RULE-55): Open the board with the regulated sample and every spec; 7 rows carry `PASSED` and 3 `STRONG`, the counts the `Passing` and `Strong` boxes read
 - PROOF-203 (RULE-63): Open the board with the regulated sample; below the boxes a section labelled `ANCHORS` holds two rows, `checkout_design` and `security_baseline`, under the headings `Spec`, `Rules`, `Proofs`, `Tests`, `Strong`, then the section labelled `SPECS` lists login, invoice and export
 - PROOF-204 (RULE-63): Open the board with the solo sample, which has no anchor; no section is labelled `ANCHORS`, and the one section label on the board reads `SPECS`
-- PROOF-217 (RULE-68): Open the team sample's refund `RULE-2`, whose spec writes `PROOF-2` twice and whose tests pass; its `Passed` row reads `FAILED` and `PROOF-2 is written twice in the spec`
+- PROOF-217 (RULE-68): Open the team sample's refund `RULE-2`, whose spec writes `PROOF-2` twice and whose tests pass; its `Tests` row reads `FAILED` and `PROOF-2 is written twice in the spec`
 - PROOF-228 (RULE-71): Open the regulated sample's invoice `RULE-3`, whose `@manual` proof no test carries and which no sign-off has noted; its proof's tests read `checked at sign-off` and nothing beneath it
 - PROOF-229 (RULE-71): Open the regulated sample's invoice `RULE-3` after its newest sign-off, of `0.1.0` by `quinn.qa@labconnect.example` 4 commits ago, notes `the tube is red`; beneath `checked at sign-off` it reads `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red`
 - PROOF-246 (RULE-71): Open the regulated sample's invoice `RULE-3` after its note of `0.1.0` is marked as written before the rule was reworded; above the note the screen reads `the rule's wording changed since its last note`
@@ -195,3 +196,4 @@
 - PROOF-302 (RULE-92): Open the prompts sample's support_reply `RULE-1` after the payload's `runs` for its proof is set to 5; `Models` reads `passed 3 of 5 on claude-opus-5-5` and `passed 3 of 5 on claude-sonnet-5-5`
 - PROOF-303 (RULE-75): Open the prompts sample at 1500, 1280, 1024, 768 and 390 pixels wide, in the dark theme and in the light, with support_reply open, then the screen of each of its 6 rules; on every screen at every width in both themes the page scrolls sideways 0 pixels, and no count, label, box, rule id, model's word, model's count or model's name sits on two lines
 - PROOF-304 (RULE-88): Open the board with the prompts sample, whose data holds the one warning `claude-sonnet-5-5: model not reached. The model gave no answer. Run purlin:test --all.`; the one notice's text reads that line, its name `claude-sonnet-5-5` is set in Courier New and is no link, and its kind `model not reached` stands in a label with a border 1 pixel wide
+- PROOF-305 (RULE-93): Open the prompts sample's support_reply `RULE-2`, whose passed cell reads `graded`; the labels of the screen's first panel read exactly `Tests`, `Spec` and `Last run`, drawn `TESTS`, `SPEC` and `LAST RUN`, and the badge beside `TESTS` reads `GRADED`. Open the regulated sample's login `RULE-1`; the labels read exactly `Tests`, `Strong`, `Spec` and `Last run`, drawn `TESTS`, `STRONG`, `SPEC` and `LAST RUN`

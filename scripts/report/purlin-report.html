@@ -652,7 +652,7 @@ var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
   'spot-checked': 'neutral',
   'waiting': 'neutral', 'checked at sign-off': 'neutral',
   'not audited': 'idle', 'no proof': 'warn'};
-var CELL_LABELS = {passed: 'Passed', strong: 'Strong'};
+var CELL_LABELS = {passed: TESTS, strong: STRONG};
 function loadData(callback) {
   var frame = document.createElement('iframe');
   var done = false;

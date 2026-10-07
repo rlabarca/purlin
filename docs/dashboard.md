@@ -70,9 +70,9 @@ rule is listed first. Press a band to fold it. Press a spec to see its rules.
 
 Press a rule to open its screen. `Back to the board` returns.
 
-![The screen for one rule: Back to the board, the rule's text, the Passed and Strong rows with the boxes for each operating system, the Audit panel, and each proof with its tests](images/dashboard-rule.png)
+![The screen for one rule: Back to the board, the rule's text, the Tests and Strong rows with the boxes for each operating system, the Audit panel, and each proof with its tests](images/dashboard-rule.png)
 
-- **The `Passed` and `Strong` rows.** Each carries its word as a badge, then its reasons, such
+- **The `Tests` and `Strong` rows.** Each carries its word as a badge, then its reasons, such
   as `Windows: no run yet` or `code changed since 9f8e7d6`.
 - **One box per operating system.** `Lin`, `Mac` or `Win`: green where the rule passed, red
   where it failed.

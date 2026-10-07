@@ -78,7 +78,10 @@ var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
   'waiting': 'neutral', 'checked at sign-off': 'neutral',
   'not audited': 'idle', 'no proof': 'warn'};
 
-var CELL_LABELS = {passed: 'Passed', strong: 'Strong'};
+/* The label of each cell's row on a rule's screen. The passed cell's row is
+   `Tests`, as the board's column and the fact box are, since the word
+   beside it can read `graded` or `failed`. */
+var CELL_LABELS = {passed: TESTS, strong: STRONG};
 
 
 function loadData(callback) {

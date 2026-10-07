@@ -1084,8 +1084,8 @@ def test_the_rule_screen_shows_the_rule_its_proof_and_its_cells(browser,
     assert 'PROOF-1' in body
     assert 'tests/test_login.py :: test_sign_in' in body
     assert 'PASSED' in body and 'STRONG' in body
-    # The row's own word, not its label: the label `Passed` is drawn in capitals too.
-    assert rows['Passed'].startswith('PASSED'), rows
+    # The row's own word, not its label, which reads `Tests`.
+    assert rows['Tests'].startswith('PASSED'), rows
     assert rows['Strong'] == 'STRONG', rows
     page.close()
 
@@ -1656,7 +1656,7 @@ def test_an_audit_out_of_date_keeps_its_last_result_on_screen(browser,
 def test_a_rule_with_no_proof_reads_its_reason(browser, tmp_path):
     solo = open_board(browser, tmp_path, payload_named('solo'))
     open_rule(solo, 'login', 'RULE-3')
-    passed = solo.evaluate(KV_ROWS)['Passed']
+    passed = solo.evaluate(KV_ROWS)['Tests']
     assert passed.startswith('NO TEST') and 'no proof written' in passed
     # The whole row, and the badge alone: `NO TEST`, not a word beside it.
     assert passed == 'NO TEST no proof written', passed
@@ -1669,7 +1669,7 @@ def test_a_rule_with_no_proof_reads_its_reason(browser, tmp_path):
 def test_a_rule_out_of_date_reads_what_changed(browser, tmp_path):
     reg = open_board(browser, tmp_path, payload_named('regulated'))
     open_rule(reg, 'export', 'RULE-1')
-    passed = reg.evaluate(KV_ROWS)['Passed']
+    passed = reg.evaluate(KV_ROWS)['Tests']
     assert passed.startswith('OUT OF DATE'), passed
     assert 'code changed since 9f8e7d6' in passed
     reg.close()
@@ -1678,7 +1678,7 @@ def test_a_rule_out_of_date_reads_what_changed(browser, tmp_path):
 # The pill of the open rule's passed row: its text and the colour it is in.
 PASSED_PILL = """() => {
   const row = Array.from(document.querySelectorAll('.kv dt')).find(
-    dt => dt.textContent.trim() === 'Passed');
+    dt => dt.textContent.trim() === 'Tests');
   const pill = row.nextElementSibling.querySelector('.pill');
   return [pill.innerText.trim(), getComputedStyle(pill).color];
 }"""
@@ -1691,7 +1691,7 @@ def test_a_hand_check_no_sign_off_noted_is_passed_as_checked_at_sign_off(
     page.click('[data-act="feature"][data-feature="invoice"]')
     badges = row_badges(page, 'invoice')
     page.click('.rule[data-feature="invoice"][data-rule="RULE-3"]')
-    passed = page.evaluate(KV_ROWS)['Passed']
+    passed = page.evaluate(KV_ROWS)['Tests']
     pill = page.evaluate(PASSED_PILL)
     neutral = page.evaluate(RESOLVE_TOKEN, '--state-neutral')
     page.close()
@@ -1713,7 +1713,7 @@ def test_a_slow_proof_not_run_shows_its_tag_and_its_reason(browser, tmp_path):
         word='not run', reasons=['slow: runs with purlin:test --all'])
     reg = open_board(browser, tmp_path, payload)
     open_rule(reg, 'export', 'RULE-1')
-    passed = reg.evaluate(KV_ROWS)['Passed']
+    passed = reg.evaluate(KV_ROWS)['Tests']
     assert passed.startswith('NOT RUN'), passed
     assert 'slow: runs with purlin:test --all' in passed
     proof = reg.inner_text('.panel.proof')
@@ -2294,7 +2294,7 @@ CELL_ROW = """name => {
 def test_a_rule_of_a_spec_to_repair_says_why(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('team'))
     open_rule(page, 'refund', 'RULE-2')
-    row = page.evaluate(CELL_ROW, 'Passed')
+    row = page.evaluate(CELL_ROW, 'Tests')
     page.close()
     assert row == ['FAILED', 'PROOF-2 is written twice in the spec'], row
 
@@ -2392,7 +2392,7 @@ def test_an_anchors_rule_with_nothing_to_check_says_why_it_passed(browser,
     page = open_sample(browser, tmp_path, 'regulated',
                        skipped_with_nothing_to_check)
     open_rule(page, 'security_baseline', 'RULE-1')
-    row = page.evaluate(CELL_ROW, 'Passed')
+    row = page.evaluate(CELL_ROW, 'Tests')
     page.close()
     assert row == ['PASSED', 'PROOF-1: this project has no screens'], row
 
@@ -3267,3 +3267,28 @@ def test_a_model_not_reached_is_a_notice_like_any_other(browser, tmp_path):
     assert found['nameFont'].startswith('"Courier New"'), found
     assert found['kind'] == 'model not reached', found
     assert found['kindBorder'] == '1px', found
+
+
+# The label of each row of the open rule's first panel, as it is written and
+# as it is drawn.
+ROW_LABELS = """() => [...document.querySelector('.kv').children]
+  .filter(node => node.tagName === 'DT')
+  .map(dt => [dt.textContent.trim(), dt.innerText.trim()])"""
+
+
+# purlin: purlin_report PROOF-305
+def test_the_row_of_a_rules_passed_cell_is_labelled_tests(browser, tmp_path):
+    graded = open_sample(browser, tmp_path / 'graded', 'prompts')
+    open_rule(graded, 'support_reply', 'RULE-2')
+    first = graded.evaluate(ROW_LABELS)
+    word = graded.evaluate(PASSED_PILL)[0]
+    graded.close()
+    audited = open_sample(browser, tmp_path / 'audited', 'regulated')
+    open_rule(audited, 'login', 'RULE-1')
+    second = audited.evaluate(ROW_LABELS)
+    audited.close()
+    assert first == [['Tests', 'TESTS'], ['Spec', 'SPEC'],
+                     ['Last run', 'LAST RUN']], first
+    assert word == 'GRADED', word
+    assert second == [['Tests', 'TESTS'], ['Strong', 'STRONG'],
+                      ['Spec', 'SPEC'], ['Last run', 'LAST RUN']], second
