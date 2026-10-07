@@ -7,7 +7,7 @@
 > Scope: scripts/mcp/purlin/notices.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib
 > Highest-Rule: 8
-> Highest-Proof: 17
+> Highest-Proof: 18
 
 ## Rules
 
@@ -39,3 +39,4 @@
 - PROOF-14 (RULE-7): With only `alpha` and `beta` carrying that line, the status's lines holding `line not read` are exactly the two whole lines, `alpha`'s then `beta`'s
 - PROOF-15 (RULE-7): Three `rule to fix` lines naming `a RULE-1`, `a RULE-2` and `a RULE-3`, after one `rule to write a test for` line naming `b RULE-1` and before a line of no kind, fold to exactly `b RULE-1: rule to write a test for. Run purlin:build b.`, `rule to fix: a, in 3 places. Run purlin:status a.` and the line of no kind
 - PROOF-16 (RULE-8): The message `fatal: repository not found. Check the address.` is quoted as `fatal: repository not found`; `fatal: ` followed by 100 `x` and then `. More.` is quoted as its first 80 characters and `...`, 83 characters in all
+- PROOF-18 (RULE-7): Three lines `notices.model_not_reached` gives, for `model-a`, `model-b` and `model-c`, each with `The login expired.`, name no spec; the first is the line `notices.line` gives for the kind `model_not_reached`, and folded they are exactly the three whole lines, `model-a: model not reached. The login expired. Run purlin:test --all.` and the same for `model-b` and `model-c`, in the terminal's fold and in the dashboard's

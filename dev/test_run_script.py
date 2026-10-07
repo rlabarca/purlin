@@ -3301,6 +3301,15 @@ def _taken(section):
     return {key: section[key] for key in ('commit', 'at', 'machine', 'email')}
 
 
+def _at_markers(output):
+    """A run's lines above its `Markers:` line, the run's own, and from that
+    line on, where the status it ends on stands."""
+    lines = output.splitlines()
+    at = next(n for n, line in enumerate(lines)
+              if line.startswith('Markers:'))
+    return lines[:at], lines[at:]
+
+
 class TestAiProofs:
     """An AI proof's test is left out of the suites and started on its own,
     once per model and per run."""
@@ -3440,9 +3449,10 @@ class TestAiProofs:
                            unreached={'model-b': 'The login expired'})
         code, output = _run(root, '--all', '--test')
         assert code == 0, output
-        lines = output.splitlines()
-        assert lines.count('model-b: model not reached. The login expired. '
-                           'Run purlin:test --all.') == 1, output
+        gone = ('model-b: model not reached. The login expired. '
+                'Run purlin:test --all.')
+        assert [half.count(gone) for half in _at_markers(output)] == [
+            1, 1], output
         assert 'evidence missing' not in output, output
         assert _ai_starts(root) == ['model-a 1', 'model-a 2', 'model-a 3',
                                     'model-b 1']
@@ -3469,8 +3479,9 @@ class TestAiProofs:
             ('PROOF-3', 'RULE-3', ' @ai(model-b, model-a)')))
         code, output = _run(root, '--all', '--test')
         assert code == 0, output
-        assert len([line for line in output.splitlines() if line.startswith(
-            'model-b: model not reached.')]) == 1, output
+        assert [len([line for line in half if line.startswith(
+            'model-b: model not reached.')])
+            for half in _at_markers(output)] == [1, 1], output
         assert _ai_starts(root) == ['model-b 1'] + [
             'model-a %d' % run for run in (1, 2, 3)] * 2
         third = _ai_entry(root, 'PROOF-3')

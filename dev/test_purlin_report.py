@@ -3258,7 +3258,21 @@ def test_a_model_not_reached_is_a_notice_like_any_other(browser, tmp_path):
     payload = payload_named('prompts')
     line = ('claude-sonnet-5-5: model not reached. The model gave no answer. '
             'Run purlin:test --all.')
-    assert payload['warnings'] == [line]
+    silent = [(model['model'], run) for model
+              in rule_of(payload, 'support_reply', 'RULE-4')['proofs'][0][
+                  'models']
+              for run in model['runs'] if run['result'] == 'not run']
+    assert silent == [('claude-sonnet-5-5', {
+        'result': 'not run', 'why': 'The model gave no answer.'})], silent
+    # The sample's warning is the one the payload's builder writes for the
+    # sample's own rules, entry for entry.
+    notices = notice_module()
+    from purlin import states
+    built = [notices.model_not_reached(model, why) for model, why
+             in states.not_reached(payload['features'])]
+    assert payload['warnings'] == built == [line], built
+    assert payload['notices'] == notices.grouped(
+        notices.entries(built, 'warn')), payload['notices']
     page = open_board(browser, tmp_path, payload)
     (found,) = page.evaluate(NOTICE_PARTS)
     page.close()

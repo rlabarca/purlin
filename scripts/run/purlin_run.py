@@ -1348,9 +1348,8 @@ def run_ai_proofs(project_root, features, index, started, kept_for, setting,
                     models[at][-1]['runs'].append(made)
                     if gone:
                         if gone[0] not in silent:
-                            print(notices.line(
-                                'model_not_reached', gone[0], gone[1],
-                                notices.run('purlin:test --all')), flush=True)
+                            print(notices.model_not_reached(*gone),
+                                  flush=True)
                         silent.add(gone[0])
                         break
                     if made['result'] == reports_module.NOT_RUN \

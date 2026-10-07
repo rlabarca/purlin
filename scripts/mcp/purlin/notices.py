@@ -24,7 +24,8 @@ entries of one kind into one, the kind first (`GROUP_MANY`), so the board
 stays short, and `folded` is the same fold over the lines the terminal
 prints: the status and a test run print a kind's lines whole up to two, and
 `purlin:status <name>`, where the folded line sends a reader, prints every
-line of that spec whole. `changed_words` says what
+line of that spec whole. A line that names no spec, as one about a model
+(`model_not_reached`), always stands whole. `changed_words` says what
 changed between two wordings of a proof without printing either whole, and
 `change_sentence` is that as the sentence every surface prints.
 """
@@ -135,6 +136,16 @@ def line(kind, about, wrong, do=None, feature=None, rule=None, proof=None):
 def run(command):
     """`Run <command>.`, the sentence a line ends on."""
     return 'Run %s.' % command
+
+
+def model_not_reached(model, why):
+    """The line for a model an AI proof names that gave no answer:
+    `<model>: model not reached. <why> Run purlin:test --all.` `why` is one
+    whole sentence. The test run prints it when the model gives no answer,
+    and the status and the dashboard show it from the reason the evidence
+    keeps until a later run reaches the model. It names no spec, since one
+    model stands for every proof tried on it, so it never folds."""
+    return line('model_not_reached', model, why, run('purlin:test --all'))
 
 
 def about_proof(info, name, proof_id):

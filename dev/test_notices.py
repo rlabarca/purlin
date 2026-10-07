@@ -283,3 +283,24 @@ class TestTheTerminalFolds:
             == ['b RULE-1: rule to write a test for. Run purlin:build b.',
                 'rule to fix: a, in 3 places. Run purlin:status a.',
                 'A line of another sort.']
+
+    # purlin: notices PROOF-18
+    def test_lines_about_models_name_no_spec_and_never_fold(self):
+        made = [notices.model_not_reached(model, 'The login expired.')
+                for model in ('model-a', 'model-b', 'model-c')]
+        assert made[0] == notices.line(
+            'model_not_reached', 'model-a', 'The login expired.',
+            notices.run('purlin:test --all'))
+        assert [(line.about, line.kind, line.feature) for line in made] == [
+            ('model-a', 'model_not_reached', None),
+            ('model-b', 'model_not_reached', None),
+            ('model-c', 'model_not_reached', None)]
+        assert notices.folded(made) == [
+            'model-a: model not reached. The login expired. Run '
+            'purlin:test --all.',
+            'model-b: model not reached. The login expired. Run '
+            'purlin:test --all.',
+            'model-c: model not reached. The login expired. Run '
+            'purlin:test --all.']
+        assert [entry['text'] for entry in notices.grouped(
+            notices.entries(made, 'warn'))] == notices.folded(made)

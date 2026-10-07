@@ -2226,3 +2226,137 @@ class TestABrokenSpecFails:
         for rule_id in ('RULE-1', 'RULE-2'):
             cell = _listed(data, rule_id, 'export')['cells']['passed']
             assert cell['word'] == 'passed', (rule_id, cell)
+
+
+# The line a model that gave no answer leaves in the warnings, as the run
+# that tried it printed it.
+EXPIRED = 'The login expired.'
+SONNET_GONE = ('claude-sonnet-5-5: model not reached. The login expired. '
+               'Run purlin:test --all.')
+TWO_MODELS = '@ai(%s, %s)' % (OPUS, SONNET)
+# `SPEC` with both of its proofs AI proofs on the same two models.
+TWO_AI_PROOFS_SPEC = SPEC.replace(
+    'token\n', 'token ' + TWO_MODELS + '\n').rstrip('\n') + ' ' + TWO_MODELS \
+    + '\n'
+
+
+def _silent(name, why=EXPIRED, **more):
+    """A model's entry whose one run reads `not run` with `why`."""
+    return {'model': name, 'passed': 0, 'of': 3, 'graded': False,
+            'runs': [dict({'result': 'not run', 'why': why}, **more)]}
+
+
+def _warned(made):
+    """`(warnings, lines)`: the payload's warnings and the status's lines
+    of the kind `model not reached`."""
+    lines = purlin_status.sync_status(made.root).splitlines()
+    return made.payload()['warnings'], [
+        line for line in lines if ': model not reached.' in line]
+
+
+class TestAModelNotReached:
+
+    # purlin: states PROOF-345
+    def test_the_warning_the_run_printed_stays_in_the_status(self):
+        made = _ai_project(TWO_MODELS, _model(OPUS, 'pass', 'pass', 'pass'),
+                           _silent(SONNET))
+        try:
+            warnings, lines = _warned(made)
+            data = made.payload()
+        finally:
+            made.close()
+        assert warnings == [SONNET_GONE], warnings
+        assert lines == [SONNET_GONE], lines
+        (notice,) = data['notices']
+        assert notice == {
+            'tone': 'warn', 'kind': 'model_not_reached',
+            'label': 'model not reached', 'about': SONNET, 'feature': None,
+            'rule': None, 'rest': 'The login expired. Run purlin:test --all.',
+            'text': SONNET_GONE}, notice
+        assert [entry['kind'] for entry in data['left']] == [
+            'to_test_model'], data['left']
+
+    # purlin: states PROOF-346
+    def test_two_proofs_on_one_model_give_one_line(self):
+        made = Project(spec=TWO_AI_PROOFS_SPEC)
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([
+                _ai_entry('PROOF-1', 'RULE-1',
+                          _model(OPUS, 'pass', 'pass', 'pass'),
+                          _silent(SONNET)),
+                _ai_entry('PROOF-2', 'RULE-2',
+                          _model(OPUS, 'pass', 'pass', 'pass'),
+                          _silent(SONNET, 'It was overloaded.'))])
+            warnings, lines = _warned(made)
+        finally:
+            made.close()
+        assert warnings == [SONNET_GONE], warnings
+        assert lines == [SONNET_GONE], lines
+
+    # purlin: states PROOF-347
+    def test_a_later_run_that_reaches_the_model_takes_the_line_away(self):
+        made = _ai_project(TWO_MODELS, _model(OPUS, 'pass', 'pass', 'pass'),
+                           _silent(SONNET))
+        try:
+            before = _warned(made)
+            made.evidence([
+                _entry('PROOF-1', 'RULE-1'),
+                _ai_entry('PROOF-2', 'RULE-2',
+                          _model(OPUS, 'pass', 'pass', 'pass'),
+                          _model(SONNET, 'pass', 'fail', 'pass'))],
+                at='2026-09-14T12:00:00Z')
+            after = _warned(made)
+        finally:
+            made.close()
+        assert before == ([SONNET_GONE], [SONNET_GONE]), before
+        assert after == ([], []), after
+
+    # purlin: states PROOF-348
+    def test_a_model_the_tag_no_longer_names_gives_no_line(self):
+        # The section is taken over the spec as it stands, so it is current
+        # and still holds what an earlier tag asked of the second model.
+        made = _ai_project('@ai(%s)' % OPUS,
+                           _model(OPUS, 'pass', 'pass', 'pass'),
+                           _silent(SONNET))
+        try:
+            found = _warned(made)
+            current = made.payload()['features'][0]['evidence']
+        finally:
+            made.close()
+        assert found == ([], []), found
+        assert [system['current'] for system
+                in current['local']['platforms'].values()] == [True], current
+
+    # purlin: states PROOF-349
+    def test_a_test_with_no_result_and_a_model_never_tried_give_no_line(self):
+        made = _ai_project(
+            '@ai(%s, %s, example-model-3)' % (OPUS, SONNET),
+            _model(OPUS, 'pass', 'pass', 'pass'),
+            _silent(SONNET, 'The test at tests/test_login.py:6 has no '
+                            'result.'))
+        try:
+            found = _warned(made)
+            proof = _listed(made.payload(), 'RULE-2')['proofs'][0]
+        finally:
+            made.close()
+        assert found == ([], []), found
+        assert [(model['model'], model['word'], len(model['runs']))
+                for model in proof['models']] == [
+            (OPUS, 'passed', 3), (SONNET, 'not run', 1),
+            ('example-model-3', 'not run', 0)], proof['models']
+
+    # purlin: states PROOF-350
+    def test_a_grader_that_gave_no_answer_is_the_model_named(self):
+        made = _ai_project(
+            GRADED_TAGS,
+            _silent(OPUS, 'The grader was overloaded.', made='helper',
+                    grade={'model': GRADER, 'accepted': None,
+                           'reason': 'The grader was overloaded'}))
+        try:
+            found = _warned(made)
+        finally:
+            made.close()
+        line = ('claude-haiku-4-5-20251001: model not reached. The grader '
+                'was overloaded. Run purlin:test --all.')
+        assert found == ([line], [line]), found

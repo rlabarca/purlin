@@ -48,6 +48,7 @@ timezone. Beside it are two boxes:
 
 **Notices.** Below the boxes, one per line, are the warnings and the lines of information the
 status prints in the terminal. One more says when the working tree has uncommitted changes.
+A model that gave no answer stays listed, as `model not reached`, until a run reaches it.
 
 **Columns.** A column the project does not reach is absent.
 

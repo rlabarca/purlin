@@ -184,7 +184,9 @@ counts such specs, not their rules.
 `information` holds one line per spec whose `> Scope:` names files git does
 not have yet, as `status.not_written_lines` words it. `warnings` holds every
 other line: an evidence file left out, a spec mistake, each test comment to
-correct as `wording.stale_comments` words it. Every line takes the one shape
+correct as `wording.stale_comments` words it, and each model that gave no
+answer on the run that last tried it (`states.not_reached`), as
+`notices.model_not_reached` words it. Every line takes the one shape
 `notices.line` gives it. `notices` holds one entry per line of `warnings`,
 then one per line of `information`: its `tone`, `warn` or `neutral`; its
 `kind`, a key of `notices.KINDS`, and `label`, that kind's words; `about`,
@@ -291,6 +293,11 @@ def build_payload(project_root, generated_by='sync_status', config=None,
             project_root, name, features[name], evidence, sources,
             own_results, incomplete, tied, here_os, notes)
         feature_entries.append(entry)
+
+    # A model that gave no answer stays in the warnings, in the words the
+    # run printed, until a later run reaches it.
+    warnings.extend(notices_module.model_not_reached(model, why)
+                    for model, why in states.not_reached(feature_entries))
 
     summary = states.project_rollup({'': states.feature_rollup(own_results)})
     summary['features'] = len(features)
