@@ -49,12 +49,12 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+      "at": "2026-10-07T01:17:34Z",
+      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "fb8d7afd4a809665237f97a3df3006bb987eae8572b63bf87447ef99adcb97cc",
+        "code": "26bfd1f338d3f651b0792a671cb74481e9b2bc551719b27975808025a8808ba9",
         "spec": "7af9d62a935b99940c0fc25ece0169ccb6c937f51880fa273d77edac81916486",
         "tests": "24747c5e9570c5dd02c532e62b3d82746a45bf1939777f360e9b706201908054"
       },
@@ -75,7 +75,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -90,14 +90,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_drift",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_a_copy_without_the_spec_command_is_reported",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",

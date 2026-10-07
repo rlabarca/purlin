@@ -72,12 +72,12 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+      "at": "2026-10-07T01:17:34Z",
+      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "25d359b9c89a297769de865afa0a82de7d013c73aa8f785b03f8ace5595a6ab5",
+        "code": "bf69cca61ec6d320d5e2e9c846ff298fdc0f92e27733700136924b7543c70eba",
         "spec": "c440190c2a94f01cfc06c3941b46882979a38b18a5fe8d7557dbae6b7a1a344b",
         "tests": "f75cd8ff805bc4dbeacc16c07d8b05fdf990f8fb860b11aef9ba849fb3af91e1"
       },
@@ -98,7 +98,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -120,7 +120,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",

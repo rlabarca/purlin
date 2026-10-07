@@ -1,0 +1,385 @@
+{
+  "feature": "notices",
+  "platforms": {
+    "macos": {
+      "at": "2026-10-07T01:17:33Z",
+      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+      "dirty": false,
+      "email": "rich.labarca@gmail.com",
+      "fingerprint": {
+        "code": "84f3b638a96d9de9f17ff46a136b33797ce332732db38ae5b4bca3ccedf5d977",
+        "spec": "a0f0b1811a2d1604bd6e767c52fea42225ae27c6febab2ce2d1e36b832dd98ee",
+        "tests": "2bcf95e4af58686d845f6a3cb84a9a1de23a4211dd2103206813c4b543480310"
+      },
+      "machine": "Richs-MacBook-Pro.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheShape",
+                "duration": 0.312,
+                "name": "test_a_spec_mistake_names_the_spec_the_kind_and_the_command",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_notices.py::TestTheShape::test_a_spec_mistake_names_the_spec_the_kind_and_the_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheShape",
+                "duration": 0.255,
+                "name": "test_a_line_of_information_takes_the_same_shape",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_notices.py::TestTheShape::test_a_line_of_information_takes_the_same_shape"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheShape",
+                "duration": 0.0,
+                "name": "test_every_kind_has_its_own_few_words",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_notices.py::TestTheShape::test_every_kind_has_its_own_few_words"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheShape",
+                "duration": 0.111,
+                "name": "test_a_proof_no_spec_gives_a_rule_is_named_without_one",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_notices.py::TestTheShape::test_a_proof_no_spec_gives_a_rule_is_named_without_one"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.284,
+                "name": "test_one_word_changed_prints_that_word_alone",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_notices.py::TestARewordedProof::test_one_word_changed_prints_that_word_alone"
+        },
+        {
+          "env": null,
+          "id": "PROOF-6",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.206,
+                "name": "test_neither_wording_is_printed_whole",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_notices.py::TestARewordedProof::test_neither_wording_is_printed_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-7",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.0,
+                "name": "test_a_word_added_is_shown_with_the_word_before_it",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_notices.py::TestARewordedProof::test_a_word_added_is_shown_with_the_word_before_it"
+        },
+        {
+          "env": null,
+          "id": "PROOF-8",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.0,
+                "name": "test_a_word_taken_out_is_shown_with_the_word_on_each_side",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_notices.py::TestARewordedProof::test_a_word_taken_out_is_shown_with_the_word_on_each_side"
+        },
+        {
+          "env": null,
+          "id": "PROOF-9",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.0,
+                "name": "test_a_side_over_eight_words_is_cut_to_eight",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_notices.py::TestARewordedProof::test_a_side_over_eight_words_is_cut_to_eight"
+        },
+        {
+          "env": null,
+          "id": "PROOF-10",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.0,
+                "name": "test_wordings_that_share_too_little_read_was_reworded",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-5",
+          "test": "dev/test_notices.py::TestARewordedProof::test_wordings_that_share_too_little_read_was_reworded"
+        },
+        {
+          "env": null,
+          "id": "PROOF-11",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheDashboardsData",
+                "duration": 0.301,
+                "name": "test_the_payload_carries_the_line_in_its_parts",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_notices.py::TestTheDashboardsData::test_the_payload_carries_the_line_in_its_parts"
+        },
+        {
+          "env": null,
+          "id": "PROOF-12",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheDashboardsData",
+                "duration": 0.0,
+                "name": "test_a_line_with_no_kind_is_carried_whole",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-6",
+          "test": "dev/test_notices.py::TestTheDashboardsData::test_a_line_with_no_kind_is_carried_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-13",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheTerminalFolds",
+                "duration": 0.544,
+                "name": "test_four_specs_with_one_kind_of_warning_fold_into_one_line",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_notices.py::TestTheTerminalFolds::test_four_specs_with_one_kind_of_warning_fold_into_one_line"
+        },
+        {
+          "env": null,
+          "id": "PROOF-14",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheTerminalFolds",
+                "duration": 0.457,
+                "name": "test_two_specs_with_one_kind_of_warning_are_each_printed_whole",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_notices.py::TestTheTerminalFolds::test_two_specs_with_one_kind_of_warning_are_each_printed_whole"
+        },
+        {
+          "env": null,
+          "id": "PROOF-15",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestTheTerminalFolds",
+                "duration": 0.0,
+                "name": "test_folded_lines_keep_their_place_and_others_stand",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-7",
+          "test": "dev/test_notices.py::TestTheTerminalFolds::test_folded_lines_keep_their_place_and_others_stand"
+        },
+        {
+          "env": null,
+          "id": "PROOF-16",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_notices.TestARewordedProof",
+                "duration": 0.0,
+                "name": "test_a_tools_message_is_its_first_sentence_cut_at_80",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-8",
+          "test": "dev/test_notices.py::TestARewordedProof::test_a_tools_message_is_its_first_sentence_cut_at_80"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed",
+        "RULE-5": "passed",
+        "RULE-6": "passed",
+        "RULE-7": "passed",
+        "RULE-8": "passed"
+      },
+      "runner": "rich-labarca"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/mcp/notices.md"
+}

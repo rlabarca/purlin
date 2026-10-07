@@ -678,12 +678,12 @@
   "feature": "summary",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+      "at": "2026-10-07T01:17:35Z",
+      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "cba89e542bbd2e888caa6e349e293835484a03dd56bddbfe338febd4cde686dd",
+        "code": "721393be3456a7530a8891eee441ab5d25cc69c13fa3b33cbe3e30a4d92bc5e4",
         "spec": "7a99aac2b05c7f7c911cf9c11b4b2269059d7c4cb099f6ae663cae964d3dc2db",
         "tests": "33e7e9ea9a91360d79856a5ef808f7c7514ef3788902a6c9adb3f6a3c6539efc"
       },
@@ -697,14 +697,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheOpeningLines",
-                "duration": 0.589,
+                "duration": 0.595,
                 "name": "test_the_status_opens_on_the_project_named_by_pyproject_then_tests_met",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -719,14 +719,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheOpeningLines",
-                "duration": 0.417,
+                "duration": 0.448,
                 "name": "test_one_failing_rule_makes_the_second_line_tests_not_met",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -741,14 +741,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheOpeningLines",
-                "duration": 2.496,
+                "duration": 2.573,
                 "name": "test_a_commit_to_the_code_after_the_walk_reads_one_commit_since",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -763,14 +763,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheSentence",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_one_rule_that_passes_reads_one_rule_one_passes_its_tests",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -792,7 +792,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -814,7 +814,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -836,7 +836,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -851,14 +851,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestAHandCheckInTheSentence",
-                "duration": 0.596,
+                "duration": 0.494,
                 "name": "test_nine_passing_rules_and_a_hand_check_read_one_is_checked",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -873,14 +873,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestAHandCheckInTheSentence",
-                "duration": 3.071,
+                "duration": 3.491,
                 "name": "test_nine_strong_rules_and_a_hand_check_read_nine_of_nine_strong",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -902,7 +902,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -917,14 +917,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheSentence",
-                "duration": 1.574,
+                "duration": 1.286,
                 "name": "test_a_project_reaches_100_per_cent_beside_a_spot_checked_anchor",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -946,7 +946,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -961,14 +961,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLines",
-                "duration": 1.05,
+                "duration": 1.171,
                 "name": "test_two_rules_of_each_of_the_six_kinds_read_in_rule_23s_order",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -983,14 +983,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLines",
-                "duration": 0.589,
+                "duration": 0.729,
                 "name": "test_a_broken_spec_reads_one_spec_to_repair_before_one_rule_to_fix",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1005,14 +1005,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLines",
-                "duration": 0.502,
+                "duration": 0.522,
                 "name": "test_a_comment_naming_login_proof_9_on_committed_evidence",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1034,7 +1034,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1056,7 +1056,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1071,14 +1071,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestOneKindPerRule",
-                "duration": 0.608,
+                "duration": 0.563,
                 "name": "test_a_rule_waiting_only_on_windows_is_to_test_there",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1093,14 +1093,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestWhatLetsTheTestsBeMet",
-                "duration": 1.087,
+                "duration": 1.281,
                 "name": "test_a_weak_rule_on_committed_evidence_is_to_strengthen_tests_met",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1115,14 +1115,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestWhatLetsTheTestsBeMet",
-                "duration": 0.481,
+                "duration": 0.55,
                 "name": "test_a_rule_with_no_proof_whose_test_passes_is_to_write_a_proof_for",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1137,14 +1137,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLines",
-                "duration": 0.686,
+                "duration": 0.473,
                 "name": "test_two_features_with_results_not_committed_end_on_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1166,7 +1166,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1188,7 +1188,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1203,14 +1203,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestWhatLetsTheTestsBeMet",
-                "duration": 0.442,
+                "duration": 0.547,
                 "name": "test_two_passing_rules_with_no_tag_end_on_the_sign_off",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1225,14 +1225,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 1.637,
+                "duration": 1.309,
                 "name": "test_results_taken_on_this_code_end_on_the_sign_off",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1247,14 +1247,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 0.956,
+                "duration": 1.213,
                 "name": "test_results_recorded_before_a_later_commit_name_the_run_first",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1269,14 +1269,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 1.276,
+                "duration": 1.147,
                 "name": "test_a_result_carried_forward_ends_on_the_sign_off",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1291,14 +1291,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 1.262,
+                "duration": 1.315,
                 "name": "test_results_from_another_system_name_the_run_there",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1313,14 +1313,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 0.938,
+                "duration": 0.92,
                 "name": "test_results_taken_with_files_uncommitted_name_the_run_first",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1335,14 +1335,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 0.485,
+                "duration": 0.51,
                 "name": "test_the_dashboard_data_carries_the_same_last_line",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1357,14 +1357,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestAHandCheckInTheSentence",
-                "duration": 0.599,
+                "duration": 0.666,
                 "name": "test_an_unchecked_hand_check_leaves_the_tests_met",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",
@@ -1379,14 +1379,14 @@
             "cases": [
               {
                 "class": "dev.test_summary.TestTheLastLineAgreesWithTheSignOff",
-                "duration": 0.605,
+                "duration": 0.598,
                 "name": "test_a_test_with_a_095_marker_names_the_rewrite_before_a_sign_off",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "3d752822665006fa8f47f6d9d51400e4df360c36cd62473fa05fa03351eba1ac"
             }
           },
           "result": "pass",

@@ -456,7 +456,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-06T21:01:37Z",
-      "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -467,6 +467,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -489,6 +495,12 @@
           "test": "dev/test_renumber.py::TestPlan::test_a_dry_run_changes_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -511,6 +523,12 @@
           "test": "dev/test_renumber.py::TestPlan::test_the_line_not_on_the_default_branch_moves"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -533,6 +551,12 @@
           "test": "dev/test_renumber.py::TestPlan::test_neither_line_on_the_default_branch"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -555,6 +579,12 @@
           "test": "dev/test_renumber.py::TestPlan::test_no_default_branch"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -577,6 +607,12 @@
           "test": "dev/test_renumber.py::TestComments::test_a_comment_written_for_the_moving_line_moves"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -599,6 +635,12 @@
           "test": "dev/test_renumber.py::TestComments::test_a_comment_written_for_the_kept_line_stays"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -621,6 +663,12 @@
           "test": "dev/test_renumber.py::TestComments::test_an_uncommitted_comment_is_named_not_changed"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -643,6 +691,12 @@
           "test": "dev/test_renumber.py::TestComments::test_a_test_marked_while_proof_4_read_a_moves_to_proof_6_where_a_is_now"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -665,6 +719,12 @@
           "test": "dev/test_renumber.py::TestTheRest::test_the_highest_line_is_raised"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -687,6 +747,12 @@
           "test": "dev/test_renumber.py::TestTheRest::test_a_comment_on_another_branch_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-11",
           "manual": false,
@@ -709,6 +775,12 @@
           "test": "dev/test_renumber.py::TestTheRest::test_a_moved_rule_takes_its_new_proofs"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -731,6 +803,12 @@
           "test": "dev/test_renumber.py::TestTheRest::test_a_run_with_yes_makes_the_edits_and_commits_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -753,6 +831,12 @@
           "test": "dev/test_renumber.py::TestAsking::test_a_run_with_nothing_to_answer_from_changes_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -775,6 +859,12 @@
           "test": "dev/test_renumber.py::TestAsking::test_a_run_answered_y_renumbers"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -797,6 +887,12 @@
           "test": "dev/test_renumber.py::TestConflicts::test_a_conflict_of_two_added_rules_keeps_both"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -819,6 +915,12 @@
           "test": "dev/test_renumber.py::TestConflicts::test_a_conflict_of_two_highest_lines_takes_the_higher"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -841,6 +943,12 @@
           "test": "dev/test_renumber.py::TestConflicts::test_one_conflict_resolved_and_nothing_renumbered"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -863,6 +971,12 @@
           "test": "dev/test_renumber.py::TestConflicts::test_a_line_both_sides_changed_is_left"
         },
         {
+          "carried": {
+            "at": "2026-10-06T21:01:37Z",
+            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
