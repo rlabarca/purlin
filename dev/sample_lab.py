@@ -39,6 +39,20 @@ proof is named there. With no rule named the run is a plain audit:
 `refuse_a_bad_site`, `work_out_the_age_inline` and `check_the_helper_on_load`
 each change the code and leave every test as it was, which is where that
 audit plants a bug that survived again.
+
+**The refusal note** is a second project, for the audit of an AI proof: the
+spec `refusal_note`, whose scope is the prompt `prompts/refusal_note.md`,
+with `PROOF-1`, tagged `@ai`, and `PROOF-2`, tagged `@ai` and `@graded`, and
+`tests/test_note.py`. Each test hands the note `NOTE` to the real helper,
+`scripts/ai/purlin_ai.py record`, so an output folder is kept and no model
+is asked for one; the test of `PROOF-2` then calls `grade`. The test of
+`PROOF-1` is written weak on purpose: it looks for `LC-` and not for the
+barcode. `build_note` writes the project and runs its tests once with a
+fake grader that accepts, `note_audit` audits it with a fake `claude`
+(`dev/fake_claude_session.py`) that answers the audit's request and then
+each grade the audit's replays ask for, and `note_settle` runs the script
+with `--settle`. `wrong_outputs` is the reply that names one wrong output
+for each proof.
 """
 
 import io
@@ -56,6 +70,7 @@ for _path in (_HERE, os.path.join(_ROOT, 'scripts', 'review')):
 
 import audit_run  # noqa: E402
 import fake_claude  # noqa: E402
+import fake_claude_session  # noqa: E402
 import suites  # noqa: E402
 
 RUN_SCRIPT = os.path.join(_ROOT, 'scripts', 'run', 'purlin_run.py')
@@ -406,9 +421,9 @@ def audit(root, again=False):
     return code, out.getvalue().splitlines()
 
 
-def entries(root):
+def entries(root, evidence=EVIDENCE):
     """`{rule: its audit entry}` as the project's evidence holds them."""
-    with open(os.path.join(root, *EVIDENCE.split('/')),
+    with open(os.path.join(root, *evidence.split('/')),
               encoding='utf-8') as handle:
         return (json.load(handle).get('audit') or {}).get('rules') or {}
 
@@ -680,3 +695,226 @@ def settled(folder, rules=('RULE-3',), change=None, answers=(None,),
     made.calls = fake_claude.calls(directory)
     made.text = evidence_text(root)
     return made
+
+
+# ---------------------------------------------------------------------------
+# The refusal note: a prompt, with one AI proof and one graded by an AI
+# ---------------------------------------------------------------------------
+
+NOTE_FEATURE = 'refusal_note'
+NOTE_EVIDENCE = '.purlin/evidence/local/refusal_note.json'
+MODEL = 'claude-opus-5-5'
+GRADER = 'claude-haiku-4-5-20251001'
+
+NOTE_SPEC = '''\
+# Feature: refusal_note
+
+> Description: The prompt that writes the note a site gets when the bench refuses a sample.
+> Scope: prompts/refusal_note.md
+> Stack: prompt
+> Highest-Rule: 2
+> Highest-Proof: 2
+
+## Rules
+
+- RULE-1: The note names the barcode of the sample that was refused
+- RULE-2: The note tells the site what to do next
+
+## Proof
+
+- PROOF-1 (RULE-1): Given the refusal of `LC-1234567`, the reply names the barcode `LC-1234567` @ai(claude-opus-5-5)
+- PROOF-2 (RULE-2): Given the refusal of `LC-1234567`, the reply tells the site to send a new sample @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+'''
+
+NOTE_PROMPT = '''\
+Write the note a site gets when the bench refuses a sample. Name the sample's
+barcode, say why it was refused, and tell the site to send a new sample.
+'''
+
+# What the AI is taken to have said, and the one file it wrote: for the test
+# of `PROOF-1`, then for the test of `PROOF-2`, so the two outputs differ.
+NOTE_NAMES = 'Sample LC-1234567 was refused: its barcode is not LC- and 8 digits.'
+NOTE_NEXT = 'Send a new sample with a new label.'
+NOTE = '%s\n%s\n' % (NOTE_NAMES, NOTE_NEXT)
+NOTE_FILE = 'site: BOS\n'
+NOTE_FILE_2 = 'site: NYC\n'
+NOTE_TRANSCRIPT = '{"type": "result", "result": "the transcript line"}\n'
+
+# The check of `PROOF-1` as it is written, which any barcode gets past, and
+# as `purlin:build` strengthens it.
+ANY_BARCODE = "    assert 'LC-' in note\n"
+THE_BARCODE = "    assert 'LC-1234567' in note\n"
+
+NOTE_TESTS = '''\
+import os
+import subprocess
+import sys
+
+NOTE = %r
+SITE = %r
+SECOND_SITE = %r
+TRANSCRIPT = %r
+
+
+def helper(*args):
+    return subprocess.run([sys.executable, os.environ['PURLIN_AI']]
+                          + list(args), capture_output=True, text=True)
+
+
+def output(tmp_path, site=SITE):
+    """The folder the helper hands back for the note."""
+    made = tmp_path / 'made'
+    (made / 'files').mkdir(parents=True)
+    (made / 'reply.md').write_text(NOTE, encoding='utf-8')
+    (made / 'files' / 'site.txt').write_text(site, encoding='utf-8')
+    (made / 'transcript.jsonl').write_text(TRANSCRIPT, encoding='utf-8')
+    done = helper('record', '--from', str(made))
+    assert done.returncode == 0, done.stderr
+    return done.stdout.strip()
+
+
+# purlin: refusal_note PROOF-1
+def test_the_note_names_the_barcode(tmp_path):
+    folder = output(tmp_path)
+    with open(os.path.join(folder, 'reply.md'), encoding='utf-8') as handle:
+        note = handle.read()
+%s
+
+# purlin: refusal_note PROOF-2
+def test_the_note_says_what_to_do_next(tmp_path):
+    output(tmp_path, SECOND_SITE)
+    graded = helper('grade', '--feature', 'refusal_note', '--proof', 'PROOF-2')
+    assert graded.returncode == 0, graded.stdout + graded.stderr
+''' % (NOTE, NOTE_FILE, NOTE_FILE_2, NOTE_TRANSCRIPT, ANY_BARCODE)
+
+# The grader's two answers, and the wrong output asked for each proof: another
+# sample's barcode, and a note that asks for nothing.
+ACCEPT = 'accept: the note tells the site to send a new sample'
+REJECT = 'reject: the note asks the site for nothing'
+NOTE_OTHER = 'Sample LC-7654321 was refused: its barcode is not LC- and 8 digits.'
+NOTE_NOTHING = 'Nothing more is needed.'
+CASE_BARCODE = ('the refusal of `LC-1234567`; the proof says the reply names '
+                '`LC-1234567`; the changed output names `LC-7654321`')
+CASE_NEXT = ('the refusal of `LC-1234567`; the proof says the reply tells the '
+             'site to send a new sample; the changed output asks for nothing')
+NOTE_READING = '- PROOF-1: the test looks for `LC-` and not for the barcode.'
+
+
+def wrong_outputs(first=None, second=None):
+    """The reply that names one wrong output for each proof of the note, as
+    one text both of the audit's requests are answered with. `first` and
+    `second` stand in for the part of `PROOF-1` and of `PROOF-2`."""
+    return fake_claude.reply({
+        'PROOF-1': first or fake_claude.change(
+            'reply.md', NOTE_NAMES, NOTE_OTHER, case=CASE_BARCODE,
+            aim='past the test'),
+        'PROOF-2': second or fake_claude.change(
+            'reply.md', NOTE_NEXT, NOTE_NOTHING, case=CASE_NEXT,
+            aim='plain')}, NOTE_READING)
+
+
+def _with_fake(directory, answers):
+    """The session fake in `directory` answering `answers`, and the
+    environment that puts it first on PATH."""
+    fake_claude_session.install(directory, answers=list(answers))
+    return fake_claude_session.environment(directory)
+
+
+def build_note(folder, check=ANY_BARCODE, runs=1):
+    """Write the refusal note's project under `folder`, commit it and run
+    its tests once, each AI proof `runs` times, the grader a fake that
+    accepts. The project's root."""
+    folder = str(folder)
+    root = os.path.join(folder, 'project')
+    _write(root, 'specs/notes/refusal_note.md', NOTE_SPEC)
+    _write(root, 'prompts/refusal_note.md', NOTE_PROMPT)
+    _write(root, 'tests/test_note.py', NOTE_TESTS.replace(ANY_BARCODE, check))
+    _write(root, '.purlin/config.json', json.dumps(
+        {'version': '0.10.0', 'tests': [suites.pytest_suite()],
+         'runs': runs}))
+    _write(root, '.gitignore', '__pycache__/\n.purlin/runtime/\n')
+    _git(root, 'init', '-q', '-b', 'main')
+    _git(root, 'add', '-A')
+    _git(root, '-c', 'user.name=Quinn', '-c',
+         'user.email=quinn.qa@labconnect.example', '-c',
+         'commit.gpgsign=false', 'commit', '-qm', 'chore: the refusal note')
+    done = subprocess.run(
+        [sys.executable, RUN_SCRIPT, '--project-root', root, '--all',
+         '--test'], capture_output=True, text=True, cwd=root,
+        env=_with_fake(os.path.join(folder, 'claude'), [ACCEPT]))
+    assert done.returncode == 0, done.stdout + done.stderr
+    return root
+
+
+def note_claude(root):
+    """The folder of the fake `claude` beside the note's project."""
+    return os.path.join(os.path.dirname(root), 'claude')
+
+
+def note_audit(root, answers, again=False):
+    """Audit the refusal note with a fake `claude` answering `answers` in
+    order: `{'code', 'lines', 'entries', 'calls'}`. PATH is put back after."""
+    directory = note_claude(root)
+    fake_claude_session.install(directory, answers=list(answers))
+    previous = os.environ.get('PATH', '')
+    os.environ['PATH'] = directory + os.pathsep + previous
+    try:
+        found = shutil.which('claude')
+        assert found and os.path.realpath(found).startswith(
+            os.path.realpath(os.path.dirname(root))), found
+        out = io.StringIO()
+        code = audit_run.run(root, None, [NOTE_FEATURE], again=again, out=out)
+    finally:
+        os.environ['PATH'] = previous
+    return {'code': code, 'lines': out.getvalue().splitlines(),
+            'entries': entries(root, NOTE_EVIDENCE),
+            'calls': fake_claude_session.calls(directory)}
+
+
+def note_settle(root, rules, answers=(ACCEPT,), sound=()):
+    """Run the script's audit of the note with `--settle` for each of
+    `rules`, as its own process: `{'code', 'lines', 'entries', 'calls'}`."""
+    directory = note_claude(root)
+    fake_claude_session.install(directory, answers=list(answers))
+    args = ['--audit', '--feature', NOTE_FEATURE]
+    for rule in rules:
+        args += ['--settle', rule]
+    for proof in sound:
+        args += ['--sound', proof]
+    code, lines, _errors = run_script(root, directory, *args)
+    return {'code': code, 'lines': lines,
+            'entries': entries(root, NOTE_EVIDENCE),
+            'calls': fake_claude_session.calls(directory)}
+
+
+def the_barcode(root):
+    """Change the test of `PROOF-1` to look for the proof's own barcode."""
+    _replace(root, 'tests/test_note.py', ANY_BARCODE, THE_BARCODE)
+
+
+def note_under(run, rule):
+    """The lines `run` printed under `rule` of the note."""
+    lines = run['lines']
+    start = [index for index, line in enumerate(lines)
+             if line.startswith('%s %s   ' % (NOTE_FEATURE, rule))]
+    assert len(start) == 1, (rule, lines)
+    found = []
+    for line in lines[start[0] + 1:]:
+        if not line.startswith('  '):
+            break
+        found.append(line)
+    return found
+
+
+def note_runs(root, proof):
+    """The runs the evidence holds for `proof` of the note on `MODEL`."""
+    with open(os.path.join(root, *NOTE_EVIDENCE.split('/')),
+              encoding='utf-8') as handle:
+        data = json.load(handle)
+    for section in (data.get('platforms') or {}).values():
+        for listed in section.get('proofs') or ():
+            if listed.get('id') == proof:
+                return [made for model in listed.get('models') or ()
+                        if model.get('model') == MODEL
+                        for made in model.get('runs') or ()]
+    return []

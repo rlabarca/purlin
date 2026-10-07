@@ -41,6 +41,23 @@ change and once with it in place; the copy is removed whatever they do.
                write outside the copy, or the proof's tests do not pass in the copy
                before the change
 
+**A wrong output.** For an AI proof, one tagged `@ai`, the thing planted is
+a wrong output: the part's `file:` is a path inside the output a passing run
+of the proof's test kept, `reply.md` or a file under `files/`, and the
+change is made in a copy of that folder, under the same `purlin-bug-*`
+folder, never in the kept one. The project is not copied: the proof's own
+tests run in the project, with what a run sets for them and `PURLIN_AI_REPLAY`
+naming the copy, so the helper hands the test that copy and asks no model
+for an output. They run once on the output as kept, where they must pass
+(`BASELINE_OUTPUT`), and once with the change. A graded proof's test asks
+its grader about the changed output, so a grader that accepts it leaves the
+bug `survived`; one that gives no answer leaves it `not run` (`NO_GRADE`).
+The refusals about the feature's scope, a test's file and a comment do not
+apply; a path that is not one of the output's shown files is refused
+(`NOT_IN_OUTPUT`): what the AI was given, under `input/`, the transcript and
+the helper's record are no part of what it produced. `of_output` words a
+sentence about a bug for a wrong output.
+
 `snapshot` takes the project's `git status --porcelain -z` and the hash of
 every file it lists; the audit takes one before it asks the model and compares
 it after each rule's bugs (`check_unchanged`). A difference raises
@@ -61,6 +78,8 @@ _SCRIPTS = os.path.dirname(_HERE)
 for _path in (os.path.join(_SCRIPTS, 'mcp'), os.path.join(_SCRIPTS, 'run')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
+
+from purlin import outputs as outputs_module                    # noqa: E402
 
 STOPPED = ('The audit stopped: %s changed while the audit ran. Nothing in the '
            'project was written by the audit.')
@@ -88,6 +107,23 @@ BASELINE = 'the test does not pass in a copy of the project'
 # Why a test that did not pass with the bug in place is still not a caught bug.
 ERRORED = 'the test ended in an error, not a failure'
 
+# A wrong output, the bug of an AI proof: where the copy of the kept output
+# and the folder the run's variables name are made under the `purlin-bug-*`
+# folder, and the reasons of its own. Every other reason is a bug's, worded
+# through `of_output`.
+OUTPUT_COPY = 'output'
+# The folder of an output that holds what the AI was given, which the model is
+# shown and no wrong output changes. It mirrors `outputs.INPUT`.
+OUTPUT_INPUT = 'input'
+OUTPUT_SPARE = 'out'
+NOT_IN_OUTPUT = '%s is not in the output'
+BASELINE_OUTPUT = 'the test does not pass on the kept output'
+NO_GRADE = 'the grader gave no answer'
+_FOR_OUTPUT = (('two planted bugs', 'two wrong outputs'),
+               ('bug', 'wrong output'),
+               ('in a copy of the project', 'on the kept output'),
+               ('the copy of the project', 'the copy of the output'))
+
 # Why no bug was planted, which the audit picks its sentence by. `_plant` sets
 # it by where the reason came from: the model's own `no bug` line, a refusal
 # of this module's, or the proof's tests.
@@ -95,7 +131,7 @@ MODEL_FOUND_NONE = 'model found none'
 ANSWER_UNUSABLE = 'answer unusable'
 TEST_DOES_NOT_PASS = 'test does not pass'
 _OWN_WORDS = (NO_CHANGE, NO_CASE, ONLY_COMMENT, OUTSIDE, NOT_IN_SCOPE, NO_FILE, NOT_FOUND, FOUND_MORE,
-              NO_DIFFERENCE, TEST_FILE, NO_PART)
+              NO_DIFFERENCE, TEST_FILE, NO_PART, NOT_IN_OUTPUT)
 
 _NO_BUG_RE = re.compile(r'^[ \t]*no bug:(.*)$')
 _CHANGE_RE = re.compile(r'^file:[ \t]*(?P<file>[^\n]+?)[ \t]*\nbefore:[ \t]*\n(?P<before>.*?)\n'
@@ -138,6 +174,24 @@ def shown(text):
     """`text` as it is printed and stored: without escape sequences and control
     characters, outer spaces cut."""
     return _CONTROL_RE.sub('', _ESCAPE_RE.sub('', str(text or ''))).strip()
+
+
+def of_output(words):
+    """A sentence, or the template of one, about a planted bug, as it is said
+    of a wrong output: `bug` reads `wrong output`, and a copy of the project
+    the kept output or its copy. It is given the template, never the words
+    a model wrote."""
+    for bug, output in _FOR_OUTPUT:
+        words = words.replace(bug, output)
+    return words
+
+
+def in_output(rel):
+    """True for a path inside an output folder that a wrong output may change:
+    `reply.md`, or a file under `files/`. What the AI was given, under `input/`,
+    `transcript.jsonl` and the helper's record are not."""
+    return rel == outputs_module.REPLY or rel.startswith(
+        outputs_module.FILES + '/')
 
 
 def parse_answer(text):
@@ -247,16 +301,17 @@ def cause_of(why):
     own words, and `'model found none'` for any other. A result `_plant` gives
     carries its `cause` outright, set by where the reason came from."""
     why = str(why or '')
-    if why == BASELINE:
+    if why in (BASELINE, BASELINE_OUTPUT):
         return TEST_DOES_NOT_PASS
-    for words in _OWN_WORDS:
+    for words in _OWN_WORDS + (of_output(OUTSIDE),):
         pattern = re.escape(words).replace('%s', '.+').replace('%d', r'\d+')
         if re.fullmatch(pattern, why, re.S):
             return ANSWER_UNUSABLE
     return MODEL_FOUND_NONE
 
 
-def plant_bug(project_root, feature, proof, tests, scope_files, answer, timeout=None):
+def plant_bug(project_root, feature, proof, tests, scope_files, answer, timeout=None,
+              output=None):
     """One planted bug for one proof. `tests` is the proof's own tied tests. `answer` is
     the proof's part of the model's reply, or None where the reply holds none.
     Returns {'proof','aim','case','file','line','before','after','result','why','cause',
@@ -268,17 +323,23 @@ def plant_bug(project_root, feature, proof, tests, scope_files, answer, timeout=
     `proof` is `{'id', 'text'}` or its id; each of `tests` is `{'file', 'name',
     'source'}`. `timeout` bounds each run of the tests, in seconds, as
     `--arm-timeout` does.
+
+    `output` makes the bug a wrong output, for an AI proof: `{'folder', 'model'}`,
+    the kept output folder to plant it in, from the project root, and the model
+    that output was made on. The change is then made in a copy of that folder and
+    the tests run in the project with `PURLIN_AI_REPLAY` naming the copy.
     """
     return _plant(project_root, feature, proof, tests or [], scope_files or [], answer,
-                  timeout)
+                  timeout, output)
 
 
-def replay(project_root, feature, proof, tests, scope_files, kept, timeout=None):
+def replay(project_root, feature, proof, tests, scope_files, kept, timeout=None,
+           output=None):
     """The change an earlier audit recorded, planted again: `kept` is its entry under
     `bugs`, whose `file`, `before`, `after`, `aim` and `case` name it. The change
     goes through every refusal `plant_bug` has, the proof's own tests run once
     before it and once with it in place, and no model is asked. Returns what
-    `plant_bug` returns."""
+    `plant_bug` returns. `output` is `plant_bug`'s, for a recorded wrong output."""
     if isinstance(proof, str):
         proof = {'id': proof}
     change = (shown(kept.get('file')), str(kept.get('before') or ''),
@@ -288,7 +349,7 @@ def replay(project_root, feature, proof, tests, scope_files, kept, timeout=None)
     if not change[0] or not change[1].strip():
         return _result(proof.get('id'), 'not made', NO_CHANGE, cause=ANSWER_UNUSABLE)
     return _plant_change(project_root, feature, proof.get('id'), tests or [],
-                         scope_files or [], change, timeout)
+                         scope_files or [], change, timeout, output)
 
 
 def check_unchanged(project_root, before):
@@ -307,13 +368,14 @@ def _result(proof_id, result, why='', change=None, line=None, finding=None, caus
     if result != 'not made':
         cause = ''
     elif cause is None:
-        cause = TEST_DOES_NOT_PASS if why == BASELINE else ANSWER_UNUSABLE
+        cause = (TEST_DOES_NOT_PASS if why in (BASELINE, BASELINE_OUTPUT)
+                 else ANSWER_UNUSABLE)
     return {'proof': proof_id, 'aim': change[3], 'case': change[4], 'file': change[0],
             'line': line, 'before': change[1], 'after': change[2], 'result': result,
             'why': why, 'cause': cause, 'finding': finding}
 
 
-def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
+def _plant(project_root, feature, proof, tests, scope_files, answer, timeout, output=None):
     if isinstance(proof, str):
         proof = {'id': proof}
     proof_id = proof.get('id')
@@ -326,37 +388,60 @@ def _plant(project_root, feature, proof, tests, scope_files, answer, timeout):
         # The reason is the model's, whatever its words are.
         return _result(proof_id, 'not made', parsed[1], cause=MODEL_FOUND_NONE)
     return _plant_change(project_root, feature, proof_id, tests, scope_files,
-                         parsed[1:], timeout)
+                         parsed[1:], timeout, output)
 
 
-def _plant_change(project_root, feature, proof_id, tests, scope_files, change, timeout):
+def _plant_change(project_root, feature, proof_id, tests, scope_files, change, timeout,
+                  output=None):
     """One change, `(file, before, after, aim, case)`, through every refusal and
-    then planted in a copy, the proof's own tests run before it and with it."""
+    then planted in a copy, the proof's own tests run before it and with it. With
+    `output` the copy is of that kept output folder and the tests run in the
+    project, handed the copy."""
     path, old, new, aim, case = change
     change = (path, old, new, aim, case)
+    outside = of_output(OUTSIDE) if output else OUTSIDE
     if not case:
         return _result(proof_id, 'not made', NO_CASE, change)
-    if only_comment(path, old, new):
+    if not output and only_comment(path, old, new):
         return _result(proof_id, 'not made', ONLY_COMMENT, change)
     rel = path.replace('\\', '/')
     normal = os.path.normpath(rel).replace(os.sep, '/')
     if os.path.isabs(rel) or normal == '..' or normal.startswith('../'):
-        return _result(proof_id, 'not made', OUTSIDE % path, change)
-    own = {os.path.normpath(t['file']).replace(os.sep, '/') for t in tests if t.get('file')}
-    if normal in own:
-        return _result(proof_id, 'not made', TEST_FILE % path, change)
-    scope = {os.path.normpath(p).replace(os.sep, '/') for p in scope_files}
-    if normal not in scope:
-        return _result(proof_id, 'not made', NOT_IN_SCOPE % path, change)
-    copy = tempfile.mkdtemp(prefix=COPY_PREFIX)
+        return _result(proof_id, 'not made', outside % path, change)
+    if output:
+        if not in_output(normal):
+            return _result(proof_id, 'not made', NOT_IN_OUTPUT % path, change)
+    else:
+        own = {os.path.normpath(t['file']).replace(os.sep, '/') for t in tests if t.get('file')}
+        if normal in own:
+            return _result(proof_id, 'not made', TEST_FILE % path, change)
+        scope = {os.path.normpath(p).replace(os.sep, '/') for p in scope_files}
+        if normal not in scope:
+            return _result(proof_id, 'not made', NOT_IN_SCOPE % path, change)
+    made = tempfile.mkdtemp(prefix=COPY_PREFIX)
     try:
-        _copy_project(project_root, copy)
+        import purlin_run
+        if output:
+            # The project stays where it is: its tests are handed the copy.
+            copy = os.path.join(made, OUTPUT_COPY)
+            shutil.copytree(os.path.join(project_root, *str(output['folder']).split('/')),
+                            copy)
+            where, environment = project_root, {
+                outputs_module.AI_HELPER: purlin_run.AI_HELPER_PATH,
+                outputs_module.AI_MODEL: str(output.get('model') or ''),
+                outputs_module.AI_OUT: os.path.join(made, OUTPUT_SPARE),
+                outputs_module.AI_REPLAY: copy}
+        else:
+            copy = made
+            _copy_project(project_root, copy)
+            where, environment = copy, None
         try:
             text = _read_in(copy, normal)
         except _Refused:
-            return _result(proof_id, 'not made', OUTSIDE % path, change)
+            return _result(proof_id, 'not made', outside % path, change)
         if text is None:
-            return _result(proof_id, 'not made', NO_FILE % path, change)
+            return _result(proof_id, 'not made',
+                           (NOT_IN_OUTPUT if output else NO_FILE) % path, change)
         if old not in text and '\r\n' in text:
             # The model was shown the file's lines with `\n` ends; the file's are CRLF.
             old, new = _crlf(old), _crlf(new)
@@ -367,9 +452,10 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             return _result(proof_id, 'not made', FOUND_MORE % (path, count), change)
         if old == new:
             return _result(proof_id, 'not made', NO_DIFFERENCE % path, change)
-        import purlin_run
-        if purlin_run.proof_result(copy, feature, proof_id, tests, timeout) != 'pass':
-            return _result(proof_id, 'not made', BASELINE, change)
+        if purlin_run.proof_result(where, feature, proof_id, tests, timeout,
+                                   environment) != 'pass':
+            return _result(proof_id, 'not made',
+                           BASELINE_OUTPUT if output else BASELINE, change)
         at = text.index(old)
         changed = text[:at] + new + text[at + len(old):]
         try:
@@ -379,9 +465,13 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             # or a cache keyed by time and size, such as Python's, serves the old code.
             os.utime(_inside(copy, normal), (stamp + 2, stamp + 2))
         except (_Refused, OSError):
-            return _result(proof_id, 'not made', OUTSIDE % path, change)
+            return _result(proof_id, 'not made', outside % path, change)
         line, words = _changed_line(normal, changed, at, old, new)
-        ran = purlin_run.proof_result(copy, feature, proof_id, tests, timeout)
+        ran = purlin_run.proof_result(where, feature, proof_id, tests, timeout,
+                                      environment)
+        if output and ran != 'pass' and _no_grade(copy):
+            # The grader said nothing of the changed output: nothing caught it.
+            return _result(proof_id, 'not run', NO_GRADE, change, line)
         if ran == 'pass':
             return _result(proof_id, 'survived', '', change, line,
                            SURVIVED % (proof_id, path, line, words))
@@ -390,7 +480,14 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
         return _result(proof_id, 'not run', ERRORED if ran == 'error' else '',
                        change, line)
     finally:
-        shutil.rmtree(copy, ignore_errors=True)
+        shutil.rmtree(made, ignore_errors=True)
+
+
+def _no_grade(copy):
+    """True where the last grade the helper recorded for the output at `copy` is
+    of a grader that gave no answer."""
+    grade = outputs_module.read_record(copy).get('grade')
+    return isinstance(grade, dict) and grade.get('accepted') is None
 
 
 def _crlf(text):

@@ -3,6 +3,10 @@
 Each test builds a small project of its own, `src/age.py` with one marked test per proof,
 and either hands one part of a reply to `planted_bug.plant_bug` or runs the audit there
 with the fake `claude`. No test audits this repository's code and none reaches a real model.
+
+The tests of a wrong output, the bug of an `@ai` proof, run on the refusal note of
+`dev/sample_lab.py`, whose tests hand their output to the real helper with `record`; the
+grader of its `PROOF-2` is the fake of `dev/fake_claude_session.py`.
 """
 
 import io
@@ -19,11 +23,15 @@ import pytest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, os.path.join(_ROOT, 'scripts', 'review'))
+sys.path.insert(0, os.path.join(_ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, _HERE)
 
 import audit_run  # noqa: E402
 import fake_claude  # noqa: E402
+import fake_claude_session  # noqa: E402
 import planted_bug  # noqa: E402
+import sample_lab  # noqa: E402
+from purlin import outputs  # noqa: E402
 
 RUN_SCRIPT = os.path.join(_ROOT, 'scripts', 'run', 'purlin_run.py')
 EVIDENCE = '.purlin/evidence/local/age.json'
@@ -1017,3 +1025,215 @@ def test_a_project_that_changes_as_a_bug_is_planted_again_stops_the_settle(
     # The one call is the first audit's: the settle stopped before it asked the model.
     assert len(fake_claude.calls(own_claude)) == 1
 
+
+
+# ---------------------------------------------------------------------------
+# A wrong output, the bug of an `@ai` proof
+# ---------------------------------------------------------------------------
+
+NOTE = sample_lab.NOTE_FEATURE
+KEPT_1 = '.purlin/runtime/ai/refusal_note/PROOF-1/claude-opus-5-5/1'
+KEPT_2 = '.purlin/runtime/ai/refusal_note/PROOF-2/claude-opus-5-5/1'
+NOTE_TESTS = {
+    'PROOF-1': [{'file': 'tests/test_note.py', 'name': 'test_the_note_names_the_barcode',
+                 'source': ''}],
+    'PROOF-2': [{'file': 'tests/test_note.py', 'name': 'test_the_note_says_what_to_do_next',
+                 'source': ''}]}
+OTHER_BARCODE = fake_claude.change('reply.md', sample_lab.NOTE_NAMES, sample_lab.NOTE_OTHER,
+                                   case=sample_lab.CASE_BARCODE, aim='past the test')
+ASKS_NOTHING = fake_claude.change('reply.md', sample_lab.NOTE_NEXT, sample_lab.NOTE_NOTHING,
+                                  case=sample_lab.CASE_NEXT)
+
+
+@pytest.fixture(scope='module')
+def note(tmp_path_factory):
+    """The refusal note, its tests run once: the test of `PROOF-1` looks for `LC-`."""
+    return sample_lab.build_note(tmp_path_factory.mktemp('note'))
+
+
+@pytest.fixture(scope='module')
+def strong_note(tmp_path_factory):
+    """The refusal note with the test of `PROOF-1` looking for `LC-1234567`."""
+    return sample_lab.build_note(tmp_path_factory.mktemp('strong-note'),
+                                 check=sample_lab.THE_BARCODE)
+
+
+def wrong(root, proof, answer, folder=None):
+    """One wrong output planted for `proof` of the refusal note at `root`."""
+    kept = folder or (KEPT_1 if proof == 'PROOF-1' else KEPT_2)
+    return planted_bug.plant_bug(root, NOTE, proof, NOTE_TESTS[proof], [], answer,
+                                 output={'folder': kept, 'model': sample_lab.MODEL})
+
+
+def grader(tmp_path, monkeypatch, *answers):
+    """A fake grader, first on PATH, that gives `answers` in order. Its folder."""
+    directory = fake_claude_session.install(str(tmp_path / 'grader'), answers=list(answers))
+    monkeypatch.setenv('PATH', directory + os.pathsep + os.environ.get('PATH', ''))
+    assert os.path.realpath(shutil.which('claude')).startswith(os.path.realpath(str(tmp_path)))
+    return directory
+
+
+# purlin: planted_bug PROOF-64
+def test_a_wrong_output_leaves_the_kept_folder_and_the_project_as_they_were(note, tmp_path):
+    kept = os.path.join(note, *KEPT_1.split('/'))
+    sha = outputs.folder_sha256(kept)
+    record = files_of(kept)
+    status = git(note, 'status', '--porcelain')
+    result = wrong(note, 'PROOF-1', OTHER_BARCODE)
+    assert (result['file'], result['result']) == ('reply.md', 'survived'), result
+    assert outputs.folder_sha256(kept) == sha
+    assert files_of(kept) == record
+    assert git(note, 'status', '--porcelain') == status
+    assert copies(tmp_path) == []
+
+
+# purlin: planted_bug PROOF-65
+def test_a_test_that_still_passes_on_a_wrong_output_reads_survived(note):
+    result = wrong(note, 'PROOF-1', OTHER_BARCODE)
+    assert result['result'] == 'survived', result
+    assert result['finding'] == (
+        'PROOF-1: the test still passes when reply.md:1 reads "Sample LC-7654321 was '
+        'refused: its barcode is not LC- and 8 digits."')
+
+
+# purlin: planted_bug PROOF-66
+def test_a_test_that_fails_on_a_wrong_output_reads_caught(strong_note):
+    result = wrong(strong_note, 'PROOF-1', OTHER_BARCODE)
+    assert 'LC-7654321' in result['after']
+    assert (result['result'], result['finding']) == ('caught', None), result
+
+
+# purlin: planted_bug PROOF-67
+def test_the_test_is_handed_the_copy_and_what_a_run_sets(note, tmp_path, monkeypatch):
+    directory = grader(tmp_path, monkeypatch, sample_lab.ACCEPT)
+    result = wrong(note, 'PROOF-2', ASKS_NOTHING)
+    assert result['result'] == 'survived', result
+    calls = fake_claude_session.calls(directory)
+    assert len(calls) == 2
+    temporary = os.path.realpath(str(tmp_path / 'tmp'))
+    for call in calls:
+        env = call['env']
+        assert env['PURLIN_AI_MODEL'] == 'claude-opus-5-5'
+        assert os.path.samefile(env['PURLIN_AI'],
+                                os.path.join(_ROOT, 'scripts', 'ai', 'purlin_ai.py'))
+        made, name = os.path.split(env['PURLIN_AI_REPLAY'])
+        assert name == 'output'
+        assert os.path.basename(made).startswith('purlin-bug-')
+        assert os.path.realpath(os.path.dirname(made)) == temporary
+        assert env['PURLIN_AI_OUT'] == os.path.join(made, 'out')
+
+
+# purlin: planted_bug PROOF-68
+def test_a_test_that_does_not_pass_on_the_kept_output_has_nothing_planted(
+        note, tmp_path, monkeypatch):
+    directory = grader(tmp_path, monkeypatch, sample_lab.REJECT)
+    result = wrong(note, 'PROOF-2', ASKS_NOTHING)
+    assert (result['result'], result['why']) == (
+        'not made', 'the test does not pass on the kept output'), result
+    assert result['cause'] == planted_bug.TEST_DOES_NOT_PASS
+    assert len(fake_claude_session.calls(directory)) == 1
+
+
+def not_run(monkeypatch):
+    """The starts of a proof's tests from here on, none of which runs anything."""
+    import purlin_run
+    started = []
+    monkeypatch.setattr(purlin_run, 'proof_result',
+                        lambda *args, **more: started.append(args) or 'pass')
+    return started
+
+
+# purlin: planted_bug PROOF-69
+def test_a_file_the_model_was_not_shown_is_not_in_the_output(note, monkeypatch):
+    started = not_run(monkeypatch)
+    answer = fake_claude.change('transcript.jsonl', 'the transcript line', 'another line',
+                                case=sample_lab.CASE_BARCODE)
+    result = wrong(note, 'PROOF-1', answer)
+    assert (result['result'], result['why']) == (
+        'not made', 'transcript.jsonl is not in the output'), result
+    assert started == []
+
+
+# purlin: planted_bug PROOF-70
+def test_a_path_that_leaves_the_copy_of_the_output_is_refused(note, monkeypatch):
+    started = not_run(monkeypatch)
+    answer = fake_claude.change('../reply.md', sample_lab.NOTE_NAMES, sample_lab.NOTE_OTHER,
+                                case=sample_lab.CASE_BARCODE)
+    result = wrong(note, 'PROOF-1', answer)
+    assert (result['result'], result['why']) == (
+        'not made', '../reply.md is outside the copy of the output'), result
+    assert started == []
+
+
+# purlin: planted_bug PROOF-71
+def test_a_line_that_would_be_a_comment_in_code_is_planted_in_an_output(note):
+    answer = fake_claude.change('reply.md', sample_lab.NOTE_NAMES,
+                                '# Refused\n' + sample_lab.NOTE_NAMES,
+                                case=sample_lab.CASE_BARCODE)
+    assert planted_bug.only_comment('reply.py', sample_lab.NOTE_NAMES,
+                                    '# Refused\n' + sample_lab.NOTE_NAMES)
+    result = wrong(note, 'PROOF-1', answer)
+    assert (result['result'], result['line']) == ('survived', 1), result
+
+
+# purlin: planted_bug PROOF-72
+def test_a_file_under_files_is_changed_whatever_the_scope_names(note):
+    answer = fake_claude.change('files/site.txt', 'site: BOS', 'site: NYC',
+                                case=sample_lab.CASE_BARCODE)
+    result = wrong(note, 'PROOF-1', answer)
+    assert result['finding'] == (
+        'PROOF-1: the test still passes when files/site.txt:1 reads "site: NYC"'), result
+
+
+# purlin: planted_bug PROOF-73
+def test_a_grader_that_accepts_the_wrong_output_leaves_it_survived(
+        note, tmp_path, monkeypatch):
+    directory = grader(tmp_path, monkeypatch, sample_lab.ACCEPT, sample_lab.ACCEPT)
+    result = wrong(note, 'PROOF-2', ASKS_NOTHING)
+    assert result['result'] == 'survived', result
+    asked = [call['prompt'] for call in fake_claude_session.calls(directory)]
+    assert len(asked) == 2
+    assert 'Nothing more is needed.' not in asked[0]
+    assert 'Nothing more is needed.\n' in asked[1]
+
+
+# purlin: planted_bug PROOF-74
+def test_a_grader_that_rejects_the_wrong_output_catches_it(note, tmp_path, monkeypatch):
+    directory = grader(tmp_path, monkeypatch, sample_lab.ACCEPT, sample_lab.REJECT)
+    result = wrong(note, 'PROOF-2', ASKS_NOTHING)
+    assert 'Nothing more is needed.' in result['after']
+    assert result['result'] == 'caught', result
+    assert len(fake_claude_session.calls(directory)) == 2
+
+
+# purlin: planted_bug PROOF-75
+def test_a_grader_that_gives_no_answer_decides_nothing(note, tmp_path, monkeypatch):
+    grader(tmp_path, monkeypatch, sample_lab.ACCEPT,
+           fake_claude_session.answer(exit_code=1))
+    result = wrong(note, 'PROOF-2', ASKS_NOTHING)
+    assert (result['result'], result['why']) == (
+        'not run', 'the grader gave no answer'), result
+
+
+# purlin: planted_bug PROOF-76
+def test_what_the_ai_was_given_is_never_changed(note, monkeypatch):
+    started = not_run(monkeypatch)
+    answer = fake_claude.change('input/message.md', 'The bench refused LC-1234567.',
+                                'The bench refused LC-7654321.',
+                                case=sample_lab.CASE_BARCODE)
+    result = wrong(note, 'PROOF-1', answer)
+    assert (result['result'], result['why']) == (
+        'not made', 'input/message.md is not in the output'), result
+    assert planted_bug.OUTPUT_INPUT == 'input'
+    assert started == []
+
+
+# purlin: planted_bug PROOF-77
+def test_the_helpers_record_is_never_changed(note, monkeypatch):
+    started = not_run(monkeypatch)
+    answer = fake_claude.change('purlin.json', '"made": "project"', '"made": "helper"',
+                                case=sample_lab.CASE_BARCODE)
+    result = wrong(note, 'PROOF-1', answer)
+    assert (result['result'], result['why']) == (
+        'not made', 'purlin.json is not in the output'), result
+    assert started == []

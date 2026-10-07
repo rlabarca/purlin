@@ -25,6 +25,9 @@ What each group holds:
             stands, on the sample lab project and the small login project
 *again*     an audit without `--settle`: a bug that survived planted again
             where the code changed and its test did not
+*output*    an `@ai` proof: the wrong output asked for, planted in a kept
+            output and settled, on the refusal note of `dev/sample_lab.py`,
+            whose tests hand their output to the real helper with `record`
 """
 
 import contextlib
@@ -49,6 +52,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 import ai_audit as audit_module  # noqa: E402
 import audit_run  # noqa: E402
 import fake_claude  # noqa: E402
+import fake_claude_session  # noqa: E402
 import marked_tests  # noqa: E402
 import sample_lab  # noqa: E402
 import suites  # noqa: E402
@@ -2681,3 +2685,391 @@ class TestACallerOfItsOwnModelAndSystemPrompt:
         assert found['printed'] == '{"result": "yes"}\n'
         assert found['said'] == ''
 
+
+
+# ---------------------------------------------------------------------------
+# output: an `@ai` proof is planted a wrong output
+# ---------------------------------------------------------------------------
+
+NOTE = sample_lab.NOTE_FEATURE
+SURVIVED_1 = [
+    '  PROOF-1: the test still passes when reply.md:1 reads "Sample LC-7654321 '
+    'was refused: its barcode is not LC- and 8 digits."',
+    '  PROOF-1: the AI says this breaks: the refusal of `LC-1234567`; the '
+    'proof says the reply names `LC-1234567`; the changed output names '
+    '`LC-7654321`']
+SURVIVED_2 = [
+    '  PROOF-2: the test still passes when reply.md:2 reads "Nothing more is '
+    'needed."',
+    '  PROOF-2: the AI says this breaks: the refusal of `LC-1234567`; the '
+    'proof says the reply tells the site to send a new sample; the changed '
+    'output asks for nothing']
+KEPT_1 = '.purlin/runtime/ai/refusal_note/PROOF-1/claude-opus-5-5/1'
+
+
+def note_requests(run):
+    """`({rule: the audit's request for it}, [each request the grader got])`
+    of one audit of the refusal note."""
+    asked, graded = {}, []
+    for call in run['calls']:
+        if call['prompt'].startswith('The sentence:'):
+            graded.append(call['prompt'])
+            continue
+        for rule in ('RULE-1', 'RULE-2'):
+            if '\n%s %s\n' % (NOTE, rule) in call['prompt']:
+                assert rule not in asked
+                asked[rule] = call['prompt']
+    return asked, graded
+
+
+def kept_sha(root, proof):
+    """The sha256 the evidence names for the one run of `proof`."""
+    runs = sample_lab.note_runs(root, proof)
+    assert len(runs) == 1 and runs[0]['result'] == 'pass', runs
+    return runs[0]['output']
+
+
+def remove_the_outputs(root):
+    shutil.rmtree(os.path.join(root, '.purlin', 'runtime', 'ai'))
+
+
+def printout(root, rule):
+    done = subprocess.run(
+        [sys.executable, AI_AUDIT_PY, '--project-root', root, '--feature',
+         NOTE, '--rule', rule], capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+    return done.stdout.splitlines()
+
+
+@pytest.fixture(scope='module')
+def note(tmp_path_factory):
+    """The refusal note audited once: the test of `PROOF-1` looks for `LC-`,
+    and the grader accepts each output it is shown."""
+    root = sample_lab.build_note(tmp_path_factory.mktemp('note'))
+    built = fake_claude_session.calls(sample_lab.note_claude(root))
+    run = sample_lab.note_audit(root, [sample_lab.wrong_outputs()] * 2
+                                + [sample_lab.ACCEPT])
+    return dict(run, root=root, built=built)
+
+
+@pytest.fixture(scope='module')
+def note_caught(tmp_path_factory):
+    """The refusal note audited once: the test of `PROOF-1` looks for
+    `LC-1234567`, and the grader rejects the changed output."""
+    root = sample_lab.build_note(tmp_path_factory.mktemp('note-caught'),
+                                 check=sample_lab.THE_BARCODE)
+    run = sample_lab.note_audit(root, [sample_lab.wrong_outputs()] * 2
+                                + [sample_lab.ACCEPT, sample_lab.REJECT])
+    return dict(run, root=root)
+
+
+@pytest.fixture(scope='module')
+def note_not_kept(tmp_path_factory):
+    """The refusal note with no output kept, audited twice: `first` and
+    `second`, and the printout for `RULE-1` between them."""
+    root = sample_lab.build_note(tmp_path_factory.mktemp('note-not-kept'))
+    remove_the_outputs(root)
+    first = sample_lab.note_audit(root, [sample_lab.wrong_outputs()])
+    printed = printout(root, 'RULE-1')
+    second = sample_lab.note_audit(root, [sample_lab.wrong_outputs()])
+    return {'root': root, 'first': first, 'second': second,
+            'printed': printed}
+
+
+class TestAWrongOutput:
+    # purlin: ai_audit PROOF-196
+    def test_a_graded_rule_is_read(self, note):
+        payload = audit_module.load_payload(note['root'])
+        rule = audit_module.rule_entry(payload, NOTE, 'RULE-2')
+        assert rule['cells']['passed']['word'] == 'graded'
+        assert audit_module.passes(rule)
+        assert [line for line in note['lines'] if 'RULE-2' in line] == [
+            'refusal_note RULE-2   weak']
+        assert note['entries']['RULE-2']['verdict'] == 'weak'
+
+    # purlin: ai_audit PROOF-197
+    def test_the_request_asks_a_wrong_output_and_shows_the_kept_one(self, note):
+        asked = note_requests(note)[0]['RULE-1']
+        assert asked.count('Plant one wrong output for each of: PROOF-1.\n') == 1
+        assert ('\n\nOutput of PROOF-1:\n'
+                '\n'
+                'File: reply.md\n'
+                'Sample LC-1234567 was refused: its barcode is not LC- and 8 '
+                'digits.\n'
+                'Send a new sample with a new label.\n'
+                '\n'
+                'File: files/site.txt\n'
+                'site: BOS\n'
+                '\n---\n') in asked
+        assert asked.index('Plant one wrong output for each of: PROOF-1.') \
+            < asked.index('Output of PROOF-1:')
+
+    # purlin: ai_audit PROOF-198
+    def test_the_request_shows_no_other_file(self, note):
+        asked = note_requests(note)[0]['RULE-1']
+        assert asked.count('\nFile: ') == 2
+        for absent in ('Plant one bug', 'File: prompts/refusal_note.md',
+                       'File: transcript.jsonl', 'File: purlin.json',
+                       'the transcript line'):
+            assert absent not in asked, absent
+        with open(os.path.join(note['root'], *KEPT_1.split('/'),
+                               'transcript.jsonl'), encoding='utf-8') as kept:
+            assert 'the transcript line' in kept.read()
+
+    # purlin: ai_audit PROOF-199
+    def test_a_proof_line_carries_its_ai_tags(self, note):
+        asked = note_requests(note)[0]['RULE-2']
+        assert ('\nPROOF-2 @ai(claude-opus-5-5) '
+                '@graded(claude-haiku-4-5-20251001): Given the refusal of '
+                '`LC-1234567`, the reply tells the site to send a new '
+                'sample\n') in asked
+
+    # purlin: ai_audit PROOF-200
+    def test_the_entry_is_a_bugs_and_holds_the_output(self, note):
+        entry = dict(note['entries']['RULE-1']['bugs']['PROOF-1'])
+        keys = [entry.pop('bug_key'), entry.pop('test_key')]
+        assert all(re.fullmatch('[0-9a-f]{64}', key) for key in keys), keys
+        assert entry == {
+            'aim': 'past the test', 'case': sample_lab.CASE_BARCODE,
+            'file': 'reply.md', 'line': 1,
+            'before': 'Sample LC-1234567 was refused: its barcode is not '
+                      'LC- and 8 digits.',
+            'after': 'Sample LC-7654321 was refused: its barcode is not '
+                     'LC- and 8 digits.',
+            'result': 'survived', 'why': '',
+            'output': kept_sha(note['root'], 'PROOF-1')}
+        assert re.fullmatch('[0-9a-f]{64}', entry['output'])
+
+    @staticmethod
+    def kept_folder(root, model, run, reply):
+        """One run folder of `note PROOF-1`, holding `reply`. Its sha256."""
+        from purlin import outputs
+        folder = os.path.join(root, *outputs.ai_run_dir(
+            'note', 'PROOF-1', model, run).split('/'))
+        os.makedirs(folder)
+        with open(os.path.join(folder, 'reply.md'), 'w',
+                  encoding='utf-8') as handle:
+            handle.write(reply)
+        return outputs.folder_sha256(folder)
+
+    # purlin: ai_audit PROOF-201
+    def test_the_first_passing_run_on_the_first_model_of_the_tag(self, tmp_path):
+        root = str(tmp_path)
+        failed = self.kept_folder(root, 'claude-opus-5-5', 1, 'one\n')
+        passed = self.kept_folder(root, 'claude-opus-5-5', 2, 'two\n')
+        other = self.kept_folder(root, 'claude-sonnet-5-5', 1, 'three\n')
+        proof = {'ai': ['claude-opus-5-5', 'claude-sonnet-5-5'], 'models': [
+            {'model': 'claude-sonnet-5-5',
+             'runs': [{'result': 'pass', 'output': other}]},
+            {'model': 'claude-opus-5-5',
+             'runs': [{'result': 'fail', 'output': failed},
+                      {'result': 'pass', 'output': passed}]}]}
+        assert audit_module.kept_output(root, proof) == (
+            passed, '.purlin/runtime/ai/note/PROOF-1/claude-opus-5-5/2')
+        assert audit_module.kept_output(root, dict(proof, ai=[])) is None
+
+    # purlin: ai_audit PROOF-202
+    def test_a_run_whose_folder_is_gone_is_passed_over(self, tmp_path):
+        root = str(tmp_path)
+        first = self.kept_folder(root, 'claude-opus-5-5', 1, 'one\n')
+        second = self.kept_folder(root, 'claude-opus-5-5', 2, 'two\n')
+        proof = {'ai': ['claude-opus-5-5'], 'models': [
+            {'model': 'claude-opus-5-5',
+             'runs': [{'result': 'pass', 'output': first},
+                      {'result': 'pass', 'output': second}]}]}
+        kept = os.path.join(root, '.purlin', 'runtime', 'ai', 'note',
+                            'PROOF-1', 'claude-opus-5-5')
+        shutil.rmtree(os.path.join(kept, '1'))
+        assert audit_module.kept_output(root, proof) == (
+            second, '.purlin/runtime/ai/note/PROOF-1/claude-opus-5-5/2')
+        shutil.rmtree(os.path.join(kept, '2'))
+        assert audit_module.kept_output(root, proof) is None
+
+    # purlin: ai_audit PROOF-203
+    def test_a_wrong_output_that_survives_makes_the_rule_weak(self, note):
+        assert 'refusal_note RULE-1   weak' in note['lines']
+        assert sample_lab.note_under(note, 'RULE-1') == SURVIVED_1
+        assert note['entries']['RULE-1']['findings'] == [
+            line.strip() for line in SURVIVED_1]
+
+    # purlin: ai_audit PROOF-204
+    def test_a_wrong_output_the_test_fails_on_is_caught(self, note_caught):
+        assert 'refusal_note RULE-1   strong' in note_caught['lines']
+        assert sample_lab.note_under(note_caught, 'RULE-1') == []
+        entry = note_caught['entries']['RULE-1']['bugs']['PROOF-1']
+        assert 'LC-1234567' in sample_lab.THE_BARCODE
+        assert (entry['result'], entry['output']) == (
+            'caught', kept_sha(note_caught['root'], 'PROOF-1'))
+        assert 'test_key' not in entry
+
+    # purlin: ai_audit PROOF-205
+    def test_a_grader_that_accepts_the_wrong_output_makes_the_rule_weak(
+            self, note):
+        assert 'refusal_note RULE-2   weak' in note['lines']
+        assert 'Nothing more is needed.' in SURVIVED_2[0]
+        assert sample_lab.note_under(note, 'RULE-2') == SURVIVED_2
+        assert note['entries']['RULE-2']['bugs']['PROOF-2']['result'] \
+            == 'survived'
+
+    # purlin: ai_audit PROOF-206
+    def test_a_grader_that_rejects_the_wrong_output_catches_it(
+            self, note_caught):
+        assert 'refusal_note RULE-2   strong' in note_caught['lines']
+        assert sample_lab.note_under(note_caught, 'RULE-2') == []
+        entry = note_caught['entries']['RULE-2']['bugs']['PROOF-2']
+        assert (entry['result'], entry['after']) == (
+            'caught', 'Nothing more is needed.')
+
+    # purlin: ai_audit PROOF-207
+    def test_the_grader_is_asked_about_the_changed_output(self, note):
+        graded = note_requests(note)[1]
+        assert len(graded) == 2
+        kept = 'Send a new sample with a new label.\n'
+        changed = 'Nothing more is needed.\n'
+        assert kept in graded[0] and changed not in graded[0]
+        assert changed in graded[1] and kept not in graded[1]
+        assert graded[1] == graded[0].replace(kept, changed)
+
+    # purlin: ai_audit PROOF-208
+    def test_no_kept_output_reads_spot_checked_with_its_reason(
+            self, note_not_kept):
+        run = note_not_kept['first']
+        assert not os.path.exists(os.path.join(
+            note_not_kept['root'], '.purlin', 'runtime', 'ai'))
+        assert 'refusal_note RULE-1   spot-checked' in run['lines']
+        assert sample_lab.note_under(run, 'RULE-1') == [
+            '  The spot tests found nothing. No wrong output was planted: '
+            'this machine keeps no passing output of PROOF-1.']
+        entry = run['entries']['RULE-1']
+        assert (entry['verdict'], entry['bugs']) == ('spot-checked', {})
+        assert entry['no_bug'] == [
+            'No wrong output was planted: this machine keeps no passing '
+            'output of PROOF-1.']
+        assert len(run['calls']) == 2
+        assert not [call for call in run['calls']
+                    if 'Plant one' in call['prompt'].split('\n---\n', 1)[1]]
+
+    # purlin: ai_audit PROOF-209
+    def test_a_rule_with_no_kept_output_is_not_read_again(self, note_not_kept):
+        assert len(note_not_kept['first']['calls']) == 2
+        assert len(note_not_kept['second']['calls']) == 0
+        assert [line for line in note_not_kept['second']['lines']
+                if line.startswith('refusal_note ')] == []
+
+    # purlin: ai_audit PROOF-210
+    def test_a_test_that_does_not_pass_on_the_kept_output(self, tmp_path):
+        root = sample_lab.build_note(tmp_path)
+        run = sample_lab.note_audit(root, [sample_lab.wrong_outputs()] * 2
+                                    + [sample_lab.REJECT])
+        assert 'refusal_note RULE-2   spot-checked' in run['lines']
+        assert sample_lab.note_under(run, 'RULE-2') == [
+            '  The spot tests found nothing. No wrong output was planted: '
+            'the test of PROOF-2 does not pass on the kept output.']
+        entry = run['entries']['RULE-2']['bugs']['PROOF-2']
+        assert (entry['result'], entry['why']) == (
+            'not made', 'the test does not pass on the kept output')
+        # The two requests of the audit, and the grader asked once.
+        assert len(run['calls']) == 3
+
+    # purlin: ai_audit PROOF-211
+    def test_a_model_that_cannot_be_reached_for_a_wrong_output(self, tmp_path):
+        root = sample_lab.build_note(tmp_path)
+        run = sample_lab.note_audit(
+            root, [fake_claude_session.answer(exit_code=1)])
+        assert 'refusal_note RULE-1   spot-checked' in run['lines']
+        assert sample_lab.note_under(run, 'RULE-1') == [
+            '  The spot tests found nothing. No wrong output was planted: '
+            'the model could not be reached: claude exited with an error.']
+        assert run['entries']['RULE-1']['bugs'] == {}
+
+    # purlin: ai_audit PROOF-212
+    def test_a_settle_plants_the_recorded_wrong_output_again(self, tmp_path):
+        root = sample_lab.build_note(tmp_path)
+        first = sample_lab.note_audit(root, [sample_lab.wrong_outputs()] * 2
+                                      + [sample_lab.ACCEPT])
+        before = first['entries']['RULE-1']['bugs']['PROOF-1']
+        assert before['result'] == 'survived'
+        sample_lab.the_barcode(root)
+        assert 'LC-1234567' in sample_lab.THE_BARCODE
+        made = sample_lab.note_settle(root, ['RULE-1'])
+        assert made['code'] == 0, made['lines']
+        assert 'refusal_note RULE-1   strong' in made['lines']
+        assert sample_lab.note_under(made, 'RULE-1') == [
+            '  PROOF-1: the test now catches the wrong output it missed at '
+            'reply.md:1.']
+        entry = made['entries']['RULE-1']['bugs']['PROOF-1']
+        assert entry['result'] == 'caught'
+        assert 'test_key' not in entry
+        for name in ('output', 'before', 'after', 'file', 'line', 'aim',
+                     'case'):
+            assert entry[name] == before[name], name
+        assert len(made['calls']) == 0
+
+    # purlin: ai_audit PROOF-213
+    def test_a_settle_is_refused_while_the_test_is_as_it_was(self, tmp_path):
+        root = sample_lab.build_note(tmp_path)
+        first = sample_lab.note_audit(root, [sample_lab.wrong_outputs()] * 2
+                                      + [sample_lab.ACCEPT])
+        assert first['entries']['RULE-1']['bugs']['PROOF-1']['result'] \
+            == 'survived'
+        made = sample_lab.note_settle(root, ['RULE-1'])
+        assert 'refusal_note RULE-1   weak' in made['lines']
+        assert sample_lab.note_under(made, 'RULE-1') == [
+            '  PROOF-1: its test is as it was when the wrong output got '
+            'past it. Strengthen it with purlin:build, then settle.'
+        ] + SURVIVED_1
+        assert len(made['calls']) == 0
+
+    # purlin: ai_audit PROOF-214
+    def test_the_printout_names_the_kept_output(self, note, note_not_kept):
+        lines = printout(note['root'], 'RULE-1')
+        at = lines.index('Output')
+        assert lines[at - 2] == "        assert 'LC-' in note"
+        assert lines[at - 1:at + 3] == [
+            '', 'Output',
+            '  PROOF-1  .purlin/runtime/ai/refusal_note/PROOF-1/'
+            'claude-opus-5-5/1', '']
+        assert lines[at + 3] == 'What the audit found'
+        gone = note_not_kept['printed']
+        at = gone.index('Output')
+        assert gone[at + 1:at + 3] == [
+            '  PROOF-1  no passing output kept on this machine', '']
+
+    # purlin: ai_audit PROOF-215
+    def test_no_start_of_claude_reaches_a_real_model(self, note):
+        fake = os.path.realpath(sample_lab.note_claude(note['root']))
+        assert fake.startswith(os.path.realpath(
+            os.path.dirname(note['root'])))
+        # The run's one grade, then the audit's two requests and two grades.
+        assert len(note['built']) == 1
+        assert len(note['calls']) == 4
+        from purlin import outputs
+        for proof in ('PROOF-1', 'PROOF-2'):
+            runs = sample_lab.note_runs(note['root'], proof)
+            assert [made.get('made') for made in runs] == ['project']
+            folder = os.path.join(note['root'], *outputs.ai_run_dir(
+                NOTE, proof, sample_lab.MODEL, 1).split('/'))
+            assert outputs.read_record(folder)['made'] == 'project'
+
+    # purlin: ai_audit PROOF-216
+    def test_the_request_shows_what_the_ai_was_given_first(self, tmp_path):
+        root = str(tmp_path)
+        kept = '.purlin/runtime/ai/note/PROOF-1/claude-opus-5-5/1'
+        for path, text in (('input/message.md',
+                            'The bench refused LC-1234567.\n'),
+                           ('reply.md', 'Sample LC-1234567 was refused.\n')):
+            write(os.path.join(root, *kept.split('/'),
+                               *path.split('/')), text)
+        reading = {'feature': 'note', 'rule': 'RULE-1', 'rule_text': 'r',
+                   'proofs': [{'id': 'PROOF-1', 'text': 'p',
+                               'ai': ['claude-opus-5-5'], 'folder': kept}],
+                   'tests': [], 'plant': ['PROOF-1'], 'files': []}
+        asked = audit_module.model_prompt(root, reading, criteria='')
+        assert ('\n\nInput of PROOF-1:\n\nFile: input/message.md\n'
+                'The bench refused LC-1234567.\n\nOutput of PROOF-1:\n\n'
+                'File: reply.md\nSample LC-1234567 was refused.\n\n---\n'
+                ) in asked
+        assert ('\nIn the part, file: is a path of that output as given '
+                'below, never one under input/, and case:\n') in asked
+        assert audit_module.output_files(root, kept) == [
+            {'path': 'reply.md', 'text': 'Sample LC-1234567 was refused.\n'}]

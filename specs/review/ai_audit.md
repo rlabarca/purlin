@@ -16,11 +16,14 @@
 >   the proof, and the evidence then records that the test was not changed. An audit without
 >   `--settle` plants a bug that survived again before it asks for a new one, where the code
 >   changed and the proof's test did not: while that test still passes with it, the bug stays
->   and the rule reads `weak`.
+>   and the rule reads `weak`. For a proof about what an AI produced, one tagged `@ai`, the model
+>   is shown an output a passing run kept and asked for a wrong output, a change to it that
+>   breaks what the proof says; the proof's test is run on the changed output, and for a graded
+>   proof that asks its grader. Every line about it says `wrong output`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 80
-> Highest-Proof: 195
+> Highest-Rule: 91
+> Highest-Proof: 216
 
 ## Rules
 
@@ -76,6 +79,17 @@
 - RULE-78: Where the spot tests of a settle find nothing in a test the rule's entry holds a finding of theirs for, the audit prints under the rule, before any other line, `  <file>::<test>: the spot tests now find nothing.`, and the evidence does not hold that line
 - RULE-79: A caller that names a model and a system prompt of its own starts the same call with `--model <name>` before `--system-prompt` and its own system prompt as the last argument; the audit names neither
 - RULE-80: A call's answer carries what the program printed, and for a call that failed what the program itself said of it: the `result` of a JSON that reports an error, else its standard error where it exited with an error
+- RULE-81: A rule whose passed cell reads `graded` is read as one whose cell reads `passed` is
+- RULE-82: For an `@ai` proof the request asks a wrong output and no bug: it holds the line `Plant one wrong output for each of: <the proofs>.` and, under `Output of <PROOF-N>:`, `reply.md` and then each file under `files/` of the proof's kept output, as text; it holds neither that output's `transcript.jsonl`, nor the helper's record, nor a file of the feature's scope, and each proof line carries its `@ai(...)` and `@graded(...)` tags
+- RULE-83: The wrong output is planted in the output of the first passing run, on the first model the proof's tag names, whose folder this machine still keeps; the entry under `bugs` is a bug's and holds `output`, the sha256 of that folder
+- RULE-84: A wrong output the proof's test still passes with makes the rule `weak`, with the two findings a bug has, the file being the path inside the output; one the test fails on makes the bug `caught`
+- RULE-85: A `@graded` proof's grader is asked about the changed output: a grader that accepts it leaves the rule `weak`, and one that rejects it makes the bug `caught`
+- RULE-86: Where this machine keeps no passing output of an `@ai` proof, nothing is planted and nothing is recorded for the proof, `no_bug` holds `No wrong output was planted: this machine keeps no passing output of <PROOF-N>.`, and no later audit reads the rule for that proof until an output is kept
+- RULE-87: Every sentence about a wrong output says `wrong output` where it says `bug` of another proof: a test that does not pass on the kept output reads `No wrong output was planted: the test of <PROOF-N> does not pass on the kept output.`, and a model that could not be reached `No wrong output was planted: the model could not be reached: <why>.`
+- RULE-88: A settle plants the recorded wrong output again, in a copy of the kept output, with no model asked, and runs the proof's test as it stands: a test that now fails makes the entry `caught` and prints `<PROOF-N>: the test now catches the wrong output it missed at <file>:<line>.`; a settle for a proof whose test is as it was prints `<PROOF-N>: its test is as it was when the wrong output got past it. Strengthen it with purlin:build, then settle.`
+- RULE-89: `ai_audit.py --feature <f> --rule RULE-N` names, for a rule with an `@ai` proof, under a line `Output` after the tests, each such proof and the folder of the kept output a wrong one is planted in, or `no passing output kept on this machine`
+- RULE-90: No test of the audit of an `@ai` proof reaches a real model: the output is handed over by the helper's `record`, and the audit's model and the grader are a fake `claude` under the test's own temporary folder
+- RULE-91: Where the kept output holds files under `input/`, what the AI was given, the request shows them under `Input of <PROOF-N>:`, before `Output of <PROOF-N>:`, and says no wrong output changes a path under `input/`
 
 ## Proof
 
@@ -200,3 +214,24 @@
 - PROOF-193 (RULE-80): `claude` exits with the code 1 having printed a JSON whose `is_error` is true and whose `result` reads `Invalid API key · Please run /login`; the answer's reason reads `claude exited with an error`, and what the program said reads `Invalid API key · Please run /login`
 - PROOF-194 (RULE-80): `claude` exits with the code 1, prints nothing and writes `error: unknown option '--modle'` to its standard error; what the program said reads `error: unknown option '--modle'` and a line feed
 - PROOF-195 (RULE-80): `claude` exits 0 and prints `{"result": "yes"}`; the answer reads `yes`, what the program printed reads `{"result": "yes"}` and a line feed, and what the program said is empty
+- PROOF-196 (RULE-81): The passed cell of `RULE-2` of the refusal note reads `graded`; the note is audited; the audit prints `refusal_note RULE-2   weak`, and the evidence holds an audit entry for `RULE-2`
+- PROOF-197 (RULE-82): The refusal note is audited; the request for `RULE-1` holds, in this order, the lines `Plant one wrong output for each of: PROOF-1.`, `Output of PROOF-1:`, `File: reply.md`, the two lines of the kept reply, `File: files/site.txt` and `site: BOS`
+- PROOF-198 (RULE-82): The request for `RULE-1` of the refusal note holds none of `Plant one bug`, `File: prompts/refusal_note.md`, `File: transcript.jsonl`, `File: purlin.json` and `the transcript line`, which the kept `transcript.jsonl` holds
+- PROOF-199 (RULE-82): The request for `RULE-2` of the refusal note holds the line `PROOF-2 @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001): Given the refusal of `LC-1234567`, the reply tells the site to send a new sample`
+- PROOF-200 (RULE-83): The evidence names the output of the one run of `PROOF-1` by its sha256; after the audit the entry of `PROOF-1` holds exactly `aim` `past the test`, the model's `case`, `file` `reply.md`, `line` `1`, the `before` and `after` lines, `result` `survived`, an empty `why`, a `bug_key` and a `test_key` of 64 hexadecimal characters each, and `output`, that sha256
+- PROOF-201 (RULE-83): A proof is tagged `@ai(claude-opus-5-5, claude-sonnet-5-5)`; on `claude-opus-5-5` its first run failed and its second passed, on `claude-sonnet-5-5` its one run passed, and this machine keeps all three folders; the output chosen is that of the second run on `claude-opus-5-5`
+- PROOF-202 (RULE-83): The folder of the first passing run of a proof is gone from this machine and the folder of its second passing run is kept; the output chosen is the second run's, and with that one gone as well none is chosen
+- PROOF-203 (RULE-84): The test of `PROOF-1` looks for `LC-` and the model's wrong output names another barcode; the lines under `refusal_note RULE-1   weak` are exactly `  PROOF-1: the test still passes when reply.md:1 reads "Sample LC-7654321 was refused: its barcode is not LC- and 8 digits."` and `  PROOF-1: the AI says this breaks: the refusal of `LC-1234567`; the proof says the reply names `LC-1234567`; the changed output names `LC-7654321``
+- PROOF-204 (RULE-84): The test of `PROOF-1` looks for `LC-1234567` and the model's wrong output names another barcode; the audit prints `refusal_note RULE-1   strong` with no line under it, and the entry of `PROOF-1` reads `caught` and holds the `output` the evidence names for its run
+- PROOF-205 (RULE-85): The grader accepts the output of `PROOF-2` with its second line changed to `Nothing more is needed.`; the lines under `refusal_note RULE-2   weak` are exactly `  PROOF-2: the test still passes when reply.md:2 reads "Nothing more is needed."` and `  PROOF-2: the AI says this breaks: the refusal of `LC-1234567`; the proof says the reply tells the site to send a new sample; the changed output asks for nothing`
+- PROOF-206 (RULE-85): The grader accepts the output of `PROOF-2` as it was kept and rejects it with its second line changed; the audit prints `refusal_note RULE-2   strong` with no line under it, and the entry of `PROOF-2` reads `caught`
+- PROOF-207 (RULE-85): The refusal note is audited with a grader that accepts; of the two requests the grader gets, the first holds `Send a new sample with a new label.` and the second `Nothing more is needed.` in its place
+- PROOF-208 (RULE-86): The folder `.purlin/runtime/ai` of the refusal note is removed and the note is audited; the audit prints `refusal_note RULE-1   spot-checked` and under it exactly `  The spot tests found nothing. No wrong output was planted: this machine keeps no passing output of PROOF-1.`, the entry of `RULE-1` holds no bug, and no request holds `Plant one`
+- PROOF-209 (RULE-86): The refusal note, audited once with no output kept, is audited again with nothing changed; `claude` is started `0` times
+- PROOF-210 (RULE-87): The grader rejects the output of `PROOF-2` as it was kept; the audit prints `refusal_note RULE-2   spot-checked` and under it exactly `  The spot tests found nothing. No wrong output was planted: the test of PROOF-2 does not pass on the kept output.`
+- PROOF-211 (RULE-87): `claude` exits with an error each time the refusal note's audit asks it; the line under `refusal_note RULE-1   spot-checked` is exactly `  The spot tests found nothing. No wrong output was planted: the model could not be reached: claude exited with an error.`
+- PROOF-212 (RULE-88): The wrong output kept for `PROOF-1` reads `survived`; its test is changed to look for `LC-1234567` and `RULE-1` is settled; the run exits `0`, prints `refusal_note RULE-1   strong` and under it exactly `  PROOF-1: the test now catches the wrong output it missed at reply.md:1.`, the entry reads `caught` with the `output`, `before` and `after` it held, and `claude` is started `0` times
+- PROOF-213 (RULE-88): The wrong output kept for `PROOF-1` reads `survived` and nothing has changed since; `RULE-1` is named with `--settle`; the first line under `refusal_note RULE-1   weak` is `  PROOF-1: its test is as it was when the wrong output got past it. Strengthen it with purlin:build, then settle.`
+- PROOF-214 (RULE-89): `ai_audit.py --feature refusal_note --rule RULE-1` is run on the refusal note; it prints, after the test's source, the line `Output` and under it `  PROOF-1  .purlin/runtime/ai/refusal_note/PROOF-1/claude-opus-5-5/1`; with the folder `.purlin/runtime/ai` removed that line reads `  PROOF-1  no passing output kept on this machine`
+- PROOF-215 (RULE-90): The refusal note is built and audited; every start of `claude` is logged by a fake under the test's own temporary folder, and the helper's record of each kept output reads `made` `project`
+- PROOF-216 (RULE-91): The kept output of `PROOF-1` holds `input/message.md` reading `The bench refused LC-1234567.` and `reply.md`; the request holds, in this order, `Input of PROOF-1:`, `File: input/message.md`, `The bench refused LC-1234567.`, `Output of PROOF-1:` and `File: reply.md`, and the line `In the part, file: is a path of that output as given below, never one under input/, and case:`

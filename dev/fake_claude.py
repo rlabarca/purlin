@@ -35,7 +35,8 @@ What the fake answers is set in `fake_claude.json` beside it:
 
     answers   one per call in order; the last one repeats. Each is
               - null: a part reading `no bug: the fake model plants no bug`
-                for each proof the request asks a bug for, and an empty reading;
+                for each proof the request asks a bug or a wrong output for,
+                and an empty reading;
               - an object `{"PROOF-2": <part>, "reading": <lines>}`: the part
                 of each proof the request asks for and the object names, then
                 the reading, so one object answers several rules;
@@ -84,8 +85,9 @@ answers = setup.get('answers') or [None]
 answer = answers[min(index, len(answers) - 1)]
 if not isinstance(answer, str):
     import re
-    asked = re.findall(r'^Plant one bug for each of: (.*)\.$', prompt, re.M)
-    asked = [name.strip() for name in asked[-1].split(',')] if asked else []
+    asked = [name.strip() for found in re.findall(
+        r'^Plant one (?:bug|wrong output) for each of: (.*)\.$', prompt, re.M)
+        for name in found.split(',')]
     given = answer if isinstance(answer, dict) else dict(
         (name, setup['default']) for name in asked)
     parts = []

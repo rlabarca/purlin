@@ -7,13 +7,17 @@ and for its reading; then each bug is planted and its proof's test run. The spot
 planted bugs set the rule's verdict; the model's reading explains the tests and decides nothing. The model's request opens with this file
 verbatim, so every sentence here is written to be read by a person and by a model.
 
+For a proof about what an AI produced, one tagged `@ai`, the bug is a wrong output: a change to
+an output a run kept, with the proof's test run on it. "A wrong output" under "The planted bug"
+says how.
+
 ## Which rules the audit reads
 
 The audit reads a rule when all of these hold:
 
 - the rule is its feature's own;
 - at least one of its proofs has a test;
-- its tests pass;
+- its tests pass, which a rule graded by an AI does as any other;
 - it has no audit entry, or its entry is out of date because the rule, its proofs, its tests or
   its feature's code changed since, or a proof it plants a bug for has no result recorded.
 
@@ -25,7 +29,8 @@ result.
 
 An anchor's rules are read once, as the anchor's. `purlin:audit --all` reads every rule that
 passes its tests again. A rule whose every proof is `@manual` has no test to read, so it is not
-read.
+read. An `@ai` proof this machine keeps no passing output of has nothing to plant a wrong output
+in, so a rule is not read again for that proof until an output is kept.
 
 ## The verdict
 
@@ -57,7 +62,7 @@ The audit's first step reads each marked test as text, without running it, and f
   or maintenance, such as many assertions in one test or magic numbers, are left out (see
   "Considered and left out").
 
-### The six checks
+### The seven checks
 
 #### 1. The test checks nothing
 
@@ -156,6 +161,21 @@ not the code ([Barr et al., TSE 2015](https://discovery-pp.ucl.ac.uk/id/eprint/1
 and a model shown buggy code more often rejects the right expected answer
 ([Konstantinou et al., 2024](https://arxiv.org/pdf/2410.21136)). The proof is the requirement's
 expected value, written by a person; a test that never mentions it is checking something else.
+
+#### 7. The test of a graded proof never calls grade
+
+**Flags** the test of a proof tagged `@graded` whose file holds no `grade`: a grader decides
+such a proof, and a test that never asks for the grade passes whatever the grader would say.
+The word is read as a word of its own or the end of a name, such as `ask_grade`, with a small
+or a capital first letter.
+
+**Does not flag** a proof with no `@graded` tag; a test whose file holds the word anywhere, in
+a helper it defines or in the test itself.
+
+**Finding:** `tests/test_note.py::test_the_note_says_what_to_do_next: the proof is graded and the test never calls grade.`
+
+**Why:** this check needs the proof's tag, so it is Purlin's own. A rule that reads `graded`
+says a model judged the output; where the test never asks, nothing judged it.
 
 ### Considered and left out
 
@@ -273,6 +293,91 @@ The two printed lines are not stored. A bug that survived whose proof's test cha
 planted again by this audit: a new bug is asked for. "Settling a finding" says what is compared,
 and how a finding that still holds is cleared.
 
+### A wrong output
+
+A proof tagged `@ai` says what an AI produced, and its test reads an output. For such a proof
+the audit plants a wrong output in place of a bug: a change to an output a run kept. No model
+is asked for an output again, and nothing is changed in the prompt or the skill that produced
+it.
+
+**Which output.** The output of the first passing run, on the first model the proof's tag
+names, whose folder this machine still keeps. The model is shown the proof and its test, then,
+under `Input of PROOF-N:`, what the AI was given, each file under `input/` where the folder
+holds one, then, under `Output of PROOF-N:`, what it produced: `reply.md`, then each file under
+`files/`. Each is shown where it is text. The model is not shown `transcript.jsonl` or the
+helper's record, and no file the feature covers is shown for that proof.
+
+**The request.** The model is asked for the smallest change to one file of the output after
+which what the proof says no longer holds. Of those changes it chooses the one the proof's
+test, as it is written, is most likely to miss: words the test never reads, a value it never
+compares, a file it never opens. Where a model grades the output, it chooses the change a
+grader is most likely to accept. Where the test checks what the proof says, it makes the
+plainest such change. A change that leaves what the proof says true is never the wrong output,
+and the change carries no note about itself.
+
+**The part** has the shape any part has. `file:` is `reply.md` or a path under `files/`, never
+one under `input/`: the input is what the AI was given, and it is never changed. `case:` says
+what the proof says and what the changed output says in its place:
+
+```
+=== PROOF-4 ===
+aim: past the test
+case: the sample report; the proof says the reply names three findings; the changed output names two
+file: reply.md
+before:
+<the exact lines>
+after:
+<the lines>
+```
+
+**Planting.** The change is made in a copy of the output folder, in the system's temporary
+folder, and the copy is deleted after. The kept folder is not written. The project is not
+copied: the proof's own tests run in the project, with the variables a test run sets for an
+`@ai` proof and `PURLIN_AI_REPLAY` naming the copy, so the helper hands the test that copy.
+They run once on the output as kept and once with the change. A test that writes a file git
+does not ignore stops the audit, as any change to the project does.
+
+- **Caught.** A test of the proof ran and failed on the changed output.
+- **Survived.** Every one of the proof's own tests still passes on it. The rule reads `weak`,
+  with the two findings a bug has, the file being the path inside the output:
+  `PROOF-4: the test still passes when reply.md:12 reads "The report holds two findings."`
+  `PROOF-4: the AI says this breaks: the sample report; the proof says the reply names three findings; the changed output names two`
+- **A graded proof.** Its test asks the grader about the output it is handed, so the grader is
+  asked about the changed output. A grader that accepts it leaves the test passing: the wrong
+  output survived, and the rule reads `weak`. A grader that rejects it fails the test: caught.
+  A grader that gives no answer about the changed output decides nothing. The entry reads
+  `not run`, and `no_bug` holds
+  `A wrong output was planted for PROOF-5 and its grader gave no answer.`
+- **Not made.** The reasons a bug has, where they mean something here: no part, no change, a
+  change and no case, a change that leaves the file as it was or does not match it exactly
+  once, a path outside the copy of the output. Two are a wrong output's own. A path that is
+  not `reply.md` or a file under `files/`, or that the output does not hold, reads
+  `<path> is not in the output`: a file under `input/`, `transcript.jsonl` and `purlin.json`
+  are each refused so. Tests that do not pass on the output as kept read
+  `No wrong output was planted: the test of PROOF-4 does not pass on the kept output.`
+  The refusals about a file the feature does not cover, a file that holds a test and a change
+  to a comment do not apply to an output.
+- **No kept output on this machine.** A fresh clone holds the results and not the folders, and
+  so does a machine the runs were not made on. Nothing is planted and nothing is recorded for
+  the proof, and `no_bug` holds
+  `No wrong output was planted: this machine keeps no passing output of PROOF-4.`
+  Where nothing else sets the verdict the rule reads `spot-checked`. A test run that starts
+  the proof on this machine keeps an output.
+
+Every sentence the audit prints or keeps about a wrong output says `wrong output` where it
+says `bug` of another proof, such as
+`No wrong output was planted: the model found no change that would break PROOF-4: <why>.` and
+`  PROOF-4: the test now catches the wrong output it missed at reply.md:12.`
+The entry under `bugs` is a bug's, and holds `output` as well: the sha256 of the kept folder
+the change was made in. It keeps its result while the proof's tests and the feature's code
+are unchanged. One that survived is planted again first, and settled as "Settling a finding"
+says, in a copy of the folder its entry names where this machine still keeps it, else of the
+output kept now.
+
+**What it shows.** A wrong output tests the check, and for a graded proof the grader. No bug
+is planted in the prompt or the skill itself. A rule that reads `strong` says its test noticed
+one output going wrong; it does not say the prompt is a good one.
+
 ## Settling a finding
 
 A planted bug that survived is settled by a test run, and a finding of the spot tests by
@@ -290,7 +395,9 @@ The script takes `--sound PROOF-N` the same way, once per proof.
   settled, and the run names it as failing.
 - The test of a proof tagged `@slow` is started with them where its rule is named, so one
   command settles a rule with a slow proof. The slow tests of every other rule are left out,
-  and the run names them.
+  and the run names them. An `@ai` proof is a slow proof: its test is started on each model its
+  tag names, as a full test run starts it, and the recorded wrong output is then planted again
+  with no model asked for an output.
 - Only the rules named are read.
 
 **A test that has not changed.** While the recorded bug still gets past the test, a finding is
@@ -402,8 +509,10 @@ by settling caught the bug it once missed, with a test written after that bug wa
 The model is asked for a small bug for each proof and for its reading. The request holds this
 file, then the rule's text, its proofs, the source of each test, and under `Findings:` each
 finding of the spot tests, or `none`; then the proofs to plant a bug for, the aim of "The planted
-bug" and the text of each file the feature covers. It answers with one part for each of those
-proofs and then its reading. The model decides nothing: the test run says whether a bug was
+bug" and the text of each file the feature covers; then the `@ai` proofs to plant a wrong output
+for, the request of "A wrong output" and, for each, what the AI was given under
+`Input of PROOF-N:` and its kept output under `Output of PROOF-N:`.
+It answers with one part for each of those proofs and then its reading. The model decides nothing: the test run says whether a bug was
 caught, the case it names is shown as its claim, and its reading explains.
 
 **The reading.** Under a line `=== reading ===`, one sentence per line, each opening `- `: what
@@ -505,7 +614,8 @@ The audit reports. It recommends nothing.
 Each rule read gets one entry in its feature's evidence, under `audit.rules`: the hashes of its
 rule, proofs, tests and code, the `verdict`, the `findings`, under `no_bug` one sentence for each
 proof no bug was caught for, each planted bug under `bugs` with its `aim`, its `case`, its
-file, line, the lines before and after, and its result, the model's `explanation` and `notes`, the `model`, the sha256
+file, line, the lines before and after, and its result, and for a wrong output the sha256 of the
+kept `output` it was planted in, the model's `explanation` and `notes`, the `model`, the sha256
 of these `criteria`, the time and the commit. A person reads it beside the rule, each proof and
 the source of each test, which is what the audit read.
 

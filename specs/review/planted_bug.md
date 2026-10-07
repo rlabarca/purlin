@@ -10,11 +10,14 @@
 >   with the change as the finding and the case the model named under it; a test that ran and
 >   failed reads `caught`; a test that did not run reads `not run`; a change that cannot be made,
 >   names no case or touches only a comment reads `not made`. A check before the model is asked
->   and after the last bug stops the audit if the project changed.
+>   and after the last bug stops the audit if the project changed. For a proof about what an AI
+>   produced, one tagged `@ai`, the bug is a wrong output: the change is made in a copy of an
+>   output folder a passing run kept, and the proof's own test runs in the project, handed that
+>   copy, so no model is asked for an output again.
 > Scope: scripts/review/planted_bug.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 30
-> Highest-Proof: 63
+> Highest-Rule: 35
+> Highest-Proof: 77
 
 ## Rules
 
@@ -45,6 +48,11 @@
 - RULE-28: A `case:` line wrapped over a second line is read to the end of that second line, the two joined by one space, where the second line is not blank and opens none of `aim:`, `case:`, `file:`, `before:`, `after:`, `no bug:` or `===`
 - RULE-29: A `case:` line standing after the `file:` line and before `before:` is read as one above `file:` is
 - RULE-30: A line opening `#!`, `//go:` or `// @ts-`, after any indent, is code to the comment check, so a change to one is planted
+- RULE-31: A wrong output, the bug of an `@ai` proof, is planted in a copy of the kept output folder, made under a folder named `purlin-bug-*` in the system's temporary folder; neither the kept folder nor the project is written, and the copy is removed after
+- RULE-32: The proof's own test runs in the project with `PURLIN_AI_REPLAY` naming the copy, `PURLIN_AI` the helper, `PURLIN_AI_MODEL` the model the output was made on and `PURLIN_AI_OUT` a folder beside the copy; a test that still passes on the changed output reads `survived`, with the finding `<PROOF-N>: the test still passes when <path inside the output>:<line> reads "<the changed line>"`, and a test that fails on it reads `caught`
+- RULE-33: The proof's test is run on the copy before the change is made; where it does not pass there, no wrong output is planted and the result reads `not made` with the reason `the test does not pass on the kept output`
+- RULE-34: A wrong output changes `reply.md` or a file under `files/` of the output: any other path, such as one under `input/`, `transcript.jsonl` or `purlin.json`, reads `not made` with the reason `<path> is not in the output`, and a path that leaves the copy with `<path> is outside the copy of the output`; the refusals about the feature's scope and about a change to a comment do not apply to an output
+- RULE-35: The test of a `@graded` proof asks its grader about the changed output: a grader that accepts it leaves the result `survived`, one that rejects it makes it `caught`, and one that gives no answer leaves it `not run` with the reason `the grader gave no answer`
 
 ## Proof
 
@@ -109,3 +117,17 @@
 - PROOF-59 (RULE-30): The feature covers `src/age.ts`, where the line `// @ts-ignore` stands two spaces in, above `return 90;`, and the model's change turns that line into `// @ts-expect-error`; the bug is planted, and its entry reads `survived`
 - PROOF-60 (RULE-30): The feature covers `src/age.go`, where the line `//go:noinline` stands one tab in, and the model's change turns it into `//go:norace`; the bug is planted, and its entry reads `survived`
 - PROOF-61 (RULE-6): The bug kept for `PROOF-1` reads `survived`, and its test, each time it runs in a copy of the project, writes `notes.txt` in the project; `RULE-1` is settled; the audit prints `The audit stopped: notes.txt changed while the audit ran. Nothing in the project was written by the audit.`, exits `1`, and the settle starts `claude` `0` times
+- PROOF-64 (RULE-31): A wrong output is planted for `PROOF-1` of the refusal note, in `reply.md`; afterwards the kept output folder gives the sha256 it gave before, `git status --porcelain` prints what it printed before, and the temporary folder holds no folder whose name starts `purlin-bug-`
+- PROOF-65 (RULE-32): The test of `PROOF-1` looks for `LC-` in the reply, and the answer turns the first line of `reply.md` into `Sample LC-7654321 was refused: its barcode is not LC- and 8 digits.`; the result reads `survived` and the finding `PROOF-1: the test still passes when reply.md:1 reads "Sample LC-7654321 was refused: its barcode is not LC- and 8 digits."`
+- PROOF-66 (RULE-32): The test of `PROOF-1` looks for `LC-1234567` in the reply, and the answer turns the first line of `reply.md` into one naming `LC-7654321`; the result reads `caught`
+- PROOF-67 (RULE-32): A wrong output is planted for `PROOF-2`, whose test asks a grader; the grader is started `2` times, each with `PURLIN_AI_MODEL` reading `claude-opus-5-5`, `PURLIN_AI` the path of `scripts/ai/purlin_ai.py`, `PURLIN_AI_REPLAY` a folder named `output` under a `purlin-bug-` folder of the temporary folder, and `PURLIN_AI_OUT` the folder `out` beside it
+- PROOF-68 (RULE-33): The grader rejects the output of `PROOF-2` as it was kept; the result reads `not made` with the reason `the test does not pass on the kept output`, and the grader is started `1` time
+- PROOF-69 (RULE-34): The answer names `file: transcript.jsonl`; the result reads `not made` with the reason `transcript.jsonl is not in the output`, and the test of `PROOF-1` is not run
+- PROOF-70 (RULE-34): The answer names `file: ../reply.md`; the result reads `not made` with the reason `../reply.md is outside the copy of the output`
+- PROOF-71 (RULE-34): The answer puts the one line `# Refused` above the first line of `reply.md`; the wrong output is planted, and the result reads `survived`, at line `1`
+- PROOF-72 (RULE-34): The answer turns `site: BOS` in `files/site.txt`, a file no `> Scope:` names, into `site: NYC`; the finding is `PROOF-1: the test still passes when files/site.txt:1 reads "site: NYC"`
+- PROOF-73 (RULE-35): The answer turns the second line of `reply.md` into `Nothing more is needed.` and the grader accepts both times it is asked; the result for `PROOF-2` reads `survived`, and what the grader is shown the second time holds `Nothing more is needed.`
+- PROOF-74 (RULE-35): The grader accepts the output of `PROOF-2` as it was kept and rejects it with the second line reading `Nothing more is needed.`; the result reads `caught`
+- PROOF-75 (RULE-35): The grader accepts the output of `PROOF-2` as it was kept and exits with an error when asked about the changed one; the result reads `not run` with the reason `the grader gave no answer`
+- PROOF-76 (RULE-34): The answer names `file: input/message.md`, what the AI was given; the result reads `not made` with the reason `input/message.md is not in the output`, and the test of `PROOF-1` is not run
+- PROOF-77 (RULE-34): The answer names `file: purlin.json`; the result reads `not made` with the reason `purlin.json is not in the output`, and the test of `PROOF-1` is not run

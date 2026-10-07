@@ -14,6 +14,14 @@ to the model, and reads the reply back: one part per proof, and the reading,
 which becomes the explanation under the findings. It decides no verdict and
 writes no file.
 
+**An AI proof**, one tagged `@ai`, is asked a wrong output in place of a bug
+(`REQUEST_OUTPUTS`): the request holds the output one passing run of its
+test kept on this machine (`kept_output`), `reply.md` and each file under
+`files/` as text (`output_files`), before it what the AI was given, each
+file under `input/` (`input_files`), and no file of the feature's scope for
+it. The part the reply holds for it has the shape any part has, its `file:`
+a path inside that output.
+
 **The call.** `COMMAND` and `SYSTEM_PROMPT`: `claude -p` with no tools, no MCP
 server, no plugin, no skill, no project instructions and none of the person's
 settings, started in an empty folder outside the project with
@@ -62,9 +70,12 @@ for _path in (_MCP_DIR, _HERE):
 
 import config_engine                                          # noqa: E402
 import marked_tests                                           # noqa: E402
+import planted_bug                                            # noqa: E402
 from purlin import (console as console_module,                 # noqa: E402
                     evidence as evidence_module,
-                    payload as payload_module)
+                    outputs as outputs_module,
+                    payload as payload_module,
+                    states as states_module)
 
 NOT_A_RULE = ('%s %s is not a rule any spec has. Run purlin:status %s to see '
               'its rules.')
@@ -112,6 +123,10 @@ VERDICT_WORDS = {'strong': 'Strong.', 'weak': 'Weak.',
                  'spot-checked': 'Spot-checked.'}
 SPOT_CHECKED = 'The spot tests found nothing. %s'   # the `no_bug` sentences
 NO_TEST_YET = '  No test yet. Run purlin:build %s.'
+# Under `Output`, for an AI proof: PROOF-N, then the folder of the kept output
+# a wrong output is planted in, or `NO_OUTPUT_KEPT`.
+OUTPUT_LINE = '  %s  %s'
+NO_OUTPUT_KEPT = 'no passing output kept on this machine'
 
 
 # ---------------------------------------------------------------------------
@@ -135,9 +150,10 @@ def rule_entry(payload, feature, rule):
 
 
 def passes(entry):
-    """True when the rule passes its tests: its passed cell reads `passed`."""
+    """True when the rule passes its tests: its passed cell reads `passed`,
+    or `graded` (`states.passes`)."""
     cells = (entry or {}).get('cells') or {}
-    return ((cells.get('passed') or {}).get('word')) == 'passed'
+    return states_module.passes((cells.get('passed') or {}).get('word'))
 
 
 def tested(entry):
@@ -146,23 +162,82 @@ def tested(entry):
                for proof in (entry or {}).get('proofs') or ())
 
 
-def plants_for(entry, anchor=False, here=None):
+def plants_for(entry, anchor=False, here=None, project_root=None):
     """The ids of the proofs the audit plants a bug for: each proof of the
     rule that has a test, is not checked by hand and is not tagged for a
-    system this machine is not; none for an anchor's rule."""
+    system this machine is not; none for an anchor's rule. With
+    `project_root`, an AI proof this machine keeps no passing output of
+    (`kept_output`) is left out as well: there is nothing to plant a wrong
+    output in."""
     if anchor:
         return []
     here = here or evidence_module.host_os()
     return [proof.get('id') for proof in (entry or {}).get('proofs') or ()
             if proof.get('tests') and not proof.get('manual')
-            and proof.get('env') in (None, '', here)]
+            and proof.get('env') in (None, '', here)
+            and (project_root is None or not proof.get('ai')
+                 or kept_output(project_root, proof))]
+
+
+def kept_output(project_root, proof):
+    """`(sha256, folder)` of the output a wrong one is planted in for an AI
+    proof, or None for any other proof and where this machine keeps none.
+
+    `proof` is the payload's. The output is that of the first passing run,
+    on the first model the proof's tag names, whose folder this machine
+    still keeps (`outputs.ai_held`); `folder` is `/` separated from the
+    project root."""
+    models = (proof or {}).get('ai') or ()
+    for model in (proof or {}).get('models') or ():
+        if not models or model.get('model') != models[0]:
+            continue
+        for run in model.get('runs') or ():
+            if run.get('result') != 'pass' or not run.get('output'):
+                continue
+            folder = outputs_module.ai_held(project_root, run['output'])
+            if folder:
+                return run['output'], folder
+    return None
+
+
+def output_files(project_root, folder):
+    """`[{'path', 'text'}]` for each file of a kept output the model is
+    shown as what the AI produced: `reply.md`, then each file under `files/`
+    in path order, each where it is UTF-8 text (`planted_bug.in_output`).
+    `transcript.jsonl` and the helper's record are not shown."""
+    return _shown_files(project_root, folder, planted_bug.in_output)
+
+
+def input_files(project_root, folder):
+    """`[{'path', 'text'}]` for each file under `input/` of a kept output,
+    what the AI was given, in path order, each where it is UTF-8 text. The
+    model is shown them and no wrong output changes one."""
+    return _shown_files(
+        project_root, folder,
+        lambda rel: rel.startswith(planted_bug.OUTPUT_INPUT + '/'))
+
+
+def _shown_files(project_root, folder, wanted):
+    full = os.path.join(project_root, *str(folder).split('/'))
+    found = []
+    for rel in sorted(outputs_module.folder_files(full),
+                      key=lambda rel: (rel != outputs_module.REPLY, rel)):
+        if not wanted(rel):
+            continue
+        try:
+            with open(os.path.join(full, *rel.split('/')), encoding='utf-8',
+                      newline='') as handle:
+                found.append({'path': rel, 'text': handle.read()})
+        except (OSError, UnicodeDecodeError):
+            continue
+    return found
 
 
 def is_read(entry, again=False, audit=None, plant=()):
     """True when the audit reads this rule (ai_audit RULE-1).
 
     A rule is read when at least one of its proofs has a test, its passed
-    cell reads `passed`, and it has no audit entry, an entry out of date, or
+    cell reads `passed` or `graded`, and it has no audit entry, an entry out of date, or
     a proof it plants a bug for with no result recorded. `audit` is the
     rule's entry as `evidence.audit_entry` gives it, with `out_of_date`, and
     `plant` the proofs of `plants_for`. `again` drops the condition about an
@@ -183,14 +258,24 @@ def reading_for(project_root, payload, feature, rule, findings=()):
     `findings` are the spot tests' sentences for the rule, which the request
     sets after the tests. `plant`, the proofs a bug is asked for, and
     `files`, the paths the feature's scope reaches, are the caller's to fill.
+    A proof holds `ai`, the models its tag names, and `graded`, its grader;
+    an AI proof holds `output` and `folder` as well, what `kept_output`
+    gives for it, each None where this machine keeps no passing output.
     """
     payload = load_payload(project_root, payload)
     entry = rule_entry(payload, feature, rule)
     if entry is None:
         return None
-    proofs = [{'id': proof.get('id'), 'manual': bool(proof.get('manual')),
-               'env': proof.get('env'), 'text': proof.get('text')}
-              for proof in entry.get('proofs') or ()]
+    proofs = []
+    for proof in entry.get('proofs') or ():
+        proofs.append({'id': proof.get('id'),
+                       'manual': bool(proof.get('manual')),
+                       'env': proof.get('env'), 'text': proof.get('text'),
+                       'ai': list(proof.get('ai') or ()),
+                       'graded': proof.get('graded')})
+        if proofs[-1]['ai']:
+            kept = kept_output(project_root, proof) or (None, None)
+            proofs[-1].update(output=kept[0], folder=kept[1])
     return {
         'feature': feature,
         'rule': rule,
@@ -220,6 +305,10 @@ def _proof_tags(proof):
     tags = ' @manual' if proof.get('manual') else ''
     if proof.get('env'):
         tags += ' @env(%s)' % proof['env']
+    if proof.get('ai'):
+        tags += ' @ai(%s)' % ', '.join(proof['ai'])
+    if proof.get('graded'):
+        tags += ' @graded(%s)' % proof['graded']
     return tags
 
 
@@ -279,6 +368,36 @@ REQUEST_BUGS = (
     'was, and no comment',
     'about the bug.',
 )
+
+# What asks for the wrong outputs, one for each AI proof, each aimed past its
+# proof's test: the proofs, the instruction, then for each proof what the AI
+# was given, under `INPUT_OF`, and its kept output, under `OUTPUT_OF`.
+REQUEST_OUTPUTS = (
+    '---',
+    '',
+    'Plant one wrong output for each of: %s.',
+    'Each of these proofs is about what an AI produced, and its test is '
+    'shown above. Below, for',
+    'each proof, is what the AI was given, where it was kept, and then the '
+    'output one passing run',
+    'of that test kept. The input is shown and never changed. For each '
+    'proof, make the smallest',
+    'change to one file of its output after which what the proof says no '
+    "longer holds. Choose the",
+    "change the proof's test, as it is written, is most likely to miss: "
+    'words it never reads, a value',
+    'it never compares, a file it never opens. Where a model grades the '
+    'output, choose the change a',
+    'grader is most likely to accept. Where the test checks what the proof '
+    'says, make the plainest',
+    'such change. Never a change that leaves what the proof says true, and '
+    'no note about the change.',
+    'In the part, file: is a path of that output as given below, never one '
+    'under input/, and case:',
+    'says what the proof says and what the changed output says in its place.',
+)
+INPUT_OF = 'Input of %s:'
+OUTPUT_OF = 'Output of %s:'
 
 # The shape of the reply, the request's last part: with a part per proof
 # (filled with the first proof asked for), or the reading alone.
@@ -341,7 +460,9 @@ def model_prompt(project_root, reading, criteria=None):
     """The one request for a rule: the criteria verbatim, then the rule, its
     proofs, each test's source and the spot tests' findings; where
     `reading['plant']` names a proof, those proofs and the text of each of
-    `reading['files']`; and last the shape of the reply."""
+    `reading['files']`; where it names an AI proof, those proofs and each
+    one's kept output (`REQUEST_OUTPUTS`); and last the shape of the
+    reply."""
     text = criteria_text(project_root) if criteria is None else criteria
     parts = [text, '', '---', '',
              '%s %s' % (reading.get('feature'), reading.get('rule')),
@@ -364,14 +485,34 @@ def model_prompt(project_root, reading, criteria=None):
     if not findings:
         parts.append('none')
     plant = [str(proof) for proof in reading.get('plant') or ()]
+    kept = {proof.get('id'): proof.get('folder')
+            for proof in reading.get('proofs') or () if proof.get('ai')}
+    code = [proof for proof in plant if proof not in kept]
+    wrong = [proof for proof in plant if proof in kept]
     parts.append('')
-    if plant:
-        parts.extend(line % ', '.join(plant) if '%s' in line else line
+    if code:
+        parts.extend(line % ', '.join(code) if '%s' in line else line
                      for line in REQUEST_BUGS)
         for item in reading.get('files') or ():
             path, held = _file_of(project_root, item)
             parts.extend(['', 'File: %s' % path, held.rstrip('\n')])
         parts.append('')
+    if wrong:
+        parts.extend(line % ', '.join(wrong) if '%s' in line else line
+                     for line in REQUEST_OUTPUTS)
+        for proof in wrong:
+            for title, shown in (
+                    (INPUT_OF, input_files(project_root, kept[proof] or '')),
+                    (OUTPUT_OF, output_files(project_root,
+                                             kept[proof] or ''))):
+                if title == INPUT_OF and not shown:
+                    continue
+                parts.extend(['', title % proof])
+                for item in shown:
+                    parts.extend(['', 'File: %s' % item['path'],
+                                  item['text'].rstrip('\n')])
+        parts.append('')
+    if plant:
         parts.extend(line % {'proof': plant[0]} if '%(' in line else line
                      for line in REPLY_PARTS)
     else:
@@ -629,7 +770,9 @@ def bug_key(test_source_hash, code_part):
 # ---------------------------------------------------------------------------
 
 def render(reading):
-    """One rule as the audit reads it, and what the last audit found."""
+    """One rule as the audit reads it, and what the last audit found. A rule
+    with an AI proof names, under `Output`, the kept output a wrong one is
+    planted in."""
     lines = ['%s %s' % (reading.get('feature'), reading.get('rule')),
              '', 'Rule', '  %s' % (reading.get('rule_text') or ''), '',
              'Proof']
@@ -647,6 +790,12 @@ def render(reading):
             lines.append('  %s  manual' % test.get('proof'))
         for line in (test.get('body') or '').splitlines():
             lines.append('    %s' % line)
+    kept = [proof for proof in reading.get('proofs') or ()
+            if proof.get('ai')]
+    if kept:
+        lines.extend(['', 'Output'])
+        lines.extend(OUTPUT_LINE % (proof.get('id'), proof.get('folder')
+                                    or NO_OUTPUT_KEPT) for proof in kept)
     lines.extend(['', 'What the audit found'])
     audit = reading.get('audit') or {}
     if not audit:
