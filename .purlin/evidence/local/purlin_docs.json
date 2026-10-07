@@ -2,167 +2,350 @@
   "audit": {
     "rules": {
       "RULE-12": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-17": {
-            "after": "Nothing waits on it. [audit.md](Audit.md) says what it checks and why.",
+            "after": "[The table of tags](specs-and-anchors.md#rules)",
             "aim": "past the test",
-            "before": "Nothing waits on it. [audit.md](audit.md) says what it checks and why.",
-            "bug_key": "34c8e65b97a65125d3f7e8560a897960d1c26b4747a39cb086538cc669b3fccb",
-            "case": "the link to the audit guide on docs/getting-started.md, followed from docs/; the proof says it names a file the repository holds; the changed page links to Audit.md, and the repository holds only audit.md",
-            "file": "docs/getting-started.md",
-            "line": 260,
+            "before": "[The table of tags](specs-and-anchors.md#five-tags-say-how-when-and-where-a-proof-is-shown)",
+            "bug_key": "a722315be7472a3b85748ff4bd68b50be1add64637ad5e474edd0596fe3b8604",
+            "case": "the link \"The table of tags\" on docs/testing-ai.md, followed to docs/specs-and-anchors.md; the proof says its `#` part matches a heading of that file as the git host spells its anchor; the changed page links to `#rules`, which is only a `## Rules` line inside a code sample and no heading the git hos",
+            "file": "docs/testing-ai.md",
+            "line": 34,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-17: the test follows every relative link on the real pages under `docs/` through `broken_links` and expects an empty list, so a link to a missing file or to an anchor the helper does not know fails it.",
+          "PROOF-17: the test also checks each path segment against its folder's listing letter for letter, and checks that one made-up missing page and one made-up missing heading are reported while a real link out of `docs/` is not.",
+          "PROOF-17: which lines of a file count as headings is decided inside the helper, which the test does not show, so the test never shows that a `#` line inside a fenced code sample is refused as an anchor, nor that the anchor is spelled as the git host spells it for headings with punctuation or repeats.",
+          "PROOF-17: the floors of `9` pages and `40` followed links guard against an empty scan and do not compare which links were followed."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "a3b2f36f8a51804569000e8750f4430db74f577c977f01e0dd73d14afb401ae6",
         "rule_hash": "ce5d0cd5d0bb23c40996cee62bec0d025708d428393fb11bfdc8a459f5aa2e98",
-        "test_hash": "906044041cf11ca73d40561fddb29acc81fa68f86029897c481fce75db434bec",
+        "test_hash": "3580610cf6cb16f8820643fa2e62702acfc2df03ff43cda7b70be47888636efc",
         "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-21": {
-            "after": "  ([Foster et al., FSE 2025](http://arxiv.org/pdf/2501.12862), section 3.) Of 381 bugs read by",
+            "after": "([Just et al., FSE 2014](http://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf),",
             "aim": "plain",
-            "before": "  ([Foster et al., FSE 2025](https://arxiv.org/pdf/2501.12862), section 3.) Of 381 bugs read by",
-            "bug_key": "79d2c7cf757ea699a5cd48f7d4a3db75ff3434e8c8e19ca0ce0138bc71fe1941",
-            "case": "the text of docs/audit.md cites Foster et al., FSE 2025; the proof says as a link starting `https://`; the changed page gives that paper only as a link starting `http://`",
-            "file": "docs/audit.md",
-            "line": 180,
+            "before": "([Just et al., FSE 2014](https://homes.cs.washington.edu/~mernst/pubs/mutation-effectiveness-fse2014.pdf),",
+            "bug_key": "0f401065b4d8033b2448a1c4f60aaaabfb27a222029ada9af3f6c59e3027ef7c",
+            "case": "the research page's citation of Just et al., FSE 2014; the proof says it is a link starting `https://`; the changed page gives it as a link starting `http://`",
+            "file": "docs/audit-research.md",
+            "line": 193,
             "result": "caught",
             "why": ""
           },
           "PROOF-22": {
-            "after": "[Atil et al., 2025](https://arxiv.org/pdf/2408.0466)). Purlin keeps a proof's result until its",
+            "after": "Atil et al., 2025, <https://arxiv.org/abs/2408.04667>). Purlin keeps a proof's result until its",
             "aim": "past the test",
             "before": "[Atil et al., 2025](https://arxiv.org/pdf/2408.04667)). Purlin keeps a proof's result until its",
-            "bug_key": "6c2bd1b7866d53e5189592a9985ba8d196c7b75c447bb5712d23cc0ba96808de",
-            "case": "the Atil et al. link the text gives before `Sources`; the proof says it appears again in the list under `Sources`; the changed page gives https://arxiv.org/pdf/2408.0466 before the heading, which the list does not hold",
-            "file": "docs/audit.md",
-            "line": 259,
-            "result": "caught",
+            "bug_key": "a70f7f1036d03faacf8fd57419843d1f50ebfaf50750bdab7a16ee6bde21df66",
+            "case": "the research page's link for Atil et al. before `Sources`; the proof says every such link appears again in the list under `Sources`; the changed page gives the link <https://arxiv.org/abs/2408.04667> in angle brackets, and the list holds only https://arxiv.org/pdf/2408.04667",
+            "file": "docs/audit-research.md",
+            "line": 145,
+            "result": "survived",
+            "test_key": "511e3dca9a269183b7fbdddbbd65d487796097ff80f2ef90ba8001f7c51e1935",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-21: the test reads the page before `Sources` and asserts that no one of the five papers is left uncited, so a paper whose only full-name link is not `https://` should fail it.",
-          "PROOF-21: the sample text shows the helper refusing a paper named in plain words and one linked by `http://`, with literal expected names, so the helper's own strictness is checked for those two forms.",
-          "PROOF-22: the test asserts that the real page leaves no link unlisted and holds at least 10 links before `Sources`, so a page whose links are not read at all cannot pass it.",
-          "PROOF-22: the sample text holds two unrelated `https://` links, so it does not show whether a link is compared whole or found as part of a longer listed link, nor whether a relative link is read.",
-          "No spot test fired, and the source of the helpers `papers_not_cited`, `links_not_listed`, `targets` and `around_sources` is not in the request, so how they match is not read here."
+          "PROOF-21: the test reads the text before `Sources` and requires that the helper `papers_not_cited` report none of the five papers missing, then shows on a sample that a plain-words name and an `http://` link both count as not cited, so the proof's case and its result are checked.",
+          "PROOF-21: the helper's source is not shown, so how it matches a paper's name to a link's words is not seen here.",
+          "PROOF-22: the test requires that `links_not_listed` find nothing on the real page and that it find a left-out link on a sample of `[words](target)` links, so a link written another way, such as one in angle brackets, may not be read as a link at all.",
+          "PROOF-22: the test takes the list under `Sources` to be every link after the heading, so a link in the paragraph under the heading counts as listed though it is not in the list.",
+          "PROOF-22: for the audit page the test checks the link to `audit-research.md`, the count of 3 or 4 distinct `https://` links and that each is among the links after `Sources`, which is what the proof names for that page.",
+          "PROOF-22: the check that the text before `Sources` holds at least 10 links is a floor the proof does not name."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-22: the test still passes when docs/audit-research.md:145 reads \"Atil et al., 2025, <https://arxiv.org/abs/2408.04667>). Purlin keeps a proof's result until its\"",
+          "PROOF-22: the AI says this breaks: the research page's link for Atil et al. before `Sources`; the proof says every such link appears again in the list under `Sources`; the changed page gives the link <https://arxiv.org/abs/2408.04667> in angle brackets, and the list holds only https://arxiv.org/pdf/2408.04667"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-21 names five papers in one sentence, which is five results from one reading of the page."
+          "PROOF-22 holds two cases, the research page's links against its own list and the audit page's links against that list."
         ],
-        "proof_hash": "a18395fa7c1fde20ecaaa44ab9b4bdc7856ccdbffc91db9fd19749638ad0edc9",
-        "rule_hash": "0d9336293eb4db2d21f5204ee7cddba0c5a4ca087994362289d704a31da48e3f",
-        "test_hash": "7e1ee95a8a7551436548304c3feabd0c1b34fc3947075b851ee20c028e3daf2c",
-        "verdict": "strong"
+        "proof_hash": "6dcf6c47cefc4378b2ad469fdfb589d6e082751529fd9712bf37eca642756367",
+        "rule_hash": "3d4c72258e5f58752f30d5ef371819f98ade85c938431f54f511bd81257f73a7",
+        "test_hash": "526f6d06ad3bc63dfdf79a4a640fae39fc10f2a2bb2a9196d0d9affcbe6329c4",
+        "verdict": "weak"
       },
       "RULE-16": {
-        "at": "2026-10-06T15:53:26Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-24": {
-            "after": "Each checkout of a repository, a worktree included, has its own results, its own status and never its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
+            "after": "Each checkout of a repository, a worktree included, nowhere has its own results, its own status and",
             "aim": "past the test",
-            "before": "Each checkout of a repository, a worktree included, has its own results, its own status and its own dashboard. Nothing is shared until the work is merged. After you merge work from a worktree, run `purlin:status` in the main checkout: that brings its status and dashboard up to date.",
-            "bug_key": "a0c75b9bfc29e75973421c3b0df0d6089599aa85c122f24c6d0138ce3339bba5",
-            "case": "the one paragraph of docs/working-together.md that names a worktree; the proof says its `Each checkout` sentence says each checkout has its own results and its own dashboard; the changed sentence says each checkout has never its own dashboard",
+            "before": "Each checkout of a repository, a worktree included, has its own results, its own status and",
+            "bug_key": "274a0a7901255d8183318438f6bafc4e6122d511847fb07ccc5a8ea018fd9039",
+            "case": "the more-than-one-checkout paragraph of docs/working-together.md; the proof says the `Each checkout` sentence says, with no word of denial before `has`, that it has its own results and its own dashboard; the changed page reads \"nowhere has its own results\", which denies it",
             "file": "docs/working-together.md",
-            "line": 160,
-            "result": "caught",
+            "line": 94,
+            "result": "survived",
+            "test_key": "2c4b82b387d3bd4487c4258a1eba784e1c7db7643326d0500ecfff8a2b57c439",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "4850aeaf33fc08b43bb36f4221963c6d8e98471d",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-24: the test finds the one paragraph naming a worktree, requires one `Each checkout` sentence whose words after `has` are a plain list of `its own` items from results to dashboard, and looks for `merge` or `merged` and the backticked `purlin:status`.",
+          "PROOF-24: denial before `has` is judged by a fixed list of words, so a denying word outside the list, such as `nowhere`, `nothing` or `nobody`, leaves the test passing while the sentence says the opposite.",
+          "PROOF-24: the spot tests found nothing, and that holds as far as they go, since every assertion can fail and the values the proof names in backticks appear in the test."
+        ],
+        "findings": [
+          "PROOF-24: the test still passes when docs/working-together.md:94 reads \"Each checkout of a repository, a worktree included, nowhere has its own results, its own status and\"",
+          "PROOF-24: the AI says this breaks: the more-than-one-checkout paragraph of docs/working-together.md; the proof says the `Each checkout` sentence says, with no word of denial before `has`, that it has its own results and its own dashboard; the changed page reads \"nowhere has its own results\", which denies it"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "442ec2de74fe4721ec63b7c4cfaafa9f78fc914f1b2197b16ac315cef3a49ccd",
         "rule_hash": "1f3f502cd01fce46fb61442e9e0e4206945004ba4eff4951f20dcbf3def99ac0",
         "test_hash": "528c48d19aa325152503f814ed9be91ab7941661a373dc50f5821fd43fb7f7c1",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-17": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-25": {
-            "after": "* Auditing again does not clear a finding. If the code changes and the test does not,",
+            "after": "The share of strong rules\n-------------------------\n\nEvery audit ends on the share of rules it found strong, such as",
             "aim": "past the test",
-            "before": "Auditing again does not clear a finding. If the code changes and the test does not,",
-            "bug_key": "0394e933609e9d01c038faccf9c258d1fdc46ce47bfacf5c89335c298b0c13e6",
-            "case": "the part under `What to do with a finding` in docs/audit.md; the proof says exactly 6 bullets; the changed page holds 7, the seventh written with a `*` marker",
+            "before": "Every audit ends on the share of rules it found strong, such as",
+            "bug_key": "a9a0de56fc8a17c8731aa4ec9bf13a5c1e6cf1edf68ae60ad50dec2cf08f8a65",
+            "case": "docs/audit.md read for the heading after `How it works`; the proof says the next heading is `What to do with a finding`; the changed page has an underlined heading `The share of strong rules` between them",
             "file": "docs/audit.md",
-            "line": 61,
-            "result": "caught",
+            "line": 45,
+            "result": "survived",
+            "test_key": "92a382eb9c8fde90178fdaee351c0880a919c7b819225013c6c7fcfe0ecf57b8",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-25: the test compares the heading after `How it works` with `What to do with a finding`, but through a helper whose source is not shown, so a heading written as an underlined line rather than with `#` may go unseen.",
+          "PROOF-25: the test counts the bullets twice, by the helper and by its own pattern for `-`, `*`, `+` and numbered markers, and compares both with 6, so a bullet added or removed under the heading fails it.",
+          "PROOF-25: the test looks for `purlin:build`, `strong` and `spot-checked` anywhere in the part, so it does not tell a bullet naming them from a paragraph below the bullets naming them, and a sentence saying the opposite about them still passes."
+        ],
+        "findings": [
+          "PROOF-25: the test still passes when docs/audit.md:45 reads \"The share of strong rules\"",
+          "PROOF-25: the AI says this breaks: docs/audit.md read for the heading after `How it works`; the proof says the next heading is `What to do with a finding`; the changed page has an underlined heading `The share of strong rules` between them"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "b3845bf19f9ae3c3704dadb40d07a6de94cd5e9c810623617d6c13aa19b015d0",
         "rule_hash": "18624330ceb13d4e6f959c601624a56f0ed98507b11ea23e96ab9cfa677d8fb1",
         "test_hash": "814d6d7800ed7b8098ffc463ef0a2b604988fe9c839d24ac2c6aee1e6c057f38",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-18": {
-        "at": "2026-10-05T18:47:45Z",
+        "at": "2026-10-07T18:35:37Z",
         "bugs": {
           "PROOF-26": {
-            "after": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\" || git clone --depth 1 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
+            "after": "        run: git clone --depth 1 --branch signed/0.10.0 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
             "aim": "past the test",
             "before": "        run: git clone --depth 1 --branch signed/0.10.0 https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"",
-            "bug_key": "e9aec9337237759d76fe0b2aa0c94c2cb3588356e411e45d136032008db26dbf",
-            "case": "the clones of the purlin repository on docs/running-and-evidence.md that name a branch; the proof says exactly 1, naming `signed/` plus the `VERSION` content; the changed page holds 2, the second naming `main` with `-b`",
+            "bug_key": "bbaabbc63e1a00e4d710b0d04b3d2ffe01c5d3891629bfe11c32df8c8c5ef0d8",
+            "case": "the Windows workflow example's clone of purlin; the proof says the branch it names is `signed/` followed by the VERSION file's content; the changed page's clone also names `-b main` after it, so the command names a second branch and git clones `main`",
             "file": "docs/running-and-evidence.md",
-            "line": 635,
-            "result": "caught",
+            "line": 270,
+            "result": "survived",
+            "test_key": "55c5d910ca7bb33fbee2e39ca8dd4ce0d48ebd8eb4059d43023cf5b6715184bd",
             "why": ""
           }
         },
-        "code_hash": "1004e4b483f03e56407fdec8c8f52095bd2cbb9ab9c902c657fb307438b5f2c0",
-        "commit": "28ea2ca723e53146153f609098e5c8d838f200a9",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-26: the test reads the `VERSION` file and compares the branch of each purlin clone on the page with `signed/` plus that content, so a different tag, a second purlin clone naming a branch, or no clone fails it.",
+          "PROOF-26: the first check reads only `--branch` followed by a space, and the second takes only the first branch option in each clone command, so a later `-b` on the same command is never compared.",
+          "PROOF-26: the second check reads each clone only up to the end of its line, so a clone that names a branch on one line and the purlin address on a continued line is not counted.",
+          "PROOF-26: the spot tests found nothing, and the expected value comes from the `VERSION` file and not from the page under test."
+        ],
+        "findings": [
+          "PROOF-26: the test still passes when docs/running-and-evidence.md:270 reads \"run: git clone --depth 1 --branch signed/0.10.0 -b main https://github.com/rlabarca/purlin \"$RUNNER_TEMP/purlin\"\"",
+          "PROOF-26: the AI says this breaks: the Windows workflow example's clone of purlin; the proof says the branch it names is `signed/` followed by the VERSION file's content; the changed page's clone also names `-b main` after it, so the command names a second branch and git clones `main`"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "d75f07512091ddaacd81b40b67d529c54a59cfdfa4aec7f49f57be57a4f00e69",
         "rule_hash": "6778b6cf1d3d4a498737621b2f6676109f96f91b6877fef7e230ca6188771600",
         "test_hash": "7f49b1d78448ea2e6f20285f33701b42badeb5d6e7df7c288e8bb97edd3edbb6",
+        "verdict": "weak"
+      },
+      "RULE-19": {
+        "at": "2026-10-07T18:35:37Z",
+        "bugs": {
+          "PROOF-27": {
+            "after": "| [The audit](audit.md), with [its research](audit-research.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |",
+            "aim": "past the test",
+            "before": "| [The audit](audit.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |",
+            "bug_key": "72fb597469c0387746f64de4b86d2925393c3d4d61fd8fb40ec4db245e702912",
+            "case": "the table of guides in docs/index.md; the proof says each first cell links one page and every page is linked exactly 1 time; the changed page's first cell for the audit links two pages, so audit-research.md is linked 2 times",
+            "file": "docs/index.md",
+            "line": 25,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-27: the test compares the sorted list of what the first cells link with every page under docs/ but index.md, so a page left out, a page listed twice in two rows and a row that links nothing each fail it.",
+          "PROOF-27: the test compares the count with the literal 13 and the line under the title with the literal sentence the proof names, so neither value is taken from the page alone.",
+          "PROOF-27: the second comparison of the line under the title builds its expected value from the count of pages, which adds nothing beyond the literal comparison above it.",
+          "PROOF-27: the test reads the rows through a helper whose source is not shown, and its sample holds no first cell with two links, so a cell that links a second page may be read as one link and still pass.",
+          "PROOF-27: the sample text checks the helper on a made-up page, which shows that the helper reports duplicates and unlinked rows but observes nothing about docs/index.md itself."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e1a883d54c16a22c517aefcf5cdf64e943c20ed6ad3b66ca3662e15e1aee25f9",
+        "rule_hash": "b635fc43a4cc7b222e583063c6946e3a300d856844721e174ef8a637fd72d51c",
+        "test_hash": "14c9f546445fe15119ee4d0719199fe81e65ec9575728959d1e0e8f5b2f64262",
         "verdict": "strong"
+      },
+      "RULE-20": {
+        "at": "2026-10-07T18:35:37Z",
+        "bugs": {
+          "PROOF-28": {
+            "after": "[testing-ai.md](testing-ai.md) and `[graded-by-ai.md](graded-by-ai.md)` say what stands behind",
+            "aim": "past the test",
+            "before": "[testing-ai.md](testing-ai.md) and [graded-by-ai.md](graded-by-ai.md) say what stands behind",
+            "bug_key": "225ead0f77bf16ef39f0e35a185f1bcc0c97c8de1b352a038c3b3ca1d7c37b21",
+            "case": "`docs/sign-off.md` read for its links; the proof says it holds a link to `graded-by-ai.md`; the changed page holds only a code span showing link text, so it links to `testing-ai.md` alone",
+            "file": "docs/sign-off.md",
+            "line": 131,
+            "result": "survived",
+            "test_key": "4a13932003abeabe654debbb58569c36b395a0c3ab288bde4cbcda4b3e9e3403",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-28: the test reads the two AI pages and the six folding pages from disk and expects the helper `links_missing` to report nothing, which is the proof's case and its result.",
+          "PROOF-28: the helper `links_missing` is not shown, so what it counts as a link is not visible in the test's own lines.",
+          "PROOF-28: the second half checks that a page naming the other in plain words or in a code span is reported, and that a link with a `#` part counts.",
+          "PROOF-28: the sample's code span holds only the file name, so link syntax written inside a code span, which renders as no link, is never tried.",
+          "PROOF-28: the sample changes only `testing-ai.md` and `audit.md`, so the helper's handling of a missing link on the other six pages rests on the first assertion alone."
+        ],
+        "findings": [
+          "PROOF-28: the test still passes when docs/sign-off.md:131 reads \"[testing-ai.md](testing-ai.md) and `[graded-by-ai.md](graded-by-ai.md)` say what stands behind\"",
+          "PROOF-28: the AI says this breaks: `docs/sign-off.md` read for its links; the proof says it holds a link to `graded-by-ai.md`; the changed page holds only a code span showing link text, so it links to `testing-ai.md` alone"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-28 holds several cases, the two AI pages linking each other and each of six folding pages linking both, in one proof."
+        ],
+        "proof_hash": "35e8c7ae81a121fdc5879dae33266a3c2d3736846395599c5bf8125d23f9ca83",
+        "rule_hash": "5183e888476ac6f6b5a348b0c0e55d335c641dc8cf2609ab96607b635bbe52c0",
+        "test_hash": "ee438f8724ab14202e48968bb4deca12a7ed35353598defae6450382411f8198",
+        "verdict": "weak"
+      },
+      "RULE-21": {
+        "at": "2026-10-07T18:35:37Z",
+        "bugs": {
+          "PROOF-29": {
+            "after": "    G -->|\"reject, with one reason\"| F([failed])",
+            "aim": "past the test",
+            "before": "    G -->|\"reject, with one reason\"| F([\"<b>failed</b>\"])",
+            "bug_key": "e0f4702567bc701e17115df75b3cde7ad8948a881d185a71e05e2f1766e14b2e",
+            "case": "the flow diagram of docs/graded-by-ai.md; the proof says the label of every box opens `<b>`; the changed page has a box whose label is `failed`, written without quotation marks and without bold",
+            "file": "docs/graded-by-ai.md",
+            "line": 15,
+            "result": "survived",
+            "test_key": "b896f73d4dbca3b153e4b7448dd54013aeff557d851340e7d48ac0c00b6b24d1",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-29: the test reads both pages, compares the count of mermaid blocks with 1 and the first line with `flowchart LR`, requires 5 labels or more, and requires every label that `box_labels` returns to open `<b>`, so it observes each value the proof names.",
+          "PROOF-29: the bold check covers only the labels `box_labels` returns, and that helper's source was not shown, so a box it does not recognise is never checked.",
+          "PROOF-29: the test's own sample shows only quoted labels, so a box whose label has no quotation marks may be left out; the page would then still hold 5 recognised boxes and pass.",
+          "PROOF-29: the sample at the end shows a quoted non-bold label `Two` is returned and that an arrow label is not counted, so a quoted non-bold box on either page would fail the test."
+        ],
+        "findings": [
+          "PROOF-29: the test still passes when docs/graded-by-ai.md:15 reads \"G -->|\"reject, with one reason\"| F([failed])\"",
+          "PROOF-29: the AI says this breaks: the flow diagram of docs/graded-by-ai.md; the proof says the label of every box opens `<b>`; the changed page has a box whose label is `failed`, written without quotation marks and without bold"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "4540c3b6de4a57873a933a9a391a4b067799023155481ad05d7760c576339629",
+        "rule_hash": "d9ace3b9c12c42ef44602edfeca301f1e8ca16d5dd627491d66127cc70f71426",
+        "test_hash": "575587aa5ddf00ad2a5eda6afdd614e76e06e387cb6ca9988071292b7f60677a",
+        "verdict": "weak"
+      },
+      "RULE-22": {
+        "at": "2026-10-07T18:35:37Z",
+        "bugs": {
+          "PROOF-30": {
+            "after": "([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The six spot tests",
+            "aim": "past the test",
+            "before": "([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The spot tests",
+            "bug_key": "42c3c16853bdfcdcc2d98556831cb091222c50cd1f642c25286f3e19b7b3bc39",
+            "case": "docs/audit-research.md read for its counts of the checks; the proof says it holds `The seven checks are in` once and no other count of checks; the changed page also says there are six spot tests",
+            "file": "docs/audit-research.md",
+            "line": 228,
+            "result": "survived",
+            "test_key": "124d53457f44c1de869a2efbe0afe6b441e2b91ad23218bbe6c1af47ee8cd2f8",
+            "why": ""
+          }
+        },
+        "code_hash": "8933ffc277476bc82dd2a8fe87a19a5a5a45ad725490e9c5e78452b35ff826b3",
+        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-30: the test reads the reference's heading as exactly `seven`, then requires each page to hold `The seven checks are in` once, so a changed or repeated sentence fails it.",
+          "PROOF-30: the test takes \"no other count\" from the helper check_counts, whose source is not shown, and its one self-check shows it finding a number only before the word `checks`.",
+          "PROOF-30: a count written with other words, such as a number before `spot tests`, may not be seen by the helper, so a page that counts the spot tests differently could still pass.",
+          "PROOF-30: the expected word `seven` is a literal in the test and is not taken from the reference, so the two pages and the reference are each held to the same fixed value."
+        ],
+        "findings": [
+          "PROOF-30: the test still passes when docs/audit-research.md:228 reads \"([an empirical study of coding agents, 2026](https://arxiv.org/pdf/2602.00409)). The six spot tests\"",
+          "PROOF-30: the AI says this breaks: docs/audit-research.md read for its counts of the checks; the proof says it holds `The seven checks are in` once and no other count of checks; the changed page also says there are six spot tests"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-30 holds more than one case: the reference's heading, and each of two pages with both a count of one sentence and the absence of any other count."
+        ],
+        "proof_hash": "e8ec1d7b0381e85b4aec933310838e53f3c14bf94662737b2f0d154eb534f8ee",
+        "rule_hash": "49fac34fc1b263657ba924d4ae6fedcd780f31c1063884a395448c537e632a0a",
+        "test_hash": "1f8fc825cedcc20e5abc45d5ad2ded9c1780560e7fe508909dc8a3d6689ca6a7",
+        "verdict": "weak"
       }
     }
   },
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:14Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:28:28Z",
+      "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -187,7 +370,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -209,7 +392,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -231,7 +414,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -253,7 +436,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -275,7 +458,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -297,7 +480,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -319,7 +502,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -341,7 +524,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -363,7 +546,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
@@ -385,7 +568,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
             }
           },
           "result": "pass",
