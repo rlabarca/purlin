@@ -171,8 +171,8 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T19:50:41Z",
-      "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+      "at": "2026-10-07T21:05:20Z",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -190,14 +190,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -219,7 +219,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -241,7 +241,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -263,7 +263,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -274,7 +274,74 @@
           "env": null,
           "id": "PROOF-55",
           "manual": false,
-          "result": "not run",
+          "models": [
+            {
+              "graded": false,
+              "model": "claude-opus-5-5",
+              "of": 3,
+              "passed": 3,
+              "runs": [
+                {
+                  "made": "helper",
+                  "output": "acafc8d42cec75e13595c8747fc8127d7ac4e9bf0bd3af34a232c16e247a5b78",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 60.114,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "90c4cc3d7fda65bf507f01b9e2f86062442e75b946a4398c974e6111c4d980d9"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "f3be3090b5b724b9f748f3114e218c7949100aba6e3f2bb65ef5c85e69d69dd4",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 40.179,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "1560f6718457cdd981055634d30654621aeedc4eed89ab9fc4e165b231bb2177"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "0895cf01a43f2765a57b3371dd81b744ca82ffb50b269a46f4b73a78fe5e471c",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 49.426,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "7841242445466f5d049eeef67db4dfebaa0d2e6a0dfc0e90939ccfff40fe52db"
+                    }
+                  },
+                  "result": "pass"
+                }
+              ]
+            }
+          ],
+          "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_skill_build.py::test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it"
         },
@@ -282,7 +349,89 @@
           "env": null,
           "id": "PROOF-56",
           "manual": false,
-          "result": "not run",
+          "models": [
+            {
+              "graded": true,
+              "model": "claude-opus-5-5",
+              "of": 3,
+              "passed": 3,
+              "runs": [
+                {
+                  "grade": {
+                    "accepted": true,
+                    "model": "claude-haiku-4-5-20251001",
+                    "reason": "the reply correctly identifies that PROOF-5 lacks specific times and age values, proposes a sharpened proof with collection time (2026-03-01T08:00), receipt time (2026-03-02T09:30), and age (25 hours), names purlin:spec as the command to change it, and makes no changes to specs/, tests/, or src/"
+                  },
+                  "made": "helper",
+                  "output": "7387c8aecbb332e3aa2f88e4eb4d8cd3f90d40d4b2b957f6837a999e0170dd79",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 44.491,
+                        "name": "test_a_session_stops_for_a_proof_that_names_too_little",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "df2c781b6a21299de35b294007e8387aadeaafc1b52419e6e6ee01d221459b76"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "grade": {
+                    "accepted": true,
+                    "model": "claude-haiku-4-5-20251001",
+                    "reason": "The reply correctly identifies that PROOF-5 lacks specific times and age, proposes a replacement naming collection time (2026-03-01T08:00), receipt time (2026-03-02T09:30), and age in hours (25), names purlin:spec as the command to use, and changes no files under specs/, tests/, or src/."
+                  },
+                  "made": "helper",
+                  "output": "b6bda7ef6fe858e4e30f396e06ad4a947df3469a26685a78740253b620d58883",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 42.961,
+                        "name": "test_a_session_stops_for_a_proof_that_names_too_little",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "f1a647ecd9ef10707087eb073a59a308b6ee18211211a12e926410942b461cf4"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "grade": {
+                    "accepted": true,
+                    "model": "claude-haiku-4-5-20251001",
+                    "reason": "the reply correctly identifies that PROOF-5 lacks specific times and age value, proposes a sharpened version naming collected at `2026-03-01T08:00`, received at `2026-03-02T09:30`, and age as `25` hours, names `purlin:spec` as the command, and changed only `.purlin/report-data.js` without touching specs/, tests/, or src/"
+                  },
+                  "made": "helper",
+                  "output": "d4e90098f7b59bf0a4ca368cf1a76f62493ff8d9a0251f44f7f6978d1b7e4ec5",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 39.645,
+                        "name": "test_a_session_stops_for_a_proof_that_names_too_little",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "4a6ca510d2d14fb60ff226932291bbef8440e0e43f2ba40aaa053a7970c98896"
+                    }
+                  },
+                  "result": "pass"
+                }
+              ]
+            }
+          ],
+          "result": "pass",
           "rule": "RULE-25",
           "test": "dev/test_skill_build.py::test_a_session_stops_for_a_proof_that_names_too_little"
         }
@@ -291,8 +440,8 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
-        "RULE-24": "not run",
-        "RULE-25": "not run"
+        "RULE-24": "passed",
+        "RULE-25": "passed"
       },
       "runner": "rich-labarca"
     }

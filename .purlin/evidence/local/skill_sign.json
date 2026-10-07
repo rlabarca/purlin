@@ -103,7 +103,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T18:39:36Z",
-      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -114,6 +114,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -136,6 +142,12 @@
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_of_its_seven_commands"
         },
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -158,6 +170,12 @@
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_path_it_must_name"
         },
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -180,6 +198,12 @@
           "test": "dev/test_skill_sign.py::test_the_sign_skill_shows_the_walks_four_lines_about_ai_proofs"
         },
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-67",
           "manual": false,

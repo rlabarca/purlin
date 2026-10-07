@@ -71,7 +71,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T18:39:36Z",
-      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -82,6 +82,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
@@ -104,6 +110,12 @@
           "test": "dev/test_skill_spec_from_code.py::test_the_spec_from_code_skill_holds_each_command_and_file"
         },
         {
+          "carried": {
+            "at": "2026-10-07T18:39:36Z",
+            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-168",
           "manual": false,

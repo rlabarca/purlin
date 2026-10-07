@@ -146,12 +146,12 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T19:39:43Z",
-      "commit": "663b6bf300eb947f40114e05543bbf33fff7b444",
+      "at": "2026-10-07T21:05:20Z",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
+        "code": "b1279f32a643a70151112d4b18348fab2878917e0ff46977cfe4f6f0bd1f3956",
         "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
         "tests": "a3b8fb7d9ba950ebc59b128b0231aaf3cdbed71c9c5c7ff81a8a1149c6b505c2"
       },
@@ -165,14 +165,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 2.587,
+                "duration": 2.502,
                 "name": "test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -187,14 +187,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.371,
+                "duration": 0.403,
                 "name": "test_every_python_file_under_scripts_parses_as_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -209,14 +209,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 1.386,
+                "duration": 1.279,
                 "name": "test_a_test_run_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -231,14 +231,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.748,
+                "duration": 0.739,
                 "name": "test_the_status_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -253,14 +253,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoProcessLeft",
-                "duration": 1.965,
+                "duration": 2.003,
                 "name": "test_no_command_leaves_a_process_running",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",
@@ -275,14 +275,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 0.25,
+                "duration": 0.288,
                 "name": "test_no_skill_and_not_the_agent_definition_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "ae4683036469f59e2388c8646d3d22ce21ebf9dfc0c89bebf7153c5e987b445c"
+              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
             }
           },
           "result": "pass",

@@ -152,7 +152,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T19:50:41Z",
-      "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -163,6 +163,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T19:50:41Z",
+            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -185,6 +191,12 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_holds_each_command_and_file"
         },
         {
+          "carried": {
+            "at": "2026-10-07T19:50:41Z",
+            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -207,6 +219,12 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_says_where_the_two_highest_lines_go"
         },
         {
+          "carried": {
+            "at": "2026-10-07T19:50:41Z",
+            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -229,6 +247,12 @@
           "test": "dev/test_skill_spec.py::test_the_part_on_proofs_shows_the_two_tags_with_their_models"
         },
         {
+          "carried": {
+            "at": "2026-10-07T19:50:41Z",
+            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -251,6 +275,12 @@
           "test": "dev/test_skill_spec.py::test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model"
         },
         {
+          "carried": {
+            "at": "2026-10-07T19:50:41Z",
+            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,

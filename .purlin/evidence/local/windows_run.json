@@ -99,7 +99,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -110,6 +110,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -132,6 +138,12 @@
           "test": "dev/test_windows_run.py::test_a_green_run_pushes_watches_pulls_and_deletes"
         },
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -154,6 +166,12 @@
           "test": "dev/test_windows_run.py::test_a_red_run_says_so_still_pulls_and_deletes_and_exits_1"
         },
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -176,6 +194,12 @@
           "test": "dev/test_windows_run.py::test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push"
         },
         {
+          "carried": {
+            "at": "2026-10-07T17:50:15Z",
+            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
