@@ -70,7 +70,7 @@ DEFAULT_MODEL = 'claude-fake-1'
 SETUP = 'fake_claude_session.json'
 
 # The environment values a call logs.
-LOGGED = ('DISABLE_PROMPT_CACHING', 'PURLIN_AI', 'PURLIN_AI_MODEL',
+LOGGED = ('DISABLE_PROMPT_CACHING', 'ENABLE_CLAUDEAI_MCP_SERVERS', 'PURLIN_AI', 'PURLIN_AI_MODEL',
           'PURLIN_AI_OUT', 'PURLIN_AI_REPLAY', 'PURLIN_PROJECT_ROOT')
 
 _SCRIPT = r'''#!%(python)s

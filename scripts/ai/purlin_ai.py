@@ -121,12 +121,15 @@ EXIT_OK = 0
 EXIT_REFUSED = 1
 EXIT_NO_ANSWER = 2
 
-# A session: `claude` with one plugin, nothing of the person's settings or
-# servers, no history kept and no permission asked. `--model <name>` and
-# `--plugin-dir <folder>` follow. Each flag is one `claude` 2.1.289 lists.
+# A session: `claude` with one plugin, nothing of the person's settings, no
+# history kept and no permission asked. `--model <name>` and `--plugin-dir
+# <folder>` follow. Each flag is one `claude` 2.1.289 lists. The plugin's
+# own tool servers load, which `--strict-mcp-config` would shut out, and
+# `SESSION_ENVIRONMENT` keeps out the connectors of the person's account.
 SESSION = ('claude', '-p', '--output-format', 'stream-json', '--verbose',
-           '--setting-sources', '', '--strict-mcp-config',
-           '--no-session-persistence', '--dangerously-skip-permissions')
+           '--setting-sources', '', '--no-session-persistence',
+           '--dangerously-skip-permissions')
+SESSION_ENVIRONMENT = {'ENABLE_CLAUDEAI_MCP_SERVERS': 'false'}
 
 # How long one session may take, in seconds.
 SESSION_TIMEOUT = 1800
@@ -474,6 +477,7 @@ def _ask_session(command, named, message, cwd):
     program at `command`, `named` being the arguments after `SESSION`'s."""
     env = dict((name, value) for name, value in os.environ.items()
                if name not in NOT_PASSED_ON)
+    env.update(SESSION_ENVIRONMENT)
     try:
         result = subprocess.run([command] + list(SESSION[1:]) + named,
                                 input=message, capture_output=True,

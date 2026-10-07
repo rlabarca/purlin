@@ -10,8 +10,8 @@
 >   leaves the record alone, saying why, so the run can read the proof as `not run`.
 > Scope: scripts/ai/purlin_ai.py
 > Stack: python/stdlib (json, subprocess, shutil, tempfile, re)
-> Highest-Rule: 35
-> Highest-Proof: 61
+> Highest-Rule: 36
+> Highest-Proof: 62
 
 ## Rules
 
@@ -23,7 +23,7 @@
 - RULE-6: After a `run` with `--instructions` the folder `PURLIN_AI_OUT` names holds `reply.md`, the `result` of the JSON the program printed; `transcript.jsonl`, that JSON on one line; an empty `files/`; and `purlin.json`
 - RULE-7: A `run` or a `record` that made an output prints that folder's path alone on standard output, nothing on standard error, and exits 0
 - RULE-8: The `purlin.json` of a run the model answered reads `made` `helper`, `model` the model asked, `reached` true and `why` null, and holds no other key
-- RULE-9: With `--skill` or `--plugin` the program started is `claude -p --output-format stream-json --verbose --setting-sources "" --strict-mcp-config --no-session-persistence --dangerously-skip-permissions --model <the model> --plugin-dir <folder>`, the folder being the plugin's own for `--plugin`
+- RULE-9: With `--skill` or `--plugin` the program started is `claude -p --output-format stream-json --verbose --setting-sources "" --no-session-persistence --dangerously-skip-permissions --model <the model> --plugin-dir <folder>`, the folder being the plugin's own for `--plugin`
 - RULE-10: A skill is loaded as a plugin of its own, made outside the project and outside the session's folder: it holds `.claude-plugin/plugin.json`, naming the plugin after the skill's folder, and the skill's files under `skills/<the folder's name>/`, and it is removed when the session ends
 - RULE-11: The session is started in a copy of `--project`, or in an empty folder where none is given, made under the system's temporary folder and outside the project; the copy is removed when the session ends and the sample is left as it was
 - RULE-12: After a session `reply.md` holds the `result` of the last `result` line the program printed and `transcript.jsonl` every line it printed
@@ -50,6 +50,7 @@
 - RULE-33: Under `PURLIN_AI_REPLAY`, `grade` grades that folder and writes the grade into its `purlin.json`; the folder `PURLIN_AI_OUT` names is left as it was
 - RULE-34: `grade` for a proof that names no grader, a proof no spec has, or a folder holding no `reply.md` starts no `claude`, changes no file, names what is wrong and what to do on one line of standard error, and exits 2
 - RULE-35: The grader is shown a text over 20,000 characters as its first 10,000 and its last 10,000 around the line `[... <n> characters cut ...]`, a file that is not UTF-8 text as `[not text: <n> bytes]`, and the files after the 50th, in path order, by path alone under `<n> more files, not shown:`
+- RULE-36: A session loads the tool servers of the plugin it was given and none of the person's own: it is started without `--strict-mcp-config`, and with `ENABLE_CLAUDEAI_MCP_SERVERS` set to `false`
 
 ## Proof
 
@@ -66,7 +67,7 @@
 - PROOF-11 (RULE-6): `claude` answers the bare call with the two lines `Three findings:` and `F-1, F-2, F-3.`; the output folder holds exactly the files `purlin.json`, `reply.md` and `transcript.jsonl`; `reply.md` reads those two lines, `transcript.jsonl` is one line holding the JSON object the program printed, and the folder `files` is there and empty
 - PROOF-12 (RULE-7): A `run` with `--instructions` that the model answers prints the path `PURLIN_AI_OUT` names and a line feed on standard output and nothing else, prints nothing on standard error, and exits 0
 - PROOF-13 (RULE-8): After a `run` on the model `claude-test-1` that the model answers, `purlin.json` reads exactly `made` `helper`, `model` `claude-test-1`, `reached` true and `why` null
-- PROOF-14 (RULE-9): `run --plugin tool --say "Go."` in a project holding the plugin `tool`, with the model `claude-test-1`, starts `claude` exactly once with exactly the arguments `-p --output-format stream-json --verbose --setting-sources "" --strict-mcp-config --no-session-persistence --dangerously-skip-permissions --model claude-test-1 --plugin-dir` and then the full path of `tool`
+- PROOF-14 (RULE-9): `run --plugin tool --say "Go."` in a project holding the plugin `tool`, with the model `claude-test-1`, starts `claude` exactly once with exactly the arguments `-p --output-format stream-json --verbose --setting-sources "" --no-session-persistence --dangerously-skip-permissions --model claude-test-1 --plugin-dir` and then the full path of `tool`
 - PROOF-15 (RULE-10): The skill `skills/summarize` holds `SKILL.md` and `notes/style.md`; `run --skill skills/summarize --project sample --say "Summarise it."` starts `claude` with the arguments of a session, its last the folder of a plugin that holds exactly `.claude-plugin/plugin.json`, whose `name` reads `summarize`, `skills/summarize/SKILL.md` with the skill's own text and `skills/summarize/notes/style.md`; that folder is not under the project or the folder `claude` is started in, and is gone when the helper ends
 - PROOF-16 (RULE-11): The sample holds `keep.md` and `report.md`, and the session rewrites `report.md`; `claude` is started in a folder that holds exactly those two files, is under the system's temporary folder and not under the project, and is gone when the helper ends; every file of the sample then holds the bytes it held before
 - PROOF-17 (RULE-11): `run --skill skills/summarize --say "Go."`, with no `--project`, starts `claude` in a folder that holds no file, is not under the project and is gone when the helper ends
@@ -114,3 +115,4 @@
 - PROOF-59 (RULE-35): `files/long.txt` holds 10,000 `a`, 5,000 `b` and 10,000 `c`; the grader's request ends with `=== files/long.txt ===`, the 10,000 `a`, the line `[... 5000 characters cut ...]` and the 10,000 `c`
 - PROOF-60 (RULE-35): `files/image.png` holds 6 bytes that are not UTF-8 text; the grader's request ends with `=== files/image.png ===` and the line `[not text: 6 bytes]`
 - PROOF-61 (RULE-35): `files/` holds `f01.txt` to `f52.txt`; the grader's request ends with `=== files/f50.txt ===`, that file's text `text 50`, a blank line, `2 more files, not shown:`, `files/f51.txt` and `files/f52.txt`, and holds nothing of the text of `f51.txt`
+- PROOF-62 (RULE-36): The helper is started with `ENABLE_CLAUDEAI_MCP_SERVERS` set to `true`; the session it starts finds it set to `false`, and its arguments hold no `--strict-mcp-config`

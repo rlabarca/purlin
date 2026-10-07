@@ -51,8 +51,8 @@ BARE = ['-p', '--output-format', 'json', '--max-turns', '1', '--tools', '',
         '--strict-mcp-config', '--safe-mode', '--setting-sources', '',
         '--disable-slash-commands', '--no-session-persistence']
 SESSION = ['-p', '--output-format', 'stream-json', '--verbose',
-           '--setting-sources', '', '--strict-mcp-config',
-           '--no-session-persistence', '--dangerously-skip-permissions']
+           '--setting-sources', '', '--no-session-persistence',
+           '--dangerously-skip-permissions']
 
 GRADER_PROMPT = (
     'You grade what an AI produced against one sentence. You have no tools. '
@@ -412,9 +412,19 @@ class TestASession:
         done = made.session(PURLIN_PROJECT_ROOT=made.root)
         assert done.returncode == 0, done.stderr
         env = made.calls()[0]['env']
+        env.pop('ENABLE_CLAUDEAI_MCP_SERVERS')
         assert env == {'DISABLE_PROMPT_CACHING': None, 'PURLIN_AI': None,
                        'PURLIN_AI_MODEL': None, 'PURLIN_AI_OUT': None,
                        'PURLIN_AI_REPLAY': None, 'PURLIN_PROJECT_ROOT': None}
+
+    # purlin: ai_helper PROOF-62
+    def test_the_session_is_told_to_leave_the_persons_connectors_out(
+            self, made):
+        done = made.session(ENABLE_CLAUDEAI_MCP_SERVERS='true')
+        assert done.returncode == 0, done.stderr
+        call = made.calls()[0]
+        assert call['env']['ENABLE_CLAUDEAI_MCP_SERVERS'] == 'false'
+        assert '--strict-mcp-config' not in call['argv']
 
     # purlin: ai_helper PROOF-24
     def test_a_session_is_given_1800_seconds(self, made, monkeypatch):
