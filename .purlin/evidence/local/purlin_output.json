@@ -82,31 +82,42 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-07T18:27:31Z",
+        "at": "2026-10-07T19:38:05Z",
         "bugs": {
           "PROOF-6": {
-            "after": "    try:\n        subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'],\n                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                         stderr=subprocess.DEVNULL, env={}, cwd=os.sep,\n                         start_new_session=True)\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
+            "after": "    print('')\n    for line in next_step(root):\n        print(line)\n    subprocess.Popen(\n        [sys.executable, '-c', 'import time; time.sleep(600)'],\n        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n        stderr=subprocess.DEVNULL, start_new_session=True,\n        env={name: value for name, value in os.environ.items()\n             if not name.startswith('PURLIN_')})\n    return EXIT_OK",
             "aim": "past the test",
-            "before": "    try:\n        result = subprocess.run(\n            ['git', 'status', '--porcelain', '--', 'specs/'],",
-            "bug_key": "0ec41931d661493b96fa258f1cd2650bb405561f832756cbff4bcf57f445cb3c",
-            "case": "a test run with --commit and the status in a scratch project; the proof says no process either started is still running; the changed code leaves a detached process running for 600 seconds after each exits 0",
-            "file": "scripts/mcp/purlin/status.py",
-            "line": 638,
-            "result": "caught",
+            "before": "    print('')\n    for line in next_step(root):\n        print(line)\n    return EXIT_OK",
+            "bug_key": "a34af34676223cb8b069f0e55bde224d91cbc6825bcca48b17b17b146173bd7c",
+            "case": "setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running afterwards; the changed setup leaves a Python process sleeping for 600 seconds after it exits",
+            "file": "scripts/init/scaffold.py",
+            "line": 395,
+            "result": "survived",
+            "test_key": "9e2b7f1b82403fe8c64802a28267c14e341d6e624ed3df1f0151b4433d0524a9",
             "why": ""
           }
         },
         "code_hash": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
-        "commit": "d4b92fd9c9f1b8e8c2719af467ae6bb33cacc739",
+        "commit": "ea32fa9df74326cc82f42af7139b3b5cd839f40f",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [],
-        "findings": [],
+        "explanation": [
+          "PROOF-6: the test runs setup, a test run with `--commit` and the status in a scratch project and asserts each exits `0`, which is the proof's own case.",
+          "PROOF-6: it looks for a leftover process three ways: the descendants a watcher saw while the commands ran, each command's process group or a command line naming the project, and an environment variable every child inherits.",
+          "PROOF-6: the watcher polls about every 0.01 seconds, so a process started in the instant before a command exits may never be seen as a descendant.",
+          "PROOF-6: a process that also leaves its command's group, drops the variable and names nothing of the project on its command line is then missed by the other two looks as well.",
+          "PROOF-6: the test asserts the watcher saw the test run only, so nothing shows that it saw setup or the status at all.",
+          "PROOF-6: on Windows only the group and command-line look runs, so a process that leaves its group and names nothing of the project is not looked for there."
+        ],
+        "findings": [
+          "PROOF-6: the test still passes when scripts/init/scaffold.py:395 reads \"subprocess.Popen(\"",
+          "PROOF-6: the AI says this breaks: setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running afterwards; the changed setup leaves a Python process sleeping for 600 seconds after it exits"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "8b4a1e30c44dfe443f1533df6f8cf3c5ea0554a9c85de3f63a1b58c368b02cbc",
         "rule_hash": "7e040db3b040d335fd4d6bc9775c37a18b6041724ccadbda6fa8da3e4ce18769",
-        "test_hash": "f313165c7e67677d368eb406aa511b77171784764faeb5169c8bc1b2a0532ef9",
-        "verdict": "strong"
+        "test_hash": "588aae3333214f04ce56a410ceb6ffd56204721ba0f73691cd6c957248dff59e",
+        "verdict": "weak"
       },
       "RULE-4": {
         "at": "2026-10-07T18:25:02Z",
@@ -146,14 +157,14 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T18:27:09Z",
-      "commit": "d4b92fd9c9f1b8e8c2719af467ae6bb33cacc739",
+      "at": "2026-10-07T19:37:32Z",
+      "commit": "ea32fa9df74326cc82f42af7139b3b5cd839f40f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "41b227ff5531b1307dda17164ae954a5721ccc1945b0b607232835f9fea89f85",
         "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
-        "tests": "5a91c45f636331542ec0306772216d7888b14df48807bf4e14ed63aa273406c0"
+        "tests": "0727daf9d549cc8dd72b24c0fa8d6cdb1aa591473ad62fca021670ad5facd39d"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -165,14 +176,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 2.577,
+                "duration": 2.522,
                 "name": "test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
@@ -187,14 +198,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.454,
+                "duration": 0.307,
                 "name": "test_every_python_file_under_scripts_parses_as_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
@@ -209,14 +220,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 1.285,
+                "duration": 1.062,
                 "name": "test_a_test_run_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
@@ -231,14 +242,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.674,
+                "duration": 0.704,
                 "name": "test_the_status_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
@@ -253,14 +264,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoProcessLeft",
-                "duration": 2.049,
+                "duration": 1.838,
                 "name": "test_no_command_leaves_a_process_running",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
@@ -275,14 +286,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 0.255,
+                "duration": 0.251,
                 "name": "test_no_skill_and_not_the_agent_definition_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "67714a28c7f053a699537a819eeef34e514c814133ab4b805a3b7a20414b3da3"
+              "sha256": "cefa1c3b9421c8560d3958eef79281aa68ea63e5ef15948be75ec9eaaa60b0bf"
             }
           },
           "result": "pass",
