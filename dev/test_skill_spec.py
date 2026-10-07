@@ -65,9 +65,10 @@ def test_the_part_on_proofs_shows_the_two_tags_with_their_models():
 
 
 # purlin: skill_spec PROOF-65
-def test_the_part_on_proofs_asks_which_check_and_picks_no_model():
+def test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model():
     part = flat(_proofs())
     assert [sentence for sentence in ASKS if sentence not in part] == []
+    assert 'Where you may ask, never pick a model yourself' in part
 
 
 # purlin: skill_spec PROOF-66
