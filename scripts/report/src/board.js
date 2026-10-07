@@ -4,7 +4,9 @@
 /* The boxes, in the order the work is done. Wherever the project writes a
    proof line the `No proof` box comes first, counting the rules that have
    none yet; then `Passing`, the payload's `summary.steps.passed`, carrying
-   the project's total under its label; then, where a rule's passed cell
+   the project's total under its label and, where a rule passes with a
+   proof a model graded, how many do, `summary.steps.graded`, on a line
+   under that; then, where a rule's passed cell
    reads `failed`, `Failing`, counting those rules in the fail tone, so a
    failing rule is on the first screen however many specs the board lists;
    then, where any rule has an audit
@@ -34,9 +36,11 @@ function statStrip() {
   }
   var passing = (summary.steps || {}).passed || 0;
   var byHand = (summary.steps || {}).by_hand || 0;
+  var graded = (summary.steps || {}).graded || 0;
   boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
-                 total + (total === 1 ? ' rule total' : ' rules total')));
+                 [total + (total === 1 ? ' rule total' : ' rules total')]
+                   .concat(graded ? [graded + GRADED_BY_AI] : [])));
   var failing = ruleCounts(function (rule) {
     return cellWord(rule, 'passed') === 'failed';
   });
@@ -61,13 +65,15 @@ function statStrip() {
     + '"><div class="tiles">' + boxes.join('') + '</div></div>';
 }
 
-/* One box: its count in its tone, its label, a second line under the label
-   where it has one, and its hover where it has one. */
+/* One box: its count in its tone, its label, each line of `under` beneath
+   the label, and its hover where it has one. */
 function box(label, count, hue, lines, under) {
   return '<div class="tile"' + (lines.length ? hover(lines) : '')
     + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
     + '</div><div class="tile-l">' + esc(label) + '</div>'
-    + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
+    + (under || []).map(function (text) {
+      return '<div class="tile-l tile-t">' + esc(text) + '</div>';
+    }).join('')
     + '</div>';
 }
 
@@ -133,7 +139,7 @@ function rulesCell(feature) {
 
 /* What the marked tests found, as the passed cells read it and as
    `board.tests_cell` words it: how many of the spec's rules passed
-   everywhere they ran, then how many are checked by hand, which no test
+   everywhere they ran, a rule that reads `graded` among them, then how many are checked by hand, which no test
    runs for, then the two words that say a test did not pass, and, on an
    anchor's row, how many rules read `out of date`, the results its own
    changes left behind. A feature's row never carries that part. The share
@@ -148,7 +154,8 @@ function testsCell(feature) {
   });
   var byHand = found['checked at sign-off'] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length, byHand),
+    + counts([share((found.passed || 0) + (found.graded || 0), rules.length,
+                    byHand),
       [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail'],
@@ -255,7 +262,7 @@ function groupBand(name, features, columns) {
   }));
   var total = rules.length;
   var passing = rules.filter(function (rule) {
-    return cellWord(rule, 'passed') === 'passed'; }).length;
+    return passes(cellWord(rule, 'passed')); }).length;
   return '<div class="group" role="button" tabindex="0" aria-expanded="'
     + (open ? 'true' : 'false') + '" data-act="group" data-group="'
     + esc(name) + '"><span class="gl"><span class="caret" aria-hidden="true">'

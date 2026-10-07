@@ -23,7 +23,8 @@ function platformBoxes(cell) {
     var entry = platforms[os];
     return '<span class="os ' + (entry.word === 'passed' ? 'pass'
         : entry.word === 'failed' ? 'fail' : 'none') + '"'
-      + hover([[systemWords(os).word, entry.word, entry.source || 'local',
+      + hover([[systemWords(os).word, platformWord(cell, entry),
+        entry.source || 'local',
         ageText(entry.at).text].join(DOT)])
       + '>' + esc(systemWords(os).short) + '</span>';
   }).join(' ');
@@ -227,17 +228,60 @@ function carriedRow(carried) {
   }).join(' ') + '</dd>';
 }
 
+/* The runs of one model the page opens: the one that failed, the one that
+   is not run, and every run a grader read. Each is one line: which run it
+   was of how many, its word, and the reason there is to read, the grader's
+   own for a graded run and why the model gave no answer for a `not run`
+   one. A run that passed and no grader read draws nothing. */
+function runLines(model, of, graded) {
+  return (model.runs || []).map(function (run, index) {
+    if (run.result === 'pass' && !run.grade) { return ''; }
+    var word = run.result === 'pass' && graded ? WORDS.graded
+      : TEST_WORDS[run.result] || WORDS.not_run;
+    var reason = (run.grade || {}).reason || run.why || '';
+    return '<p class="run"><span class="mono nowrap">' + (index + 1) + ' '
+      + WORDS.of + ' ' + of + '</span> <span class="mono nowrap" '
+      + 'style="color:var(--state-' + tone(word) + ')">' + esc(word)
+      + '</span>' + (reason ? ' <span class="sec">' + esc(reason) + '</span>'
+        : '') + '</p>';
+  }).join('');
+}
+
+/* An AI proof's models, one line each as the terminal prints it under
+   `purlin:status <name>`: the model's word, how many of its runs passed of
+   how many, and the model, `graded 3 of 3 on claude-opus-5-5`, the count
+   out of the runs asked now where they are more than the runs held
+   (`states.runs_of`). Under it, the runs `runLines` opens. Before the
+   models, for a graded proof, the model that grades. A proof with no
+   `@ai(...)` tag draws neither row. */
+function modelRows(proof) {
+  var models = proof.models || [];
+  if (!models.length) { return ''; }
+  return (proof.graded ? '<dt>Grader</dt><dd><span class="mono nowrap">'
+      + esc(proof.graded) + '</span></dd>' : '')
+    + '<dt>Models</dt><dd class="models">' + models.map(function (model) {
+      var of = Math.max(model.of || 0, proof.runs || 0);
+      return '<p class="mono"><span class="nowrap" style="color:var(--state-'
+        + tone(model.word) + ')">' + esc(model.word) + '</span> '
+        + '<span class="nowrap">' + (model.passed || 0) + ' ' + WORDS.of + ' '
+        + of + '</span> <span class="nowrap">on ' + esc(model.model)
+        + '</span></p>' + runLines(model, of, !!proof.graded);
+    }).join('') + '</dd>';
+}
+
 /* One proof: its id and words, its own result, its `@manual`, `@slow` and
    `@env` tags, the last naming the operating system it asks for, and its
    tests with what each found, and under its result where its results were
-   carried from. A `@manual` proof no test carries is checked at the
-   sign-off, and says so.
+   carried from, then, for an AI proof, its grader and its models. An AI
+   proof is slow by its `@ai(...)` tag and carries no `@slow` of its own,
+   so none is drawn for it. A `@manual` proof no test carries is checked at
+   the sign-off, and says so.
    `rule.feature` is the spec that owns the rule, whose build writes a
    missing test. */
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
-    .concat(proof.slow ? ['@slow'] : [])
+    .concat(proof.slow && !(proof.ai || []).length ? ['@slow'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
     || (proof.manual ? handCheckLines(rule)
@@ -248,6 +292,7 @@ function proofDetail(proof, rule) {
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
     + carriedRow(proof.carried)
+    + modelRows(proof)
     + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';

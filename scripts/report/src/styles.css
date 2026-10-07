@@ -60,7 +60,9 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}
+/* A line under a box's label takes the box's side padding too, so a count
+   of three digits fits a phone's half-width box on one line. */
+.tile-l.tile-t{margin:var(--space-1) calc(-1 * var(--space-2)) 0;white-space:nowrap}
 
 /* --- the spec table -------------------------------------------------- */
 /* The spec table owns its tracks, the outer two being the row padding less
@@ -101,6 +103,11 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
 .ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
+/* An AI proof's models, one line each, and under a model the runs there is
+   something to read of, set in from it. */
+.models p{margin:0 0 var(--space-2)}
+.models p:last-child{margin-bottom:0}
+.models .run{padding-left:var(--space-6)}
 .ptests .dot,.tests .dot{margin-top:.45em}
 /* What a failing test's tool reported: one panel under the test's line. A
    long line wraps inside it and a long text scrolls inside it, so the page

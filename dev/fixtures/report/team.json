@@ -1179,7 +1179,7 @@
     }
   },
   "project": "ledger",
-  "schema_version": 19,
+  "schema_version": 20,
   "signoff": {
     "commit": null,
     "since": null,
@@ -1214,7 +1214,8 @@
     "spot_checked": 1,
     "steps": {
       "by_hand": 0,
-      "passed": 6
+      "passed": 6,
+      "graded": 0
     },
     "strong": 4,
     "untested": 2,

@@ -72,7 +72,7 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.tile-l.tile-t{margin-top:var(--space-1);white-space:nowrap}
+.tile-l.tile-t{margin:var(--space-1) calc(-1 * var(--space-2)) 0;white-space:nowrap}
 .tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
 .tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
 .specs>*{grid-column:1/-1}
@@ -107,6 +107,9 @@ pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-heigh
 .ptests p{margin:0 0 var(--space-2)}
 .ptests p:last-child{margin-bottom:0}
 .ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
+.models p{margin:0 0 var(--space-2)}
+.models p:last-child{margin-bottom:0}
+.models .run{padding-left:var(--space-6)}
 .ptests .dot,.tests .dot{margin-top:.45em}
 pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere}
 pre.failure:last-child{margin-bottom:0}
@@ -179,9 +182,11 @@ function statStrip() {
   }
   var passing = (summary.steps || {}).passed || 0;
   var byHand = (summary.steps || {}).by_hand || 0;
+  var graded = (summary.steps || {}).graded || 0;
   boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
                  platformLines(project),
-                 total + (total === 1 ? ' rule total' : ' rules total')));
+                 [total + (total === 1 ? ' rule total' : ' rules total')]
+                   .concat(graded ? [graded + GRADED_BY_AI] : [])));
   var failing = ruleCounts(function (rule) {
     return cellWord(rule, 'passed') === 'failed';
   });
@@ -206,7 +211,9 @@ function box(label, count, hue, lines, under) {
   return '<div class="tile"' + (lines.length ? hover(lines) : '')
     + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
     + '</div><div class="tile-l">' + esc(label) + '</div>'
-    + (under ? '<div class="tile-l tile-t">' + esc(under) + '</div>' : '')
+    + (under || []).map(function (text) {
+      return '<div class="tile-l tile-t">' + esc(text) + '</div>';
+    }).join('')
     + '</div>';
 }
 function ruleCounts(counted) {
@@ -252,7 +259,8 @@ function testsCell(feature) {
   });
   var byHand = found['checked at sign-off'] || 0;
   return '<span' + hover(platformLines(feature)) + '>'
-    + counts([share(found.passed || 0, rules.length, byHand),
+    + counts([share((found.passed || 0) + (found.graded || 0), rules.length,
+                    byHand),
       [byHand, WORDS.by_hand, 'neutral'],
       [found.partial || 0, WORDS.partial, 'warn'],
       [found.failed || 0, WORDS.failing, 'fail'],
@@ -323,7 +331,7 @@ function groupBand(name, features, columns) {
   }));
   var total = rules.length;
   var passing = rules.filter(function (rule) {
-    return cellWord(rule, 'passed') === 'passed'; }).length;
+    return passes(cellWord(rule, 'passed')); }).length;
   return '<div class="group" role="button" tabindex="0" aria-expanded="'
     + (open ? 'true' : 'false') + '" data-act="group" data-group="'
     + esc(name) + '"><span class="gl"><span class="caret" aria-hidden="true">'
@@ -393,7 +401,8 @@ function platformBoxes(cell) {
     var entry = platforms[os];
     return '<span class="os ' + (entry.word === 'passed' ? 'pass'
         : entry.word === 'failed' ? 'fail' : 'none') + '"'
-      + hover([[systemWords(os).word, entry.word, entry.source || 'local',
+      + hover([[systemWords(os).word, platformWord(cell, entry),
+        entry.source || 'local',
         ageText(entry.at).text].join(DOT)])
       + '>' + esc(systemWords(os).short) + '</span>';
   }).join(' ');
@@ -524,10 +533,37 @@ function carriedRow(carried) {
       + esc(String(carried[os]).slice(0, 7)) + '</span></span>';
   }).join(' ') + '</dd>';
 }
+function runLines(model, of, graded) {
+  return (model.runs || []).map(function (run, index) {
+    if (run.result === 'pass' && !run.grade) { return ''; }
+    var word = run.result === 'pass' && graded ? WORDS.graded
+      : TEST_WORDS[run.result] || WORDS.not_run;
+    var reason = (run.grade || {}).reason || run.why || '';
+    return '<p class="run"><span class="mono nowrap">' + (index + 1) + ' '
+      + WORDS.of + ' ' + of + '</span> <span class="mono nowrap" '
+      + 'style="color:var(--state-' + tone(word) + ')">' + esc(word)
+      + '</span>' + (reason ? ' <span class="sec">' + esc(reason) + '</span>'
+        : '') + '</p>';
+  }).join('');
+}
+function modelRows(proof) {
+  var models = proof.models || [];
+  if (!models.length) { return ''; }
+  return (proof.graded ? '<dt>Grader</dt><dd><span class="mono nowrap">'
+      + esc(proof.graded) + '</span></dd>' : '')
+    + '<dt>Models</dt><dd class="models">' + models.map(function (model) {
+      var of = Math.max(model.of || 0, proof.runs || 0);
+      return '<p class="mono"><span class="nowrap" style="color:var(--state-'
+        + tone(model.word) + ')">' + esc(model.word) + '</span> '
+        + '<span class="nowrap">' + (model.passed || 0) + ' ' + WORDS.of + ' '
+        + of + '</span> <span class="nowrap">on ' + esc(model.model)
+        + '</span></p>' + runLines(model, of, !!proof.graded);
+    }).join('') + '</dd>';
+}
 function proofDetail(proof, rule) {
   var owner = rule.feature;
   var tags = (proof.manual ? ['@manual'] : [])
-    .concat(proof.slow ? ['@slow'] : [])
+    .concat(proof.slow && !(proof.ai || []).length ? ['@slow'] : [])
     .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
   var tests = testLines(proof.tests)
     || (proof.manual ? handCheckLines(rule)
@@ -538,6 +574,7 @@ function proofDetail(proof, rule) {
     + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
     + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
     + carriedRow(proof.carried)
+    + modelRows(proof)
     + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
       : '')
     + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
@@ -587,7 +624,7 @@ function renderRule() {
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 19;
+var SCHEMA = 20;
 var TESTS = 'Tests';
 var SIGNOFF = 'Sign-off';
 var MET = 'met';
@@ -602,12 +639,14 @@ var PASSING = 'Passing';
 var FAILING = 'Failing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
+var GRADED_BY_AI = ' graded by an AI';
 var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
              partial: 'partial', failing: 'failing', passed: 'passed',
-             failed: 'failed', not_run: 'not run', out_of_date: 'out of date'};
-var CELL_TONES = {'passed': 'pass',
+             graded: 'graded', failed: 'failed', not_run: 'not run',
+             out_of_date: 'out of date'};
+var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'spot-checked': 'neutral',
@@ -656,6 +695,11 @@ function esc(value) {
   });
 }
 function tone(word) { return CELL_TONES[word] || 'idle'; }
+function passes(word) { return word === WORDS.passed || word === WORDS.graded; }
+function platformWord(cell, entry) {
+  return entry.word === WORDS.passed && cell.word === WORDS.graded
+    ? WORDS.graded : entry.word;
+}
 function pill(word) {
   return '<span class="pill" style="color:var(--state-' + tone(word) + ')"><b>'
     + esc(String(word).toUpperCase()) + '</b></span>';
@@ -730,12 +774,14 @@ function platformLines(feature) {
   var byOs = {};
   var names = [];
   (feature.rules || []).forEach(function (rule) {
-    var platforms = ((rule.cells || {}).passed || {}).platforms || {};
+    var cell = (rule.cells || {}).passed || {};
+    var platforms = cell.platforms || {};
     Object.keys(platforms).forEach(function (os) {
       var entry = platforms[os];
+      var word = platformWord(cell, entry);
       if (!byOs[os]) { byOs[os] = {at: '', words: {}}; names.push(os); }
       var found = byOs[os];
-      found.words[entry.word] = (found.words[entry.word] || 0) + 1;
+      found.words[word] = (found.words[word] || 0) + 1;
       if (newer(entry.at, found.at)) { found.at = entry.at; found.source = entry.source; }
     });
   });
@@ -745,7 +791,8 @@ function platformLines(feature) {
       var found = byOs[os];
       return [systemWords(os).word, found.source || 'local',
         ageText(found.at).text].concat(
-        [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
+        [WORDS.passed, WORDS.graded, WORDS.failed,
+         WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
         .join(DOT);
@@ -811,8 +858,9 @@ function cellWord(rule, name) {
 }
 function reachedSteps(rule) {
   var out = [];
-  if (cellWord(rule, 'passed') !== 'passed') { return out; }
-  out.push('passed');
+  var word = cellWord(rule, 'passed');
+  if (!passes(word)) { return out; }
+  out.push(word);
   if (audited() && cellWord(rule, 'strong') === 'strong') {
     out.push('strong');
   }

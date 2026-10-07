@@ -10,7 +10,7 @@
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null,
             features: {}, groups: {}};
-var SCHEMA = 19;
+var SCHEMA = 20;
 
 /* The two facts the top bar states, as the payload gives them: whether the
    tests are met on the committed evidence, the payload's `met`, and whether
@@ -39,12 +39,16 @@ var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
    every other rule is checked at sign-off, `summary.steps.by_hand`; `Strong`
    counts the rules the audit found strong, the payload's
    `summary.audit.strong`, drawn only where a rule has an audit entry;
+   under `Passing`'s total, where a rule passes with a proof a model graded,
+   `<g> graded by an AI`, the payload's `summary.steps.graded`, as the
+   terminal's sentence counts them;
    `Failing` counts the rules whose passed cell reads `failed`, and is drawn
    only where there is one. */
 var PASSING = 'Passing';
 var FAILING = 'Failing';
 var STRONG = 'Strong';
 var NO_PROOF = 'No proof';
+var GRADED_BY_AI = ' graded by an AI';
 
 /* The board's five column headings and the words its cells append, in one
    place. `scripts/mcp/purlin/board.py` renders the same columns for
@@ -60,12 +64,14 @@ var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
 var DOT = ' \u00b7 ';
 var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
              partial: 'partial', failing: 'failing', passed: 'passed',
-             failed: 'failed', not_run: 'not run', out_of_date: 'out of date'};
+             graded: 'graded', failed: 'failed', not_run: 'not run',
+             out_of_date: 'out of date'};
 
 /* Every word a cell can read, and the tone it reads in. A word carries the
    same hue wherever it is drawn, so a pill on the board, a row on the rule
-   screen and a proof beneath a rule agree. */
-var CELL_TONES = {'passed': 'pass',
+   screen and a proof beneath a rule agree. `graded` passes, so it is drawn
+   as `passed` is and told from it by its word alone. */
+var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
   'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
   'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
   'spot-checked': 'neutral',
@@ -136,6 +142,20 @@ function esc(value) {
 }
 
 function tone(word) { return CELL_TONES[word] || 'idle'; }
+
+/* True for a word that says the tests pass: `passed`, or `graded`, which a
+   rule reads where it passes with a proof a model graded. `states.passes`
+   answers the same for the status. */
+function passes(word) { return word === WORDS.passed || word === WORDS.graded; }
+
+/* What one operating system's run found for a rule, as a person reads it:
+   the word the passed cell's `platforms` holds, but `graded` in place of
+   `passed` where the cell itself reads `graded`, so a graded rule reads
+   `passed` nowhere. */
+function platformWord(cell, entry) {
+  return entry.word === WORDS.passed && cell.word === WORDS.graded
+    ? WORDS.graded : entry.word;
+}
 
 function pill(word) {
   return '<span class="pill" style="color:var(--state-' + tone(word) + ')"><b>'
@@ -251,12 +271,14 @@ function platformLines(feature) {
   var byOs = {};
   var names = [];
   (feature.rules || []).forEach(function (rule) {
-    var platforms = ((rule.cells || {}).passed || {}).platforms || {};
+    var cell = (rule.cells || {}).passed || {};
+    var platforms = cell.platforms || {};
     Object.keys(platforms).forEach(function (os) {
       var entry = platforms[os];
+      var word = platformWord(cell, entry);
       if (!byOs[os]) { byOs[os] = {at: '', words: {}}; names.push(os); }
       var found = byOs[os];
-      found.words[entry.word] = (found.words[entry.word] || 0) + 1;
+      found.words[word] = (found.words[word] || 0) + 1;
       if (newer(entry.at, found.at)) { found.at = entry.at; found.source = entry.source; }
     });
   });
@@ -266,7 +288,8 @@ function platformLines(feature) {
       var found = byOs[os];
       return [systemWords(os).word, found.source || 'local',
         ageText(found.at).text].concat(
-        [WORDS.passed, WORDS.failed, WORDS.not_run].filter(function (word) {
+        [WORDS.passed, WORDS.graded, WORDS.failed,
+         WORDS.not_run].filter(function (word) {
           return found.words[word];
         }).map(function (word) { return found.words[word] + ' ' + word; }))
         .join(DOT);
@@ -354,15 +377,16 @@ function cellWord(rule, name) {
 }
 
 /* What a rule has reached, as the boxes count it: its passed cell reads
-   `passed`, and then, where the audit read the project, the audit found it
-   strong. A rule checked by hand alone reads `checked at sign-off` there
+   `passed` or `graded`, the step named by the word the cell reads, and
+   then, where the audit read the project, the audit found it strong. A rule checked by hand alone reads `checked at sign-off` there
    until a sign-off notes it, and has reached neither. The audit reads only
    a rule whose tests pass, so a rule that has not reached the first has not
    reached the second. */
 function reachedSteps(rule) {
   var out = [];
-  if (cellWord(rule, 'passed') !== 'passed') { return out; }
-  out.push('passed');
+  var word = cellWord(rule, 'passed');
+  if (!passes(word)) { return out; }
+  out.push(word);
   if (audited() && cellWord(rule, 'strong') === 'strong') {
     out.push('strong');
   }

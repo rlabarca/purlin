@@ -1830,9 +1830,9 @@ def _table_rows(lines):
 class TestStatusTable:
 
     # purlin: states PROOF-58
-    def test_the_three_samples_show_the_same_cells_in_the_table_and_page(
+    def test_the_four_samples_show_the_same_cells_in_the_table_and_page(
             self, browser, dashboard_page, tmp_path):
-        for name in ('solo', 'team', 'regulated'):
+        for name in ('solo', 'team', 'regulated', 'prompts'):
             sample = _fixture(name)
             headings, table = _table_cells(purlin_status._table(sample))
             shown, dashboard = _dashboard(browser, dashboard_page,

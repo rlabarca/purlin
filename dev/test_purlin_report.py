@@ -6,7 +6,7 @@ gradient, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The samples under `dev/fixtures/report/` are payloads at schema 19, written on
+The samples under `dev/fixtures/report/` are payloads at schema 20, written on
 the branch `main` at the commit `a1b2c3d` and stamped `2026-10-01T10:42:13Z`:
 solo, which no audit has read and no one has signed, with one rule failing
 its tests; team, with an audit, one spec to repair, which writes a proof
@@ -15,7 +15,11 @@ regulated, signed as `0.1.0` four commits ago, with a rule whose audit found
 a gap and a planted bug its test missed, a rule no audit has run on, a hand
 check no sign-off has noted, a rule that passed on one system and failed on
 another, and a rule of a remote anchor with no test. No rule of regulated
-reads `failed`; one of solo's and two of team's do.
+reads `failed`; one of solo's and two of team's do. A fourth, prompts, is a
+project that tests a prompt: six rules of AI proofs, two of them reading
+`graded`, one that failed a run on one model, one whose grader refused a
+run, one with a model that gave no answer, and the warning that names that
+model.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -36,6 +40,9 @@ PAGE = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
 BUILD = os.path.join(DEV, 'build_report.py')
 FIXTURES = os.path.join(DEV, 'fixtures', 'report')
 PROCESSES = ('solo', 'team', 'regulated')
+# Every sample the page's readability is measured over: the three, and the
+# one whose rules have AI proofs.
+WALKED = PROCESSES + ('prompts',)
 
 sys.path.insert(0, DEV)
 
@@ -465,7 +472,8 @@ RESOLVE_TOKEN = """(name) => {
 # purlin: purlin_report PROOF-8
 def test_a_step_box_counts_the_rules_that_reached_it(browser, tmp_path):
     payload = payload_named('regulated')
-    assert payload['summary']['steps'] == {'passed': 7, 'by_hand': 1}
+    assert payload['summary']['steps'] == {'passed': 7, 'graded': 0,
+                                           'by_hand': 1}
     assert payload['summary']['audit']['strong'] == 3
     page = open_board(browser, tmp_path, payload)
     found = boxes(page)
@@ -516,7 +524,8 @@ def test_passing_is_complete_once_every_other_rule_is_checked_at_sign_off(
     payload = payload_named('regulated')
     every_tested_rule_passing(payload)
     assert payload['summary']['rules'] == 11
-    assert payload['summary']['steps'] == {'passed': 10, 'by_hand': 1}
+    assert payload['summary']['steps'] == {'passed': 10, 'graded': 0,
+                                           'by_hand': 1}
     page = open_board(browser, tmp_path, payload)
     found = {label: (count, colour) for label, count, colour in boxes(page)}
     passing = page.evaluate(RESOLVE_TOKEN, '--state-pass')
@@ -1118,13 +1127,13 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
         payload['schema_version'] = 3
     page = open_sample(browser, tmp_path, 'team', marked_as_schema_3)
     assert texts(page, '.notice') == [
-        'This data was written for schema 3 and this page reads schema 19. '
+        'This data was written for schema 3 and this page reads schema 20. '
         'Run purlin:status to write it again.']
     # On screen, not only in the page: the one notice is drawn.
     assert [notice.is_visible()
             for notice in page.query_selector_all('.notice')] == [True]
     assert page.locator('.notice').inner_text().strip() == (
-        'This data was written for schema 3 and this page reads schema 19. '
+        'This data was written for schema 3 and this page reads schema 20. '
         'Run purlin:status to write it again.')
     assert page.query_selector_all('.tile') == []
     assert page.query_selector_all('.fact') == []
@@ -1401,7 +1410,7 @@ def one_line_of_each_kind(name):
                         specs.HEADING_NAMES_OTHER % 'other')),
         (words['tags_conflict'],
          specs._proof_mistake('tags_conflict', {}, name, 'PROOF-3',
-                              specs.SLOW_AND_MANUAL)),
+                              specs.READ_AS_MANUAL % '@slow')),
         (words['line_unread'],
          specs._mistake('line_unread', name,
                         specs.UNREAD_FIELD % '> Requires:')),
@@ -1948,7 +1957,7 @@ def _every_text_in(browser, tmp_path, theme, relaxed=None):
     low = []
     tones = set()
     measured = set()
-    for process in PROCESSES:
+    for process in WALKED:
         page = open_in_theme(browser, tmp_path / process,
                              payload_named(process), theme)
         page.click('.tr')
@@ -1976,7 +1985,7 @@ def _every_text_in(browser, tmp_path, theme, relaxed=None):
 
 # purlin: purlin_report PROOF-66
 def test_every_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
-    """The three samples, each on the board with its first spec open and
+    """The four samples, each on the board with its first spec open and
     then on the screen of each of that spec's rules; every text node's
     computed colour against the ground under it: 7:1, and 4.5:1 for text in
     the fail colour and the accent colour."""
@@ -1990,7 +1999,7 @@ def test_every_text_measures_7_to_1_in_the_dark_theme(browser, tmp_path):
 
 # purlin: purlin_report PROOF-104
 def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
-    """The three samples, each on the board with its first spec open and
+    """The four samples, each on the board with its first spec open and
     then on the screen of each of that spec's rules; every text node's
     computed colour against the ground under it, state colours and the
     accent included."""
@@ -2001,7 +2010,7 @@ def test_every_text_measures_7_to_1_in_the_light_theme(browser, tmp_path):
     # Each sample's board with its first spec open, measured here as it is
     # seen, through any opacity it is drawn at: nothing under 7:1, the rule
     # texts of the open spec among what was measured.
-    for process in PROCESSES:
+    for process in WALKED:
         payload = payload_named(process)
         page = open_in_theme(browser, tmp_path / ('board-' + process),
                              payload, 'light')
@@ -3039,3 +3048,222 @@ def test_a_name_the_page_has_no_rule_for_is_not_a_link(browser, tmp_path):
     assert [(item['name'], item['link']) for item in found] == [
         ('nosuch PROOF-1', False), ('login', False)], found
     assert still == 2 and tables >= 1
+
+
+# ---------------------------------------------------------------------------
+# An AI proof: a graded rule, and a proof's models on its rule's screen
+# ---------------------------------------------------------------------------
+
+def reply_open(browser, tmp_path, change=None, **options):
+    """The prompts sample's board with support_reply open."""
+    page = open_sample(browser, tmp_path, 'prompts', change, **options)
+    page.click('[data-act="feature"][data-feature="support_reply"]')
+    return page
+
+
+def open_reply_rule(page, rule_id, feature='support_reply'):
+    """One rule's screen, from a board with its spec open."""
+    page.click('.rule[data-feature="%s"][data-rule="%s"]' % (feature, rule_id))
+    page.wait_for_selector('h1', timeout=10000)
+
+
+# purlin: purlin_report PROOF-294
+def test_a_graded_rule_counts_among_the_rules_that_pass(browser, tmp_path):
+    payload = payload_named('prompts')
+    assert payload['summary']['rules'] == 8
+    assert [rule['id'] for feature in payload['features']
+            for rule in feature['rules']
+            if rule['cells']['passed']['word'] == 'graded'] == [
+                'RULE-2', 'RULE-6']
+    page = open_board(browser, tmp_path, payload)
+    found = {label: count for label, count, _colour in boxes(page)}
+    bands = page.eval_on_selector_all(
+        '.group',
+        r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
+    cells = count_cells(page)
+    page.close()
+    assert found['Passing'] == '5', found
+    assert bands == ['▼ PROMPTS 1 spec 3 of 6 rules pass',
+                     '▼ API 1 spec 2 of 2 rules pass'], bands
+    assert cells['support_reply']['Tests'] == '3 of 6 · 2 failing', cells
+
+
+# purlin: purlin_report PROOF-295
+def test_a_graded_rules_badge_reads_graded_in_the_pass_tone(browser,
+                                                            tmp_path):
+    page = reply_open(browser, tmp_path)
+    badges = row_badges(page, 'support_reply')
+    colours = dict(page.eval_on_selector_all(
+        '.rule .rp .pill',
+        'els => els.map(e => [e.innerText.trim(), getComputedStyle(e).color])'))
+    passing = resolved(page, '--state-pass')
+    page.close()
+    assert badges == {'RULE-1': 'PASSED', 'RULE-2': 'GRADED',
+                      'RULE-3': 'FAILED', 'RULE-4': '', 'RULE-5': 'FAILED',
+                      'RULE-6': 'GRADED'}, badges
+    assert colours['GRADED'] == colours['PASSED'] == passing, colours
+
+
+# purlin: purlin_report PROOF-296
+def test_a_graded_rule_reads_graded_in_its_hovers_and_on_its_screen(browser,
+                                                                    tmp_path):
+    # The clock stands at the moment the sample was written, 2026-10-01
+    # 10:42:13 UTC, 18 hours after its run of 2026-09-30 16:20.
+    page = reply_open(browser, tmp_path, clock_at='2026-10-01T10:42:13Z')
+    hover = hovers(page)['support_reply']['Tests']
+    open_reply_rule(page, 'RULE-2')
+    pills = texts(page, '.wrap .pill')
+    (box,) = page.evaluate(PLATFORM_BOXES)
+    page.close()
+    assert hover == ('macOS · local · 18 hours old · 1 passed · 2 graded'
+                     ' · 2 failed · 1 not run'), hover
+    assert pills == ['GRADED', 'GRADED'], pills
+    assert (box['os'], box['tone']) == ('Mac', 'pass'), box
+    assert box['title'].startswith('macOS · graded · local · '), box
+
+
+def lines_under(page):
+    """Each box's label and every line under it."""
+    return page.eval_on_selector_all(
+        '.tile', "els => els.map(e => [e.querySelector('.tile-l')"
+        ".textContent.trim(), Array.from(e.querySelectorAll('.tile-t'))"
+        ".map(t => t.innerText.trim())])")
+
+
+# purlin: purlin_report PROOF-297
+def test_the_passing_box_says_how_many_rules_an_ai_graded(browser, tmp_path):
+    payload = payload_named('prompts')
+    assert payload['summary']['steps'] == {'passed': 5, 'graded': 2,
+                                           'by_hand': 0}
+    page = open_board(browser, tmp_path, payload)
+    assert lines_under(page) == [
+        ['No proof', []],
+        ['Passing', ['8 RULES TOTAL', '2 GRADED BY AN AI']],
+        ['Failing', []]]
+    graded = page.query_selector_all('.tile-t')[1]
+    label = page.query_selector_all('.tile')[1].query_selector('.tile-l')
+    assert label.inner_text().strip() == 'PASSING'
+    assert graded.evaluate(LOOK) == label.evaluate(LOOK)
+    page.close()
+
+
+# purlin: purlin_report PROOF-298
+def test_no_graded_line_where_no_rule_is_graded(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert payload['summary']['steps']['graded'] == 0
+    page = open_board(browser, tmp_path, payload)
+    found = dict(lines_under(page))
+    page.close()
+    assert found['Passing'] == ['11 RULES TOTAL'], found
+
+
+# Each proof panel on the open rule's screen: its rows' labels in order, the
+# lines of its `Models` row and how each is drawn, and its `Grader` row.
+MODEL_ROWS = r"""() => Array.from(document.querySelectorAll('.proof .kv'))
+  .map(list => {
+    const labels = Array.from(list.querySelectorAll('dt')).map(
+      dt => dt.textContent.trim());
+    const row = label => { const dt = Array.from(list.querySelectorAll('dt'))
+      .find(d => d.textContent.trim() === label);
+      return dt ? dt.nextElementSibling : null; };
+    const models = row('Models');
+    const grader = row('Grader');
+    return {labels: labels,
+      lines: models ? Array.from(models.querySelectorAll('p')).map(
+        p => p.innerText.trim().replace(/\s+/g, ' ')) : null,
+      fonts: models ? Array.from(models.querySelectorAll('p:not(.run)')).map(
+        p => getComputedStyle(p).fontFamily) : null,
+      words: models ? Array.from(models.querySelectorAll('p:not(.run)')).map(
+        p => [p.firstElementChild.textContent.trim(),
+              getComputedStyle(p.firstElementChild).color]) : null,
+      grader: grader ? grader.innerText.trim() : null};
+  })"""
+
+
+def models_of(browser, tmp_path, rule_id, feature='support_reply',
+              change=None):
+    """`MODEL_ROWS` for the one proof of a rule of the prompts sample, and
+    the pass and fail tones as the page resolves them."""
+    page = open_sample(browser, tmp_path, 'prompts', change)
+    page.click('[data-act="feature"][data-feature="%s"]' % feature)
+    open_reply_rule(page, rule_id, feature)
+    (found,) = page.evaluate(MODEL_ROWS)
+    found['tones'] = {name: resolved(page, '--state-' + name)
+                      for name in ('pass', 'fail', 'warn')}
+    page.close()
+    return found
+
+
+# purlin: purlin_report PROOF-299
+def test_an_ai_proof_reads_one_line_per_model_and_the_run_that_failed(
+        browser, tmp_path):
+    proof = rule_of(payload_named('prompts'), 'support_reply',
+                    'RULE-3')['proofs'][0]
+    assert [[run['result'] for run in model['runs']]
+            for model in proof['models']] == [['pass'] * 3,
+                                              ['pass', 'fail', 'pass']]
+    found = models_of(browser, tmp_path, 'RULE-3')
+    assert found['labels'] == ['PROOF-3', 'Result', 'Models', 'Tests'], found
+    assert found['lines'] == ['passed 3 of 3 on claude-opus-5-5',
+                              'failed 2 of 3 on claude-sonnet-5-5',
+                              '2 of 3 failed'], found
+    assert [font.startswith('"Courier New"') for font in found['fonts']] == [
+        True, True], found
+    assert found['words'] == [['passed', found['tones']['pass']],
+                              ['failed', found['tones']['fail']]], found
+
+
+# purlin: purlin_report PROOF-300
+def test_a_graded_proof_names_its_grader_and_its_reason_for_each_run(
+        browser, tmp_path):
+    found = models_of(browser, tmp_path, 'RULE-4')
+    assert found['labels'] == ['PROOF-4', 'Result', 'Grader', 'Models',
+                               'Tests'], found
+    assert found['grader'] == 'claude-haiku-4-5-20251001', found
+    assert found['lines'] == [
+        'graded 3 of 3 on claude-opus-5-5',
+        '1 of 3 graded The whole reply is in Spanish.',
+        '2 of 3 graded It answers in Spanish.',
+        '3 of 3 graded Spanish throughout, the greeting included.',
+        'not run 0 of 3 on claude-sonnet-5-5',
+        '1 of 3 not run The model gave no answer.'], found
+
+
+# purlin: purlin_report PROOF-301
+def test_runs_that_passed_ungraded_draw_no_line_and_a_plain_proof_no_row(
+        browser, tmp_path):
+    found = models_of(browser, tmp_path / 'ai', 'RULE-1')
+    assert found['lines'] == ['passed 3 of 3 on claude-opus-5-5',
+                              'passed 3 of 3 on claude-sonnet-5-5'], found
+    assert found['labels'] == ['PROOF-1', 'Result', 'Models', 'Tests'], found
+    plain = models_of(browser, tmp_path / 'plain', 'RULE-1', 'order_lookup')
+    assert plain['labels'] == ['PROOF-1', 'Result', 'Tests'], plain
+    assert (plain['lines'], plain['grader']) == (None, None), plain
+
+
+# purlin: purlin_report PROOF-302
+def test_a_models_count_is_out_of_the_runs_asked_now(browser, tmp_path):
+    def five_asked(payload):
+        proof = rule_of(payload, 'support_reply', 'RULE-1')['proofs'][0]
+        assert (proof['runs'], [model['of'] for model in proof['models']]) == (
+            3, [3, 3])
+        proof['runs'] = 5
+    found = models_of(browser, tmp_path, 'RULE-1', change=five_asked)
+    assert found['lines'] == ['passed 3 of 5 on claude-opus-5-5',
+                              'passed 3 of 5 on claude-sonnet-5-5'], found
+
+
+# purlin: purlin_report PROOF-304
+def test_a_model_not_reached_is_a_notice_like_any_other(browser, tmp_path):
+    payload = payload_named('prompts')
+    line = ('claude-sonnet-5-5: model not reached. The model gave no answer. '
+            'Run purlin:test --all.')
+    assert payload['warnings'] == [line]
+    page = open_board(browser, tmp_path, payload)
+    (found,) = page.evaluate(NOTICE_PARTS)
+    page.close()
+    assert found['text'] == line, found
+    assert (found['name'], found['link']) == ('claude-sonnet-5-5', False), found
+    assert found['nameFont'].startswith('"Courier New"'), found
+    assert found['kind'] == 'model not reached', found
+    assert found['kindBorder'] == '1px', found

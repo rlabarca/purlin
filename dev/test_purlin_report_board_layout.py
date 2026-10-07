@@ -11,7 +11,7 @@ DEV = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, DEV)
 
 from test_purlin_report import (browser, open_board,  # noqa: E402,F401
-                                payload_named)
+                                open_in_theme, payload_named)
 
 # The five widths a person opens the page at, from a wide screen to a phone.
 EVERY_WIDTH = (1500, 1280, 1024, 768, 390)
@@ -24,7 +24,8 @@ BROKEN_VALUES = """() => {
                '.tag',
                '.pill', '.os', '.rule .rid', 'h1', '.tile-v', '.tile-l',
                '.name .n', '.group .gt', '.group .gs', '.group .gc',
-               '.kv dt', '.th > div', '.eyebrow', '.btn'];
+               '.kv dt', '.th > div', '.eyebrow', '.btn',
+               '.models .nowrap'];
   const out = [];
   document.querySelectorAll(sel.join(',')).forEach(el => {
     if (!el.textContent.trim() || !el.getClientRects().length) { return; }
@@ -76,6 +77,46 @@ def test_both_screens_fit_every_width_in_the_dark_theme(browser, tmp_path):  # n
         wrong += [(width, screen, sideways, broken)
                   for screen, sideways, broken in seen if sideways or broken]
     assert wrong == [], wrong
+
+
+# How many parts of a model's line the selector above measures on the open
+# screen: its word, its count and its name, and the same of each run.
+MODEL_PARTS = """() => document.querySelectorAll('.models .nowrap').length"""
+
+
+# purlin: purlin_report PROOF-303
+def test_an_ai_proofs_models_fit_every_width_in_both_themes(browser, tmp_path):  # noqa: F811
+    payload = payload_named('prompts')
+    (reply,) = [feature for feature in payload['features']
+                if feature['name'] == 'support_reply']
+    rules = [rule['id'] for rule in reply['rules']]
+    assert len(rules) == 6
+    wrong = []
+    parts = 0
+    for theme in ('dark', 'light'):
+        for width in EVERY_WIDTH:
+            page = open_in_theme(browser, tmp_path / ('%s-%d' % (theme, width)),
+                                 payload, theme)
+            page.set_viewport_size({'width': width, 'height': 900})
+            page.click('[data-act="feature"][data-feature="support_reply"]')
+            seen = [('board', page.evaluate(SIDEWAYS),
+                     page.evaluate(BROKEN_VALUES))]
+            for rule in rules:
+                page.click('.rule[data-feature="support_reply"]'
+                           '[data-rule="%s"] .rt' % rule)
+                assert page.inner_text('h1') == rule, (theme, width)
+                parts += page.evaluate(MODEL_PARTS)
+                seen.append((rule, page.evaluate(SIDEWAYS),
+                             page.evaluate(BROKEN_VALUES)))
+                page.click('[data-act="close"]')
+                page.wait_for_selector('.rule', timeout=10000)
+            page.close()
+            wrong += [(theme, width, screen, sideways, broken)
+                      for screen, sideways, broken in seen
+                      if sideways or broken]
+    assert wrong == [], wrong
+    # Six rules' model lines and their runs, at five widths in two themes.
+    assert parts == 10 * 64, parts
 
 
 # Where the top bar's theme button and its two boxes stand, against the

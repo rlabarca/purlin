@@ -1,0 +1,1180 @@
+{
+  "branch": "main",
+  "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+  "dirty": false,
+  "evidence": {
+    "order_lookup": {
+      "local": {
+        "macos": {
+          "at": "2026-09-30T16:20:00Z",
+          "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+          "current": true,
+          "path": ".purlin/evidence/local/order_lookup.json",
+          "result": "pass"
+        }
+      }
+    },
+    "support_reply": {
+      "local": {
+        "macos": {
+          "at": "2026-09-30T16:20:00Z",
+          "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+          "current": true,
+          "path": ".purlin/evidence/local/support_reply.json",
+          "result": "fail"
+        }
+      }
+    }
+  },
+  "features": [
+    {
+      "broken": [],
+      "category": "api",
+      "current": true,
+      "description": "Finding an order by its number.",
+      "evidence": {
+        "ci": null,
+        "local": {
+          "committed": true,
+          "path": ".purlin/evidence/local/order_lookup.json",
+          "platforms": {
+            "macos": {
+              "at": "2026-09-30T16:20:00Z",
+              "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+              "current": true
+            }
+          }
+        }
+      },
+      "incomplete": false,
+      "incomplete_reason": null,
+      "is_anchor": false,
+      "name": "order_lookup",
+      "pinned": null,
+      "rollup": {
+        "audit_out_of_date": 0,
+        "by_hand": 0,
+        "failing": 0,
+        "incomplete": false,
+        "manual": 0,
+        "not_audited": 2,
+        "partial": 0,
+        "passed": 2,
+        "proofs": 2,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
+        "rules": 2,
+        "spot_checked": 0,
+        "strong": 0,
+        "untested": 0,
+        "weak": 0
+      },
+      "rules": [
+        {
+          "audit": null,
+          "bucket": "passed",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has read this rule"
+              ],
+              "word": "not audited"
+            }
+          },
+          "feature": "order_lookup",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": true,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-1",
+          "left": null,
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "f27d4870cf6be6d11e93ba5b05bf452266931cfd1800cf58efd7670773cd0e09",
+          "proofs": [
+            {
+              "ai": [],
+              "carried": {},
+              "env": null,
+              "graded": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "models": [],
+              "result": "passed",
+              "runs": null,
+              "slow": false,
+              "tests": [
+                {
+                  "file": "tests/test_order_lookup.py",
+                  "name": "test_known_order",
+                  "result": "pass"
+                }
+              ],
+              "text": "GET /orders/48213 returns 200 and the order's number"
+            }
+          ],
+          "rule_hash": "a9a5ca5bf0f31691af43998ae73d5934c187e830b1e2ce43e8d160714e24ef07",
+          "test_hash": "938c82f7a5a8864be5b17695b71759e1bf9e353c681076deab140f64196be922",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "A known order number returns the order."
+        },
+        {
+          "audit": null,
+          "bucket": "passed",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has read this rule"
+              ],
+              "word": "not audited"
+            }
+          },
+          "feature": "order_lookup",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": true,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-2",
+          "left": null,
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "7626766cd29a9f2c0369541135c062ead8c924926779e5810505ba13616a7524",
+          "proofs": [
+            {
+              "ai": [],
+              "carried": {},
+              "env": null,
+              "graded": null,
+              "id": "PROOF-2",
+              "manual": false,
+              "models": [],
+              "result": "passed",
+              "runs": null,
+              "slow": false,
+              "tests": [
+                {
+                  "file": "tests/test_order_lookup.py",
+                  "name": "test_unknown_order",
+                  "result": "pass"
+                }
+              ],
+              "text": "GET /orders/0 returns 404"
+            }
+          ],
+          "rule_hash": "4a4f2ac88224eefac66aa1bce1e5a3c64f338170fc782dabb1fab793b2789f41",
+          "test_hash": "fc177fcd1e9c328bccf896f7de3868f046a947e8d55ed4d5b048fb0c00980355",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "An unknown order number returns 404."
+        }
+      ],
+      "scope": [
+        "src/orders.py"
+      ],
+      "source": null,
+      "source_path": null,
+      "spec_path": "specs/api/order_lookup.md"
+    },
+    {
+      "broken": [],
+      "category": "prompts",
+      "current": true,
+      "description": "The prompt that drafts a reply to a customer's message about an order.",
+      "evidence": {
+        "ci": null,
+        "local": {
+          "committed": true,
+          "path": ".purlin/evidence/local/support_reply.json",
+          "platforms": {
+            "macos": {
+              "at": "2026-09-30T16:20:00Z",
+              "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+              "current": true
+            }
+          }
+        }
+      },
+      "incomplete": false,
+      "incomplete_reason": null,
+      "is_anchor": false,
+      "name": "support_reply",
+      "pinned": null,
+      "rollup": {
+        "audit_out_of_date": 0,
+        "by_hand": 0,
+        "failing": 2,
+        "incomplete": false,
+        "manual": 0,
+        "not_audited": 3,
+        "partial": 0,
+        "passed": 3,
+        "proofs": 6,
+        "proofs_without_test": 0,
+        "proofs_without_test_ids": [],
+        "rules": 6,
+        "spot_checked": 0,
+        "strong": 0,
+        "untested": 1,
+        "weak": 0
+      },
+      "rules": [
+        {
+          "audit": null,
+          "bucket": "passed",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has read this rule"
+              ],
+              "word": "not audited"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": true,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-1",
+          "left": null,
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "dbb41b0b93142ea50f6ceea5d264c1e0e2d2d8e468cee7df2e4824a00bcfa650",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5",
+                "claude-sonnet-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": null,
+              "id": "PROOF-1",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "made": "helper",
+                      "output": "0101010101010101010101010101010101010101010101010101010101010101",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0202020202020202020202020202020202020202020202020202020202020202",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0303030303030303030303030303030303030303030303030303030303030303",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "passed"
+                },
+                {
+                  "model": "claude-sonnet-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "made": "helper",
+                      "output": "0404040404040404040404040404040404040404040404040404040404040404",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0505050505050505050505050505050505050505050505050505050505050505",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0606060606060606060606060606060606060606060606060606060606060606",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "passed"
+                }
+              ],
+              "result": "passed",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_names_the_order_number",
+                  "result": "pass"
+                }
+              ],
+              "text": "Send the message `Where is order 48213?`; the reply holds `48213`"
+            }
+          ],
+          "rule_hash": "da0dfa7ffe2dcf7bcb0a928bbd42cb98ff59010a3ad70f39d9a69fa9e9de67aa",
+          "test_hash": "8fce97b12779a25d1c7e7e18421dec69937ce37eb3e48a2d980ed6ec9e740ecd",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply names the order number the customer gave."
+        },
+        {
+          "audit": null,
+          "bucket": "passed",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "graded"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has read this rule"
+              ],
+              "word": "not audited"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": true,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-2",
+          "left": null,
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "d5914a59eee212806d97872834771645e5c45c5fafed37eee8f09b8e07ae4bc6",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": "claude-haiku-4-5-20251001",
+              "id": "PROOF-2",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It says sorry once, in the first sentence, and offers to trace the parcel."
+                      },
+                      "made": "helper",
+                      "output": "0707070707070707070707070707070707070707070707070707070707070707",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "One apology, and no refund is promised."
+                      },
+                      "made": "helper",
+                      "output": "0808080808080808080808080808080808080808080808080808080808080808",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It apologises once and names no refund."
+                      },
+                      "made": "helper",
+                      "output": "0909090909090909090909090909090909090909090909090909090909090909",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "graded"
+                }
+              ],
+              "result": "graded",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_apologises_once",
+                  "result": "pass"
+                }
+              ],
+              "text": "Send a complaint about a late parcel; the reply apologises exactly once and promises no refund"
+            }
+          ],
+          "rule_hash": "d2ac351f949c4af8ea883c60acc61d76b1ca2527a159266fa837fbfe7a2a5fab",
+          "test_hash": "300255927b18c2c0bc5d6c5fbc003b4bc46c692ef345834238eb8b7b5a52e2d9",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply apologises once and promises no refund."
+        },
+        {
+          "audit": null,
+          "bucket": "failing",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "failed"
+                }
+              },
+              "reasons": [
+                "failing: macOS, local",
+                "claude-sonnet-5-5: 2 of 3 passed"
+              ],
+              "source": "local",
+              "word": "failed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "word": "waiting"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": true,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-3",
+          "left": "to_fix",
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "e2df2495af7cd8fd0044a1429648922c9f740d292103379f5f171b2d4e10b346",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5",
+                "claude-sonnet-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": null,
+              "id": "PROOF-3",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "made": "helper",
+                      "output": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "passed"
+                },
+                {
+                  "model": "claude-sonnet-5-5",
+                  "of": 3,
+                  "passed": 2,
+                  "runs": [
+                    {
+                      "made": "helper",
+                      "output": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
+                      "result": "pass"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+                      "result": "fail"
+                    },
+                    {
+                      "made": "helper",
+                      "output": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "failed"
+                }
+              ],
+              "result": "failed",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_stays_short",
+                  "result": "fail"
+                }
+              ],
+              "text": "Send a message of 400 words; the reply holds 120 words or fewer"
+            }
+          ],
+          "rule_hash": "95cd3b81c4eef626baf736254deb468039a049c004a6f58b2826567875c95c84",
+          "test_hash": "311a1ed9101fb1177f535cfb5e0cbc70796d39d9e63e73044f34a9ffbe4739cc",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply is 120 words or fewer."
+        },
+        {
+          "audit": null,
+          "bucket": "untested",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": false,
+              "current": false,
+              "missing_env": [],
+              "missing_models": [
+                "claude-sonnet-5-5"
+              ],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "not run"
+                }
+              },
+              "reasons": [
+                "slow: runs with purlin:test --all",
+                "claude-sonnet-5-5: 0 of 3 run"
+              ],
+              "source": null,
+              "word": "not run"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "word": "waiting"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-4",
+          "left": "to_test_model",
+          "machines": {},
+          "proof_hash": "e8a23874e3dac0461da309788016203a81a70f85b5364dafba4a545f95d12848",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5",
+                "claude-sonnet-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": "claude-haiku-4-5-20251001",
+              "id": "PROOF-4",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "The whole reply is in Spanish."
+                      },
+                      "made": "helper",
+                      "output": "1010101010101010101010101010101010101010101010101010101010101010",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It answers in Spanish."
+                      },
+                      "made": "helper",
+                      "output": "1111111111111111111111111111111111111111111111111111111111111111",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "Spanish throughout, the greeting included."
+                      },
+                      "made": "helper",
+                      "output": "1212121212121212121212121212121212121212121212121212121212121212",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "graded"
+                },
+                {
+                  "model": "claude-sonnet-5-5",
+                  "of": 1,
+                  "passed": 0,
+                  "runs": [
+                    {
+                      "result": "not run",
+                      "why": "The model gave no answer."
+                    }
+                  ],
+                  "word": "not run"
+                }
+              ],
+              "result": "not run",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_answers_in_spanish",
+                  "result": "not run"
+                }
+              ],
+              "text": "Send a message in Spanish; the reply is in Spanish"
+            }
+          ],
+          "rule_hash": "10bc3b9b501d8611a58ad9e8eef72c0468f824582e998c8969df1f085a7dc3d4",
+          "test_hash": "86e5aa638a827b6d1d685058bc521207b59f07e732ab5b17b1572d668d0f753b",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply is written in the language the customer wrote in."
+        },
+        {
+          "audit": null,
+          "bucket": "failing",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "failed"
+                }
+              },
+              "reasons": [
+                "failing: macOS, local",
+                "claude-opus-5-5: 2 of 3 passed"
+              ],
+              "source": "local",
+              "word": "failed"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "waiting for its tests to pass"
+              ],
+              "word": "waiting"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": true,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": false,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-5",
+          "left": "to_fix",
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "7f2ff788ee17b3d9ee481e9591f5a632c4f23ccc11374c44ffe8dc203064894d",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": "claude-haiku-4-5-20251001",
+              "id": "PROOF-5",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 2,
+                  "runs": [
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It offers one step: to reply with the order number."
+                      },
+                      "made": "helper",
+                      "output": "1414141414141414141414141414141414141414141414141414141414141414",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": false,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It offers two steps: to reply with the order number, and to call the shop."
+                      },
+                      "made": "helper",
+                      "output": "1515151515151515151515151515151515151515151515151515151515151515",
+                      "result": "fail"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "One next step, at the end."
+                      },
+                      "made": "helper",
+                      "output": "1616161616161616161616161616161616161616161616161616161616161616",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "failed"
+                }
+              ],
+              "result": "failed",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_offers_one_next_step",
+                  "result": "fail"
+                }
+              ],
+              "text": "Send a message asking three questions; the reply offers exactly one next step"
+            }
+          ],
+          "rule_hash": "1d25afce863d7e6e058303a4cb85f2a6943828a7820057325d936f28736557cc",
+          "test_hash": "adcf6c946c601c6a1d774606e91effedbc760a26d39fa9513e704d10833a56ce",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply offers one next step and no more."
+        },
+        {
+          "audit": null,
+          "bucket": "passed",
+          "carried": {},
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "missing_models": [],
+              "nothing_to_check": [],
+              "platforms": {
+                "macos": {
+                  "at": "2026-09-30T16:20:00Z",
+                  "source": "local",
+                  "word": "passed"
+                }
+              },
+              "reasons": [],
+              "source": "local",
+              "word": "graded"
+            },
+            "strong": {
+              "evidence": null,
+              "findings": [],
+              "reasons": [
+                "no audit has read this rule"
+              ],
+              "word": "not audited"
+            }
+          },
+          "feature": "support_reply",
+          "flags": {
+            "audit_out_of_date": false,
+            "by_hand": false,
+            "failing": false,
+            "manual": false,
+            "no_proof": false,
+            "not_audited": true,
+            "out_of_date": false,
+            "partial": false,
+            "spot_checked": false,
+            "strong": false,
+            "weak": false
+          },
+          "id": "RULE-6",
+          "left": null,
+          "machines": {
+            "macos": "dev-machine"
+          },
+          "proof_hash": "1e4dc35cba5e6f975cb12f0638b83716b9aefe7ff0b30dedbec61640e3893a97",
+          "proofs": [
+            {
+              "ai": [
+                "claude-opus-5-5",
+                "claude-sonnet-5-5"
+              ],
+              "carried": {},
+              "env": null,
+              "graded": "claude-haiku-4-5-20251001",
+              "id": "PROOF-6",
+              "manual": false,
+              "models": [
+                {
+                  "model": "claude-opus-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It asks for no card number and says never to send one."
+                      },
+                      "made": "helper",
+                      "output": "1717171717171717171717171717171717171717171717171717171717171717",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "No card number is asked for."
+                      },
+                      "made": "helper",
+                      "output": "1818181818181818181818181818181818181818181818181818181818181818",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It asks for the order number alone."
+                      },
+                      "made": "helper",
+                      "output": "1919191919191919191919191919191919191919191919191919191919191919",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "graded"
+                },
+                {
+                  "model": "claude-sonnet-5-5",
+                  "of": 3,
+                  "passed": 3,
+                  "runs": [
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It asks for nothing but the order number."
+                      },
+                      "made": "helper",
+                      "output": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "No card number is asked for."
+                      },
+                      "made": "helper",
+                      "output": "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+                      "result": "pass"
+                    },
+                    {
+                      "grade": {
+                        "accepted": true,
+                        "model": "claude-haiku-4-5-20251001",
+                        "reason": "It tells the customer not to send card details."
+                      },
+                      "made": "helper",
+                      "output": "1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+                      "result": "pass"
+                    }
+                  ],
+                  "word": "graded"
+                }
+              ],
+              "result": "graded",
+              "runs": 3,
+              "slow": true,
+              "tests": [
+                {
+                  "file": "tests/test_support_reply.py",
+                  "name": "test_asks_for_no_card_number",
+                  "result": "pass"
+                }
+              ],
+              "text": "Send a message offering a card number; the reply asks for none"
+            }
+          ],
+          "rule_hash": "b1a6d2e7e001ad9fe3b1b0ce5e193500e87aebc017d43803ef3d2d732da21eef",
+          "test_hash": "862892e18b8671c6079ccb5e0b3e9800d25957e4269645f4cb9b1b1fdcf24273",
+          "test_hash_kind": "test",
+          "tests": [],
+          "text": "The reply never asks for a card number."
+        }
+      ],
+      "scope": [
+        "prompts/support_reply.md"
+      ],
+      "source": null,
+      "source_path": null,
+      "spec_path": "specs/prompts/support_reply.md"
+    }
+  ],
+  "generated_at": "2026-10-01T10:42:13Z",
+  "generated_by": "sync_status",
+  "information": [],
+  "last_line": null,
+  "left": [
+    {
+      "command": "purlin:build",
+      "count": 2,
+      "kind": "to_fix",
+      "text": "2 rules to fix"
+    },
+    {
+      "command": "purlin:test --all",
+      "count": 1,
+      "kind": "to_test_model",
+      "model": "claude-sonnet-5-5",
+      "text": "1 rule to test on claude-sonnet-5-5"
+    }
+  ],
+  "met": false,
+  "notices": [
+    {
+      "about": "claude-sonnet-5-5",
+      "feature": null,
+      "kind": "model_not_reached",
+      "label": "model not reached",
+      "rest": "The model gave no answer. Run purlin:test --all.",
+      "rule": null,
+      "text": "claude-sonnet-5-5: model not reached. The model gave no answer. Run purlin:test --all.",
+      "tone": "warn"
+    }
+  ],
+  "os_words": {
+    "linux": {
+      "short": "Lin",
+      "word": "Linux/Unix"
+    },
+    "macos": {
+      "short": "Mac",
+      "word": "macOS"
+    },
+    "windows": {
+      "short": "Win",
+      "word": "Windows"
+    }
+  },
+  "project": "helpdesk",
+  "schema_version": 20,
+  "signoff": {
+    "commit": null,
+    "since": null,
+    "version": null,
+    "word": "not signed"
+  },
+  "summary": {
+    "audit": {
+      "not_audited": 5,
+      "out_of_date": 0,
+      "spot_checked": 0,
+      "strong": 0,
+      "weak": 0
+    },
+    "audit_out_of_date": 0,
+    "by_hand": 0,
+    "failing": 2,
+    "features": 2,
+    "incomplete": 0,
+    "manual": 0,
+    "not_audited": 5,
+    "partial": 0,
+    "passed": 5,
+    "proofs": 8,
+    "proofs_without_test": 0,
+    "proofs_without_test_ids": [],
+    "rules": 8,
+    "sentence": "8 rules. 5 pass their tests, 2 of them graded by an AI.",
+    "spot_checked": 0,
+    "steps": {
+      "by_hand": 0,
+      "graded": 2,
+      "passed": 5
+    },
+    "strong": 0,
+    "untested": 1,
+    "weak": 0
+  },
+  "version": "0.10.0",
+  "warnings": [
+    "claude-sonnet-5-5: model not reached. The model gave no answer. Run purlin:test --all."
+  ]
+}
