@@ -40,8 +40,11 @@ Everything else is what Purlin already has, used as it is:
 
 | Question | Answer |
 |---|---|
-| How a prompt or skill is run | Both ways: a real Claude Code session with the skill loaded, and a prompt sent with its instructions as the system prompt. A Claude project's instructions are tested the second way. |
+| How a prompt or skill is run | Both ways: a real Claude Code session with the skill loaded, and a prompt sent with its instructions as the system prompt. A Claude project's instructions are tested the second way. Both go through the `claude` program by default; no key. |
+| A project's own way of running | "Claude program by default but proofs can be written to do something custom project by project": a test may make the AI's output its own way and hand the folder to the helper. Purlin records that it was made by the project's own test, and the model the test says it used. |
 | What counts as passing | It runs several times and all must pass. Every run is recorded, pass or fail. |
+| How many times | 3 where nothing is said. The project's settings can change that, and one proof can ask for its own: `@ai(runs=10)`. |
+| A named model that cannot be reached | The proof reads `not run` on that model, with the reason in one warning. Never a failure. |
 | May an AI grade an output | Yes, as a third kind of proof, clearly marked. |
 | What a result is tied to | The models the project's settings name: one result per model. |
 | What output is kept | Kept on disk while working; committed with the package for a signed version. |
@@ -50,6 +53,9 @@ Everything else is what Purlin already has, used as it is:
 | What the audit plants | A wrong output: a kept output changed so it breaks what the proof says, and the same test run on it. No model runs again. |
 | How a graded rule counts | It counts as passing and reads `graded`, never `passed`. |
 | The tags | `@ai` and `@graded`. |
+| Which model grades | "Specified in the proof with a tag": `@graded(<model>)`. There is no grader setting and no default. |
+| Purlin on itself | Yes, the three proofs of 3.11. |
+| A failing rule's line | `rule to fix`, as built, the name `Left to do` uses. |
 | Where the check lives | An ordinary test plus the one helper. No checks written in the spec. |
 | When they run | They are slow proofs. |
 | The grader's criteria | The proof's own sentence, and nothing else. |
@@ -63,6 +69,7 @@ Everything else is what Purlin already has, used as it is:
 ```
 purlin_ai.py run --skill <folder> | --plugin <folder> | --instructions <file>...
                  [--project <sample folder>] --input <file> | --say "<text>"
+purlin_ai.py record --from <folder> [--model <name>]
 purlin_ai.py grade --feature <name> --proof PROOF-N
 ```
 
@@ -78,13 +85,20 @@ purlin_ai.py grade --feature <name> --proof PROOF-N
     hand back in place of running. A test never reads them.
   - Started by hand with none set, it uses the first model of the settings and a folder
     under `.purlin/runtime/ai/`.
+- **`record`** is for a test that makes the AI's output its own way: it calls an API with
+  its own key, drives another tool, or builds the prompt in code first. The test hands over
+  the folder it wrote, and `record` prints the folder to assert on, as `run` does. The
+  evidence marks that output `made by the project's own test`, with the model `--model`
+  names, or `PURLIN_AI_MODEL` where it names none. Under `PURLIN_AI_REPLAY` it hands back the
+  earlier output, so the audit works on these as on any other. The test reads
+  `PURLIN_AI_MODEL` to know which model to ask.
 - **`grade`** shows the grader the proof's sentence, read from the spec, and the output
-  folder of the last `run` in this test. It prints `accept: <one reason>` and exits 0, or
-  `reject: <one reason>` and exits 1. The grader is started bare, as the audit's model is.
-  The grader is the model the setting `grader` names, or the first of `models`.
+  folder of the last `run` or `record` in this test. It prints `accept: <one reason>` and
+  exits 0, or `reject: <one reason>` and exits 1. The grader is the model the proof's own
+  tag names, started bare, as the audit's model is.
 
-A test for an `@ai` proof calls `run` and asserts on the folder. A test for a `@graded` proof
-calls `run`, then `grade`, and asserts it exits 0.
+A test for an `@ai` proof calls `run` or `record` and asserts on the folder. A test for a
+`@graded` proof calls one of them, then `grade`, and asserts it exits 0.
 
 ### 3.2 The two tags
 
@@ -92,8 +106,14 @@ On a proof line, beside `@manual`, `@slow` and `@env(...)`:
 
 ```
 - PROOF-4 (RULE-2): With the sample report, the reply names the three findings by their ids @ai
-- PROOF-5 (RULE-3): The summary states no fact the sample report does not hold @graded
+- PROOF-5 (RULE-3): The summary states no fact the sample report does not hold @graded(claude-haiku-4-5-20251001)
+- PROOF-6 (RULE-4): Asked for a refund over the limit, the reply refuses and names the limit @ai(runs=10)
 ```
+
+- `@graded(<model>)` names the model that grades. `@graded` with no model is a mistake the
+  status names, as `spec to repair`.
+- `runs=<n>` in either tag sets that proof's own count: `@ai(runs=10)`,
+  `@graded(<model>, runs=10)`.
 
 - Each is a slow proof without `@slow` being written. `@slow` beside either is allowed and
   adds nothing.
@@ -103,13 +123,13 @@ On a proof line, beside `@manual`, `@slow` and `@env(...)`:
 ### 3.3 The settings
 
 ```json
-{ "models": ["claude-opus-5-5"], "runs": 5, "grader": "claude-haiku-4-5-20251001" }
+{ "models": ["claude-opus-5-5"], "runs": 3 }
 ```
 
 - `models`: the models these proofs are shown on. With none named and an `@ai` proof in a
   spec, the run stops and says which line to add.
-- `runs`: how many times each is run on each model. 5 where it is not set.
-- `grader`: optional.
+- `runs`: how many times each is run on each model. 3 where it is not set, and a proof's own
+  `runs=` wins over it.
 - A change to `models` ends no result. A model with no result reads `not run`.
 - The first test run that meets an `@ai` proof with no `models` setting asks, as it asks for
   the test command.
@@ -124,8 +144,13 @@ For each `@ai` or `@graded` proof a full run reaches, and for each model named:
 3. It records, for the proof, one entry per model: the model, how many passed of how many,
    and for each run its outcome and the fingerprint of its output folder.
 
-It prints one line as each starts, `Running login PROOF-4 on claude-opus-5-5, 1 of 5`, since
+It prints one line as each starts, `Running login PROOF-4 on claude-opus-5-5, 1 of 3`, since
 these take minutes.
+
+A model that gives no answer (it is overloaded, the login expired, the name is misspelt)
+leaves the proof `not run` on that model, never failed. The run prints one warning in the
+one shape, as `claude-opus-5-5: model not reached. <why, in few words>. Run purlin:test
+--all.`, and the tests are not `met` until it runs.
 
 ### 3.5 What a person reads
 
@@ -134,14 +159,15 @@ reported.
 
 | Line | Where |
 |---|---|
-| `    PROOF-4  passed  5 of 5 on claude-opus-5-5  tests/test_report.py::test_names_findings` | a proof under `purlin:status <name>` |
-| `    PROOF-4  failed  4 of 5 on claude-opus-5-5  ...` | the same, one run failed |
-| `    PROOF-5  graded  5 of 5 on claude-opus-5-5  ...` | a graded proof |
+| `    PROOF-4  passed  3 of 3 on claude-opus-5-5  tests/test_report.py::test_names_findings` | a proof under `purlin:status <name>` |
+| `    PROOF-4  failed  2 of 3 on claude-opus-5-5  ...` | the same, one run failed |
+| `    PROOF-5  graded  3 of 3 on claude-opus-5-5  ...` | a graded proof |
 | `graded` | the rule's cell where it passes and any of its proofs is graded |
 | `40 rules. 40 pass their tests, 6 of them graded by an AI.` | the closing sentence |
 | `3 rules to test on claude-opus-5-5: purlin:test --all` | `Left to do`, a model with no result |
 | `2 slow proofs to run: purlin:test --all` | `Left to do`, as for any slow proof |
-| `Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.` | the sign-off's overview |
+| `Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.` | the sign-off's overview, one line per grader |
+| `claude-opus-5-5: model not reached. <why>. Run purlin:test --all.` | a warning, where a named model gave no answer |
 
 ### 3.6 The audit
 
@@ -160,8 +186,9 @@ reported.
 ### 3.7 The evidence and the package
 
 - Each proof entry of a system's section gains `models`, absent for any other proof:
-  `[{model, passed, of, graded, runs: [{result, output}]}]`, `output` the sha256 of the
-  run's folder.
+  `[{model, passed, of, graded, runs: [{result, output, made}]}]`, `output` the sha256 of
+  the run's folder and `made` reading `helper` or `project`, the second for an output the
+  test handed over with `record`.
 - For a graded proof each run also holds `grade`: the grader's model and its one reason.
 - The evidence format and the package format each go up by 1, and the spec format for the
   two tags. The dashboard's data carries the same fields and its schema goes up by 1.

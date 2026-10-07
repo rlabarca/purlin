@@ -1841,9 +1841,13 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     The plan is `dev/plans/ai-proofs-plan.md`; it goes into 0.10.0, before any sign-off.
     - **The check stays an ordinary test** in the project's own test tool, which calls one
       helper Purlin ships to run a skill or a prompt on a sample and hand back the output.
-    - **Two tags.** `@ai`: the test checks an AI's output exactly. `@graded`: an AI grades the
-      output against the proof's own sentence, and nothing else.
-    - **It runs several times, and all must pass.** Every run is recorded.
+    - **Two tags.** `@ai`: the test checks an AI's output exactly. `@graded(<model>)`: the model
+      the tag names grades the output against the proof's own sentence, and nothing else.
+    - **It runs several times, and all must pass.** Every run is recorded. 3 times where
+      nothing is said; a proof may ask for its own count, `@ai(runs=10)`.
+    - **It runs through the `claude` program by default**, and a test may make the output its
+      own way and hand it over; the evidence says which.
+    - **A named model that cannot be reached leaves the proof `not run`**, never failed.
     - **Results are per model.** The project's settings name the models it validates against.
     - **A graded rule counts as passing and reads `graded`**, never `passed`.
     - **An AI proof is a slow proof**: skipped by a plain run, run by `purlin:test --all`.

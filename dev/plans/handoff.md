@@ -71,15 +71,16 @@ How the audit of Purlin itself went, for whoever runs it next:
 ## For the owner
 
 1. **Read `docs/regulated.md` first**, then the other pages: every one was rewritten.
-2. **A failing rule's line reads `rule to fix`**, where the owner's example read `failing
-   test`: the name `Left to do` already had was kept, so one piece of work has one name.
+2. **A failing rule's line reads `rule to fix`**, the name `Left to do` uses; the owner kept
+   it on 2026-10-07.
 3. **A slow test whose name is the start of another test's name is started on every plain
    run**, with a line saying so, until one is renamed. pytest cannot leave out exactly one.
 4. **A test report is kept only on the machine that ran the tests.** The preview here reads
    `Test reports kept with the package: 2 of 3. 1 is not on this machine`: the third is the
    Windows runner's.
-5. **Prompts run through the `claude` program in the plan**, as the audit's model does, where
-   the option the owner picked said the prompt way needs an API key.
+5. **The plan carries the owner's answers of 2026-10-07**: prompts run through the `claude`
+   program by default and a test may make the output its own way; the grader is named in the
+   proof's tag; 3 runs by default; a model that cannot be reached reads `not run`.
 6. **About a dozen kinds of warning can still pass 160 characters** with long names; what
    remains in each is a name, a path or the command.
 7. **Not in the one shape**: the audit's findings under a rule, and a refusal that ends a
