@@ -1703,14 +1703,16 @@ def main(argv=None):
     if unmarked:
         print(unmarked)
     if scan:
-        for line in reports_module.untied_lines(scan) + wrong:
+        for line in reports_module.untied_lines(scan):
             print(line)
-        if args.action != 'ci':
-            # A test comment to correct changes no exit code: it is work
-            # left, which the status counts.
-            for entry in wording_module.stale_comments(project_root, features,
-                                                       scanned=scan):
-                print(entry['text'])
+        # A test comment to correct changes no exit code: it is work left,
+        # which the status counts. Three or more of them fold into one line
+        # (`notices.folded`), as the status folds them.
+        stale = ([] if args.action == 'ci' else
+                 [entry['text'] for entry in wording_module.stale_comments(
+                     project_root, features, scanned=scan)])
+        for line in notices.folded(wrong + stale):
+            print(line)
     # Loud failure B: a marker of a feature this run covers has no result.
     failures.extend(missing)
     ran = [done.suite.name for done in runs]
@@ -1741,7 +1743,7 @@ def main(argv=None):
     exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0
     if failures:
         print('')
-        for failure in failures:
+        for failure in notices.folded(failures):
             print(failure)
 
     # A `--ci` run commits its `ci/` files alone: the specs, tests and
@@ -1758,7 +1760,7 @@ def main(argv=None):
     problems = rule_problems(features, sections, index)
     if problems:
         print('')
-        for line in problems:
+        for line in notices.folded(problems):
             print(line)
 
     if args.action == 'ci':

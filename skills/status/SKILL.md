@@ -111,7 +111,9 @@ as they are, or nothing when the tool returned nothing. Where a warning says a n
 twice, follow `Renumbering` in `skills/spec/SKILL.md`.
 
 Every line takes the shape `references/writing_style.md`, "A warning's shape", gives: what it
-is about, its kind, what is wrong, what to run.
+is about, its kind, what is wrong, what to run. Three or more of one kind fold into one line,
+such as `proof line not read: 4 specs, export, invoice and 2 more. Run purlin:status for each.`
+`purlin:status <name>` prints each of that spec's lines whole.
 
 The last warning lists each test that still carries a marker from Purlin 0.9.5, one per line,
 with the feature and the rule the marker names:
@@ -153,8 +155,8 @@ specs/auth/login.md: 3 rules
     PROOF-3  hand check
 ```
 
-Where the spec has a mistake, the script prints each mistake first, as the status's warnings
-word it. The view writes nothing. The next step is the Step 4 row for the first kind of work
+The script prints first every line the status has about the spec, its warnings and then its
+lines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work
 this spec's rules wait for.
 
 ## Step 4: name the next step

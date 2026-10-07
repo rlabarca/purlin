@@ -6,8 +6,8 @@
 >   was reworded is shown by the words that changed, never whole.
 > Scope: scripts/mcp/purlin/notices.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib
-> Highest-Rule: 6
-> Highest-Proof: 12
+> Highest-Rule: 7
+> Highest-Proof: 15
 
 ## Rules
 
@@ -17,6 +17,7 @@
 - RULE-4: A test comment whose proof was reworded is named by the words that changed alone, `"<old words>" became "<new words>"`, the shortest run of words that differs, followed by the test's file and line and the commit that last changed the test; neither wording is printed whole
 - RULE-5: A word added or taken out is shown with the word on each side of it; a side of more than 8 words is cut to its first 8, followed by ` ...`; and where the two wordings share no word at either end, or the words that differ are more than 8 on both sides, the line says `was reworded` and quotes neither
 - RULE-6: The data the dashboard reads carries each line as an entry of `notices`: its tone, `warn` or `neutral`, its kind and the kind's words, what it is about, the spec and the rule it names, the rest of the line, and the line whole
+- RULE-7: Where the status would print three or more lines of one kind that each name a spec, it prints one line in their place, the dashboard's own: the kind, how many specs, the first two and how many more, ending `Run purlin:status for each.`, or, where they name one spec, that spec, how many places and `Run purlin:status <name>.`; one or two lines of a kind are printed whole, and `purlin:status <name>` prints every line of that spec whole
 
 ## Proof
 
@@ -32,3 +33,6 @@
 - PROOF-10 (RULE-5): A proof reading `A` reworded to `B` reads `was reworded`, and so does a proof whose 9 middle words all change to 9 others between a first and a last word that stay
 - PROOF-11 (RULE-6): In the project of PROOF-5 the payload's `notices` is exactly one entry: `tone` `warn`, `kind` `to_correct`, `label` `test comment to correct`, `about` `login PROOF-1 (RULE-1)`, `feature` `login`, `rule` `RULE-1`, `rest` `"sixteen" became "seventeen" after tests/test_login.py:1 last changed (<sha7>). Run purlin:build login.`, and `text` the line whole
 - PROOF-12 (RULE-6): A line that carries no kind, handed to the same data, is an entry whose `text` and `rest` are the line and whose `kind`, `label`, `about`, `feature` and `rule` are null
+- PROOF-13 (RULE-7): The specs `alpha`, `beta`, `delta` and `gamma` each carry `> Requires: api`; the status prints `line not read: 4 specs, alpha, beta and 2 more. Run purlin:status for each.` once and no line holding `: line not read.`, and `purlin_status.py --spec alpha` prints first `alpha: line not read. Every anchor covers the whole project, so > Requires: is not read. Run purlin:spec alpha.`
+- PROOF-14 (RULE-7): With only `alpha` and `beta` carrying that line, the status's lines holding `line not read` are exactly the two whole lines, `alpha`'s then `beta`'s
+- PROOF-15 (RULE-7): Three `rule to fix` lines naming `a RULE-1`, `a RULE-2` and `a RULE-3`, after one `rule to write a test for` line naming `b RULE-1` and before a line of no kind, fold to exactly `b RULE-1: rule to write a test for. Run purlin:build b.`, `rule to fix: a, in 3 places. Run purlin:status a.` and the line of no kind

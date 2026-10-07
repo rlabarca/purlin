@@ -202,3 +202,66 @@ class TestTheDashboardsData:
             'feature': None, 'rule': None,
             'rest': 'A line of some other sort.',
             'text': 'A line of some other sort.'}]
+
+
+STATUS_PY = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'scripts', 'run', 'purlin_status.py')
+
+
+def _requires(name):
+    """The spec `name`, carrying `> Requires: api`, a line Purlin does not read."""
+    return SPEC.replace('# Feature: login', '# Feature: %s' % name).replace(
+        '> Scope:', '> Requires: api\n> Scope:')
+
+
+def _unread(name):
+    return ('%s: line not read. Every anchor covers the whole project, so '
+            '> Requires: is not read. Run purlin:spec %s.' % (name, name))
+
+
+def _status_of(names):
+    """`(the status's lines, what --spec prints for the first name)` in a
+    project whose specs `names` each carry `> Requires: api`."""
+    made = Project(spec=None)
+    try:
+        for name in names:
+            made.spec(_requires(name), name=name)
+        lines = purlin_status.sync_status(made.root).splitlines()
+        one = subprocess.run(
+            [sys.executable, STATUS_PY, '--project-root', made.root, '--spec',
+             names[0]], capture_output=True, text=True, encoding='utf-8')
+    finally:
+        made.close()
+    return lines, one.stdout.splitlines()
+
+
+class TestTheTerminalFolds:
+
+    # purlin: notices PROOF-13
+    def test_four_specs_with_one_kind_of_warning_fold_into_one_line(self):
+        lines, one = _status_of(['alpha', 'beta', 'delta', 'gamma'])
+        assert lines.count(
+            'line not read: 4 specs, alpha, beta and 2 more. Run '
+            'purlin:status for each.') == 1, lines
+        assert not [line for line in lines if ': line not read.' in line], \
+            lines
+        assert one[0] == _unread('alpha'), one
+
+    # purlin: notices PROOF-14
+    def test_two_specs_with_one_kind_of_warning_are_each_printed_whole(self):
+        lines, _one = _status_of(['alpha', 'beta'])
+        assert [line for line in lines if 'line not read' in line] == [
+            _unread('alpha'), _unread('beta')], lines
+
+    # purlin: notices PROOF-15
+    def test_folded_lines_keep_their_place_and_others_stand(self):
+        made = [notices.line('to_fix', 'a RULE-%d' % n, None,
+                             notices.run('purlin:build a'), feature='a',
+                             rule='RULE-%d' % n) for n in (1, 2, 3)]
+        other = notices.line('no_test', 'b RULE-1', None,
+                             notices.run('purlin:build b'), feature='b',
+                             rule='RULE-1')
+        assert notices.folded([other] + made + ['A line of another sort.']) \
+            == ['b RULE-1: rule to write a test for. Run purlin:build b.',
+                'rule to fix: a, in 3 places. Run purlin:status a.',
+                'A line of another sort.']

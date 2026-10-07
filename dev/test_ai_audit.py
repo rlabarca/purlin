@@ -2053,9 +2053,9 @@ class TestSettlingAFinding:
     def test_a_rule_whose_test_fails_is_not_settled(self, tmp_path):
         made = sample_lab.settled(tmp_path, change=sample_lab.expect_24)
         assert made.code == 1, made.lines
-        assert ('sample_intake RULE-3 fails: tests/test_intake.py::'
-                'test_age_is_whole_hours. Run purlin:build sample_intake.'
-                ) in made.lines, made.lines
+        assert ('sample_intake RULE-3: rule to fix. tests/test_intake.py::'
+                'test_age_is_whole_hours fails. Run purlin:build '
+                'sample_intake.') in made.lines, made.lines
         assert made.rule_lines('RULE-3') == [], made.lines
         assert not [line for line in made.lines
                     if 'nothing to settle' in line], made.lines

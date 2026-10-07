@@ -80,8 +80,10 @@ package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" 
 - It is one line, and a path or a name is never cut.
 
 On the dashboard the name is in the machine typeface and the kind is a label. Three or more of
-one kind fold into one notice that opens on the kind:
+one kind fold into one line that opens on the kind, on the dashboard, in the status and in a
+test run:
 `proof line not read: 4 specs, export, invoice and 2 more. Run purlin:status for each.`
+`purlin:status <name>` prints every line of that spec whole.
 
 ## Short and plain
 

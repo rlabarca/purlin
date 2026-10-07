@@ -18,7 +18,10 @@ it is, with what it is about, its kind and the spec, rule and proof it names
 beside it. `entries` gives those parts for the dashboard's data, which draws
 the name and the kind apart from the rest. `grouped` folds three or more
 entries of one kind into one, the kind first (`GROUP_MANY`), so the board
-stays short; the terminal prints every line. `changed_words` says what
+stays short, and `folded` is the same fold over the lines the terminal
+prints: the status and a test run print a kind's lines whole up to two, and
+`purlin:status <name>`, where the folded line sends a reader, prints every
+line of that spec whole. `changed_words` says what
 changed between two wordings of a proof without printing either whole, and
 `change_sentence` is that as the sentence every surface prints.
 """
@@ -206,6 +209,18 @@ def entries(lines, tone):
                     'rule': getattr(item, 'rule', None),
                     'rest': rest, 'text': text})
     return out
+
+
+def folded(lines):
+    """The lines as the terminal prints them: three or more of one kind,
+    each naming a spec, folded into the one line `grouped` gives, where the
+    first of them stood. Every other line is handed back as it was."""
+    lines = list(lines or ())
+    found = entries(lines, None)
+    for entry, item in zip(found, lines):
+        entry['line'] = item
+    return [entry['line'] if 'line' in entry else entry['text']
+            for entry in grouped(found)]
 
 
 def grouped(found):

@@ -26,7 +26,9 @@ a test: its line, which ends on what to do, then one line per test with the
 feature and the rule the marker names. The dashboard's data carries that
 warning as one line. Every one of these lines takes the one shape
 `scripts/mcp/purlin/notices.py` gives: what it is about, its kind, what is
-wrong, what to run. The report ends on the summary sentence, `Left to do` and the last
+wrong, what to run. Three or more of one kind fold into one line that opens
+on the kind (`notices.folded`), and `purlin_status.py --spec <name>` prints
+each line of a spec whole. The report ends on the summary sentence, `Left to do` and the last
 line, with `→ Run: purlin:init --update` above them while an upgrade is
 pending. Where every rule passes and `purlin:sign` would refuse the results
 as they stand, the last line names the run to make first
@@ -189,17 +191,19 @@ def sync_status(project_root):
     lines = summary_module.opening(data)
     lines.append('')
     lines.extend(_table(data))
+    # Three or more lines of one kind fold into one, as on the dashboard
+    # (`notices.folded`); `purlin:status <name>` prints each of a spec whole.
     nothing = nothing_lines(data)
     if nothing:
         lines.append('')
-        lines.extend(nothing)
+        lines.extend(notices.folded(nothing))
     names = incomplete_names(data)
     information = data.get('information') or []
     if names or information:
         lines.append('')
     if names:
         lines.append(incomplete_line(names))
-    lines.extend(information)
+    lines.extend(notices.folded(information))
     if fingerprint_module.setting_changed(project_root):
         lines.append('')
         lines.append(SETTING_CHANGED)
@@ -207,7 +211,7 @@ def sync_status(project_root):
     pin_lines = _pin_lines(project_root)
     if pin_lines:
         lines.append('')
-        lines.extend(pin_lines)
+        lines.extend(notices.folded(pin_lines))
 
     uncommitted = uncommitted_line(project_root)
     if uncommitted:
@@ -216,12 +220,33 @@ def sync_status(project_root):
 
     if warnings or old:
         lines.append('')
-        lines.extend(warnings)
+        lines.extend(notices.folded(warnings))
         lines.extend(old_marker_lines(old))
 
     lines.append('')
     lines.extend(ending_lines(data, project_root))
     return '\n'.join(lines)
+
+
+def spec_notices(project_root, data, name):
+    """`(warnings, information)`: every line the status folds that is
+    about the spec `name`, each whole. `data` is the payload. It is what a
+    folded line sends a reader to: an anchor's pin line, then each warning
+    that names the spec or its file; then each line of information that
+    names the spec."""
+    path = (next((feature.get('spec_path') for feature in data['features']
+                  if feature['name'] == name), None) or '')
+    warnings = [line for line in _pin_lines(project_root)
+                if getattr(line, 'feature', None) == name]
+    warnings += [line for line in data['warnings']
+                 if getattr(line, 'feature', None) == name
+                 or (path and path in line)]
+    names = incomplete_names(data)
+    information = (nothing_lines(data)
+                   + ([incomplete_line([name])] if name in names else [])
+                   + list(data.get('information') or ()))
+    return warnings, [line for line in information
+                      if getattr(line, 'feature', None) == name]
 
 
 def pending_lines(project_root):

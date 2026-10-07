@@ -30,6 +30,8 @@ from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import frameworks  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
+STATUS_PY = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'scripts', 'run', 'purlin_status.py')
 from run_project import (RUN_SCRIPT, _project,  # noqa: E402,F401
                          _pytest_project, _run, _spec, claude)
 
@@ -1706,6 +1708,36 @@ class TestEachRuleThatFailsOrHasNoTest:
         assert ('feat RULE-1: rule to fix. tests/test_feat.py::test_a and 1 '
                 'more fail. Run purlin:build feat.') in output.splitlines(), \
             output
+
+
+class TestThreeOfAKindFold:
+
+    # purlin: run_script PROOF-345
+    def test_three_failing_rules_of_one_spec_fold_into_one_line(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=''.join(
+            '# purlin: feat PROOF-%d\n'
+            'def test_%d():\n'
+            '    assert 1 == 2\n\n' % (n, n) for n in (1, 2, 3)))
+        _spec(root, 'feat', rules=3, proofs=tuple(
+            ('PROOF-%d' % n, 'RULE-%d' % n, '') for n in (1, 2, 3)))
+        _code, output = _run(root, '--all', '--test')
+        lines = output.splitlines()
+        assert lines.count('rule to fix: feat, in 3 places. Run '
+                           'purlin:status feat.') == 1, output
+        assert not [line for line in lines if ': rule to fix.' in line], \
+            output
+        status = subprocess.run(
+            [sys.executable, STATUS_PY, '--project-root', str(root),
+             '--spec', 'feat'], capture_output=True, text=True,
+            encoding='utf-8').stdout.splitlines()
+        assert [line.split()[:2] for line in status
+                if line.startswith('  RULE-')] == [
+            ['RULE-1', 'failed'], ['RULE-2', 'failed'],
+            ['RULE-3', 'failed']], status
+        assert sum(1 for line in status
+                   if line.strip().startswith('PROOF-')
+                   and 'tests/test_feat.py::test_' in line) == 3, status
 
 
 class TestTheTwoCommits:

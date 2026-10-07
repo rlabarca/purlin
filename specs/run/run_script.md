@@ -15,8 +15,8 @@
 >   tool it knows.
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
-> Highest-Rule: 123
-> Highest-Proof: 344
+> Highest-Rule: 124
+> Highest-Proof: 345
 
 ## Rules
 
@@ -71,6 +71,7 @@
 - RULE-12: `--ci` covers only the features that have a proof tagged `@env` for this machine's system and writes, for each, this system's section of `.purlin/evidence/ci/<feature>.json`, listing those proofs alone and the rules they prove, on whatever branch it runs, and prints `Evidence written to .purlin/evidence/ci/<feature>.json.`, or `to .purlin/evidence/ci/ for <n> features.` where several ran; it writes nothing under `.purlin/evidence/local/`, and exits 1 when a test tied to one of those proofs failed or could not run and 0 otherwise, whatever else it found, a test tied to no such proof included
 - RULE-75: Only `--audit` audits: a `--ci` run calls no model and writes no `audit`
 - RULE-123: A test run keeps each report file it read as `.purlin/runtime/kept/<sha256><extension>`, the bytes as the suite left them, the sha256 the one each result's `reported.report` names and the extension the report's own, `.json` for a `gotest` report read from the command's standard output; and it removes each kept file whose sha256 no evidence file on disk names
+- RULE-124: Where a run would print three or more lines of one kind that each name a spec, among its rules to fix, its rules to write a test for, its `evidence missing` lines or its test comments to correct, it prints one line in their place, as the status does, which names `purlin:status` for the spec or for each spec
 
 ## Proof
 
@@ -203,3 +204,4 @@
 - PROOF-340 (RULE-123): After a first run whose test passes, the test is changed to fail and `purlin:test feat` runs again; the evidence names another report than the first run's, and `.purlin/runtime/kept/` holds exactly that one file
 - PROOF-341 (RULE-123): `purlin:test --all --commit` passes the slow `PROOF-2`, another commit follows, and a plain `purlin:test feat --commit` leaves the slow test out and carries its result; `PROOF-2`'s entry holds `carried` and the `reported` the first run wrote, `PROOF-1`'s names another report, and `.purlin/runtime/kept/` holds exactly those two reports, each under its sha256 with `.xml`
 - PROOF-342 (RULE-123): A `gotest` suite's command is `cat report.json` and its `report` is `-`; after `purlin:test cart`, `PROOF-1`'s `reported.report` reads `file` `-` and the sha256 of `report.json`'s bytes, and `.purlin/runtime/kept/` holds exactly `<that sha256>.json`
+- PROOF-345 (RULE-124): `feat`'s three rules each have one failing test in `tests/test_feat.py`; `--all --test` prints `rule to fix: feat, in 3 places. Run purlin:status feat.` once and no line holding `: rule to fix.`, and `purlin_status.py --spec feat` then reads `failed` for RULE-1, RULE-2 and RULE-3 and names a test of `tests/test_feat.py` under each
