@@ -1393,3 +1393,129 @@ class TestCheckingTheKeptReports:
                 '1.'])
         finally:
             made.close()
+
+
+# ---------------------------------------------------------------------------
+# What an AI produced: the run folders of `outputs.py`
+# ---------------------------------------------------------------------------
+
+from purlin import outputs as purlin_outputs  # noqa: E402
+
+RUN_ONE = '.purlin/runtime/ai/login/PROOF-4/model-a/1'
+RUN_TWO = '.purlin/runtime/ai/login/PROOF-4/model-a/2'
+
+
+def _sha(text):
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+
+def _folder(root, rel, **files):
+    """Write `files`, `{name with __ for /: text}`, under `root/rel`. The
+    folder's full path."""
+    folder = os.path.join(str(root), *rel.split('/'))
+    for name, text in files.items():
+        path = os.path.join(folder, *name.split('__'))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8', newline='') as handle:
+            handle.write(text)
+    return folder
+
+
+class TestAiOutputs:
+    """The folder one run of an AI proof's test writes, and how it is named,
+    found and removed."""
+
+    # purlin: package PROOF-96
+    def test_a_run_folder_names_the_feature_the_proof_the_model_and_the_run(
+            self):
+        assert purlin_outputs.ai_run_dir(
+            'login', 'PROOF-4', 'claude-opus-5-5', 2) == (
+            '.purlin/runtime/ai/login/PROOF-4/claude-opus-5-5/2')
+        assert purlin_outputs.ai_run_dir(
+            'login', 'PROOF-4', 'claude-opus-5-5', 2, test=3) == (
+            '.purlin/runtime/ai/login/PROOF-4/claude-opus-5-5/2.3')
+
+    # purlin: package PROOF-97
+    def test_a_model_name_is_written_as_a_folder_name(self):
+        assert purlin_outputs.ai_run_dir(
+            'login', 'PROOF-4', 'vendor/model:1', 1) == (
+            '.purlin/runtime/ai/login/PROOF-4/vendor_model_1/1')
+
+    # purlin: package PROOF-98
+    def test_a_folders_sha256_is_taken_over_one_line_per_file(self, tmp_path):
+        folder = _folder(tmp_path, 'out', **{'reply.md': 'hello',
+                                             'files__a.txt': 'a'})
+        lines = '%s  files/a.txt\n%s  reply.md\n' % (_sha('a'), _sha('hello'))
+        assert purlin_outputs.folder_sha256(folder) == _sha(lines)
+
+    # purlin: package PROOF-99
+    def test_the_record_is_outside_the_sha256_and_the_reply_inside(
+            self, tmp_path):
+        folder = _folder(tmp_path, 'out', **{'reply.md': 'hello',
+                                             'files__a.txt': 'a'})
+        before = purlin_outputs.folder_sha256(folder)
+        purlin_outputs.write_record(folder, {'made': 'helper'})
+        assert os.path.isfile(os.path.join(folder, 'purlin.json'))
+        assert purlin_outputs.folder_sha256(folder) == before
+        _folder(tmp_path, 'out', **{'reply.md': 'hullo'})
+        after = purlin_outputs.folder_sha256(folder)
+        assert after != before and len(after) == 64
+
+    # purlin: package PROOF-100
+    def test_a_folder_holding_the_record_alone_has_no_sha256(self, tmp_path):
+        folder = str(tmp_path / 'out')
+        purlin_outputs.write_record(folder, {'reached': False})
+        assert os.listdir(folder) == ['purlin.json']
+        assert purlin_outputs.folder_sha256(folder) is None
+
+    # purlin: package PROOF-101
+    def test_a_record_is_read_back_and_a_missing_one_reads_empty(
+            self, tmp_path):
+        record = {'made': 'helper', 'model': 'model-a', 'reached': True,
+                  'why': None}
+        folder = str(tmp_path / 'out')
+        purlin_outputs.write_record(folder, record)
+        assert purlin_outputs.read_record(folder) == record
+        assert purlin_outputs.read_record(str(tmp_path / 'none')) == {}
+        other = _folder(tmp_path, 'other', **{'purlin.json': '[1]'})
+        assert purlin_outputs.read_record(other) == {}
+
+    # purlin: package PROOF-102
+    def test_a_kept_folder_is_found_by_its_sha256(self, tmp_path):
+        _folder(tmp_path, RUN_ONE, **{'reply.md': 'other'})
+        folder = _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
+        sha = purlin_outputs.folder_sha256(folder)
+        assert purlin_outputs.ai_held(str(tmp_path), sha) == RUN_TWO
+
+    # purlin: package PROOF-103
+    def test_a_folder_changed_since_is_not_found(self, tmp_path):
+        folder = _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
+        sha = purlin_outputs.folder_sha256(folder)
+        _folder(tmp_path, RUN_TWO, **{'reply.md': 'hullo'})
+        assert purlin_outputs.ai_held(str(tmp_path), sha) is None
+
+    # purlin: package PROOF-104
+    def test_a_prune_removes_the_folder_no_evidence_names(self, tmp_path):
+        named = _folder(tmp_path, RUN_ONE, **{'reply.md': 'kept'})
+        _folder(tmp_path, RUN_TWO, **{'reply.md': 'dropped'})
+        _folder(tmp_path, '.purlin/evidence/local', **{
+            'login.json': json.dumps(
+                {'output': purlin_outputs.folder_sha256(named)})})
+        removed = purlin_outputs.prune(str(tmp_path))
+        assert removed == [RUN_TWO]
+        assert os.listdir(named) == ['reply.md']
+        assert os.listdir(os.path.dirname(named)) == ['1']
+
+    # purlin: package PROOF-105
+    def test_a_prune_removes_the_folders_it_left_empty(self, tmp_path):
+        _folder(tmp_path, '.purlin/runtime/ai/gone/PROOF-1/model-a/1',
+                **{'reply.md': 'dropped'})
+        purlin_outputs.prune(str(tmp_path))
+        assert os.listdir(os.path.join(
+            str(tmp_path), '.purlin', 'runtime', 'ai')) == []
+
+    # purlin: package PROOF-106
+    def test_the_proofs_own_runs_win_over_the_setting(self):
+        assert purlin_outputs.runs_asked({'runs': 10}, 5) == 10
+        assert purlin_outputs.runs_asked({'runs': None}, 5) == 5
+        assert purlin_outputs.runs_asked({'runs': None}, None) == 3

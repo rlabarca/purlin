@@ -11,8 +11,8 @@
 >   system of record; Purlin makes no claim of compliance.
 > Scope: scripts/export/package.py, scripts/mcp/purlin/outputs.py
 > Stack: python/stdlib (json, hashlib, subprocess), git worktree
-> Highest-Rule: 42
-> Highest-Proof: 95
+> Highest-Rule: 48
+> Highest-Proof: 106
 
 ## Rules
 
@@ -44,6 +44,12 @@
 - RULE-40: Each result carries `tests`, one entry per test its section lists for the rule, in the section's order, naming the `proof`, the `test`, its `result` and `reported`, what the suite's report holds for the test exactly as the evidence keeps it, and null where the evidence keeps none
 - RULE-41: The package carries `outputs`, one entry per report file its results name, by `file`: `kind` `report`, `file` `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the `sha256` the evidence records, `from`, the path the run read the report from, and `tests`, how many test results name it; `[]` where no result names one; and it lists the same outputs whether or not the machine that builds it keeps the files
 - RULE-42: `purlin:sign --check` on a package that matches its fingerprint and lists outputs prints `Reports beside the package that match their sha256: <k> of <n>.`, looking under the folder the package file is in; a report that is not there fails nothing, and one whose bytes give another sha256 prints `A report beside the package does not match it: <file> gives the sha256 <computed>, and the package records <recorded>.` and exits 1
+- RULE-43: One run of an AI proof's test writes to the folder `.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>`, `<n>` the run counted from 1 and every character of the model's name that is not a letter, a digit, `.`, `_` or `-` written `_`; the second and each later test of one proof writes to `<n>.<t>`, `<t>` the test counted from 2
+- RULE-44: An output folder is named by one sha256, taken over one line per file under it, `<sha256 of the file's bytes>  <path>` and a line feed, the paths sorted and `/` separated; the record `purlin.json` is in none of the lines, and a folder holding no other file has no sha256
+- RULE-45: The record of a run is the JSON object in the folder's `purlin.json`; a folder with no such file, or one that does not hold a JSON object, reads as the empty record `{}`
+- RULE-46: A kept output folder is found by its sha256: the answer is the path, from the project root and `/` separated, of the run folder under `.purlin/runtime/ai/` whose files give that sha256 now, and nothing where no folder does
+- RULE-47: A run removes each run folder under `.purlin/runtime/ai/` whose sha256 no evidence file on disk names, and each folder above it left empty, and leaves every folder an evidence file names
+- RULE-48: An AI proof's test runs on each model as many times as the proof's own `runs=` says, else as the `runs` setting says, else 3
 
 ## Proof
 
@@ -104,3 +110,14 @@
 - PROOF-93 (RULE-42): A project whose results name one report the signing machine keeps is signed, and its committed package checked with `purlin:sign --check`; it exits 0 and prints exactly `The package matches its fingerprint.` and `Reports beside the package that match their sha256: 1 of 1.`
 - PROOF-94 (RULE-42): In that signed project the bytes `<!-- edited -->` are added to the end of the committed report and the package checked; it exits 1 and prints exactly `The package matches its fingerprint.`, `Reports beside the package that match their sha256: 0 of 1.` and `A report beside the package does not match it: <file> gives the sha256 <of the edited bytes>, and the package records <the sha256 the package lists>.`
 - PROOF-95 (RULE-42): That signed package is copied alone into an empty folder and checked there; it exits 0 and prints exactly `The package matches its fingerprint.` and `Reports beside the package that match their sha256: 0 of 1.`
+- PROOF-96 (RULE-43): The folder of run `2` of `login` `PROOF-4` on `claude-opus-5-5` reads `.purlin/runtime/ai/login/PROOF-4/claude-opus-5-5/2`, and that of its third test `.purlin/runtime/ai/login/PROOF-4/claude-opus-5-5/2.3`
+- PROOF-97 (RULE-43): The folder of run `1` of `login` `PROOF-4` on the model `vendor/model:1` reads `.purlin/runtime/ai/login/PROOF-4/vendor_model_1/1`
+- PROOF-98 (RULE-44): A folder holds `reply.md` reading `hello` and `files/a.txt` reading `a`; its sha256 is the sha256 of the two lines `<sha256 of a>  files/a.txt` and `<sha256 of hello>  reply.md`, each ending in a line feed
+- PROOF-99 (RULE-44): That folder's sha256 is taken, `purlin.json` is written into it, and the sha256 taken again is the same; after `reply.md` is changed to `hullo` it differs
+- PROOF-100 (RULE-44): A folder holding `purlin.json` alone has no sha256
+- PROOF-101 (RULE-45): The record `{"made": "helper", "model": "model-a", "reached": true, "why": null}` is written into a folder and read back as that object; a folder with no `purlin.json` reads `{}`, and so does one whose `purlin.json` holds `[1]`
+- PROOF-102 (RULE-46): `.purlin/runtime/ai/login/PROOF-4/model-a/2` holds `reply.md` reading `hello`; asked for that folder's sha256, the answer is `.purlin/runtime/ai/login/PROOF-4/model-a/2`
+- PROOF-103 (RULE-46): After that folder's `reply.md` is changed to `hullo`, asked for the sha256 it had before, the answer is nothing
+- PROOF-104 (RULE-47): `.purlin/runtime/ai/login/PROOF-4/model-a/1` gives a sha256 that `.purlin/evidence/local/login.json` holds and `.purlin/runtime/ai/login/PROOF-4/model-a/2` one no evidence file holds; after the outputs are pruned the first folder is there with its `reply.md`, the second is gone, and the answer names `.purlin/runtime/ai/login/PROOF-4/model-a/2`
+- PROOF-105 (RULE-47): The only run folder under `.purlin/runtime/ai/` is `gone/PROOF-1/model-a/1`, which no evidence file names; after the outputs are pruned `.purlin/runtime/ai/` holds no `gone` folder
+- PROOF-106 (RULE-48): A proof with `runs=10` under the setting `5` is asked for `10` runs; a proof with no `runs=` is asked for `5` under the setting `5` and for `3` with no setting

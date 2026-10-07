@@ -30,16 +30,20 @@ test, a folder:
 The evidence names the folder by `folder_sha256`, which every file in it
 but `purlin.json` goes into. `scripts/ai/purlin_ai.py` writes the folder
 and the record; the run names the folder through `AI_OUT` and reads the
-record back.
+record back. The folder stays where the run wrote it, found again by its
+sha256 (`ai_held`), and a run removes each one no evidence file on disk
+names any longer (`prune`).
 
 `references/formats/evidence_format.md` and `package_format.md` hold the
 fields that name an output.
 """
 
 import hashlib
+import json
 import os
 import pathlib
 import re
+import shutil
 
 from . import evidence as evidence_module
 from . import signatures as signatures_module
@@ -166,17 +170,20 @@ def named_in_evidence(project_root):
 
 
 def prune(project_root, keep_too=()):
-    """Remove each kept output no evidence file on disk names. The names.
+    """Remove each kept output no evidence file on disk names. What was
+    removed: the name of each report file, then the path of each run
+    folder of an AI proof, `/` separated from the project root.
 
-    `keep_too` is the sha256s to leave whatever the evidence says.
+    `keep_too` is the sha256s to leave whatever the evidence says. A folder
+    under `AI_DIR` left empty goes with the run folder it held.
     """
+    wanted = named_in_evidence(project_root) | set(keep_too)
+    removed = []
     folder = _full(project_root, KEPT_DIR)
     try:
         names = sorted(os.listdir(folder))
     except OSError:
-        return []
-    wanted = named_in_evidence(project_root) | set(keep_too)
-    removed = []
+        names = []
     for name in names:
         found = _SHA_NAME.match(name)
         if not found or found.group(1) in wanted:
@@ -186,6 +193,18 @@ def prune(project_root, keep_too=()):
         except OSError:
             continue
         removed.append(name)
+    for rel in ai_run_dirs(project_root):
+        if folder_sha256(_full(project_root, rel)) in wanted:
+            continue
+        shutil.rmtree(_full(project_root, rel), ignore_errors=True)
+        removed.append(rel)
+        above = os.path.dirname(_full(project_root, rel))
+        for _level in range(_RUN_DEPTH - 1):
+            try:
+                os.rmdir(above)
+            except OSError:
+                break
+            above = os.path.dirname(above)
     return removed
 
 
@@ -207,6 +226,66 @@ def ai_run_dir(feature, proof_id, model, run, test=1):
     last = '%d' % run if test <= 1 else '%d.%d' % (run, test)
     return '%s/%s/%s/%s/%s' % (AI_DIR, feature, proof_id, model_slug(model),
                                last)
+
+
+# How many folders deep a run folder sits under `AI_DIR`: the feature, the
+# proof, the model and the run.
+_RUN_DEPTH = 4
+
+
+def ai_run_dirs(project_root):
+    """Every run folder under `AI_DIR`, as `ai_run_dir` names one, sorted."""
+    found = []
+
+    def walk(rel, depth):
+        try:
+            names = sorted(os.listdir(_full(project_root, rel)))
+        except OSError:
+            return
+        for name in names:
+            below = '%s/%s' % (rel, name)
+            if not os.path.isdir(_full(project_root, below)):
+                continue
+            if depth == _RUN_DEPTH:
+                found.append(below)
+            else:
+                walk(below, depth + 1)
+    walk(AI_DIR, 1)
+    return found
+
+
+def ai_held(project_root, sha):
+    """The run folder this machine keeps whose files give the sha256 `sha`
+    now, as `ai_run_dir` names it, or None where it keeps none."""
+    if not sha:
+        return None
+    for rel in ai_run_dirs(project_root):
+        if folder_sha256(_full(project_root, rel)) == sha:
+            return rel
+    return None
+
+
+def runs_asked(proof, setting=None):
+    """How many times an AI proof's test runs on each model: the proof's
+    own `runs`, else `setting`, the `runs` of the settings file as
+    `config_engine.runs` reads it, else `RUNS`."""
+    return (proof or {}).get('runs') or setting or RUNS
+
+
+def runs_setting(project_root):
+    """The `runs` of the project's settings file, or None where it sets
+    none (`config_engine.runs`)."""
+    import config_engine
+    from . import markers as markers_module
+    return config_engine.runs(markers_module.load_config(project_root))
+
+
+def asked_runs(info, setting=None):
+    """`{proof id: runs}` for each AI proof of one spec, `info` its entry
+    in `specs.scan_specs`: what `runs_asked` answers for each."""
+    return {proof_id: runs_asked(proof, setting)
+            for proof_id, proof in ((info or {}).get('proofs') or {}).items()
+            if proof.get('ai')}
 
 
 def folder_files(folder):
@@ -244,7 +323,6 @@ def folder_sha256(folder):
 def read_record(folder):
     """The helper's record of the run that wrote `folder`, `{}` where it
     left none that can be read."""
-    import json
     data = _read(os.path.join(folder, RECORD))
     try:
         found = json.loads(data.decode('utf-8')) if data else {}
@@ -255,7 +333,6 @@ def read_record(folder):
 
 def write_record(folder, record):
     """Write the helper's record of a run into `folder`."""
-    import json
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(folder, RECORD), 'w', encoding='utf-8',
               newline='\n') as handle:
