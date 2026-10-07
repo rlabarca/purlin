@@ -2,15 +2,15 @@
 
 > Description: The heuristic spot tests, the audit's first step. They read each marked test as
 >   text, without running it, and flag a test that cannot fail, as
->   `references/review_criteria.md`, "Heuristic spot tests", gives them: six checks, each with
+>   `references/review_criteria.md`, "Heuristic spot tests", gives them: seven checks, each with
 >   what it flags, what it does not flag and the finding it reports, naming the test's file and
 >   name. Python is read by its syntax tree; JavaScript, TypeScript, C#, Go and shell by the
 >   token reading the markers already use. A check a language cannot be read for is skipped and
 >   named once. No model is called.
 > Scope: scripts/review/plain_checks.py
 > Stack: python/stdlib (ast, re)
-> Highest-Rule: 10
-> Highest-Proof: 32
+> Highest-Rule: 11
+> Highest-Proof: 36
 
 ## Rules
 
@@ -23,6 +23,7 @@
 - RULE-7: A check that cannot be read in a test's language is skipped, and the audit prints `<check> is not read in <language> tests.` once per check and language
 - RULE-9: The spot tests start no `claude`
 - RULE-10: A marked test whose source cannot be found is named once, as `<file>::<test>: its source was not found, so the spot tests did not read it.`
+- RULE-11: The test of a proof tagged `@graded` whose file holds no `grade`, as a word of its own or the end of a name, reads `<file>::<test>: the proof is graded and the test never calls grade.`, in any language; a test whose file holds the word, and the test of a proof with no `@graded` tag, are not flagged
 
 ## Proof
 
@@ -48,3 +49,7 @@
 - PROOF-28 (RULE-7): A project's marked tests are two shell tests; the audit prints `The test replaces what it is testing is not read in shell tests.` exactly once
 - PROOF-30 (RULE-9): With a `claude` on the path that records each start, the spot tests read every marked test of a project of three features; `claude` is started `0` times
 - PROOF-31 (RULE-10): The evidence names `test_renamed_away` for `PROOF-1`, which `tests/test_login.py` no longer holds; the audit prints `tests/test_login.py::test_renamed_away: its source was not found, so the spot tests did not read it.` exactly once
+- PROOF-33 (RULE-11): `PROOF-2` is graded by `claude-haiku-4-5-20251001`, and `tests/test_note.py` holds `test_note`, which reads `reply.md` and asserts it holds `LC-1234567`; the finding is `tests/test_note.py::test_note: the proof is graded and the test never calls grade.`
+- PROOF-34 (RULE-11): `PROOF-2` is graded by `claude-haiku-4-5-20251001`, and `test_note` starts the helper with the argument `grade` and asserts it exits `0`; nothing is found
+- PROOF-35 (RULE-11): `PROOF-1` carries no `@graded` tag, and `test_note` reads `reply.md` and holds no `grade`; nothing is found
+- PROOF-36 (RULE-11): A project's spec tags `PROOF-2` `@ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)`, and its marked test, the shell script `tests/note.test.sh`, holds no `grade`; the spot tests over the project answer the one finding `tests/note.test.sh::note.test.sh: the proof is graded and the test never calls grade.`

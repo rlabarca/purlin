@@ -391,3 +391,56 @@ def test_the_spot_tests_start_no_claude(tmp_path, own_claude):
     assert {(f['feature'], f['proof']) for f in found} == {
         ('age', 'PROOF-1'), ('login', 'PROOF-1'), ('zone', 'PROOF-1')}
     assert len(fake_claude.calls(own_claude)) == 0
+
+
+GRADED = {'id': 'PROOF-2', 'text': 'the reply tells the site to send a new sample',
+          'graded': 'claude-haiku-4-5-20251001'}
+NEVER_GRADES = ('tests/test_note.py::test_note: the proof is graded and the test never '
+                'calls grade.')
+READS_THE_REPLY = '''
+    def test_note(folder):
+        with open(folder + "/reply.md") as handle:
+            assert "LC-1234567" in handle.read()
+'''
+
+
+# purlin: plain_checks PROOF-33
+def test_a_graded_proofs_test_that_never_calls_grade(tmp_path):
+    path = write(tmp_path, 'tests/test_note.py', READS_THE_REPLY)
+    assert findings(tmp_path, path, 'test_note', GRADED) == [NEVER_GRADES]
+
+
+# purlin: plain_checks PROOF-34
+def test_a_graded_proofs_test_that_calls_grade_is_not_flagged(tmp_path):
+    path = write(tmp_path, 'tests/test_note.py', '''
+        import os
+        import subprocess
+        import sys
+
+        def test_note():
+            done = subprocess.run([sys.executable, os.environ["PURLIN_AI"], "grade",
+                                   "--feature", "note", "--proof", "PROOF-2"])
+            assert done.returncode == 0
+    ''')
+    assert findings(tmp_path, path, 'test_note', GRADED) == []
+
+
+# purlin: plain_checks PROOF-35
+def test_a_proof_that_is_not_graded_needs_no_grade(tmp_path):
+    path = write(tmp_path, 'tests/test_note.py', READS_THE_REPLY)
+    proof = {'id': 'PROOF-1', 'text': 'the reply names the barcode', 'graded': None}
+    assert 'grade' not in READS_THE_REPLY
+    assert findings(tmp_path, path, 'test_note', proof) == []
+    assert findings(tmp_path, path, 'test_note') == []
+
+
+# purlin: plain_checks PROOF-36
+def test_the_grader_is_read_from_the_spec_in_any_language(tmp_path):
+    project(tmp_path, {'note': [
+        'the reply names the barcode @ai(claude-opus-5-5)',
+        'the reply tells the site to send a new sample @ai(claude-opus-5-5) '
+        '@graded(claude-haiku-4-5-20251001)']}, {
+        'tests/note.test.sh': '# purlin: note PROOF-2\ngrep -q "new sample" "$1/reply.md"\n'})
+    found = plain_checks.check_project(str(tmp_path), out=io.StringIO())
+    assert [item['finding'] for item in found] == [
+        'tests/note.test.sh::note.test.sh: the proof is graded and the test never calls grade.']

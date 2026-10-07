@@ -1,7 +1,7 @@
 """The heuristic spot tests: what a test's own source shows, with no model.
 
 The audit's first step. Each marked test is read as text, without running it,
-against the six checks `references/review_criteria.md`, "Heuristic spot
+against the seven checks `references/review_criteria.md`, "Heuristic spot
 tests", gives, and a check fires only on a pattern that is wrong in every
 case. Python is read by its syntax tree; JavaScript, TypeScript, C#, Go and
 shell by the token reading `markers` already uses. A check a language cannot
@@ -15,10 +15,13 @@ called and no file is written.
 
 What each language is read for:
 
-    Python, JavaScript, TypeScript, C#   all six checks
-    Go                                   1, 2, 4 and 6
-    shell                                1, 2 and 6
-    any other                            6
+    Python, JavaScript, TypeScript, C#   all seven checks
+    Go                                   1, 2, 4, 6 and 7
+    shell                                1, 2, 6 and 7
+    any other                            6 and 7
+
+Check 7 reads the test of a proof tagged `@graded` alone, in any language:
+`proof` then holds `graded`, the grader its tag names.
 """
 
 import ast
@@ -38,11 +41,12 @@ from purlin import specs as specs_module                        # noqa: E402
 
 CHECKS = ('The test checks nothing', 'The check cannot fail', 'The test swallows the error',
           'The test checks the code against itself', 'The test replaces what it is testing',
-          'The test never checks the result the proof expects')
+          'The test never checks the result the proof expects',
+          'The test of a graded proof never calls grade')
 NOT_READ = '%s is not read in %s tests.'                 # check, 'shell'
 NOT_FOUND = '%s::%s: its source was not found, so the spot tests did not read it.'
 
-NOTHING, CANNOT_FAIL, SWALLOWS, ITSELF, MOCKS, NEVER = CHECKS
+NOTHING, CANNOT_FAIL, SWALLOWS, ITSELF, MOCKS, NEVER, UNGRADED = CHECKS
 
 CHECKS_NOTHING = '%s::%s: the test checks nothing.'
 CANNOT_FAIL_AT = '%s::%s: the check cannot fail: %s.'
@@ -50,6 +54,7 @@ SWALLOWS_ERROR = '%s::%s: the test swallows the error the code raises.'
 EXPECTED_FROM = '%s::%s: the expected value comes from %s(), the code under test.'
 MOCKS_IT = '%s::%s: the test mocks %s(), the function it checks.'
 NEVER_CHECKS = '%s::%s: the proof expects %s and the test never checks it.'
+NEVER_GRADES = '%s::%s: the proof is graded and the test never calls grade.'
 
 _LANGUAGES = {}
 for _ext in ('.py',):
@@ -67,13 +72,20 @@ for _ext in ('.sh', '.bash', '.zsh'):
 
 # The checks each language is read for, by their place in CHECKS.
 _READ = {
-    'Python': (0, 1, 2, 3, 4, 5),
-    'JavaScript': (0, 1, 2, 3, 4, 5),
-    'TypeScript': (0, 1, 2, 3, 4, 5),
-    'C#': (0, 1, 2, 3, 4, 5),
-    'Go': (0, 1, 3, 5),
-    'shell': (0, 1, 5),
+    'Python': (0, 1, 2, 3, 4, 5, 6),
+    'JavaScript': (0, 1, 2, 3, 4, 5, 6),
+    'TypeScript': (0, 1, 2, 3, 4, 5, 6),
+    'C#': (0, 1, 2, 3, 4, 5, 6),
+    'Go': (0, 1, 3, 5, 6),
+    'shell': (0, 1, 5, 6),
 }
+# The two checks that read a file's text alone, so in any language.
+_READ_IN_ANY = (5, 6)
+
+# The word a test of a graded proof holds where it asks for the grade: the
+# helper's `grade`, as a word of its own or the end of a name, in either case
+# of its first letter.
+_GRADE_RE = re.compile(r'(?<![A-Za-z])[Gg]rade(?![a-z])')
 
 # What counts as an assertion of the test framework, read in a file's text.
 _ASSERTS = {
@@ -112,7 +124,8 @@ def language_of(path):
 
 def check(project_root, feature, proof, test):
     """[(check, finding)] for one tied test, from its source and the proof's words.
-    `proof` is {'id', 'text'}; `test` is {'file', 'name', 'source'}. A check the test's
+    `proof` is {'id', 'text'}, with `graded`, its grader, for a proof tagged
+    `@graded`; `test` is {'file', 'name', 'source'}. A check the test's
     language cannot be read for is given as (check, None)."""
     path = test['file']
     name = test['name']
@@ -120,7 +133,7 @@ def check(project_root, feature, proof, test):
     text = _read(project_root, path)
     if text is None:
         text = test.get('source') or ''
-    read = _READ.get(language, (5,))
+    read = _READ.get(language, _READ_IN_ANY)
     reader = _PythonTest if language == 'Python' else _TokenTest
     found = reader(project_root, path, name, text, test.get('source') or '', language)
     out = []
@@ -132,6 +145,11 @@ def check(project_root, feature, proof, test):
             value = _value_never_checked(project_root, path, text, (proof or {}).get('text', ''))
             if value is not None:
                 out.append((title, NEVER_CHECKS % (path, name, value)))
+            continue
+        if index == 6:
+            # A helper the file defines may make the call, so the file is read.
+            if (proof or {}).get('graded') and not _GRADE_RE.search(text):
+                out.append((title, NEVER_GRADES % (path, name)))
             continue
         finding = found.finding(index)
         if finding is not None:
@@ -180,7 +198,8 @@ def _check_project(project_root, features, out):
                 if info is None:
                     continue
                 proof = info['proofs'].get(marker.id)
-                proof = {'id': marker.id, 'text': proof['text'] if proof else ''}
+                proof = {'id': marker.id, 'text': proof['text'] if proof else '',
+                         'graded': (proof or {}).get('graded')}
                 for title, finding in check(project_root, marker.feature, proof, test):
                     if finding is None:
                         key = (title, language_of(path))
