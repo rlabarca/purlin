@@ -89,7 +89,7 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-07T18:26:12Z",
+        "at": "2026-10-07T18:28:31Z",
         "bugs": {
           "PROOF-17": {
             "after": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text)[:20].encode('utf-8')).hexdigest()",
@@ -106,34 +106,25 @@
             "after": "    return ' '.join(re.split(r'[ \\r\\n]+', (text or '').strip()))",
             "aim": "past the test",
             "before": "    return ' '.join((text or '').split())",
-            "bug_key": "5b69ad0c1fbb9e4eac5212ff9d4ec02270c8a091b97ac5325d172d0447f7fe20",
+            "bug_key": "ee05c68b30e2bf228951ed3f7fd9a2deb457caffcc4e214ac75b610006dc7e01",
             "case": "the rule `Tokens expire after 24 hours` broken after `expire` with the next line indented by a tab; the proof says the same rule text hash; the changed code gives a different hash",
             "file": "scripts/mcp/purlin/specs.py",
             "line": 242,
-            "result": "survived",
-            "test_key": "32d3c203634d7d010fb9af9d2ff1dc0aa7b0530b2bb789fedd6da37285926724",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
-        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "commit": "8abf039546907847fdda9c6154501b8b7ee74bf1",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-19: the test hashes the rule unbroken and compares it with eight versions broken after `expire`, using a line feed, a carriage return or both, with spaces before the break or a two-space indent after it, so the proof's case and its result are checked.",
-          "PROOF-19: every indented version in the test is indented with spaces, so a break followed by a tab-indented line is never compared, and code that stopped folding tabs would still pass.",
-          "PROOF-17: the test hashes the two rule texts the proof names and asserts the hashes differ, so the proof's case and its result are checked directly.",
-          "Findings: the spot tests found nothing, and both tests compare real hash values with an assertion that can fail."
-        ],
-        "findings": [
-          "PROOF-19: the test still passes when scripts/mcp/purlin/specs.py:242 reads \"return ' '.join(re.split(r'[ \\r\\n]+', (text or '').strip()))\"",
-          "PROOF-19: the AI says this breaks: the rule `Tokens expire after 24 hours` broken after `expire` with the next line indented by a tab; the proof says the same rule text hash; the changed code gives a different hash"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "4dec231f95af38874aacf09f0a807f4e0863be4faa39ab14249bf9de7c0e9f8d",
         "rule_hash": "f0515efad160d6aab691b0b2f8221ae20f5ab2eabf4aeed1b9c738fa8d39663a",
-        "test_hash": "677b371b53a8c9332c6047837615b6f2b7a1a57a04faab74190c6d5e7f19a534",
-        "verdict": "weak"
+        "test_hash": "5f56c3e5c5380ac91783b41e5090c609977dfe7f5224ef32fdc58160b01cb843",
+        "verdict": "strong"
       },
       "RULE-20": {
         "at": "2026-10-07T18:26:12Z",
@@ -269,14 +260,14 @@
   "feature": "specs",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:28:20Z",
+      "commit": "8abf039546907847fdda9c6154501b8b7ee74bf1",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
         "spec": "89ae134d24206b661414201d3c7c671f64df36acaa90777acae73ff769010a55",
-        "tests": "112d2689d37847c02f5e4a9061c0d081121c5e4b5a0d25de6a330c0558bd6636"
+        "tests": "72fed5104a0d65fd620537ddb61b87a3a780b1e0833b5670dc5d15b3d96b4430"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -288,14 +279,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestOldTagsAndFields",
-                "duration": 0.106,
+                "duration": 0.104,
                 "name": "test_a_stamped_manual_still_reads_manual_and_is_listed",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -310,14 +301,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestOldTagsAndFields",
-                "duration": 0.104,
+                "duration": 0.108,
                 "name": "test_a_visual_reference_field_is_ignored_and_listed",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -332,14 +323,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestTheWarning",
-                "duration": 0.228,
+                "duration": 0.314,
                 "name": "test_one_warning_names_both_files",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -354,14 +345,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestSource",
-                "duration": 0.095,
+                "duration": 0.11,
                 "name": "test_a_git_url_and_a_path_are_read_apart",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -376,14 +367,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestSource",
-                "duration": 0.094,
+                "duration": 0.114,
                 "name": "test_an_option_shaped_source_is_not_split",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -398,14 +389,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestSource",
-                "duration": 0.101,
+                "duration": 0.157,
                 "name": "test_a_path_field_supplies_the_path_for_a_bare_url",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -420,14 +411,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestAnchors",
-                "duration": 0.09,
+                "duration": 0.113,
                 "name": "test_an_anchor_carries_its_source_and_its_pin",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -442,14 +433,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestAnchors",
-                "duration": 0.099,
+                "duration": 0.113,
                 "name": "test_the_anchors_folder_alone_makes_an_anchor",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -464,14 +455,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestAnchors",
-                "duration": 0.105,
+                "duration": 0.116,
                 "name": "test_the_anchor_heading_alone_makes_an_anchor",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -486,14 +477,14 @@
             "cases": [
               {
                 "class": "dev.test_specs_reader.TestRuleText",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_a_line_break_in_a_rule_keeps_its_hash",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -515,7 +506,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
@@ -537,7 +528,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9d40f7f35a7082c3688116c32c93b3cec28510de71a05d4d95714674386d0db0"
             }
           },
           "result": "pass",
