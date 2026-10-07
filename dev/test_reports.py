@@ -739,6 +739,8 @@ class TestThroughARun:
         assert code == 1
         assert 'wrote no report' in out, out
         assert not (root / report).exists()
+        # Gone, not moved aside: nothing of it is left beside its path.
+        assert os.listdir(str((root / report).parent)) == []
 
     # purlin: reports PROOF-86
     def test_a_report_folder_is_read_file_by_file(self, tmp_path):
@@ -1233,15 +1235,26 @@ class TestWhatIsKeptForATest:
     # purlin: reports PROOF-136
     def test_each_case_is_kept_with_its_name_outcome_time_and_text(self):
         sha = 'a' * 64
-        kept = reports.reported([
-            _outcome('test_many[1]', 'pass', duration=0.5),
-            _outcome('test_many[2]', 'fail', duration=0.25,
-                     text='assert 2 == 3'),
-            _outcome('test_many[3]', 'fail', text='fixture broke',
-                     error=True),
-            _outcome('test_many[4]', 'skip', classname='',
-                     reason='not today')],
-            {'reports/pytest.xml': sha})
+        # The four cases as `reports/pytest.xml` holds them.
+        read = reports.read_junit(
+            '<testsuite>'
+            '<testcase classname="tests.test_x" name="test_many[1]" '
+            'time="0.5"/>'
+            '<testcase classname="tests.test_x" name="test_many[2]" '
+            'time="0.25"><failure>assert 2 == 3</failure></testcase>'
+            '<testcase classname="tests.test_x" name="test_many[3]">'
+            '<error>fixture broke</error></testcase>'
+            '<testcase name="test_many[4]">'
+            '<skipped message="not today"/></testcase>'
+            '</testsuite>')
+        assert [case.name for case in read] == [
+            'test_many[1]', 'test_many[2]', 'test_many[3]', 'test_many[4]']
+        outcomes = []
+        for case in read:
+            case.source = 'reports/pytest.xml'
+            outcomes.append(reports.Outcome(case.outcome, case.reason,
+                                            case.error, case))
+        kept = reports.reported(outcomes, {'reports/pytest.xml': sha})
         assert kept == {
             'cases': [
                 {'name': 'test_many[1]', 'class': 'tests.test_x',
