@@ -170,7 +170,11 @@ check side by side, exact, graded and by hand, and says what a good one names;
 check where the proof can name the thing to look for in the output. Where a sentence about
 what an AI does could be checked exactly, graded or by hand, **Stop and ask** which. In the
 same question, ask which model or models each AI proof is shown on, and which model
-grades a graded one. Never pick a model yourself: the model is what is being validated.
+grades a graded one. Where you may ask, never pick a model yourself: the model is what is being
+validated. Where you may not ask, because the person said to ask nothing or nobody is there to
+answer, name the model you are running on in each `@ai(...)` tag, pick a grader for a graded
+proof, and say so as the first thing in your reply: `These proofs are shown on <model> and
+graded by <grader>, which I chose. Change the tags if you validate on another model.`
 Write `runs=<n>` in a tag only where the person asks for a count of their own.
 
 ## Ids
