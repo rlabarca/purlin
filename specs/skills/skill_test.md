@@ -6,14 +6,15 @@
 >   the one reference that says what a project sets up.
 > Scope: skills/test/SKILL.md
 > Stack: markdown, Claude Code skill definition
-> Highest-Rule: 25
-> Highest-Proof: 59
+> Highest-Rule: 26
+> Highest-Proof: 60
 
 ## Rules
 
 - RULE-23: `skills/test/SKILL.md` names the command `purlin:test --all --commit` and the paths `scripts/run/purlin_run.py`, `.purlin/evidence/local/<feature>.json`, `.purlin/config.json` and `references/evidence_and_signoff.md`
 - RULE-24: `skills/test/SKILL.md` gives the hand-off as the run script takes it: one line that names `scripts/run/purlin_run.py` with `--test`, `--all` and `--commit`
 - RULE-25: `skills/test/SKILL.md` shows the three lines a run prints about an AI proof, and says what to do about a model that was not reached
+- RULE-26: `skills/test/SKILL.md` tells a session to start a full run in the background where it will outlast one command, say first that it reaches real models and takes minutes, and wait for it to end and read its last lines before saying anything is done
 
 ## Proof
 
@@ -23,3 +24,4 @@
 - PROOF-57 (RULE-24): A copy of the skill file with every `--test --all --commit` taken out is reported as `skills/test/SKILL.md has no single line carrying all of 'scripts/run/purlin_run.py', '--test', '--all', '--commit'`
 - PROOF-58 (RULE-25): The text of `skills/test/SKILL.md` holds each of the lines `Running <feature> <PROOF-N> on <model>, <i> of <n>`, `<model>: model not reached. <why>. Run purlin:test --all.` and `<n> rules to test on <model>: purlin:test --all`
 - PROOF-59 (RULE-25): The text of `skills/test/SKILL.md` holds the sentences ``Check that `claude` is logged in and that the proof's tag spells the model's name as the model is named, then run `purlin:test --all` again.`` and `It is never a failure: never change the code or the test for it, and never reword the proof.`
+- PROOF-60 (RULE-26): The text of `skills/test/SKILL.md` holds the sentences `A full run with AI proofs outlasts one command: start it in the background, and say first that it reaches real models and takes minutes. Then wait for it to end and read its last lines before you say anything is done. The work is not finished while the run is going: never end a reply on a run still in progress.`

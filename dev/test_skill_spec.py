@@ -43,7 +43,15 @@ AI_LINES = (
     '@graded(claude-haiku-4-5-20251001)')
 ASKS = ('Where a sentence about what an AI does could be checked exactly, '
         'graded or by hand, **Stop and ask** which.',
-        'Never pick a model yourself: the model is what is being validated.')
+        'Where you may ask, never pick a model yourself: the model is what '
+        'is being validated.')
+NO_ASKING = (
+    'Where you may not ask, because the person said to ask nothing or '
+    'nobody is there to answer, name the model you are running on in each '
+    '`@ai(...)` tag, pick a grader for a graded proof, and say so as the '
+    'first thing in your reply: `These proofs are shown on <model> and '
+    'graded by <grader>, which I chose. Change the tags if you validate on '
+    'another model.`')
 
 
 def _proofs():
@@ -57,6 +65,12 @@ def test_the_part_on_proofs_shows_the_two_tags_with_their_models():
 
 
 # purlin: skill_spec PROOF-65
-def test_the_part_on_proofs_asks_which_check_and_picks_no_model():
+def test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model():
     part = flat(_proofs())
     assert [sentence for sentence in ASKS if sentence not in part] == []
+    assert 'Where you may ask, never pick a model yourself' in part
+
+
+# purlin: skill_spec PROOF-66
+def test_the_part_on_proofs_says_what_to_do_where_it_may_not_ask():
+    assert NO_ASKING in flat(_proofs())

@@ -62,12 +62,12 @@ def test_the_build_skill_says_how_the_test_of_an_ai_proof_is_written():
     assert not_named(section, AI_TEST) == []
 
 
-SAYS_FIRST = ('Run `purlin:test --all` once the test is written, and say '
-              'first that it reaches a real model and takes minutes.')
+SAYS_FIRST = ('Run `purlin:test --all` once the test is written, as '
+              '`skills/test/SKILL.md` says to run it.')
 
 
 # purlin: skill_build PROOF-54
-def test_the_build_skill_runs_the_full_run_and_says_so_first():
+def test_the_build_skill_runs_the_full_run_as_the_test_skill_says():
     section = under_heading(read(SKILL), 'The test of an AI proof')
     assert SAYS_FIRST in flat(section)
 
