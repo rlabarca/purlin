@@ -173,7 +173,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T21:05:20Z",
-      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+      "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -184,6 +184,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -206,6 +212,12 @@
           "test": "dev/test_skill_init.py::test_one_line_runs_the_script_through_the_lookup_with_the_root"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -228,6 +240,12 @@
           "test": "dev/test_skill_init.py::test_every_flag_handed_is_one_the_usage_lists"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -250,6 +268,12 @@
           "test": "dev/test_skill_init.py::test_a_reader_finds_the_files_setup_writes_and_the_two_references"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-99",
           "manual": false,
@@ -272,6 +296,12 @@
           "test": "dev/test_skill_init.py::test_the_upgrade_part_lists_then_asks_then_passes_each_answer"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-100",
           "manual": false,
@@ -294,6 +324,12 @@
           "test": "dev/test_skill_init.py::test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-101",
           "manual": false,
@@ -316,6 +352,12 @@
           "test": "dev/test_skill_init.py::test_the_restoring_part_names_the_files_then_lists_asks_and_restores"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-102",
           "manual": false,
@@ -338,6 +380,12 @@
           "test": "dev/test_skill_init.py::test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-103",
           "manual": false,

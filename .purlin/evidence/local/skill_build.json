@@ -183,9 +183,9 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T22:02:46Z",
-      "commit": "3dce8c224643d35aca70b661ac811f69d98a6e18",
-      "dirty": true,
+      "at": "2026-10-07T22:12:20Z",
+      "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
+      "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "82f4f5dab661b5484874d29503279bcae05fea067b9f629d579a5e176f7f98e7",
@@ -202,14 +202,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d6a0dc8bffc577d5108c6ede84da767237bee16cbbfee5befc198eae414c1b68"
+              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
             }
           },
           "result": "pass",
@@ -231,7 +231,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d6a0dc8bffc577d5108c6ede84da767237bee16cbbfee5befc198eae414c1b68"
+              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
             }
           },
           "result": "pass",
@@ -253,7 +253,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d6a0dc8bffc577d5108c6ede84da767237bee16cbbfee5befc198eae414c1b68"
+              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
             }
           },
           "result": "pass",
@@ -275,7 +275,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d6a0dc8bffc577d5108c6ede84da767237bee16cbbfee5befc198eae414c1b68"
+              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
             }
           },
           "result": "pass",
@@ -286,16 +286,95 @@
           "env": null,
           "id": "PROOF-55",
           "manual": false,
-          "result": "not run",
+          "models": [
+            {
+              "graded": false,
+              "model": "claude-opus-5-5",
+              "of": 3,
+              "passed": 3,
+              "runs": [
+                {
+                  "made": "helper",
+                  "output": "22befb6d28e5e35fde2753fa69c8fa361233a012432e1b3781998cd61b096625",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 66.925,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "808b62f5da31972d7aa9703a4e0acd0b5a41919881751dda65aaff2edd819892"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "b156d3a01b2717f77d9cf649376d3e08d60c4848aa48334e2e14325d681664d8",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 49.748,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "98889209531a2841be87abcbcab62a28310dad9d65dda267e3465402ab6e5678"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "6fad0af0c31cb747d033a535f35cc37b78fdd266434eb79f119927b846f937e4",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_build",
+                        "duration": 46.74,
+                        "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "4e15e5c5fd994355593cfb746d86287b54a80c4f239da5fa976216d85476a80f"
+                    }
+                  },
+                  "result": "pass"
+                }
+              ]
+            }
+          ],
+          "result": "pass",
           "rule": "RULE-24",
           "test": "dev/test_skill_build.py::test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it"
         },
         {
+          "carried": {
+            "at": "2026-10-07T22:02:46Z",
+            "commit": "3dce8c224643d35aca70b661ac811f69d98a6e18",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
           "models": [
             {
+              "carried": {
+                "at": "2026-10-07T22:02:46Z",
+                "commit": "3dce8c224643d35aca70b661ac811f69d98a6e18",
+                "email": "rich.labarca@gmail.com",
+                "machine": "Richs-MacBook-Pro.local"
+              },
               "graded": true,
               "model": "claude-opus-5-5",
               "of": 3,
@@ -385,7 +464,7 @@
         "RULE-21": "passed",
         "RULE-22": "passed",
         "RULE-23": "passed",
-        "RULE-24": "not run",
+        "RULE-24": "passed",
         "RULE-25": "passed"
       },
       "runner": "rich-labarca"

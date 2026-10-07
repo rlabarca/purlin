@@ -34,7 +34,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T22:03:56Z",
-      "commit": "af99dbff488cd8211b2d11946f322c2bea9a8e84",
+      "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -45,6 +45,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T22:03:56Z",
+            "commit": "af99dbff488cd8211b2d11946f322c2bea9a8e84",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,

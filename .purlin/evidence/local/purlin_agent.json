@@ -350,7 +350,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T21:05:20Z",
-      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+      "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -361,6 +361,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -383,6 +389,12 @@
           "test": "dev/test_purlin_agent.py::test_the_agent_definition_holds_each_command_and_file"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -405,6 +417,12 @@
           "test": "dev/test_purlin_agent.py::test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -427,6 +445,12 @@
           "test": "dev/test_purlin_agent.py::test_every_path_a_skill_or_the_agent_definition_names_exists"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -449,6 +473,12 @@
           "test": "dev/test_purlin_agent.py::test_every_flag_a_skill_passes_is_one_its_script_takes"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -471,6 +501,12 @@
           "test": "dev/test_purlin_agent.py::test_the_answers_file_the_sign_skill_shows_is_walked"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -493,6 +529,12 @@
           "test": "dev/test_purlin_agent.py::test_no_skill_agent_definition_or_reference_names_a_path_under_dev"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -515,6 +557,12 @@
           "test": "dev/test_purlin_agent.py::test_every_skill_naming_the_status_names_the_tool_and_the_script"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -537,6 +585,12 @@
           "test": "dev/test_purlin_agent.py::test_the_command_reference_and_the_glossary_name_the_settle_command"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -559,6 +613,12 @@
           "test": "dev/test_purlin_agent.py::test_one_sentence_says_what_an_ai_proof_is_and_where_to_read"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -581,6 +641,12 @@
           "test": "dev/test_purlin_agent.py::test_the_command_reference_gives_the_helpers_three_lines"
         },
         {
+          "carried": {
+            "at": "2026-10-07T21:05:20Z",
+            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
