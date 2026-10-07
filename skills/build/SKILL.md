@@ -108,7 +108,7 @@ Its test is an ordinary marked test. It starts the helper, at the path the run s
 
 `purlin:test` leaves the test out, as it does any slow proof's. `purlin:test --all` starts it
 on each model the tag names, several times on each. Run `purlin:test --all` once the test is
-written, and say first that it reaches a real model and takes minutes. `skills/test/SKILL.md`, Step 4 says how each line of that run reads. A model that was not
+written, as `skills/test/SKILL.md` says to run it. Its Step 4 says how each line of that run reads. A model that was not
 reached is no failure: change nothing for it.
 
 ## When a rule is wrong

@@ -87,6 +87,11 @@ its test alone, after the suites, on each model the tag names, and prints
 reaches a real model, so say so before you start a run with `--all` in a project that has one.
 `references/purlin_commands.md` says which results `--all` keeps.
 
+A full run with AI proofs outlasts one command: start it in the background, and say first that it
+reaches real models and takes minutes. Then wait for it to end and read its last lines before you
+say anything is done. The work is not finished while the run is going: never end a reply on a run
+still in progress.
+
 With `--all` or `--clean`, once the anchors' tests have run, the spot tests read again each
 rule of an anchor that passes and holds an audit entry, with no model asked, and the run prints
 `Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w> weak.` A rule that

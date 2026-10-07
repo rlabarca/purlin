@@ -62,6 +62,19 @@ NOT_REACHED = (
     'never reword the proof.')
 
 
+FULL_RUN = (
+    'A full run with AI proofs outlasts one command: start it in the '
+    'background, and say first that it reaches real models and takes '
+    'minutes. Then wait for it to end and read its last lines before you '
+    'say anything is done. The work is not finished while the run is going: '
+    'never end a reply on a run still in progress.')
+
+
+# purlin: skill_test PROOF-60
+def test_the_skill_waits_for_a_full_run_to_end():
+    assert FULL_RUN in flat(read(SKILL))
+
+
 # purlin: skill_test PROOF-59
 def test_the_skill_says_what_to_do_about_a_model_not_reached():
     text = flat(read(SKILL))
