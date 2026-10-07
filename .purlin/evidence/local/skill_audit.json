@@ -175,41 +175,41 @@
         "verdict": "strong"
       },
       "RULE-34": {
-        "at": "2026-10-07T21:54:54Z",
+        "at": "2026-10-07T22:00:18Z",
         "bugs": {
           "PROOF-64": {
-            "after": "\u2192 Run: `purlin:build sample_intake_v2` to strengthen the four tests and settle each rule.",
+            "after": "- 4 rules to strengthen \u2192 Run: `purlin:build sample_intake.v2`",
             "aim": "past the test",
-            "before": "\u2192 Run: `purlin:build sample_intake` to strengthen the four tests and settle each rule.",
-            "bug_key": "28d651f9e4ecf04c96891a758d6d87908fc23814bf668d83fce5289eea3fa70f",
-            "case": "the never-audited sample lab given `Run purlin:audit sample_intake. Work only in this folder.`; the proof says the reply holds `purlin:build sample_intake`; the changed reply names `purlin:build sample_intake_v2`, a feature the project does not have",
+            "before": "- 4 rules to strengthen \u2192 Run: `purlin:build sample_intake`",
+            "bug_key": "499e67e3dd2961b13e80b53ea8a66001c5ba746585f35a14f28c9d33676e8636",
+            "case": "the never-audited sample lab asked to run purlin:audit sample_intake; the proof says the reply holds the command purlin:build sample_intake; the changed reply names purlin:build sample_intake.v2, a build of another feature",
             "file": "reply.md",
-            "line": 33,
-            "output": "4195cf0445de15fe27085bd155e1e22424c1c348e4b570071755b70443c077ad",
+            "line": 35,
+            "output": "1fb1acd8348cbd5901d1cae34f2ed31ef5ec29bfa9243cced55a199d725ee46d",
             "result": "survived",
-            "test_key": "b6d133349832ae53e938b8a92c1f097d31bd1ac023e38ae3c2577404e7b44c24",
+            "test_key": "7e40b0292ce91743d8db8e43c95fafb5c424ce14688776596e581388191f1522",
             "why": ""
           }
         },
         "code_hash": "a9d37efb32ffcaf0369c43c2805566e5d83cb83043c0f6e760ea6dcd47babf81",
-        "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
+        "commit": "af97b147f6ffe571451bc662bf6aef417e10f52e",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-64: the test builds the sample lab with no audit entry, asserts that it holds none, and hands the session the proof's message, so the starting situation and the action are the proof's.",
-          "PROOF-64: the test asserts the evidence file is among the files the session changed and compares the verdict of `RULE-7` in that file with `weak`, which are the two results the proof names for the evidence.",
-          "PROOF-64: the test looks for `purlin:build sample_intake` anywhere in the reply as a run of characters, so a reply that names the build for a longer feature name beginning with those characters still passes.",
-          "PROOF-64: the test never reads why `RULE-7` is weak, so an entry that reads `weak` for a reason other than the test of `PROOF-11` checking nothing still passes; the proof names that only as the starting situation.",
-          "Findings: the spot tests found nothing, and the test holds four assertions that can fail and the values `RULE-7`, `weak` and `purlin:build sample_intake` that the proof names."
+          "PROOF-64: the test starts from a lab with no audit entries, runs the session on the audit message, and checks that the evidence file is among the files the session changed, which is the first result the proof names.",
+          "PROOF-64: the test reads the `RULE-7` verdict from the audit entries of the changed evidence file and compares it with the literal `weak`, so a verdict of any other word fails it.",
+          "PROOF-64: the test searches the reply for `purlin:build sample_intake` not followed by a letter, digit, underscore or hyphen, so a longer name joined by a dot or a slash, such as `sample_intake.v2`, still passes.",
+          "PROOF-64: the test does not check that the session ran the audit beyond the evidence it left, and it reads none of `RULE-7`'s findings, so an entry that reads `weak` for any reason passes.",
+          "The spot tests found nothing, and the test's expected values, `weak` and the command, are literals taken from the proof and not from the output."
         ],
         "findings": [
-          "PROOF-64: the test still passes when reply.md:33 reads \"\u2192 Run: `purlin:build sample_intake_v2` to strengthen the four tests and settle each rule.\"",
-          "PROOF-64: the AI says this breaks: the never-audited sample lab given `Run purlin:audit sample_intake. Work only in this folder.`; the proof says the reply holds `purlin:build sample_intake`; the changed reply names `purlin:build sample_intake_v2`, a feature the project does not have"
+          "PROOF-64: the test still passes when reply.md:35 reads \"- 4 rules to strengthen \u2192 Run: `purlin:build sample_intake.v2`\"",
+          "PROOF-64: the AI says this breaks: the never-audited sample lab asked to run purlin:audit sample_intake; the proof says the reply holds the command purlin:build sample_intake; the changed reply names purlin:build sample_intake.v2, a build of another feature"
         ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "7cd1ccc2218e0a321e68b51d1c47bb5db88868f676c854f7dc227b4a84a21ade",
         "rule_hash": "71f6c3d0a424924ddc47bb584aaa2da2259fae4e9fb153aa599ebb2981e0ce47",
-        "test_hash": "8683c271acf69daef45133776c7cd6f9789c52c2fcf8e810b8113e720141f710",
+        "test_hash": "991baf6d3dfa6ecd036e7a35c8aef8d96f95b297a016ac5b0855548bf3dcbdb2",
         "verdict": "weak"
       }
     }
@@ -217,14 +217,14 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T21:49:16Z",
-      "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
-      "dirty": false,
+      "at": "2026-10-07T21:59:43Z",
+      "commit": "af97b147f6ffe571451bc662bf6aef417e10f52e",
+      "dirty": true,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "a9d37efb32ffcaf0369c43c2805566e5d83cb83043c0f6e760ea6dcd47babf81",
         "spec": "91d96e09457591c376282c5db0e8e37ac5c853685343ddcf6b8736efa8466d04",
-        "tests": "1029623bdb63f133c1ea3f096da9dcaf9dcc90aafa2b709f208c3f8dbf9925f2"
+        "tests": "5351ce3f7ba50175fa6271072c9a1195f9b437c4ffba7ebfddac2786f22e5d5b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -243,7 +243,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -258,14 +258,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_audit",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_a_copy_without_the_criteria_is_reported",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -287,7 +287,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -309,7 +309,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -331,7 +331,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -353,7 +353,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
+              "sha256": "32e72ba9a477957079233cb6c093e624b7d24504b7ca6d3a1603f60eac3cd673"
             }
           },
           "result": "pass",
@@ -361,23 +361,11 @@
           "test": "dev/test_skill_audit.py::test_the_skill_says_what_is_planted_for_an_ai_proof"
         },
         {
-          "carried": {
-            "at": "2026-10-07T17:50:15Z",
-            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
           "models": [
             {
-              "carried": {
-                "at": "2026-10-07T17:50:15Z",
-                "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
-                "email": "rich.labarca@gmail.com",
-                "machine": "Richs-MacBook-Pro.local"
-              },
               "graded": false,
               "model": "claude-opus-5-5",
               "of": 3,
@@ -385,57 +373,57 @@
               "runs": [
                 {
                   "made": "helper",
-                  "output": "4195cf0445de15fe27085bd155e1e22424c1c348e4b570071755b70443c077ad",
+                  "output": "1fb1acd8348cbd5901d1cae34f2ed31ef5ec29bfa9243cced55a199d725ee46d",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_audit",
-                        "duration": 50.28,
+                        "duration": 54.126,
                         "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "2d4e3c3ab629c77675c93b84fbcd971c4411f3798cb4e439e589c3c02b5c6350"
+                      "sha256": "9bb2e18d13fc3f960f7b09055ceb54c8833cf16f95afb71842dbcdf129dedec7"
                     }
                   },
                   "result": "pass"
                 },
                 {
                   "made": "helper",
-                  "output": "9115df4eaccd3ee276023347617a0e2a6e79023c7e0ab2e20b539a77331a8d0f",
+                  "output": "adeef04549bb504bc872023a17b342dc39ad70eb87e4771caf8cf0bb609e7d91",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_audit",
-                        "duration": 57.107,
+                        "duration": 57.321,
                         "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "afa3f276b8760fa1252c279fc51f40b03dafed55975ffca372a6f8a69616a3f5"
+                      "sha256": "d7158b90559052238fca154af89fc98044910e84f6d12c30f8bdc6cdbdd42025"
                     }
                   },
                   "result": "pass"
                 },
                 {
                   "made": "helper",
-                  "output": "8352d42d41512b2e88605d7f0cf2c3119fc26257bd3b6519af0d35eb3f6f307f",
+                  "output": "326af0e547195a7602de0967828cfc17d794b39ead12dd2fb581ce0f4bdf9554",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_audit",
-                        "duration": 55.407,
+                        "duration": 57.618,
                         "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "9c611dda6cde4f75ae04101e42d707a89d374e2b7d2e3912f8137c7f31f361e3"
+                      "sha256": "158a16f2d43578dfce58d452777b1bca2105ce9db75b45ca1c5ce75a4dea8caf"
                     }
                   },
                   "result": "pass"
