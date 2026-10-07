@@ -39,6 +39,11 @@ Every rule has two **cells**:
 A **hand check** is a proof marked `@manual`. Its rule reads `checked at sign-off` until a
 sign-off notes it: a person looks at it in the sign-off walk.
 
+A proof about what an AI does with a prompt or a skill is an **AI proof**, tagged
+`@ai(<model>)`, with an ordinary marked test: `references/spec_quality_guide.md`, "A proof about
+what an AI does", says how to write one, and `references/purlin_commands.md`, "The helper", how
+its test makes the output.
+
 `references/glossary.md` defines the rest of the words.
 
 ## The core loop

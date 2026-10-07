@@ -3,12 +3,12 @@
 > Description: What `agents/purlin.md` must name. The agent definition is the only text every
 >   Purlin session loads before it does anything, so it names the commands of the work, the
 >   hand-off and the sign-off, and the files that say what each word means; this spec holds
->   the one list of those commands and files. It also holds six checks on what every skill,
+>   the one list of those commands and files. It also holds seven checks on what every skill,
 >   the agent definition and the references tell an agent to run.
 > Scope: agents/purlin.md, skills/, references/
 > Stack: markdown, Claude Code agent definition
-> Highest-Rule: 25
-> Highest-Proof: 56
+> Highest-Rule: 27
+> Highest-Proof: 59
 
 ## Rules
 
@@ -20,6 +20,8 @@
 - RULE-23: No skill, agent definition or reference names a path under `dev/`, `/dev/null` aside
 - RULE-24: Every skill that names `sync_status` names the tool as a session lists it, `mcp__plugin_purlin_purlin__sync_status`, and the script that prints the same status, `scripts/run/purlin_status.py`
 - RULE-25: `references/purlin_commands.md` and `references/glossary.md` each name the command that settles a weak rule, `purlin:audit <feature> RULE-N --settle`
+- RULE-26: The agent definition says a proof about what an AI does is an AI proof, and names the two references that say how one is written and how its test makes the output
+- RULE-27: `references/purlin_commands.md` gives the helper's command line, and no skill and no agent definition restates it
 
 ## Proof
 
@@ -31,3 +33,6 @@
 - PROOF-54 (RULE-23): No line of `skills/*/SKILL.md`, `agents/purlin.md` or `references/**/*.md` holds `dev/` once every `/dev/null` is set aside; the same check on a copy of the build skill naming `dev/test_x.py` lists that line
 - PROOF-55 (RULE-24): Each `SKILL.md` holding `sync_status` holds `mcp__plugin_purlin_purlin__sync_status` and `scripts/run/purlin_status.py`; the same check on a copy of the build skill with the script's line taken out lists `build does not name scripts/run/purlin_status.py`
 - PROOF-56 (RULE-25): The text of `references/purlin_commands.md` holds `purlin:audit <feature> RULE-N --settle`, and so does the text of `references/glossary.md`
+- PROOF-57 (RULE-26): The text of `agents/purlin.md` holds one sentence that names `AI proof`, `@ai(<model>)`, `references/spec_quality_guide.md` and `references/purlin_commands.md`
+- PROOF-58 (RULE-27): The text of `references/purlin_commands.md` holds the three lines `purlin_ai.py run --skill <folder> | --plugin <folder> | --instructions <file>...`, `purlin_ai.py record --from <folder> [--model <name>]` and `purlin_ai.py grade --feature <name> --proof PROOF-N`
+- PROOF-59 (RULE-27): No `SKILL.md` and not `agents/purlin.md` holds `--instructions`, `--from <folder>` or `--proof PROOF-N`; the same check on a copy of the build skill with the line `purlin_ai.py record --from <folder>` added lists `--from <folder>`

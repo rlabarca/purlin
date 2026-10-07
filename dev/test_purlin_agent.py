@@ -1,4 +1,4 @@
-"""What the agent definition, `agents/purlin.md`, must name, and six checks
+"""What the agent definition, `agents/purlin.md`, must name, and seven checks
 on what every skill, the agent definition and the references tell an agent
 to run.
 
@@ -195,3 +195,41 @@ SETTLE = 'purlin:audit <feature> RULE-N --settle'
 def test_the_command_reference_and_the_glossary_name_the_settle_command():
     assert not_named(read('references/purlin_commands.md'), (SETTLE,)) == []
     assert not_named(read('references/glossary.md'), (SETTLE,)) == []
+
+
+AI_PROOF = ('AI proof', '@ai(<model>)', 'references/spec_quality_guide.md',
+            'references/purlin_commands.md')
+
+
+# purlin: purlin_agent PROOF-57
+def test_one_sentence_says_what_an_ai_proof_is_and_where_to_read():
+    assert len(sentences_with(AGENT, AI_PROOF)) == 1
+
+
+HELPER_LINES = (
+    'purlin_ai.py run --skill <folder> | --plugin <folder> | '
+    '--instructions <file>...',
+    'purlin_ai.py record --from <folder> [--model <name>]',
+    'purlin_ai.py grade --feature <name> --proof PROOF-N')
+
+
+# purlin: purlin_agent PROOF-58
+def test_the_command_reference_gives_the_helpers_three_lines():
+    lines = read('references/purlin_commands.md').splitlines()
+    assert [line for line in HELPER_LINES if line not in lines] == []
+
+
+HELPER_OPTIONS = ('--instructions', '--from <folder>', '--proof PROOF-N')
+
+
+def helper_options(text):
+    """Each option of the helper's command line the text holds."""
+    return [name for name in HELPER_OPTIONS if name in text]
+
+
+# purlin: purlin_agent PROOF-59
+def test_no_skill_and_no_agent_definition_restates_the_helpers_line():
+    assert _found(skill_files() + [AGENT], helper_options) == {}
+    copy = (read(skill_path('build'))
+            + 'purlin_ai.py record --from <folder>\n')
+    assert helper_options(copy) == ['--from <folder>']
