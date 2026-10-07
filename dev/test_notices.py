@@ -94,20 +94,26 @@ class TestTheShape:
 
     # purlin: notices PROOF-3
     def test_every_kind_has_its_own_few_words(self):
-        words = [text for _key, text in notices.KINDS]
+        # The words each kind prints, read from a line of that kind:
+        # `x: <words>.`
+        printed = {kind: str(notices.line(kind, 'x', None))[len('x: '):-1]
+                   for kind, _text in notices.KINDS}
+        words = list(printed.values())
         assert len(words) == len(notices.KINDS) > 0
         assert len(set(words)) == len(words), words
         left = {kind: one for kind, one, _many, _command in summary.KINDS}
-        shared = sorted(set(left) & set(notices.WORDS))
+        shared = sorted(set(left) & set(printed))
         assert shared == ['no_test', 'to_correct', 'to_fix', 'to_repair']
-        assert {kind: notices.WORDS[kind] for kind in shared} == {
+        assert {kind: printed[kind] for kind in shared} == {
             'no_test': left['no_test'], 'to_correct': left['to_correct'],
             'to_fix': left['to_fix'], 'to_repair': left['to_repair']}
-        assert [notices.WORDS[kind] for kind in shared] == [
+        assert [printed[kind] for kind in shared] == [
             'rule to write a test for', 'test comment to correct',
             'rule to fix', 'spec to repair']
-        assert all(2 <= len(text.split()) <= 5
-                   for kind, text in notices.KINDS if kind not in left), words
+        other = {kind: text for kind, text in printed.items()
+                 if kind not in left}
+        assert other and all(2 <= len(text.split()) <= 5
+                             for text in other.values()), other
 
     # purlin: notices PROOF-4
     def test_a_proof_no_spec_gives_a_rule_is_named_without_one(self):
