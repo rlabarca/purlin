@@ -431,25 +431,29 @@ class TestEnvScopedProofs:
 
     # purlin: run_script PROOF-10
     def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):
-        other = self._other_os()
-        root = _pytest_project(tmp_path, body=self.SKIPPED_HERE)
-        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),
-                                    ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
+        words = {'windows': 'Windows', 'macos': 'macOS',
+                 'linux': 'Linux/Unix'}
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
-        code, output = _run(root, '--all', '--test')
-        assert ('%s: proofs not run here. 1 proof needs it, and this machine '
-                'is %s. Run purlin:test on %s.'
-                % (purlin_evidence.os_word(other),
-                   purlin_evidence.os_word(here),
-                   purlin_evidence.os_word(other))
-                in output.splitlines()), output
-        assert 'evidence missing' not in output, output
-        assert [(entry['id'], entry['result'])
-                for entry in _proofs(root, 'feat')] == [
-            ('PROOF-1', 'pass'), ('PROOF-2', 'not run')], output
-        cell = _rule(root, 'feat', 'RULE-1')['cells']['passed']
-        assert cell['platforms'][here]['word'] == 'passed', cell
+        others = sorted(set(words) - {here})
+        assert len(others) == 2 and self._other_os() in others
+        # Each system that is not this machine's, named in its own words.
+        for other in others:
+            root = _pytest_project(tmp_path / other, body=self.SKIPPED_HERE)
+            _spec(root, 'feat', proofs=(
+                ('PROOF-1', 'RULE-1', ''),
+                ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))
+            code, output = _run(root, '--all', '--test')
+            assert ('%s: proofs not run here. 1 proof needs it, and this '
+                    'machine is %s. Run purlin:test on %s.'
+                    % (words[other], words[here], words[other])
+                    in output.splitlines()), output
+            assert 'evidence missing' not in output, output
+            assert [(entry['id'], entry['result'])
+                    for entry in _proofs(root, 'feat')] == [
+                ('PROOF-1', 'pass'), ('PROOF-2', 'not run')], output
+            cell = _rule(root, 'feat', 'RULE-1')['cells']['passed']
+            assert cell['platforms'][here]['word'] == 'passed', cell
 
     # purlin: run_script PROOF-115
     def test_an_env_proof_for_this_os_is_run_normally(self, tmp_path):
@@ -459,7 +463,8 @@ class TestEnvScopedProofs:
         _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ' @env(%s)' % here),))
         code, output = _run(root, '--all', '--test')
         assert not [line for line in output.splitlines()
-                    if re.match(r'\d+ proofs? needs? ', line)], output
+                    if 'proofs not run here' in line
+                    or re.search(r'\d+ proofs? needs? ', line)], output
         assert _proofs(root, 'feat') is not None, output
         assert [(entry['id'], entry['result'], entry['env'])
                 for entry in _proofs(root, 'feat')] == [
@@ -1495,11 +1500,18 @@ class TestNoTestCommand:
 
     # purlin: run_script PROOF-221
     def test_on_windows_the_pytest_command_starts_with_the_launcher(
-            self, tmp_path):
+            self, tmp_path, monkeypatch):
         root = _no_command(tmp_path, 'pytest')
         (entry,) = frameworks.suggest(str(root), os_name='windows')
         assert entry['run'] == ('py -3 -m pytest {files} '
                                 '--junitxml={report}')
+        # The same where the system is read from the machine: Python names
+        # a Windows machine `nt`.
+        with monkeypatch.context() as patched:
+            patched.setattr(frameworks.os, 'name', 'nt')
+            read = frameworks.suggest(str(root))
+        assert [entry['run'] for entry in read] == [
+            'py -3 -m pytest {files} --junitxml={report}']
 
     # purlin: run_script PROOF-326
     @pytest.mark.skipif(platform.system() != 'Windows',
@@ -2884,6 +2896,10 @@ class TestARunOverEveryFeatureCarriesForward:
         _git(root, 'commit', '-q', '-m', 'the anchor shared')
         code, output = _run(root, '--all', '--test', '--commit')
         assert code == 0, output
+        # The first run's report is taken away, so the report read below is
+        # the second run's own. git ignores it: no spec, test or code
+        # changed between.
+        (root / REPORTS_REL / 'pytest.xml').unlink()
         code, output = _run(root, '--all', '--test', '--commit')
         assert code == 0, output
         assert _ran(root) == ['test_shared'], output
@@ -3348,6 +3364,11 @@ class TestAiProofs:
         root = _ai_project(tmp_path)
         code, output = _run(root, '--all', '--test')
         assert code == 0, output
+        # The project's test writes what it read: `out` is PURLIN_AI_OUT
+        # and `helper` is PURLIN_AI, as its last start read them.
+        body = (root / 'tests' / 'test_feat.py').read_text(encoding='utf-8')
+        assert "out = pathlib.Path(os.environ['PURLIN_AI_OUT'])" in body
+        assert "{'out': str(out), 'helper': os.environ['PURLIN_AI']," in body
         seen = json.loads((root / 'seen.json').read_text(encoding='utf-8'))
         assert seen['out'] == os.path.join(
             os.path.abspath(str(root)), '.purlin', 'runtime', 'ai', 'feat',
@@ -3398,7 +3419,7 @@ class TestAiProofs:
 
     # purlin: run_script PROOF-355
     def test_a_settle_starts_the_ai_proofs_of_the_rules_it_names(
-            self, tmp_path):
+            self, tmp_path, claude):
         purlin_run = _load_run_script()
         root = _ai_project(tmp_path)
         features = importlib.import_module('purlin.specs').scan_specs(
@@ -3411,6 +3432,20 @@ class TestAiProofs:
         assert started([]) == []
         assert started(['RULE-2']) == [('feat', 'PROOF-2')]
         assert started(['RULE-1']) == []
+        # The same of the runs themselves: only the settle of `RULE-2`
+        # starts the test of PROOF-2, on each model, and no model is asked
+        # for a bug.
+        install, _directory = claude
+        install()
+        _git_repo(root)
+        _run(root, '--feature', 'feat', '--test')
+        assert _ai_starts(root) == []
+        _run(root, '--audit', '--feature', 'feat', '--settle', 'RULE-1')
+        assert _ai_starts(root) == []
+        _run(root, '--audit', '--feature', 'feat', '--settle', 'RULE-2')
+        assert _ai_starts(root) == [
+            '%s %d' % (model, run)
+            for model in ('model-a', 'model-b') for run in (1, 2, 3)]
 
     # purlin: run_script PROOF-356
     def test_every_run_is_recorded_under_its_model(self, tmp_path):
