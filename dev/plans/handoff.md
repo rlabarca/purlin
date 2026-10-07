@@ -1,117 +1,158 @@
-# Handoff, 2026-10-06: ready for decision 135
+# Handoff, 2026-10-08: decision 135 is built
 
-Local `main` is green and not pushed. Decisions 100 to 134 are built. Decision 135, testing
-prompts and skills, is planned in `dev/plans/ai-proofs-plan.md` and not built. Nothing is
-signed or tagged, and the owner has planned no signing. GitHub holds `main` (far behind local)
-and the two `qa/` branches.
+Local `main` is green and not pushed. Decisions 100 to 135 are built. Nothing is signed or
+tagged, and the owner has planned no signing. GitHub holds `main` (far behind local) and the
+two `qa/` branches.
 
 ## Where it stands
 
 | | Result |
 |---|---|
-| `bash dev/run_tests.sh` | 1375 passed, 0 failed, 10 skipped; 4 suites passed, 0 failed |
-| `purlin_run.py --test --all --commit` | 1380 markers tied, 0 not tied; 40 specs, 609 rules, every one passing |
-| `python3 dev/windows_run.py` | ends `609 rules. 609 pass their tests.` |
-| `sign.py --show` | does not refuse; about 20 seconds |
+| `bash dev/run_tests.sh` | 1666 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed |
+| `purlin_run.py --test --all --commit` | 1674 markers tied, 0 not tied; 42 specs, 742 rules, every one passing, 1 of them graded by an AI |
+| `python3 dev/windows_run.py` | ends `742 rules. 742 pass their tests, 1 of them graded by an AI.` |
+| The audit | `The audit found 731 of 734 rules strong (99%): 731 strong, 1 weak, 10 spot-checked.` |
+| `sign.py --show` | does not refuse; it opens `AI proofs run on claude-opus-5-5: 3 proofs, 3 runs each.` |
 
-Formats: spec 24, anchor 12, marker 6, evidence 17, package 17, signature 17. The dashboard's
-data is schema 19.
+Formats: spec 25, anchor 12, marker 6, evidence 18, package 18, signature 18. The
+dashboard's data is schema 20. The evidence file's own schema is `purlin-evidence/2`.
 
-## The audit is held back, on purpose
+## What decision 135 built
 
-The status ends `The audit found 81 of 601 rules strong (13%): 81 strong, 8 spot-checked, 488
-out of date, 32 not audited.` Out of date is not weak: on 2026-10-06 every rule had been read
-and 566 of 569 read `strong`. The changes since then put those results out of date, and 32
-rules are new.
+A project can test, and keep evidence for, the prompts and skills it produces.
 
-The owner chose not to audit again before decision 135, since that round changes the same code:
-"we are about to kick off a big piece of work that might invalidate a bunch". The audit of
-every spec in the project is the closing step of that round.
+- **An AI proof is a proof like any other**, with an ordinary marked test, tagged with the
+  models it is shown on: `@ai(claude-opus-5-5)`, `@ai(a, b, runs=10)`. It is a slow proof.
+- **A graded proof carries two tags**: `@ai(<model>) @graded(<grader>)`. The grader is shown
+  the proof's sentence, what the AI was given and what it produced, and judges by the
+  sentence alone. A rule that passes with one reads `graded`, never `passed`.
+- **No model is named in the settings.** The settings gain `runs` alone, 3 where not set.
+- **The helper**, `scripts/ai/purlin_ai.py`: `run` (a skill or plugin in a real session, or
+  instructions as a system prompt), `record` (an output the project's own test made) and
+  `grade`. A test reads `PURLIN_AI` to start it.
+- **A full run starts each AI proof per model, per model run**, and records every one. A
+  model that gives no answer leaves the proof `not run`, never failed, and the warning
+  `<model>: model not reached. <why>. Run purlin:test --all.` stays in the status and on the
+  dashboard until a run reaches it.
+- **Each model run keeps a folder**: `reply.md`, `transcript.jsonl`, `files/`, `input/`
+  (what the AI was given) and `purlin.json`. The evidence names it by its sha256, and a
+  sign-off commits the folders this machine holds beside the package.
+- **The audit plants a wrong output** in a copy of a kept passing output and runs the
+  proof's test on it. For a graded proof that tests the grader. A seventh spot test names a
+  graded proof's test that never calls `grade`.
+- **The sign-off** names each model and each grader, and its list, opened by `To read
+  before you sign:`, holds each graded model run with the grader's reason.
+- **The docs**: `docs/testing-ai.md` and `docs/graded-by-ai.md`, and a part in each page a
+  reader is on. The deck has the slides `ai` and `graded`, published at version 142.
+- **Purlin on itself**: three AI proofs on `claude-opus-5-5`, `skill_build` PROOF-55 and
+  PROOF-56 (graded by `claude-haiku-4-5-20251001`) and `skill_audit` PROOF-64. A full run
+  starts real sessions for them when a skill's file changed; `--clean` starts them all.
 
-How the audit of Purlin itself went, for whoever runs it next:
+## The audit of every spec
 
-- It was done in batches of 100 to 200 rules, each batch's findings worked before the next.
-- About 1 rule in 5 was weak on a first read. Of 140 planted bugs that got past a test, 136
-  were caught once the test held the value its proof names; 4 tests were judged sound and
-  settled with `--sound`. No strengthened test failed on the code as it stood.
-- The tests that hold pages and printed lines were the weakest: a test that looks for a word
-  passes when the sentence says the opposite.
-- A rule with a proof tagged for Windows settles only after a Windows run.
-- The procedure the lanes followed is the build skill's "Strengthening a weak rule".
+Every spec was audited in four lanes, each finding worked by the build skill's steps.
 
-## What this round built, since decision 129
+- 92 rules were weak on a first read, about 1 in 8. 112 planted bugs got past a test; all
+  but the ones named below were caught once the test held the value its proof names. 10
+  proofs were settled with `--sound`, each reason recorded. No code, rule or proof was
+  changed to clear a finding, and no strengthened test failed on the code as it stood.
+- The tests of pages were the weakest: a test that reads a page's text does not see a
+  stylesheet hide it. Next: "nothing else" not held, and standard error not read.
 
-- **Decision 130**, after a goal-seek test by real sessions: a plain audit plants a surviving
-  bug again first; the first run commits the settings file after a question that says so; the
-  last line names the sign-off as optional; the update restores what setup writes on a project
-  0.9.5 never set up.
-- **Decision 131**: the code says planted bug (`scripts/review/planted_bug.py`, the fields
-  `bugs` and `bug_key`, the reply line `no bug:`).
-- **Decision 132**, what the audit showed about Purlin: a test whose name begins with
-  another's is no longer left out with it; a settle reads the spot tests again and starts the
-  slow test of the rule it names; the full run reads an audited anchor again.
-- **Decision 133**: the docs are short, about 1,800 lines where they held 3,400. A heading
-  states the idea, and each page has a flow diagram with its box names in bold. The audit's
-  research is on `docs/audit-research.md`. `docs/regulated.md` is the page for regulated
-  work, beside a document control system such as Veeva.
-- **Decision 134**: each test's evidence keeps what the test tool reported, and a sign-off
-  commits the reports the machine holds beside the package; the package names the co-authors
-  git holds on each commit.
-- **Every warning has one shape**, in the terminal and on the dashboard:
-  `<what it is about>: <kind>. <what is wrong, in few words>. Run <command>.`, as
-  `package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" after
-  dev/test_export.py:336 last changed (82c91f6). Run purlin:build package.` The kinds are one
-  list, `KINDS` in `scripts/mcp/purlin/notices.py`; `references/writing_style.md`, "A
-  warning's shape", is its home. Three or more of a kind fold into one line, and
-  `purlin:status <name>` lists each. A run's result lines take the shape too, under the
-  names `Left to do` uses: `rule to fix`, `rule to write a test for`, `evidence missing`.
-- **The sign-off's preview** takes about 20 seconds; it took two minutes.
-- **The deck** is published at version 139.
+Not strong, and why:
+
+- `purlin_output` RULE-3, `weak`: see "For the owner", item 5.
+- The 8 rules of the anchor, `spot-checked`: no bug is planted for an anchor's rule.
+- `evidence` RULE-32, `spot-checked`: its only proof is a Windows one.
+- `planted_bug` RULE-8, `spot-checked`: the model found no bug it may plant.
+
+## What a real session showed
+
+A one-shot session on `claude-opus-5-5`, given a sample with one skill and one prompt and
+the goal `Write the rules and tests for this skill and this prompt with Purlin, and get
+them passing. Ask me nothing.`, set Purlin up, wrote 13 rules and 16 AI proofs, two of them
+graded, wrote their tests and started the full run. All 16 passed 3 of 3 once the run was
+let finish: 48 model runs. Two faults, both fixed in the skills on the owner's answers:
+
+- It picked the models itself and did not say so. The spec skill now says: where you may
+  not ask, name the model you are running on, pick a grader, and say so first.
+- It ended its turn with the run still going. The test skill now says to wait for a full
+  run to end before saying anything is done.
 
 ## For the owner
 
-1. **Read `docs/regulated.md` first**, then the other pages: every one was rewritten.
-2. **A failing rule's line reads `rule to fix`**, the name `Left to do` uses; the owner kept
-   it on 2026-10-07.
-3. **A slow test whose name is the start of another test's name is started on every plain
-   run**, with a line saying so, until one is renamed. pytest cannot leave out exactly one.
-4. **A test report is kept only on the machine that ran the tests.** The preview here reads
-   `Test reports kept with the package: 2 of 3. 1 is not on this machine`: the third is the
-   Windows runner's.
-5. **The plan carries the owner's answers of 2026-10-07**: prompts run through the `claude`
-   program by default and a test may make the output its own way; the grader is named in the
-   proof's tag; 3 runs by default; a model that cannot be reached reads `not run`.
-6. **About a dozen kinds of warning can still pass 160 characters** with long names; what
-   remains in each is a name, a path or the command.
-7. **Not in the one shape**: the audit's findings under a rule, and a refusal that ends a
-   command.
-8. **Left by earlier rounds, unchanged**: a rule can read `strong` while one of its proofs has
-   no caught bug; a session runs the scripts directly where a skill names a command, and
-   guesses their options; a session's status tool keeps the code it loaded when it started.
+1. **Read `docs/testing-ai.md` and `docs/graded-by-ai.md`**: both are new.
+2. **One proof, its own model runs.** Sixteen proofs made 48 model runs; proofs do not
+   share an output. The owner kept that on 2026-10-07.
+3. **A session has its permission checks off and can write outside its copy of the
+   sample**, the plugin's own folder included. The docs state the limit.
+4. **A changed tag reruns every model it names.** A model not reached, or a raised `runs`,
+   reruns what is missing alone.
+5. **`purlin_output` RULE-3 reads `weak`.** A process started through a shell in its own
+   session with an emptied environment is not seen as left running. The test already
+   finds a leftover by process id, by group and by environment.
+6. **The warning `model not reached` prints twice in one test run**: when the model gives
+   no answer, and in the status the run ends on.
+7. **`TESTS` labels two rows on a rule's page**: the rule's state, and each proof's list of
+   test files.
+8. **Left by earlier rounds, unchanged**: a rule can read `strong` while one of its proofs
+   has no caught bug; a session runs the scripts directly where a skill names a command;
+   a session's status tool keeps the code it loaded when it started.
+
+## Found and not fixed, so the audit stays current
+
+A change to a script puts its rules' audit results out of date, so these wait for the next
+round that changes that code.
+
+- `The test at <file>:<line> has no result.` has two homes: `purlin_run.NO_RESULT` and
+  `states.NO_RESULT`.
+- `ai_start` in `purlin_run.py` and `planted_bug._plant_change` each build the variables an
+  AI proof's test is given; one function would do.
+- `outputs.runs_setting` reads the settings with `markers.load_config`, and the payload
+  with `config_engine.resolve_config`.
+- `dev/skill_checks.py`, `not_named` and `must_name`, match a substring, so
+  `purlin:specs` passes for `purlin:spec`; `absent_paths` ignores letter case on macOS.
+- `specs/mcp/states.md` PROOF-312 can be read two ways; say "the last blank line above".
+  `specs/dashboard/purlin_report.md` PROOF-287 says six lines where the sample has seven.
+  `specs/run/reports.md` PROOF-3's three paths cannot show whether `*` crosses a `/`.
+- `fingerprint.carry_plan`'s `incomplete_reason` clause has no test that reaches it.
+- A planted bug can leave a process running when its test does not catch it; the audit
+  does not clean up after it.
+- After a sign-off a project shows an untracked `.purlin/report-data.js` where its
+  `.gitignore` does not name it.
+- Whether `purlin:test --clean` keeps an output where a suite cannot leave one test out
+  was not tested; the audit's line promises it.
+- `ai_helper`: where the sample folder contains the output folder, the output is left out
+  of `input/project/`; that guard has no proof.
 
 ## How to work, as the owner settled it
 
 - **Decisions close before anything launches.** Ask with the question UI, one decision at a
-  time, from the root: what the thing is for, in plain words, with everything needed to answer
-  inside the question and the recommended option first. Name a thing by what a person sees.
+  time, from the root: what the thing is for, in plain words, with everything needed to
+  answer inside the question and the recommended option first.
 - **The least change.** Before adding a concept, a format or a command, check whether
-  something Purlin has already does the job. "dont just bolt this on".
-- **Maximum parallelization, cut by ownership of files.** Each lane has its own worktree and
-  scratch folder and owns files no other lane writes. What one makes and another uses is
-  fixed word for word before they start.
+  something Purlin has already does the job.
+- **Maximum parallelization, cut by ownership of files**, each lane in its own worktree
+  under `../purlin-wt/` with its own scratch folder. Contracts are fixed word for word
+  first.
+- **Mind the usage.** The owner asked for it on 2026-10-08. Lanes run only their own tests
+  and the project-wide checks; the coordinator runs one sweep at a merge. Use a smaller
+  model for a small, exact change. Report at milestones, not at every step.
 - **No push, no pull request, no tag and no signing by any agent**, but the run branch
   `python3 dev/windows_run.py` pushes and deletes.
-- **Acceptance is the full sweep**, `bash dev/run_tests.sh`, plus this repository run through
-  its own tool with every marker tied. Never edit a number to make a sweep green.
+- **Acceptance is the full sweep**, `bash dev/run_tests.sh`, plus this repository run
+  through its own tool with every marker tied. Never edit a number to make a sweep green.
 - **Run with the project's `.venv` first on PATH.** The system `python3` has no pytest.
 - **Look at anything visual** with playwright from the `.venv`, at several widths and both
   themes, before saying it is done.
 - **A clean release.** Nothing that represents earlier functionality stays.
-- **The docs are short**, and the only pictures are simple flow diagrams. Not every decision
-  goes in a doc.
+- **The docs are short**, and the only pictures are simple flow diagrams.
 - **The deck and the docs are changed when their source is.** Pushing waits for the owner.
 - **A sign-off is optional**, and every line that names it says so.
 - **A prompt for a new session is pasted into the conversation**, never written as a file.
 - **No statement about cost** in anything that ships.
 - **Any commit puts the sign-off's refusal back**; `purlin:test --all --commit` clears it by
-  carrying the results forward.
+  carrying the results forward. A changed test of a rule with a Windows proof needs a
+  Windows run again.
+- **Never change a script once the audit is current** unless the round means to audit
+  again: the change ends its rules' results.

@@ -1838,7 +1838,7 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     codebase that produces AI prompts and skills as part of its output. it should work for
     things like claude projects that create artifacts", and "make sure we are doing these
     additions with the least amount of change, in an elegant way.. dont just bolt this on".
-    The plan is `dev/plans/ai-proofs-plan.md`; it goes into 0.10.0, before any sign-off.
+    It is built, in 0.10.0; `dev/plans/handoff.md` says where it stands.
     - **The check stays an ordinary test** in the project's own test tool, which calls one
       helper Purlin ships to run a skill or a prompt on a sample and hand back the output.
     - **Two tags.** `@ai`: the test checks an AI's output exactly. `@graded(<model>)`: the model
@@ -1860,6 +1860,15 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
       needs to specify it." `@ai(<model>, ...)` names one or several models, with one result
       per model; a graded proof reads `@ai(<model>) @graded(<grader>)`. The settings gain
       `runs` alone. Purlin's own three proofs are shown on `claude-opus-5-5`.
+    - *As built, with the owner's answers of 2026-10-07 and 2026-10-08:* the grader is shown
+      what the AI was given as well as what it produced; grading has a doc page and a slide
+      of its own; one start of an AI proof's test on one model is a "model run"; a rule's
+      page labels its first row `Tests`; `model not reached` stays in the status and on the
+      dashboard until a run reaches the model; the sign-off's list opens `To read before you
+      sign:`; a rule that fails on one model reads `failed`; a changed tag reruns every model
+      it names; a settle of an AI proof starts its models; proofs do not share an output;
+      where a session may not ask, it names the model it runs on and says so first; a
+      session waits for a full run to end.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5
