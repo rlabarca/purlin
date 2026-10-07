@@ -3125,12 +3125,15 @@ def given_a_failure(payload, text=FAILURE_TEXT):
 # purlin: purlin_report PROOF-287
 def test_a_failing_test_shows_what_its_tool_reported(browser, tmp_path):
     payload = payload_named('regulated')
+    lines = FAILURE_TEXT.split('\n')
+    assert (len(lines), lines.count('')) == (7, 2), lines
+    assert lines[0] == "AssertionError: expected 'Account locked'"
     file, name = given_a_failure(payload)
     page = open_board(browser, tmp_path, payload)
     open_rule(page, 'login', 'RULE-1')
     panels = page.evaluate(FAILURE_PANELS)
-    # The six lines as they are drawn, one under another: the panel keeps
-    # each end of a line and the spaces that open one.
+    # The seven lines as they are drawn, one under another: the panel keeps
+    # each end of a line, each empty line and the spaces that open one.
     drawn = page.eval_on_selector_all(
         '.ptests pre.failure, .tests pre.failure',
         'els => els.map(e => e.innerText)')
