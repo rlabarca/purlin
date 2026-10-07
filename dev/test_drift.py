@@ -329,11 +329,18 @@ class TestTheLastTwentyCommits:
         made = _twenty_five_commits(tmp_path)
         cloned = _clone(made, str(tmp_path / 'cloned'))
 
-        since = _report(cloned)['since']
+        report = _report(cloned)
+        since = report['since']
         assert since['action'] == 'clone', since
         assert since['from'] == _sha(cloned, 'HEAD~20'), since
         assert since['to'] == _sha(cloned), since
         assert since['commits'] == 20, since
+        # The range as the view names it: its last 20 commits, and the span.
+        first = _view(report)['lines'][0]
+        assert first == since['line'], (first, since)
+        assert first.startswith('Since the clone, '), first
+        assert first.endswith(', last 20 commits (%s..%s, 20 commits).' % (
+            _sha(cloned, 'HEAD~20')[:7], _sha(cloned)[:7])), first
 
 
 # ---------------------------------------------------------------------------
@@ -352,11 +359,16 @@ class TestSinceOverrides:
         _git(['pull', '-q'], checkout)
         assert _report(checkout)['since']['commits'] == 1
 
-        since = _report(checkout, since='3')['since']
+        report = _report(checkout, since='3')
+        since = report['since']
         assert since['commits'] == 3, since
         assert since['from'] == _sha(checkout, 'HEAD~3'), since
         assert since['to'] == _sha(checkout), since
         assert since['line'].startswith('The last 3 commits ('), since
+        # The first line of the view is that line.
+        assert _view(report)['lines'][0] == since['line'], _view(report)
+        assert _view(report)['lines'][0].startswith(
+            'The last 3 commits ('), _view(report)['lines']
 
     # purlin: drift PROOF-10
     def test_since_a_date_runs_the_last_2_of_3_dated_commits(self, tmp_path):
@@ -374,11 +386,16 @@ class TestSinceOverrides:
                                 env={'GIT_AUTHOR_DATE': stamp,
                                      'GIT_COMMITTER_DATE': stamp}))
 
-        since = _report(root, since='2026-02-15')['since']
+        report = _report(root, since='2026-02-15')
+        since = report['since']
         assert since['commits'] == 2, since
         assert since['from'] == shas[0], since
         assert since['to'] == shas[2], since
         assert since['line'].startswith('Since 2026-02-15 ('), since
+        # The first line of the view is that line.
+        assert _view(report)['lines'][0] == since['line'], _view(report)
+        assert _view(report)['lines'][0].startswith(
+            'Since 2026-02-15 ('), _view(report)['lines']
 
 
 # ---------------------------------------------------------------------------
@@ -780,6 +797,14 @@ class TestNumbersWrittenTwice:
         with monkeypatch.context() as clock:
             clock.setattr(purlin_drift.time, 'time', lambda: float(now))
             report = _report(checkout)
+            # One second short of the fourth day is three days ago still.
+            clock.setattr(purlin_drift.time, 'time',
+                          lambda: float(now + 86399))
+            later = _report(checkout)
+        assert _lines(later).count(
+            'origin/main: last fetch. It was 3 days ago, and drift does not '
+            'fetch. Run git fetch, then purlin:drift.') == 1, \
+            _lines(later)
         assert _lines(report).count(
             'origin/main: last fetch. It was 3 days ago, and drift does not '
             'fetch. Run git fetch, then purlin:drift.') == 1, \

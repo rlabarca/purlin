@@ -2,35 +2,42 @@
   "audit": {
     "rules": {
       "RULE-10": {
-        "at": "2026-10-05T19:28:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-26": {
-            "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
-            "aim": "past the test",
-            "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
-            "bug_key": "ca00b072bfca7b8d516a3ef019a5e856abcb294e8ff75123bfdd112eb4e6fd22",
-            "case": "the settings file holds `{\"key\": \"val\"}` and the move onto it fails; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
+            "after": "    except PermissionError:\n        if os.path.exists(tmp_path):",
+            "aim": "plain",
+            "before": "    except OSError:\n        if os.path.exists(tmp_path):",
+            "bug_key": "c28ea9e4124801a948f076b2670844e6ffeb5e328dbd7d6c5c7c148a8dd507bb",
+            "case": "the settings file holds {\"key\": \"val\"} and the move onto it fails; the proof says .purlin/ holds only config.json; the changed code leaves config.json.tmp beside it",
             "file": "scripts/mcp/config_engine.py",
-            "line": 184,
+            "line": 205,
             "result": "caught",
             "why": ""
           },
           "PROOF-27": {
-            "after": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        with open(path, 'a', encoding='utf-8') as f:\n            f.write('\\n')\n        raise",
-            "aim": "past the test",
-            "before": "        if os.path.exists(tmp_path):\n            os.remove(tmp_path)\n        raise",
-            "bug_key": "de98d3e3a8e468950b38c15e1fdc255143be56604c9e94261082ddfe060def75",
-            "case": "the settings file holds `{\"key\": \"val\"}` and the write fails partway with the disk full; the proof says the file reads exactly `{\"key\": \"val\"}`; the changed code leaves `{\"key\": \"val\"}` followed by an added newline",
+            "after": "        if not os.path.exists(tmp_path):",
+            "aim": "plain",
+            "before": "        if os.path.exists(tmp_path):",
+            "bug_key": "ae76cc418d3411a07447d2c0fa2d041c969a5f832275595e90ea4f14c8f2e4dc",
+            "case": "the settings file holds {\"key\": \"val\"} and the write fails partway with the disk full; the proof says .purlin/ holds only config.json; the changed code leaves the half-written config.json.tmp beside it",
             "file": "scripts/mcp/config_engine.py",
-            "line": 184,
+            "line": 206,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "75c3667c1d86906703085deba6bd0a5b349946d0",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-26: the test makes the move fail with its own error, then reads that exact message, the file's parsed contents, its exact bytes and the listing of `.purlin/`, which is every result the proof names.",
+          "PROOF-26: the test checks the proof's case and its results, so the planted bug is the plain one, which leaves the file written beside the target in place.",
+          "PROOF-27: the test makes the write fail after part of the new contents is written, then reads the error's text `No space left on device`, the file's parsed contents, its exact bytes and the listing of `.purlin/`, which is every result the proof names.",
+          "PROOF-27: the failure is raised only from the step that writes the settings, so a disk that fills at the closing newline or as the file is closed is not exercised.",
+          "PROOF-39: the test holds the file open from another program and reads that some system error is raised, the listing of `.purlin/` and the file's exact bytes; the proof names no error text and the test reads none.",
+          "Findings: the spot tests found nothing, and each test asserts on values its proof names."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
@@ -42,52 +49,52 @@
         "verdict": "strong"
       },
       "RULE-14": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-32": {
-            "after": "                         'by hand; nothing ran and nothing was changed.')",
+            "after": "                         'by hand; nothing was saved.')",
             "aim": "past the test",
             "before": "                         'by hand; nothing ran and nothing was saved.')",
-            "bug_key": "533f858a0dee909f4037be24fb70e72fceabbd05141a7eb3947792059733d949",
-            "case": "a settings file with `{` then `  \"tests\": [],}`; the proof says the sentence ends `nothing ran and nothing was saved.`; the changed code ends it `nothing ran and nothing was changed.`",
+            "bug_key": "e0d37fd2f76afbaa32d8e7c739c310293972fed348856197fd84243ee291bc9a",
+            "case": "a settings file with a trailing comma on line 2; the proof says the sentence ends `Fix the file by hand; nothing ran and nothing was saved.`; the changed code ends it `Fix the file by hand; nothing was saved.`",
             "file": "scripts/mcp/config_engine.py",
-            "line": 93,
+            "line": 117,
             "result": "caught",
             "why": ""
           },
           "PROOF-33": {
-            "after": "CONFIG_CANNOT_BE_READ = ('.purlin/config.json could not be read: %s. Fix the file '",
-            "aim": "past the test",
-            "before": "CONFIG_CANNOT_BE_READ = ('.purlin/config.json cannot be read: %s. Fix the file '",
-            "bug_key": "654b1ca45bd21bec93f2d4f1a33c81fbb0dec62644758361bb8317d339a1faa3",
-            "case": "a settings file holding `{\"version\": \"`, the byte 0xFF, `\"}`; the proof says `.purlin/config.json cannot be read: it is not UTF-8 text. ...`; the changed code gives `.purlin/config.json could not be read: it is not UTF-8 text. ...`",
+            "after": "        return CONFIG_CANNOT_BE_READ % 'it is not UTF-8'",
+            "aim": "plain",
+            "before": "        return CONFIG_CANNOT_BE_READ % 'it is not UTF-8 text'",
+            "bug_key": "2ba946bc788c590d0f3c72acdbde4d547cf14c6b6165a6ea12c1a274ede5e6e1",
+            "case": "a settings file holding the byte 0xFF; the proof says the cause reads `it is not UTF-8 text`; the changed code gives `it is not UTF-8`",
             "file": "scripts/mcp/config_engine.py",
-            "line": 92,
+            "line": 147,
             "result": "caught",
             "why": ""
           },
           "PROOF-35": {
-            "after": "                         '; nothing ran and nothing was saved.')",
-            "aim": "past the test",
-            "before": "                         'by hand; nothing ran and nothing was saved.')",
-            "bug_key": "06b34f936ddfa3485952e9f3081f88fcf4a74ec95376dab8e7dea81c05857acf",
-            "case": "a write of `tests` as an empty list over the trailing-comma file; the proof says it stops with the sentence `... Fix the file by hand; nothing ran and nothing was saved.`; the changed code stops with `... Fix the file; nothing ran and nothing was saved.`",
+            "after": "    try:\n        config = _read_json(project_root) or {}\n    except ConfigUnreadable:\n        config = {}",
+            "aim": "plain",
+            "before": "    config = _read_json(project_root) or {}",
+            "bug_key": "a88084fc475a6f609660d35dd8423116f896dd84cbfd9c264f5e0e0cd9b369f0",
+            "case": "a write of `tests` as an empty list over a settings file with a trailing comma on line 2; the proof says the write stops with the sentence and the file is byte for byte as it was; the changed code raises nothing and overwrites the file",
             "file": "scripts/mcp/config_engine.py",
-            "line": 93,
+            "line": 193,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-32: the test writes the two lines the proof names and compares the whole sentence, with the line fixed at `2` and the reader's message taken from the helper `_readers_message`, whose source is not shown.",
-          "PROOF-32: the sentence around the cause comes from the helper `_cannot_be_read`, whose source is not shown, so a test that builds it from the code's own constant would pass with a wrong sentence.",
-          "PROOF-33: the test writes the bytes the proof names and compares the whole sentence with the cause `it is not UTF-8 text` as a literal, the surrounding sentence again coming from `_cannot_be_read`.",
-          "PROOF-35: the test attempts the write the proof names, compares the refusal's whole message with line `2`, compares the file's bytes with those read before the write, and compares the folder's listing with `config.json` alone.",
-          "PROOF-35: the refusal's sentence is built by the same `_cannot_be_read` helper, so its fixed words are checked only as far as that helper holds them apart from the code.",
-          "The spot tests found nothing, and nothing in the three tests shown is always true, swallowed or mocked."
+          "PROOF-32: the test writes the two-line file the proof names, checks the reader's line is 2 and compares the whole sentence with one built by `_cannot_be_read`, a helper whose source was not shown.",
+          "PROOF-32: if that helper takes the sentence's fixed words from the code's own constant, a change to those words still passes; if it writes them out, the comparison catches it.",
+          "PROOF-32: the reader's message comes from `_readers_message`, also not shown, and the test checks only that it is not empty, so its independence from the code under test cannot be read here.",
+          "PROOF-33: the test writes the exact bytes the proof names and compares the whole sentence with the cause `it is not UTF-8 text` written as a literal, so a changed cause fails it.",
+          "PROOF-35: the test expects the refusal, compares its message with the line-2 sentence, compares the file's bytes with those read before the write and compares the folder's listing with `config.json` alone, which are the three results the proof names.",
+          "PROOF-35: the expected sentence is built by the same `_cannot_be_read` helper, so the fixed words of the sentence are checked only as far as that helper is independent of the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -98,50 +105,50 @@
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-45": {
-            "after": "    for section in ('projects', 'tool.poetry'):",
+            "after": "    for section in ('tool.poetry',):",
             "aim": "plain",
             "before": "    for section in ('project', 'tool.poetry'):",
-            "bug_key": "f701834a53b3bdbfd4bd002481d949b0e77ecba1c0e53b44b7c3ba87b69417a2",
-            "case": "a project whose pyproject.toml reads [project] and name = \"labconnect\", beside a package.json naming intake-web; the proof says the status opens `Purlin status: labconnect,`; the changed code gives `Purlin status: intake-web,`",
+            "bug_key": "babb3429dce7fad2d6dfbf879ac2571d856aa86451e6a0cd828d682052ee8992",
+            "case": "a project whose pyproject.toml reads [project] and name = \"labconnect\", beside a package.json naming intake-web; the proof says the status opens `Purlin status: labconnect,`; the changed code opens it `Purlin status: intake-web,`",
             "file": "scripts/mcp/purlin/project.py",
             "line": 92,
             "result": "caught",
             "why": ""
           },
           "PROOF-48": {
-            "after": "        result = subprocess.run(['git', 'remote', 'get-url', 'upstream'],",
+            "after": "    segment = re.split(r'[/:\\\\]', url.rstrip('/'))[0] if url else ''",
             "aim": "plain",
-            "before": "        result = subprocess.run(['git', 'remote', 'get-url', 'origin'],",
-            "bug_key": "2d0432130dd4ea6bcd7ab2c9dd85a8c952476146544af00e271e4589b00a8d44",
-            "case": "a project in the folder work with no project file, whose origin remote is /srv/git/labconnect.git; the proof says the status opens `Purlin status: labconnect,`; the changed code gives `Purlin status: work,`",
+            "before": "    segment = re.split(r'[/:\\\\]', url.rstrip('/'))[-1] if url else ''",
+            "bug_key": "9c5812e6000c2a01b96ba7e2cb860eca2fa1abbac308af3fda2b10c1858577f5",
+            "case": "a project in the folder work with no project file, whose origin remote is /srv/git/labconnect.git; the proof says the status opens `Purlin status: labconnect,`; the changed code opens it `Purlin status: work,`",
             "file": "scripts/mcp/purlin/project.py",
-            "line": 147,
+            "line": 153,
             "result": "caught",
             "why": ""
           },
           "PROOF-49": {
-            "after": "    return os.path.basename(os.path.dirname(os.path.abspath(project_root)))",
+            "after": "    return os.path.basename(os.path.abspath(project_root)).upper()",
             "aim": "plain",
             "before": "    return os.path.basename(os.path.abspath(project_root))",
-            "bug_key": "7a8ad1e6ad83a83d1f3af935cc6ac74e18966df7066c540f86205a1ae7342bff",
-            "case": "a project in the folder labconnect with no project file and no git remote; the proof says the status opens `Purlin status: labconnect,`; the changed code gives the name of the folder above it",
+            "bug_key": "622a5c74bd873f2a33651e3b5aae3e37209355f62adaa68a6a0311f8933158d8",
+            "case": "a project in the folder labconnect with no project file and no git remote; the proof says the status opens `Purlin status: labconnect,`; the changed code opens it `Purlin status: LABCONNECT,`",
             "file": "scripts/mcp/purlin/project.py",
             "line": 99,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-45: the test writes the pyproject.toml and package.json the proof names in a folder called intake, reads the status's first line against `Purlin status: labconnect,`, and checks the settings file holds only `tests` and `version` and no `labconnect`, so both results the proof names are observed.",
-          "PROOF-48: the test sets up a folder called work with no project file, adds the origin remote `/srv/git/labconnect.git` and reads the status's first line against `Purlin status: labconnect,`, which only the remote can supply since the folder is named otherwise.",
-          "PROOF-49: the test sets up a folder called labconnect with no project file and no remote and reads the status's first line against `Purlin status: labconnect,`, which is the proof's case and its result.",
-          "The three proofs cover `[project]` ahead of `package.json`, the origin remote and the folder's name; no proof reads a name from `[tool.poetry]`, from `package.json` on its own or from a `*.csproj` file, so those three sources of the rule are not observed by any test here."
+          "PROOF-45: the test writes the pyproject.toml and package.json the proof names, compares the status's first line with `Purlin status: labconnect,` up to the comma, and reads `.purlin/config.json` for exactly the keys `tests` and `version` and for no `labconnect`, so it observes both results the proof names.",
+          "PROOF-48: the test sets up a folder named `work` with no project file, adds the origin remote `/srv/git/labconnect.git` and compares the status's first line with `Purlin status: labconnect,`, so a name taken from the folder or a name keeping `.git` fails it.",
+          "PROOF-49: the test sets up a folder named `labconnect` with no project file and no remote and compares the status's first line with `Purlin status: labconnect,`, which is the proof's case and its result.",
+          "The spot tests found nothing, and each test asserts a literal the proof names after acting on a project it built."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -152,97 +159,95 @@
         "verdict": "strong"
       },
       "RULE-20": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-50": {
-            "after": "    return [SETTINGS_NOT_READ % ', '.join(sorted(others)) + fix]",
+            "after": "                                     SETTINGS_NOT_READ % ','.join(others),",
             "aim": "plain",
-            "before": "    return [SETTINGS_NOT_READ % ', '.join(others) + fix]",
-            "bug_key": "b8f3de9f2fd5f277e49616e819750b1f024d406e359544e438585835b5b041a9",
-            "case": "a settings file holding version, tests, pre_push and digest in that order; the proof says the warning names `pre_push, digest`; the changed code names `digest, pre_push`",
+            "before": "                                     SETTINGS_NOT_READ % ', '.join(others),",
+            "bug_key": "b36572beb822ad41ffdadce995c7c96f0d198efaddeda7370217b5a329f177f1",
+            "case": "a settings file holding version, tests, pre_push and digest; the proof says the one warning names `pre_push, digest` and ends `Run purlin:init --update.`; the changed code names `pre_push,digest`",
             "file": "scripts/mcp/config_engine.py",
-            "line": 45,
+            "line": 64,
             "result": "caught",
             "why": ""
           },
           "PROOF-51": {
-            "after": "        fix = SETTINGS_REMOVE if len(others) > 1 else SETTINGS_REMOVE_MANY",
+            "after": "            fix = SETTINGS_REMOVE if len(others) > 1 else SETTINGS_REMOVE_MANY",
             "aim": "plain",
-            "before": "        fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY",
-            "bug_key": "f29a01c2c093def82a5ac989dd6c485ca340427728fec25178ab9f46b20dd17c",
-            "case": "a settings file holding version, tests and colour; the proof says the warning ends `Remove it from .purlin/config.json.`; the changed code ends it `Remove them from .purlin/config.json.`",
+            "before": "            fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY",
+            "bug_key": "20be29d097a909c0d5edb5db223e875cfe4db6c89a47c62af5c1937b01d40a97",
+            "case": "a settings file holding version, tests and colour; the proof says the one warning ends `Remove it from the file.`; the changed code ends it `Remove them from the file.`",
             "file": "scripts/mcp/config_engine.py",
-            "line": 44,
+            "line": 62,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-50: the test writes the four keys in the proof's order and compares the whole list of warnings with the one sentence the proof names, so a changed key order, a changed ending or a second warning fails it.",
-          "PROOF-51: the test writes `version`, `tests` and `colour` and compares the whole list of warnings with the one sentence the proof names, so a wrong ending or an extra warning fails it.",
-          "PROOF-50 and PROOF-51: both expected sentences are written out in the tests as literals and not taken from the code's constants, so a change to the wording in the code is seen.",
-          "No proof of the rule names a file that holds both a key the upgrade removes and one it does not, so the ending for that mix is observed by neither test."
+          "PROOF-50: the test writes a settings file holding `version`, `tests`, `pre_push` and `digest` in that order and compares the whole list of warnings with the one sentence the proof names, so a change to the keys named, their order, their joining, the ending or the number of warnings fails it.",
+          "PROOF-51: the test writes a settings file holding `version`, `tests` and `colour` and compares the whole list of warnings with the one sentence the proof names, so a wrong ending or a second warning fails it.",
+          "The spot tests found nothing, and both tests take their expected sentence from a literal, not from the code.",
+          "No proof of the rule names a file holding both a key the upgrade removes and one it does not, or a file holding `runs`, so the ending for a mixed file and the silence about `runs` are not shown."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "bd83bd18f4fa951d8715be9cabad17f37f88840090e16daf453a04b6397303f1",
-        "rule_hash": "6c01f7401b8718c817702510cee72d50ba682ef283101d8b32121f8d2a3f3a67",
-        "test_hash": "460511d5718693d132105da5accf80f1bfc7a8a2a17741775d98d79e0c84f907",
+        "proof_hash": "70cba9f3463c7d849e63828b841228e3cde50b08e0a5b2ee1ac53a9d0683d6a5",
+        "rule_hash": "c96456b4e2dc4918bb698ba3d1870eb4ae4bed219544bb8797b8f09195be3c7f",
+        "test_hash": "1149cbddd8bd7703905d1f1cdd207399b21e36505b0b6dee93b0af7803b987a3",
         "verdict": "strong"
       },
       "RULE-21": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-18": {
             "after": "            return os.path.dirname(current), 'climb'",
             "aim": "plain",
             "before": "            return current, 'climb'",
-            "bug_key": "298635dd63d1f649ce8632efde1627b0d550e48e4ab30a0065caf84c29d23d3c",
+            "bug_key": "7db613820520d5cb777d4dbff268e16604c6317425c789f26f985e1879f7fe1f",
             "case": "PURLIN_PROJECT_ROOT unset, markers in <tmp>/outer and <tmp>/outer/inner, start <tmp>/outer/inner/src; the proof says <tmp>/outer/inner; the changed code gives <tmp>/outer",
             "file": "scripts/mcp/config_engine.py",
-            "line": 74,
+            "line": 98,
             "result": "caught",
             "why": ""
           },
           "PROOF-28": {
-            "after": "    if env_root and os.path.isdir(os.path.join(env_root, '.purlin')):",
+            "after": "        return env_root, 'climb'",
             "aim": "plain",
-            "before": "    if env_root and os.path.isdir(env_root):",
-            "bug_key": "0f963af189fe43fdf6e31e3bd0a27e82dce4dd8385cbaba5899d07ffdf8b8b37",
-            "case": "marker at <tmp>/project/.purlin/, PURLIN_PROJECT_ROOT naming the unmarked folder <tmp>/elsewhere, start <tmp>/project/src; the proof says <tmp>/elsewhere found by env; the changed code gives <tmp>/project found by climb",
+            "before": "        return env_root, 'env'",
+            "bug_key": "1bd403b042ce1a8ff0d2a2ab47721928540fe0ba73a801aa4a226743d4be3d21",
+            "case": "marker at <tmp>/project/.purlin/, PURLIN_PROJECT_ROOT naming the existing <tmp>/elsewhere, start <tmp>/project/src; the proof says <tmp>/elsewhere found by env; the changed code gives <tmp>/elsewhere found by climb",
             "file": "scripts/mcp/config_engine.py",
-            "line": 68,
+            "line": 93,
             "result": "caught",
             "why": ""
           },
           "PROOF-30": {
-            "after": "    return os.path.abspath(os.getcwd()), 'climb'",
+            "after": "    return os.path.abspath(start_dir or os.getcwd()), 'cwd'",
             "aim": "plain",
             "before": "    return os.path.abspath(os.getcwd()), 'cwd'",
-            "bug_key": "a6721f1bad825138017cc898c4529c471106565fd12f624e77bed9ea6269ec73",
-            "case": "PURLIN_PROJECT_ROOT unset, working directory <tmp>/work, no marker anywhere, start <tmp>/bare; the proof says <tmp>/work found by cwd; the changed code gives <tmp>/work found by climb",
+            "bug_key": "0151210e72d788792ead595a6202789cd6230340471a99db8939e39a9736df8f",
+            "case": "PURLIN_PROJECT_ROOT unset, working directory <tmp>/work, no marker anywhere, start <tmp>/bare; the proof says <tmp>/work found by cwd; the changed code gives <tmp>/bare found by cwd",
             "file": "scripts/mcp/config_engine.py",
-            "line": 80,
+            "line": 104,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-28: the test builds the marked project and the unmarked `elsewhere`, sets the variable, and compares both the pair with `(elsewhere, 'env')` and the root alone with `elsewhere`, so it observes every value the proof names.",
-          "PROOF-28: the test does not clear or check anything about the marker being skipped beyond the returned root, which is enough, since a climb would return `project` and fail the comparison.",
-          "PROOF-18: the test marks `outer` and `inner`, starts from `inner/src` and compares the root alone with `inner` and against `outer`, which is what the proof names.",
-          "PROOF-18: the test does not itself unset `PURLIN_PROJECT_ROOT`, so the proof's \"unset\" rests on a fixture or on the environment the tests run in, which the shown source does not settle.",
-          "PROOF-18: the test reads the root alone and never the name of how it was found; the proof names none, so no proof shown for this rule observes `climb`.",
-          "PROOF-30: the test changes the working directory to `work`, starts from `bare` and compares the pair with `(work, 'cwd')` and the root alone with `work`, so it observes every value the proof names.",
-          "PROOF-30: the proof's \"no marker in or above\" depends on the temporary folder having no `.purlin/` above it and on the variable being unset, neither of which the shown test arranges itself.",
-          "The findings are `none`, and nothing in the three tests matches a spot test: each asserts against values built in the test, not taken from the code under test."
+          "PROOF-28: the test sets the variable to an unmarked existing folder, starts under a marked project, and compares both the root with its source name `env` and the root asked for alone, which is everything the proof names.",
+          "PROOF-18: the test builds the two nested markers, starts below the inner one, and compares the root asked for alone with the inner folder and against the outer one, which is the result the proof names.",
+          "PROOF-18: the test reads no source name, and the proof names none, so no proof of the rule observes the name `climb`; a wrong name on a climbed root would pass all three tests.",
+          "PROOF-30: the test changes the working directory to an unmarked folder, starts from another unmarked folder, and compares the root with its source name `cwd` and the root asked for alone, which is everything the proof names.",
+          "PROOF-30: the test does not unset `PURLIN_PROJECT_ROOT` in its own lines, so the proof's \"unset\" condition rests on the fixture or the environment the test runs in.",
+          "No finding of the spot tests is on record, and each test holds failable comparisons against values built in the test, not taken from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -252,39 +257,98 @@
         "test_hash": "e58683afde9d76238295d75790d5d91c5abaccde15b20c0d2ad430f71d005607",
         "verdict": "strong"
       },
-      "RULE-4": {
-        "at": "2026-10-05T18:42:48Z",
+      "RULE-22": {
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
-          "PROOF-4": {
-            "after": "        return {key: value for key, value in json.load(f).items() if key in KNOWN_KEYS}",
+          "PROOF-52": {
+            "after": "    if runs(config) is None:",
             "aim": "plain",
-            "before": "        return json.load(f)",
-            "bug_key": "c3b3dcf8833efb4fa252d4996f4db3f7ac9072fe15f090d8127fe76118dae58a",
-            "case": "the settings file holds {\"team\": \"default\", \"shared\": {\"paths\": [\"a\", \"b\"]}}; the proof says the config reads as exactly that; the changed code gives {}",
+            "before": "    if 'runs' in config and runs(config) is None:",
+            "bug_key": "4222e276efe1c25f20a580b9a71f968270cae0c4646a2e247df3aef7e865ea9f",
+            "case": "a settings file holding `version` and `tests` alone; the proof says no number of runs and no warning; the changed code gives no number of runs and the one warning that runs is not a whole number from 1 up",
             "file": "scripts/mcp/config_engine.py",
-            "line": 152,
+            "line": 66,
             "result": "caught",
             "why": ""
           },
-          "PROOF-7": {
-            "after": "    \"\"\"Return `.purlin/config.json` as a dict, or {} when it is absent.\"\"\"\n    return _read_json(project_root) or {'version': None}",
-            "aim": "plain",
-            "before": "    \"\"\"Return `.purlin/config.json` as a dict, or {} when it is absent.\"\"\"\n    return _read_json(project_root) or {}",
-            "bug_key": "ca864cd001078dbd63ad708fe20351d51953c3885b99ca7f69a6d6577bd22dd3",
-            "case": ".purlin/ holds no settings file; the proof says the config reads as exactly {}; the changed code gives {\"version\": None}",
+          "PROOF-53": {
+            "after": "RUNS_NOT_READ = 'runs is not a whole number from 0 up.'",
+            "aim": "past the test",
+            "before": "RUNS_NOT_READ = 'runs is not a whole number from 1 up.'",
+            "bug_key": "7fc8a29c7992f66c5aab252fcbc4ebaaf585b37c7d34729dcd233f17f0786e90",
+            "case": "a settings file holding `\"runs\": 0`; the proof says the one warning `.purlin/config.json: setting not read. runs is not a whole number from 1 up. Correct it in the file.`; the changed code gives a warning reading `runs is not a whole number from 0 up.` in its place",
             "file": "scripts/mcp/config_engine.py",
-            "line": 157,
+            "line": 31,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-54": {
+            "after": "    if isinstance(value, int) and value >= 1:",
+            "aim": "plain",
+            "before": "    if isinstance(value, int) and not isinstance(value, bool) and value >= 1:",
+            "bug_key": "461a6cb01762ffba0280eb9133ab00334cf2054c3d98f8821f3434684bf2780b",
+            "case": "a settings file holding `\"runs\": true`; the proof says no number of runs and the one warning; the changed code gives a number of runs of true and no warning",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 41,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-4: the test writes the proof's own settings, nested value included, and compares the whole config with them for equality, so a dropped, changed or added key fails it.",
-          "PROOF-7: the test first confirms `.purlin/` holds no file and then compares the config with `{}` for equality, so any other value read for a missing file fails it.",
-          "The spot tests found nothing, and both tests hold the values their proofs name and compare them with a result the code under test did not supply."
+          "PROOF-52: the test compares the whole result of reading a file with `\"runs\": 5` to `(5, [])` and of a file without `runs` to `(None, [])`, so both the number and the absence of any warning are observed as the proof names them.",
+          "PROOF-53: the test compares the result for `\"runs\": 0` to no number and a list holding exactly `RUNS_NOT_READ`, so the count of warnings is observed, while the warning's wording is checked only as far as that name holds the proof's sentence written out in the test file and not text taken from the code.",
+          "PROOF-54: the test reads each of `true`, `\"3\"`, `2.5` and `-1` and compares each result to no number and the one warning, so every value the proof names is observed, with the same dependence on where `RUNS_NOT_READ` comes from.",
+          "The helper `_read` and the definition of `RUNS_NOT_READ` are not among the lines shown, so what the helper returns and whether the expected warning is a literal cannot be read here.",
+          "The spot tests found nothing, and nothing in the three tests shown is an assertion that cannot fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-52 holds two cases, a file with `\"runs\": 5` and a file with no `runs`.",
+          "PROOF-54 holds four cases, one for each of the values `true`, `\"3\"`, `2.5` and `-1`."
+        ],
+        "proof_hash": "8dd57104cbca295a800536ecd5f22aca6b53aba10ecd86fdd1eb55bb07b0464b",
+        "rule_hash": "f30c61428f0fdcf0988978ae8821cd954ee23d39ed11fff172c39c0474cb2c28",
+        "test_hash": "1487454ec0bb304ab060d963a77bcadae6667098ed7ef7d8085f4696eb1a9153",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "        return {k: v for k, v in json.load(f).items() if k in KNOWN_KEYS}",
+            "aim": "plain",
+            "before": "        return json.load(f)",
+            "bug_key": "e0e6476d4f7acf83f3a015bf12daa9db04a6f364f691d36896ee00378ca1e6e7",
+            "case": "the settings file holds {\"team\": \"default\", \"shared\": {\"paths\": [\"a\", \"b\"]}}; the proof says the config reads as exactly that, the nested value included; the changed code gives {}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 176,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "    return _read_json(project_root) or {'tests': {}}",
+            "aim": "plain",
+            "before": "    return _read_json(project_root) or {}",
+            "bug_key": "866f61e621465abf7a18909c601756b0393a8174e9704d2729558cdbb1509fe5",
+            "case": ".purlin/ holds no settings file; the proof says the config reads as exactly {}; the changed code gives {\"tests\": {}}",
+            "file": "scripts/mcp/config_engine.py",
+            "line": 181,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-4: the test writes the settings the proof names, nested value included, and compares the whole config to them with equality, so a dropped, added or altered key at any depth fails it.",
+          "PROOF-7: the test first checks that `.purlin/` holds no file, then compares the whole config to `{}` with equality, so any key in the result fails it.",
+          "The spot tests found nothing, and both tests take their expected values from literals the proofs name, not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -295,35 +359,41 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-05T19:28:48Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-24": {
-            "after": "    config[key] = int(value) if isinstance(value, bool) else value",
-            "aim": "past the test",
-            "before": "    config[key] = value",
-            "bug_key": "856ea1b41f1bc44d3c082a70e80faa3061333f521dcf099e454aacbd61e4a552",
-            "case": ".purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code writes {\"new\": 1}",
+            "after": "    config = _read_json(project_root) or {'version': 1}\n    config[key] = value",
+            "aim": "plain",
+            "before": "    config = _read_json(project_root) or {}\n    config[key] = value",
+            "bug_key": "de149909d7ca62219bd7236f074a378d9e0936e3e76c927772ac2f146ab5690e",
+            "case": ".purlin/ holds no settings file and new is set to true; the proof says config.json holds exactly {\"new\": true}; the changed code creates it holding {\"version\": 1, \"new\": true}",
             "file": "scripts/mcp/config_engine.py",
-            "line": 170,
+            "line": 193,
             "result": "caught",
             "why": ""
           },
           "PROOF-8": {
-            "after": "    config = {}",
+            "after": "    config = {}\n    config[key] = value",
             "aim": "plain",
-            "before": "    config = _read_json(project_root) or {}",
-            "bug_key": "595ff3a4c245e3f0a50fdc64ffed66dc6887e55f18611d124644e23952d77b4c",
-            "case": "the settings file holds {\"team\": \"v1\"} and user_pref is set to dark; the proof says it holds exactly {\"team\": \"v1\", \"user_pref\": \"dark\"}; the changed code leaves {\"user_pref\": \"dark\"}",
+            "before": "    config = _read_json(project_root) or {}\n    config[key] = value",
+            "bug_key": "82d7717657a812232a5441d2c02a1184399bfd48215635206e31fcd7675857ad",
+            "case": "the settings file holds {\"team\": \"v1\"} and user_pref is set to dark; the proof says it holds exactly {\"team\": \"v1\", \"user_pref\": \"dark\"}; the changed code leaves it holding {\"user_pref\": \"dark\"}",
             "file": "scripts/mcp/config_engine.py",
-            "line": 169,
+            "line": 193,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "68e99bf4d0000ed85fd9561ce0236ba846eda50faf449a99fcfcfc1433cd8aa8",
-        "commit": "75c3667c1d86906703085deba6bd0a5b349946d0",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-8: the test writes {\"team\": \"v1\"}, sets user_pref to dark, and compares the parsed file with the whole object the proof names and the folder's listing with ['config.json'], so a lost key, a wrong value or a stray file fails it.",
+          "PROOF-8: the test reads the file as parsed JSON and never as bytes, so the order of the keys and the layout of the file are not observed.",
+          "PROOF-24: the test checks the folder is empty first, sets new to true, then compares the listing, the parsed object, the identity of true and the file's exact bytes, so any other content in the created file fails it.",
+          "PROOF-38: the test compares the file's bytes with the exact text and checks for no carriage return and no other file, which is what the proof names, and it only decides anything when run on Windows.",
+          "Findings: the spot tests found nothing, and each test holds the values its proof names in backticks."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [

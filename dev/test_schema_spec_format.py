@@ -96,6 +96,13 @@ def test_the_format_reference_names_two_sections_and_no_third():
     assert listed[1].startswith('`## Proof`: '), listed
     assert re.findall(r'#+[ \t]*\w+', section) == ['## Rules', '## Proof'], (
         section)
+    # The two sentences that count them, as written: two, and no third.
+    prose = ' '.join(section.split())
+    assert prose.startswith(
+        'Every spec has these two sections, matched case-insensitively: '), (
+        prose)
+    assert 'These two are the whole structure. ' in prose, prose
+    assert not re.search(r'\b(third|three|3)\b', prose), prose
 
 
 # purlin: schema_spec_format PROOF-13
