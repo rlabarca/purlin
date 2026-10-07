@@ -71,24 +71,18 @@
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T17:50:15Z",
+      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "da0f65375f5ed9d8a44e3626716dc7616e09a1e26cceecb5ce5b5511abfb71b0",
-        "spec": "22db7a4490b43698596e78828d096a5fc2f287b763136f69b825c18470e126f2",
-        "tests": "32c81cb89864a315efa7df24acef8b72f2744f3630a84f8afdf82f271e2244d9"
+        "code": "04217cd94c8b9f05fde35decbc50be8063be64d0541a85a6e1612eeae2d3a16c",
+        "spec": "258a981b6843750ddcc658e97fef62daa0d2e62f1494ae8bf7dbe84f2f35d473",
+        "tests": "366c9f03076229fa42dfe9602fdb02b90f92958d3f68b69f07cff71e135e1e2e"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -103,7 +97,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -111,12 +105,6 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_holds_each_command_and_file"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -131,17 +119,62 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
           "rule": "RULE-33",
           "test": "dev/test_skill_spec.py::test_the_spec_skill_says_where_the_two_highest_lines_go"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_spec",
+                "duration": 0.0,
+                "name": "test_the_part_on_proofs_shows_the_two_tags_with_their_models",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_skill_spec.py::test_the_part_on_proofs_shows_the_two_tags_with_their_models"
+        },
+        {
+          "env": null,
+          "id": "PROOF-65",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_spec",
+                "duration": 0.0,
+                "name": "test_the_part_on_proofs_asks_which_check_and_picks_no_model",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_skill_spec.py::test_the_part_on_proofs_asks_which_check_and_picks_no_model"
         }
       ],
       "rules": {
         "RULE-32": "passed",
-        "RULE-33": "passed"
+        "RULE-33": "passed",
+        "RULE-34": "passed"
       },
       "runner": "rich-labarca"
     }

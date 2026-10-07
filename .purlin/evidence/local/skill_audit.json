@@ -147,24 +147,18 @@
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T17:50:15Z",
+      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "586362f58eb22c711f59b392dad6a513dfd5a790102ace50bced16fbec81e5dd",
-        "spec": "b39555637b555c21724171e6a4384e6bacfcd41da8eee17d0b5f2f614c4074ce",
-        "tests": "a26386c3b82dd31f337b79f67bc697681a90d459a4adef576938515341dd9821"
+        "code": "a9d37efb32ffcaf0369c43c2805566e5d83cb83043c0f6e760ea6dcd47babf81",
+        "spec": "91d96e09457591c376282c5db0e8e37ac5c853685343ddcf6b8736efa8466d04",
+        "tests": "1029623bdb63f133c1ea3f096da9dcaf9dcc90aafa2b709f208c3f8dbf9925f2"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -179,7 +173,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -187,12 +181,6 @@
           "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named_the_settle_included"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -207,7 +195,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -215,12 +203,6 @@
           "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -228,14 +210,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_audit",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -243,12 +225,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -263,7 +239,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -271,12 +247,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -291,19 +261,118 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
           "rule": "RULE-32",
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_line_for_a_bug_planted_again"
+        },
+        {
+          "env": null,
+          "id": "PROOF-63",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_audit",
+                "duration": 0.0,
+                "name": "test_the_skill_says_what_is_planted_for_an_ai_proof",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-33",
+          "test": "dev/test_skill_audit.py::test_the_skill_says_what_is_planted_for_an_ai_proof"
+        },
+        {
+          "env": null,
+          "id": "PROOF-64",
+          "manual": false,
+          "models": [
+            {
+              "graded": false,
+              "model": "claude-opus-5-5",
+              "of": 3,
+              "passed": 3,
+              "runs": [
+                {
+                  "made": "helper",
+                  "output": "4195cf0445de15fe27085bd155e1e22424c1c348e4b570071755b70443c077ad",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_audit",
+                        "duration": 50.28,
+                        "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "2d4e3c3ab629c77675c93b84fbcd971c4411f3798cb4e439e589c3c02b5c6350"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "9115df4eaccd3ee276023347617a0e2a6e79023c7e0ab2e20b539a77331a8d0f",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_audit",
+                        "duration": 57.107,
+                        "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "afa3f276b8760fa1252c279fc51f40b03dafed55975ffca372a6f8a69616a3f5"
+                    }
+                  },
+                  "result": "pass"
+                },
+                {
+                  "made": "helper",
+                  "output": "8352d42d41512b2e88605d7f0cf2c3119fc26257bd3b6519af0d35eb3f6f307f",
+                  "reported": {
+                    "cases": [
+                      {
+                        "class": "dev.test_skill_audit",
+                        "duration": 55.407,
+                        "name": "test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule",
+                        "outcome": "pass"
+                      }
+                    ],
+                    "report": {
+                      "file": ".purlin/runtime/reports/pytest.xml",
+                      "sha256": "9c611dda6cde4f75ae04101e42d707a89d374e2b7d2e3912f8137c7f31f361e3"
+                    }
+                  },
+                  "result": "pass"
+                }
+              ]
+            }
+          ],
+          "result": "pass",
+          "rule": "RULE-34",
+          "test": "dev/test_skill_audit.py::test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule"
         }
       ],
       "rules": {
         "RULE-29": "passed",
         "RULE-30": "passed",
         "RULE-31": "passed",
-        "RULE-32": "passed"
+        "RULE-32": "passed",
+        "RULE-33": "passed",
+        "RULE-34": "passed"
       },
       "runner": "rich-labarca"
     }

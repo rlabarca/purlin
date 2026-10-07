@@ -50,24 +50,18 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T17:50:15Z",
+      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "de1f3966eaf87afafce413ebe171ef445b94b3e7359c72cd3544419b20d2b393",
-        "spec": "048da7008597567dacdf30381598a8730e7da3836df6d0ff5b04eb311f911639",
-        "tests": "93ee5419deca1fcb2b2057af765c741035cb1a2d5a42befacf48f340e9240f85"
+        "code": "ce33647d32d05888db811a4fe0f6e2450c8f6d5205f2c0a7e43284f0534b0162",
+        "spec": "082ce14709a9cf9b559705bcf513dbcf09ca276974d2c4275f13c4c2ad2ed040",
+        "tests": "f18507df50871ef9f0549495918752c4792e381d41e97ec28d62d27033d94ed7"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -82,7 +76,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
@@ -90,12 +84,6 @@
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_of_its_seven_commands"
         },
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -110,16 +98,61 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
           "rule": "RULE-35",
           "test": "dev/test_skill_sign.py::test_the_sign_skill_holds_each_path_it_must_name"
+        },
+        {
+          "env": null,
+          "id": "PROOF-66",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_sign",
+                "duration": 0.0,
+                "name": "test_the_sign_skill_shows_the_walks_four_lines_about_ai_proofs",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_skill_sign.py::test_the_sign_skill_shows_the_walks_four_lines_about_ai_proofs"
+        },
+        {
+          "env": null,
+          "id": "PROOF-67",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_sign",
+                "duration": 0.0,
+                "name": "test_the_sign_skill_shows_the_check_line_and_one_graded_run",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-36",
+          "test": "dev/test_skill_sign.py::test_the_sign_skill_shows_the_check_line_and_one_graded_run"
         }
       ],
       "rules": {
-        "RULE-35": "passed"
+        "RULE-35": "passed",
+        "RULE-36": "passed"
       },
       "runner": "rich-labarca"
     }

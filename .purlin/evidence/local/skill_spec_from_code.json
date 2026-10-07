@@ -37,24 +37,18 @@
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-10-06T21:01:38Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T17:50:15Z",
+      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "271c2f50167b0bc056eab6fec2f0e4170a429de4fe608506ed4b39ed13ab4055",
-        "spec": "33406528904c3d36d8688566777c5afa16d0eceb6802475e5ba960a5f5395cee",
-        "tests": "ea192d13fa4ed8deb4508bb4282a3caf386408cb7f96502c76f8c4d00a8b79f8"
+        "code": "e3934fe68d70a640726212c4b7b772999b4da1e090d5f228d139e27c1348c1bb",
+        "spec": "197f28aa859a49bae03da2d8187589611d6777e35a1d0c3d23774b6dc5560585",
+        "tests": "14f5325bdc804bd7ebc48ccef4a369e8f4f805a8529d6fcee7464bd7dc924856"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-06T21:01:38Z",
-            "commit": "c86e5cb59640ec8e8f50508bf0d6eeb9f4a06a8d",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
@@ -69,16 +63,39 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "121ab42db84758826b4f75818138c271763ea2a40a544c924cccab0b3a849a82"
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
             }
           },
           "result": "pass",
           "rule": "RULE-53",
           "test": "dev/test_skill_spec_from_code.py::test_the_spec_from_code_skill_holds_each_command_and_file"
+        },
+        {
+          "env": null,
+          "id": "PROOF-168",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_skill_spec_from_code",
+                "duration": 0.0,
+                "name": "test_the_part_on_prompts_asks_the_model_writes_no_test_and_says_so",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-54",
+          "test": "dev/test_skill_spec_from_code.py::test_the_part_on_prompts_asks_the_model_writes_no_test_and_says_so"
         }
       ],
       "rules": {
-        "RULE-53": "passed"
+        "RULE-53": "passed",
+        "RULE-54": "passed"
       },
       "runner": "rich-labarca"
     }
