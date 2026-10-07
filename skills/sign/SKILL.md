@@ -56,24 +56,44 @@ The audit's findings: 1 weak.
 ```
 
 Where the package holds AI proofs, the opening also names each model they ran on, one line per
-model, and the overview counts the proofs an AI graded, one line per grader:
+model, after the `Tests run by` lines. The overview counts the proofs an AI graded, one line per
+grader, after the rules, and ends on the AI outputs kept with the package. The findings count
+the graded proofs:
 
 ```
+Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
 AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.
-Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.
+Signing 0.1.0 at 1cf829e.
+  19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
+  Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.
+  The audit: 17 strong, 1 weak.
+  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
+  Test reports kept with the package: 1 of 1.
+  AI outputs kept with the package: 60 of 60.
+The audit's findings: 1 weak, 6 proofs graded by an AI.
 ```
 
-Show both as printed. A graded proof was judged by a model against one sentence, and it reads
-`graded`, never `passed`; the list of the audit's findings can open each with its grader and
-the grader's reason. The model is part of what the person signs: results on one model say
-nothing of another.
+Under the findings, after the weak rules, each graded run has a line with its grader and the
+grader's reason:
+
+```
+  refund_skill RULE-3: PROOF-6 on claude-opus-5-5, run 1 of 5, accepted by claude-haiku-4-5-20251001: The reply refuses, gives the limit as the reason and blames nobody.
+```
+
+Show each as printed. A graded proof was judged by a model against one sentence, and it reads
+`graded`, never `passed`; it counts as passing and adds no stop. With one graded proof and no
+weak rule the findings read `The audit's findings: 1 proof graded by an AI.` The model is part
+of what the person signs: results on one model say nothing of another. The line on the AI
+outputs counts the folders, each holding what an AI produced in one run, that are committed
+with the package; it ends as the line on the test reports does where this machine does not hold
+one, and it is left out where the package lists none.
 
 There is one `Tests run by` line per run the results come from, this machine's first. Results
 `purlin:test --all` carried forward have a line of their own, `Carried forward from earlier runs
 by <who> on <machine>, the newest at <time> on <sha7>: <n> rules on <System>.` The audit's
 line shows only where the audit read a rule. The co-author line counts the last changes whose
 commit carries a `Co-Authored-By` line, as a commit made with an AI's help usually does; it
-records what git holds and judges nothing. The last line counts the test reports the package
+records what git holds and judges nothing. The line after it counts the test reports the package
 lists that are committed with it. Where this machine does not hold one, it ends ` 1 is not on
 this machine, so it is not kept.`: the report was taken on another machine or removed since, and
 the sign-off goes on without it. Where no result names a report it reads `  No test report is
@@ -209,8 +229,8 @@ A person at a terminal may instead run `sign.py` with no option and answer each 
 Where the person typed their address the script makes one signed commit, `sign(<version>): <email>`. For the first sign-off of
 a version it carries the package, `.purlin/evidence/package/<version>.json`, the sign-off,
 `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, and under
-`.purlin/evidence/package/<version>.outputs/` each test report the package lists that this
-machine keeps, and the script writes `signed/<version>` on it:
+`.purlin/evidence/package/<version>.outputs/` each test report and each AI output the package
+lists that this machine keeps, and the script writes `signed/<version>` on it:
 
 ```
 Signed 0.1.0 as quinn.qa@labconnect.example with the key ending ...4f2a.
@@ -241,6 +261,15 @@ fingerprint.` and exits 0, or `The package does not match its fingerprint: <why>
 Where the package lists test reports it then prints `Reports beside the package that match their
 sha256: <k> of <n>.` A report that is not beside the package fails nothing. One that is there and
 was changed prints `A report beside the package does not match it: ...` and the command exits 1.
+Where the package lists AI outputs it prints the same of them, each sha256 worked out again from
+the folder's files:
+
+```
+AI outputs beside the package that match their sha256: 59 of 60.
+```
+
+A folder that was changed prints `An AI output beside the package does not match it: ...` and the
+command exits 1.
 
 ## Step 7: name the next step
 
