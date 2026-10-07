@@ -1477,6 +1477,23 @@ class TestAnAIProof:
         assert (model['word'], model['passed'], model['of']) == (
             'not run', 3, 3), model
 
+    # purlin: states PROOF-352
+    def test_the_runs_setting_has_one_reader(self):
+        from purlin import outputs as purlin_outputs
+        made = _ai_project('@ai(%s)' % OPUS,
+                           _model(OPUS, 'pass', 'pass', 'pass'), runs=5)
+        try:
+            with open(os.path.join(made.root, '.purlin', 'config.json'),
+                      encoding='utf-8') as handle:
+                handed = dict(json.load(handle), runs=2)
+            assert purlin_outputs.runs_setting(made.root) == 5
+            assert purlin_outputs.runs_setting(made.root, handed) == 2
+            data = purlin_payload.build_payload(made.root, config=handed)
+        finally:
+            made.close()
+        proof = _listed(data, 'RULE-2')['proofs'][0]
+        assert (proof['runs'], proof['result']) == (2, 'passed'), proof
+
     # purlin: states PROOF-344
     def test_a_test_reads_not_run_where_more_runs_are_asked_now(self):
         _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,

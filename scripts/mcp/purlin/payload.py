@@ -214,8 +214,7 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from config_engine import resolve_config, runs as runs_setting, \
-    settings_warnings
+from config_engine import resolve_config, settings_warnings
 from purlin import (PURLIN_VERSION,
                     evidence as evidence_module,
                     facts as facts_module,
@@ -284,7 +283,7 @@ def build_payload(project_root, generated_by='sync_status', config=None,
                    + len(stale))
     # `runs` is the `runs` setting, which a proof's own `runs=` wins over.
     sources = {'suites': suites, 'tests': {}, 'blobs': {},
-               'runs': runs_setting(config)}
+               'runs': outputs_module.runs_setting(project_root, config)}
 
     feature_entries = []
     own_results = {}

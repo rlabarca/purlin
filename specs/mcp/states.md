@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 145
-> Highest-Proof: 351
+> Highest-Proof: 352
 
 ## Rules
 
@@ -207,6 +207,7 @@
 - PROOF-344 (RULE-71): In the project of PROOF-334, whose section stores `pass` for `PROOF-2`'s one test over three passing runs while the settings ask for 5, the `tests` of `PROOF-2` are exactly `[{"file": "tests/test_login.py", "name": "test_proof_2", "result": "not run"}]`
 - PROOF-335 (RULE-140): `PROOF-2` ends `@ai(claude-opus-5-5)`, and the section holds three passing runs on `claude-opus-5-5` and one failing run on `claude-sonnet-5-5`. `PROOF-2`'s `result` is `passed`, and its `models` holds the one entry for `claude-opus-5-5`
 - PROOF-336 (RULE-140): `PROOF-2` ends `@ai(claude-opus-5-5, runs=2)`, the settings hold `runs` 5, and the section holds two passing runs. `PROOF-2` carries `runs` 2 and its `result` is `passed`
+- PROOF-352 (RULE-140): The settings file holds `runs` 5 and the section holds three passing runs on `claude-opus-5-5`. The one reader of the setting answers `5` for the project and `2` where it is handed settings holding `runs` 2; the payload built from those handed settings carries `runs` 2 for `PROOF-2`, whose `result` is `passed`
 - PROOF-337 (RULE-141): In the project of PROOF-330, the payload's entry for `PROOF-1`, which has no `@ai(...)` tag, holds `ai` `[]`, `graded` null, `runs` null and `models` `[]`
 - PROOF-338 (RULE-142): In the project of PROOF-331, on a machine whose system reads `<System>`, `RULE-2`'s passed cell reads `failed` with exactly the reasons `failing: <System>, local` and `claude-opus-5-5: 2 of 3 passed`, and the rule's `left` is `to_fix`
 - PROOF-339 (RULE-142): In the project of PROOF-332, `RULE-2`'s passed cell reads `not run` with exactly the reasons `slow: runs with purlin:test --all` and `claude-sonnet-5-5: no run yet`, and `missing_models` `["claude-sonnet-5-5"]`; in the project of PROOF-333 the second reason is `claude-opus-5-5: 2 of 3 run`, and in the project of PROOF-334 it is `claude-opus-5-5: 3 of 5 run`, each with `missing_models` `["claude-opus-5-5"]`
