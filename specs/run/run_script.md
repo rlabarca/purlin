@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 133
-> Highest-Proof: 367
+> Highest-Proof: 368
 
 ## Rules
 
@@ -219,6 +219,7 @@
 - PROOF-348 (RULE-126): `feat`'s PROOF-2 is tagged `@ai(model-a, model-b)`; `--feature feat --test` exits 0, prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it when it is due.` and no line starting `Running feat`, starts its test 0 times, and the evidence lists PROOF-2 as `not run` under `tests/test_feat.py::test_reply` with no `models`
 - PROOF-349 (RULE-127): `feat`'s PROOF-2 is tagged `@ai(model-a, model-b)`; `--all --test` exits 0 and prints, after the line `Running pytest: ...` and in this order, `Running feat PROOF-2 on model-a, 1 of 3`, `2 of 3` and `3 of 3`, then the same three lines for `model-b`, no `Left out` line, and the test was started six times: `model-a 1`, `model-a 2`, `model-a 3`, `model-b 1`, `model-b 2`, `model-b 3`
 - PROOF-350 (RULE-127): In that run the last start of the test read `PURLIN_AI_OUT` as the full path of `.purlin/runtime/ai/feat/PROOF-2/model-b/3` under the project and `PURLIN_AI` as the full path of `scripts/ai/purlin_ai.py` in this plugin
+- PROOF-368 (RULE-127): The variables an AI proof's test is given are built in one place: for the model `model-b` and the folder `/work/out` they are exactly `PURLIN_AI`, the full path of `scripts/ai/purlin_ai.py` in this plugin, `PURLIN_AI_MODEL` `model-b` and `PURLIN_AI_OUT` `/work/out`; with the output to replay `/work/copy` they are those three and `PURLIN_AI_REPLAY` `/work/copy`
 - PROOF-351 (RULE-127): PROOF-2 is tagged `@ai(model-a, runs=2)` and the settings hold `runs` `5`; `--all --test` starts the test twice, `model-a 1` and `model-a 2`, and prints `Running feat PROOF-2 on model-a, 2 of 2`
 - PROOF-352 (RULE-127): PROOF-2 is tagged `@ai(model-a)` and the settings hold `runs` `2`; `--all --test` starts the test twice, `model-a 1` and `model-a 2`
 - PROOF-353 (RULE-127): PROOF-2 is tagged `@ai(model-a, runs=1)`, and `.purlin/runtime/ai/feat/PROOF-2/model-a/1` holds the file `stale.txt` before `--all --test` runs; when the test starts the folder holds no file, and after the run it holds exactly `purlin.json` and `reply.md`

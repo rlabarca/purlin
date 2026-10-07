@@ -1176,6 +1176,18 @@ def _others_left_out(suite, files, scan, feature, proof_id, tests=()):
 # The helper an AI proof's test starts, which the run names in `PURLIN_AI`.
 AI_HELPER_PATH = os.path.join(os.path.dirname(_HERE), 'ai', 'purlin_ai.py')
 
+
+def ai_variables(model, folder, replay=None):
+    """The variables an AI proof's test is given: `PURLIN_AI`, the helper;
+    `PURLIN_AI_MODEL`, the model; `PURLIN_AI_OUT`, the folder the output
+    goes in; and, where the audit hands the test an earlier output,
+    `PURLIN_AI_REPLAY`, the folder holding it."""
+    made = {outputs_module.AI_HELPER: AI_HELPER_PATH,
+            outputs_module.AI_MODEL: model, outputs_module.AI_OUT: folder}
+    if replay:
+        made[outputs_module.AI_REPLAY] = replay
+    return made
+
 # What the run prints, flushed, before each run of an AI proof's test: the
 # feature, the proof, the model, which run this is and how many are asked.
 AI_RUNNING = 'Running %s %s on %s, %d of %d'
@@ -1235,8 +1247,8 @@ def ai_start(project_root, feature, proof, entry, model, run, test, timeout,
     """One run of one test of an AI proof on one model: `(made, silent)`.
 
     The folder `outputs.ai_run_dir` names is emptied and made, the test is
-    started alone (`proof_run`) with `PURLIN_AI`, `PURLIN_AI_MODEL` and
-    `PURLIN_AI_OUT` set, and the helper's record is read back. `made` is
+    started alone (`proof_run`) with `ai_variables` set, and the helper's
+    record is read back. `made` is
     the run as the evidence holds it: `result`, then `output`, the folder's
     sha256, where the run passed or failed and left a file; `made`, as the
     record says; `why` where it reads `not run`; `reported`, what the
@@ -1251,9 +1263,7 @@ def ai_start(project_root, feature, proof, entry, model, run, test, timeout,
     word, found = proof_run(
         project_root, feature, proof['id'],
         [{'file': entry['test_file'], 'name': entry['test_name']}], timeout,
-        {outputs_module.AI_HELPER: AI_HELPER_PATH,
-         outputs_module.AI_MODEL: model, outputs_module.AI_OUT: folder},
-        log=log, keep=True)
+        ai_variables(model, folder), log=log, keep=True)
     record = outputs_module.read_record(folder)
     grade = record.get('grade') if isinstance(record.get('grade'),
                                               dict) else None

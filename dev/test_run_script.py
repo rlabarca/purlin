@@ -3376,6 +3376,18 @@ class TestAiProofs:
         assert seen['helper'] == os.path.join(REPO, 'scripts', 'ai',
                                               'purlin_ai.py')
 
+    # purlin: run_script PROOF-368
+    def test_the_variables_of_an_ai_proofs_test_are_built_in_one_place(self):
+        run_script = _load_run_script()
+        helper = os.path.join(REPO, 'scripts', 'ai', 'purlin_ai.py')
+        assert run_script.ai_variables('model-b', '/work/out') == {
+            'PURLIN_AI': helper, 'PURLIN_AI_MODEL': 'model-b',
+            'PURLIN_AI_OUT': '/work/out'}
+        assert run_script.ai_variables('model-b', '/work/out',
+                                       '/work/copy') == {
+            'PURLIN_AI': helper, 'PURLIN_AI_MODEL': 'model-b',
+            'PURLIN_AI_OUT': '/work/out', 'PURLIN_AI_REPLAY': '/work/copy'}
+
     # purlin: run_script PROOF-351
     def test_the_proofs_own_runs_win_over_the_setting(self, tmp_path):
         root = _ai_project(tmp_path, '@ai(model-a, runs=2)')

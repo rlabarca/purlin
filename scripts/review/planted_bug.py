@@ -423,11 +423,9 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             copy = os.path.join(made, OUTPUT_COPY)
             shutil.copytree(os.path.join(project_root, *str(output['folder']).split('/')),
                             copy)
-            where, environment = project_root, {
-                outputs_module.AI_HELPER: purlin_run.AI_HELPER_PATH,
-                outputs_module.AI_MODEL: str(output.get('model') or ''),
-                outputs_module.AI_OUT: os.path.join(made, OUTPUT_SPARE),
-                outputs_module.AI_REPLAY: copy}
+            where, environment = project_root, purlin_run.ai_variables(
+                str(output.get('model') or ''),
+                os.path.join(made, OUTPUT_SPARE), copy)
         else:
             copy = made
             _copy_project(project_root, copy)
