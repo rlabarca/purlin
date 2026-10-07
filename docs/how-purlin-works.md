@@ -19,6 +19,19 @@ must do, and your own tests show it.
 Purlin runs your own test command and reads its report. It says which rules pass on the code as
 it is now.
 
+## A proof is shown one of four ways
+
+| The proof is shown by | Its tag | Who decides |
+|---|---|---|
+| A test | none | the test, on a value in the result |
+| A test on an AI's output | `@ai(<model>)` | the test, on a value in the output, on each model named |
+| A grade by an AI | `@ai(<model>) @graded(<grader>)` | a second model, against the proof's sentence |
+| A check by hand | `@manual` | a person, at the sign-off |
+
+A test is the ordinary case. The two in the middle are for a prompt or a skill:
+[testing-ai.md](testing-ai.md) walks one from rule to evidence, and
+[graded-by-ai.md](graded-by-ai.md) is grading alone.
+
 ## Purlin keeps two facts
 
 It keeps the evidence of what the tests saw, and a person's sign-off over it. The terminal and
@@ -85,9 +98,10 @@ work the results describe, then the evidence.
 | Its tests | What the word means |
 |---|---|
 | `passed` | every test tied to the rule ran and passed |
+| `graded` | the same, and an AI graded one of the rule's proofs; it counts as passing |
 | `failed` | a test tied to the rule failed |
 | `no test` | the rule, or one of its proofs, has no test |
-| `not run` | a test has not run yet, such as a slow test or one tagged for another operating system |
+| `not run` | a test has not run yet, such as a slow test, an AI proof with no result on one of its models, or one tagged for another operating system |
 | `out of date` | the spec, the tests or the code changed since the last run |
 | `partial` | the tests passed on one operating system and failed on another; it is not passing |
 | `checked at sign-off` | a judgment call, tagged `@manual`; a person checks it when they sign |

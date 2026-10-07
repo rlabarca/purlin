@@ -113,9 +113,12 @@ machine.
 
 ## Documentation
 
-[docs/index.md](docs/index.md) lists every guide. Three to start with:
+[docs/index.md](docs/index.md) lists every guide. Five to start with:
 
 - [docs/how-purlin-works.md](docs/how-purlin-works.md): the model in one page.
 - [docs/sign-off.md](docs/sign-off.md): the sign-off, and where to start in a regulated
   environment.
 - [docs/audit.md](docs/audit.md): how Purlin asks whether your tests would catch a bug.
+- [docs/testing-ai.md](docs/testing-ai.md): testing a prompt or a skill, on the models you
+  name.
+- [docs/graded-by-ai.md](docs/graded-by-ai.md): a proof a second model grades.

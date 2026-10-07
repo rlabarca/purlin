@@ -42,7 +42,7 @@ timezone. Beside it are two boxes:
 | Box | What it counts |
 |---|---|
 | `No proof` | the rules no proof line names |
-| `Passing` | the rules that pass their tests, with the project's total beneath, as `11 RULES TOTAL` |
+| `Passing` | the rules that pass their tests, with the project's total beneath, as `11 RULES TOTAL`, and how many of them an AI graded |
 | `Failing` | the rules whose tests failed, in red; it is there only while one fails |
 | `Strong` | the rules the audit found strong; it is there once an audit has run |
 
@@ -81,6 +81,9 @@ Press a rule to open its screen. `Back to the board` returns.
   it.
 - **The proofs.** Each shows its words, its result, its tags and its tests, as
   `tests/test_login.py :: test_no_cookie`.
+- **An AI proof shows each model.** One line per model, as `graded 3 of 3 on claude-opus-5-5`,
+  with the grader and its reason for each run it read. A rule that passes with a graded proof
+  reads `graded`. [graded-by-ai.md](graded-by-ai.md) says what that means.
 
 A hand check, a `@manual` proof, shows the note of the newest sign-off that holds one:
 

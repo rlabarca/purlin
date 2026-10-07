@@ -17,9 +17,9 @@ flowchart LR
 
 | Command | What it runs |
 |---|---|
-| `purlin:test` | The features your change touched. Slow tests are left out. |
+| `purlin:test` | The features your change touched. Slow tests and AI proofs are left out. |
 | `purlin:test <feature>` | One feature, or several. |
-| `purlin:test --all` | Every feature: it runs what changed, slow tests included, and carries the rest forward. |
+| `purlin:test --all` | Every feature: it runs what changed, slow tests and AI proofs included, and carries the rest forward. |
 | `purlin:test --clean` | Every test of every feature. |
 | `--commit`, on any of them | Also commits the work and the evidence the run wrote. |
 
@@ -171,11 +171,51 @@ refuses and names what to run again. [sign-off.md](sign-off.md) is the sign-off,
 [evidence_and_signoff.md](../references/evidence_and_signoff.md#which-evidence-counts) the one
 definition.
 
+## An AI proof runs several times on each model
+
+A proof tagged `@ai(...)` is about what an AI does with a prompt or a skill. It is a slow
+proof: `purlin:test --all` starts its test, and a plain `purlin:test` leaves it out. The run
+starts the test alone, 3 times on each model the tag names:
+
+```
+Running triage_prompt PROOF-4 on claude-opus-5-5, 1 of 3
+```
+
+- **Every run must pass.** The proof passes on a model when all its runs passed, and it passes
+  when it passes on every model it names.
+- **There is one result per model.** A rule that passed on one model and has no result on
+  another reads `not run`. `Left to do` names the model:
+  `1 rule to test on claude-sonnet-5-5: purlin:test --all`
+- **A model that cannot be reached is `not run`, never failed.** The run says
+  `claude-sonnet-5-5: model not reached. The login expired. Run purlin:test --all.`
+- **The `runs` setting says how many.** `.purlin/config.json` holds `version`, `tests` and
+  `runs`. A proof's own `runs=<n>`, in its tag, wins. Where neither says, it is 3.
+- **A full run keeps a model that passed every run**, marked `carried`, and starts the rest.
+  `purlin:test --clean` starts every model.
+
+| For each model, the evidence holds | |
+|---|---|
+| The count | how many runs passed, of how many were asked |
+| Each run | `pass`, `fail` or `not run`, and the sha256 of the folder holding its output |
+| Who made the output | the helper, or your project's own test |
+| A graded run | the grader, whether it accepted the output, and its one reason |
+| A run that is `not run` | why, in one sentence |
+
+**What is kept.** Each run writes one folder,
+`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`: the AI's reply, what the session did,
+the files it wrote, and what the AI was given. Git ignores it, so it stays on the machine
+that ran the test. A run removes a folder no evidence names. A sign-off is optional; the first
+one of a version commits the folders with the package.
+
+[testing-ai.md](testing-ai.md) walks an AI proof from rule to evidence, and
+[graded-by-ai.md](graded-by-ai.md) is the page on a grade.
+
 ## The audit asks whether the tests would catch a bug
 
 `purlin:audit` runs the same tests. Then it runs the spot tests, plants one small bug for each
-proof in a copy of the project, and runs that proof's test. It writes what it found into the
-same evidence file, and nothing waits on it. [audit.md](audit.md) says how it works and what to do with a finding.
+proof in a copy of the project, and runs that proof's test. For an AI proof it plants a wrong
+output in a copy of a kept one. It writes what it found into the same evidence file, and
+nothing waits on it. [audit.md](audit.md) says how it works and what to do with a finding.
 
 ## Your project runs the tests on another system
 
@@ -272,4 +312,5 @@ host. The five things every such file does are in
 - [how-purlin-works.md](how-purlin-works.md): the model in one page, and who writes each file.
 - [dashboard.md](dashboard.md): the same data as a page that opens from disk.
 - [audit.md](audit.md): what the audit checks.
+- [testing-ai.md](testing-ai.md): testing a prompt or a skill.
 - [sign-off.md](sign-off.md): the evidence package, the sign-offs and the tag.

@@ -45,12 +45,32 @@ work.
 | The test case | each proof, with its expected result |
 | The test | its file and name |
 | The execution | pass or fail, the commit, the time, the machine, the operating system, who ran it, and what the test tool reported |
+| The model, for an AI proof | each model named, every run on it, and for a graded run the grader and its reason |
 | The strength of the test | what the audit found, and the bug a test missed |
 | The authors | who wrote and last changed each rule, proof and test, and any co-author git names on those commits, such as an AI |
 | The sign-off | who signed, when, with which key, what they were shown, every note they typed |
 
 The package carries a fingerprint, so anyone can check a copy is unchanged:
 `purlin:sign --check <file>`. [The sign-off](sign-off.md) walks through it.
+
+## When the product is a prompt or a skill
+
+A rule can say what an AI must do with a prompt or a skill. Its proof names the models it is
+shown on, and its test runs several times on each.
+[Testing a prompt or a skill](testing-ai.md) walks one from rule to evidence.
+
+- **The model is part of what was validated.** A result on one model says nothing about
+  another. The package names each model, by the name the proof gives it.
+- **A new model is a change.** Name it in the proof and the results end. The test runs again
+  on every model.
+- **Graded results are marked.** A proof [graded by an AI](graded-by-ai.md) reads `graded`,
+  never `passed`, in the status, the package and the sign-off. A person may require a hand
+  check on top: a second proof tagged `@manual`.
+- **The kept output is what was observed.** Each run keeps what the AI was given and what it
+  produced, in one folder named by its sha256. A sign-off is optional; the first one of a
+  version commits the folders with the package.
+- **The audit tests the check.** It plants a wrong output and sees whether the test, or the
+  grader, rejects it. It does not show the prompt is a good one.
 
 ## Your document control system holds the record
 
@@ -118,6 +138,14 @@ records that your own process can use.
   with its rules.
 - **The run you release on.** A full run carries forward results for code that did not
   change. For a version meant for release, run every test: `purlin:test --clean --commit`.
+- **Which models.** A proof passes on the models it names and says nothing about any other.
+  Decide which models a requirement must be shown on.
+- **How many runs.** Three passes of three show the behaviour held three times. They do not
+  show it always holds. Set `runs` for the project, or `runs=<n>` in a proof.
+- **Whether a graded result is enough.** A grade is an AI's opinion against one sentence.
+  Decide which requirements need a hand check as well, or in its place.
+- **Who reads the outputs.** Purlin keeps each output and shows the signer each grade. It
+  does not read them for you.
 - **What was observed.** The evidence keeps what the test tool reported for each test: its
   outcome, how long it took, and the whole failure text where it failed. For a signed version
   the tool's report file is committed with the package. Sign on the machine that ran the
@@ -130,15 +158,16 @@ Each step has a part in Purlin and a part in your document control system.
 | Step | In Purlin | In your document control system |
 |---|---|---|
 | 1. Requirements | | Approve the requirements. Each has a number. |
-| 2. Rules and test cases | Product and QA write a rule for each requirement, with its number in it, and the proofs: `purlin:spec`. | Approve the test cases, or require a review when they are merged. |
+| 2. Rules and test cases | Product and QA write a rule for each requirement, with its number in it, and the proofs: `purlin:spec`. A proof about a prompt or a skill names its models, and its grader where one grades. | Approve the test cases, or require a review when they are merged. The models are named in them. |
 | 3. Build | The AI writes the code and the tests to the proofs: `purlin:build`. A person reads the tests. | |
 | 4. Test, every build | `purlin:test` runs what changed and says what is left to do. | |
 | 5. Check the tests | `purlin:audit` plants a bug for each proof. Strengthen what it finds weak. | |
 | 6. A failure on a release version | Fix it and run again. The earlier result is in git. | Raise the deviation and close it. |
-| 7. The release run | `purlin:test --clean --commit` runs every test on the version to release. | |
-| 8. Sign-off | A person reads the evidence and signs it: `purlin:sign`. This is an engineering sign-off. | |
+| 7. The release run | `purlin:test --clean --commit` runs every test on the version to release, each AI proof on every model it names. | |
+| 8. Sign-off | A person reads the evidence and signs it: `purlin:sign`. The walk names each model and each graded proof. This is an engineering sign-off. | |
 | 9. Approval | | File the evidence package and its sign-offs. Approve and sign there. |
 | 10. A change | Change the rule or the code. Its results stop counting until the tests run again. | Approve the change to the requirement. |
+| 11. A new model | Name it in the proof's tag. The results end, and the test runs again on every model. | Approve the change, as for any other. |
 
 **Three habits make the evidence hold up:**
 

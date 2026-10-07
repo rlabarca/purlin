@@ -39,6 +39,7 @@ included. The status then reads `Tests: met`. The developer pushes the branch an
 - every changed file and every result is committed;
 - every rule has a test that passes, or a hand check;
 - every result is recorded on this version of the code;
+- every AI proof has a result on each model it names;
 - your checkout holds every commit of the branch on the host;
 - the version is not already signed over other code.
 
@@ -78,7 +79,7 @@ login RULE-2   what did you see, in one line, or Enter for no note, or stop:
 
 | The walk asks | You answer |
 |---|---|
-| `list / go on` | `list` prints each weak rule with what the audit found. The findings add no stop. |
+| `list / go on` | `list` prints each weak rule with what the audit found, then each graded run. The findings add no stop. |
 | `what did you see` | One line: the hand check's note. Enter records `no note`. |
 | | `stop` ends the walk. Nothing is signed. |
 | `Sign the evidence package for 0.1.0 as <you>? [y/N]` | `y` signs. Any other answer prints `Nothing was signed.` |
@@ -89,6 +90,47 @@ how many commits have come since. You judge whether it still holds.
 In Claude Code the agent shows you each stop and asks for your answers. To sign, you type your
 own email address.
 
+## The walk names each model and each graded proof
+
+Where the project holds AI proofs, the opening names each model they ran on. The overview
+counts the proofs an AI graded and the AI outputs kept:
+
+```text
+Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
+AI proofs run on claude-opus-5-5: 2 proofs, 3 runs each.
+Signing 0.1.0 at 1cf829e.
+  19 rules on Linux/Unix: 18 pass their tests, 1 has a hand check.
+  Graded by an AI: 1 proof, by claude-haiku-4-5-20251001.
+  The audit: 17 strong, 1 weak.
+  A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
+  Test reports kept with the package: 1 of 1.
+  AI outputs kept with the package: 6 of 6.
+The audit's findings: 1 weak, 1 proof graded by an AI. list / go on: 
+```
+
+| The line | What it tells you |
+|---|---|
+| `AI proofs run on ...` | One line per model. The model is part of what you sign: a result on one model says nothing about another. |
+| `  Graded by an AI: ...` | One line per grader. A graded proof was judged by a model against one sentence. It reads `graded`, never `passed`, and counts as passing. |
+| `  AI outputs kept with the package: ...` | How many of the folders holding what the AI produced are committed with the package. |
+
+`list` prints each graded run, with the grader and its reason:
+
+```text
+  refund_skill RULE-3: PROOF-6 on claude-opus-5-5, run 1 of 3, accepted by claude-haiku-4-5-20251001: The reply refuses, gives the 500.00 limit as the reason and blames nobody.
+```
+
+- **A graded proof adds no stop.** To have a person look, give the rule a `@manual` proof as
+  well. The walk stops there.
+- **A model with no result refuses the sign-off**, with the run that records it:
+
+```text
+No sign-off: these results are not recorded on this version of the code, 1cf829e: refund_skill on claude-sonnet-5-5. Run purlin:test --all --commit, then purlin:sign.
+```
+
+[testing-ai.md](testing-ai.md) and [graded-by-ai.md](graded-by-ai.md) say what stands behind
+these lines.
+
 ## One signature covers the whole package
 
 ```text
@@ -98,12 +140,14 @@ Tagged signed/0.1.0 at e0deb2e.
 Push the branch and the tag: git push origin main signed/0.1.0
 ```
 
-`y` makes one signed commit, `sign(0.1.0): quinn.qa@labconnect.example`. It carries two files:
+`y` makes one signed commit, `sign(0.1.0): quinn.qa@labconnect.example`. It carries two files,
+and the outputs this machine still holds:
 
 | File | What it holds |
 |---|---|
-| The evidence package, `.purlin/evidence/package/<version>.json` | Every rule, its proofs, its tests, the results, what the audit found, who ran the tests and who wrote what. It carries a fingerprint of itself. |
+| The evidence package, `.purlin/evidence/package/<version>.json` | Every rule, its proofs, its tests, the results, each AI proof's runs on each model, what the audit found, who ran the tests and who wrote what. It carries a fingerprint of itself. |
 | Your sign-off, `.purlin/evidence/package/<version>.signoffs/<signer>.json` | The package's fingerprint, your name and email as git holds them, your key's fingerprint, the time, what the walk showed and every note you typed. |
+| The outputs, `.purlin/evidence/package/<version>.outputs/` | Each test report, and each folder holding what an AI produced in one run with what it was given. The package lists each with its sha256. |
 
 The sign-off records no judgment and no answer word.
 [package_format.md](../references/formats/package_format.md) and
@@ -148,9 +192,16 @@ The package matches its fingerprint.
 For a file changed after it was written, it prints
 `The package does not match its fingerprint: <why>.` and exits 1.
 
-The first sign-off also commits the test tool's reports this machine still holds, beside the
-package. The check says how many are there and unchanged:
-`Reports beside the package that match their sha256: 1 of 1.`
+The first sign-off also commits the test tool's reports and the AI outputs this machine still
+holds, beside the package. The check says how many are there and unchanged:
+
+```text
+Reports beside the package that match their sha256: 1 of 1.
+AI outputs beside the package that match their sha256: 6 of 6.
+```
+
+An output that is not there fails nothing. One that was changed is named, and the check
+exits 1.
 
 A sign-off file is not checkable alone. The signed commit that added it binds the sign-off,
 the package and the code.

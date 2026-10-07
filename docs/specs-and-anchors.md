@@ -66,7 +66,7 @@ The file lives at `specs/<category>/<name>.md`. Its header lines are optional:
 [spec_quality_guide.md](../references/spec_quality_guide.md) is the guide to a rule and a proof
 worth having.
 
-## Three tags say how, when and where a proof is shown
+## Five tags say how, when and where a proof is shown
 
 A test can check a result. Only a person can make a judgment call. A tag stands at the end of
 the proof line:
@@ -77,9 +77,18 @@ the proof line:
 
 | Tag | Use it for | What happens |
 |---|---|---|
-| `@manual` | A judgment call, like "it looks good" or "it is easy to use". A test cannot decide these, and neither can an AI. | No test runs for it. `purlin:sign` stops there; a person checks it and writes what they saw. Until then the rule reads `checked at sign-off`. |
+| `@manual` | A judgment call only a person can make, like "it looks good" or "it is easy to use". A test cannot decide these. | No test runs for it. `purlin:sign` stops there; a person checks it and writes what they saw. Until then the rule reads `checked at sign-off`. |
 | `@slow` | A proof whose tests take a long time, like integration tests and acceptance tests. | `purlin:test` skips it while you build. `purlin:test --all` runs it. When it is due, every status says so: `1 slow proof to run: purlin:test --all` |
 | `@env(windows)`, `@env(macos)`, `@env(linux)` | A proof that must be shown on one operating system. | Only a run on that system proves it. Anywhere else the rule reads `not run`, with the reason `Windows: no run yet`. |
+| `@ai(<model>)` | A proof about what an AI does with a prompt or a skill. The tag names each model it is shown on. | `purlin:test --all` runs its test 3 times on each model, and every run must pass. There is one result per model. |
+| `@graded(<grader>)` | Beside `@ai`, a proof whose sentence needs judgment a test cannot hold. The tag names the model that grades. | The grader reads each output against the proof's sentence. The rule reads `graded`, never `passed`, and counts as passing. |
+
+One example of each:
+
+```
+- PROOF-4 (RULE-2): With the sample report, the reply names the three findings by their ids @ai(claude-opus-5-5)
+- PROOF-5 (RULE-3): The summary states no fact the sample report does not hold @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+```
 
 - **Not everything needs a rule.** Look and feel can stay outside Purlin.
 - **A hand check never stops the tests reading `met`.** It is counted as neither passing nor
@@ -89,6 +98,8 @@ the proof line:
 - **Another system is your project's own run.**
   [running-and-evidence.md](running-and-evidence.md#your-project-runs-the-tests-on-another-system)
   has one worked example.
+- **A prompt or a skill is tested like anything else.** [testing-ai.md](testing-ai.md) walks
+  an AI proof from rule to evidence, and [graded-by-ai.md](graded-by-ai.md) is grading alone.
 
 ## A number never changes
 

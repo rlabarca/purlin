@@ -258,7 +258,7 @@ bug. The test run decides.
 ## Sources
 
 Each paper is linked. What the audit does, and what it found on Purlin's own tests, is on
-[the audit page](audit.md). The six checks are in
+[the audit page](audit.md). The seven checks are in
 [the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 What a settle does is in
 [Settling a finding](../references/review_criteria.md#settling-a-finding).

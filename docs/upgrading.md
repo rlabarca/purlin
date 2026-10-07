@@ -42,7 +42,7 @@ migrations your project needs are listed.
 | `design-refs` | removes each spec's design reference lines |
 | `anchor-lines` | removes `> Requires:`, `> Global:` and `> Scope:` on an anchor: every anchor covers the whole project |
 | `os-tags` | rewrites the Windows tag at the end of a proof to `@env(windows)` |
-| `kind-tags` | drops the tag naming the kind of test, such as `@unit`; `@manual`, `@slow` and `@env(...)` stay |
+| `kind-tags` | drops the tag naming the kind of test, such as `@unit`; `@manual`, `@slow`, `@env(...)`, `@ai(...)` and `@graded(...)` stay |
 | `untracked-files` | deletes the proof and run files 0.9.5 committed and its cache folder |
 | `hooks` | deletes the git hooks 0.9.5 installed, and leaves a hook another tool wrote |
 | `config` | writes `.purlin/config.json` holding `version` and `tests` alone |

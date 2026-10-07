@@ -1,11 +1,14 @@
 """The pages under `docs/`, read as a person on the git host reads them.
 
-`specs/instructions/purlin_docs.md` holds five rules: every relative link
+`specs/instructions/purlin_docs.md` holds nine rules: every relative link
 on the pages resolves, the audit page says what to do with a finding and
 links to its research, the research page cites its papers by links it lists
 again under `Sources`, the page on working together holds one paragraph
-on working in more than one checkout, and the example that fetches Purlin
-clones it at this version's signed tag.
+on working in more than one checkout, the example that fetches Purlin
+clones it at this version's signed tag, the index lists every page, the two
+pages on AI proofs are linked from each other and from each page that folds
+an AI proof in, each of the two holds one flow diagram, and the audit's
+pages count the spot tests as the reference does.
 """
 
 import glob
@@ -303,3 +306,136 @@ def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
         if branch and re.search(r'/purlin(?:\.git)?\b', command):
             named.append(branch.group(1))
     assert named == ['signed/' + version], named
+
+
+# --- The index --------------------------------------------------------------
+
+COUNT_WORDS = {11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen'}
+GUIDES_LINE = '%s guides, and the references behind them.'
+
+
+def guides_listed(text):
+    """The page each row of the table under `## Guides` links in its first
+    cell, in the table's order. A row whose first cell is not exactly one
+    link gives the cell as it stands."""
+    part = under(text, 'Guides')
+    rows = [line for line in part.splitlines() if line.startswith('|')][2:]
+    listed = []
+    for row in rows:
+        cell = row.split('|')[1].strip()
+        link = re.fullmatch(r'\[[^\]]+\]\(([^)\s]+)\)', cell)
+        listed.append(link.group(1) if link else cell)
+    return listed
+
+
+def line_under_title(text):
+    """The first line that is not blank after the page's `# ` title."""
+    lines = text.splitlines()
+    assert lines[0].startswith('# '), lines[0]
+    return next(line for line in lines[1:] if line.strip())
+
+
+# purlin: purlin_docs PROOF-27
+def test_the_index_lists_every_page_once_and_says_how_many():
+    text = read(os.path.join(DOCS, 'index.md'))
+    others = [os.path.basename(page) for page in pages()
+              if page != 'docs/index.md']
+    listed = guides_listed(text)
+    assert sorted(listed) == others, (listed, others)
+    assert len(listed) == 13, listed
+    assert line_under_title(text) == (
+        'Thirteen guides, and the references behind them.')
+    assert line_under_title(text) == GUIDES_LINE % COUNT_WORDS[len(others)]
+    # A page listed twice, a page left out and a row that links nothing are
+    # each seen: the list is the rows as they stand.
+    sample = ('# Docs\n\nTwo guides.\n\n## Guides\n\n| Guide | For |\n|---|---|\n'
+              '| [A](audit.md) | x |\n| [A again](audit.md) | x |\n'
+              '| The dashboard | x |\n\n## Reference\n\n| [C](c.md) | x |\n')
+    assert guides_listed(sample) == ['audit.md', 'audit.md', 'The dashboard']
+    assert line_under_title(sample) == 'Two guides.'
+
+
+# --- The two pages on AI proofs ---------------------------------------------
+
+AI_PAGES = ('testing-ai.md', 'graded-by-ai.md')
+FOLDED_IN = ('how-purlin-works.md', 'specs-and-anchors.md',
+             'running-and-evidence.md', 'audit.md', 'sign-off.md',
+             'regulated.md')
+
+
+def pages_linked(text):
+    """The file each relative link of a page names, its `#` part dropped."""
+    return {target.partition('#')[0] for target in targets(text)
+            if not re.match(r'[a-z]+:', target)}
+
+
+def links_missing(texts):
+    """`<page>: <target>` for each link the two rules ask for and a page of
+    `texts`, `{page: text}`, does not hold."""
+    asked = [('testing-ai.md', 'graded-by-ai.md'),
+             ('graded-by-ai.md', 'testing-ai.md')]
+    asked += [(page, target) for page in FOLDED_IN for target in AI_PAGES]
+    return ['%s: %s' % (page, target) for page, target in asked
+            if target not in pages_linked(texts.get(page, ''))]
+
+
+# purlin: purlin_docs PROOF-28
+def test_the_two_ai_pages_are_linked_from_each_other_and_each_folding_page():
+    texts = {page: read(os.path.join(DOCS, page))
+             for page in AI_PAGES + FOLDED_IN}
+    assert links_missing(texts) == []
+    # A page that names the other in plain words, or in a code span, does
+    # not link it; a link with a `#` part does.
+    sample = dict(texts)
+    sample['testing-ai.md'] = 'See graded-by-ai.md and `graded-by-ai.md`.'
+    sample['audit.md'] = '[a](testing-ai.md#where-it-stops)'
+    assert links_missing(sample) == ['testing-ai.md: graded-by-ai.md',
+                                     'audit.md: graded-by-ai.md']
+
+
+def diagrams(text):
+    """Each fenced `mermaid` block of a page, as its lines."""
+    return [block.strip('\n').splitlines() for block
+            in re.findall(r'^```mermaid\n(.*?)^```$', text, re.M | re.S)]
+
+
+def box_labels(lines):
+    """The label of every box a mermaid flow chart draws: the quoted text
+    inside `[...]`, `(...)` or `{...}` after a node's id."""
+    return re.findall(r'\b\w+(?:\[|\(\[|\{)"([^"]*)"', '\n'.join(lines))
+
+
+# purlin: purlin_docs PROOF-29
+def test_each_ai_page_holds_one_flow_diagram_with_each_box_named_in_bold():
+    for page in AI_PAGES:
+        found = diagrams(read(os.path.join(DOCS, page)))
+        assert len(found) == 1, (page, len(found))
+        assert found[0][0] == 'flowchart LR', (page, found[0][0])
+        labels = box_labels(found[0])
+        assert len(labels) >= 5, (page, labels)
+        assert [label for label in labels
+                if not label.startswith('<b>')] == [], page
+    # A label on an arrow is no box, and a box whose name is not bold is
+    # found.
+    sample = ['flowchart LR', '    A["<b>One</b><br>x"] -->|"yes"| B(["Two"])',
+              '    B --> C{"<b>Three</b>"}']
+    assert box_labels(sample) == ['<b>One</b><br>x', 'Two', '<b>Three</b>']
+
+
+# --- The count of spot tests ------------------------------------------------
+
+def check_counts(text):
+    """Each `The <word> checks` the text holds, as the word."""
+    return re.findall(r'\bThe (\w+) checks\b', text)
+
+
+# purlin: purlin_docs PROOF-30
+def test_the_audit_pages_count_the_spot_tests_as_the_reference_does():
+    reference = read(os.path.join(ROOT, 'references', 'review_criteria.md'))
+    assert re.findall(r'^### The (\w+) checks$', reference, re.M) == ['seven']
+    for page in (AUDIT_PAGE, RESEARCH_PAGE):
+        text = ' '.join(read(page).split())
+        assert text.count('The seven checks are in') == 1, page
+        assert check_counts(text) == ['seven'], (page, check_counts(text))
+    assert check_counts('The six checks are in. The seven checks') == [
+        'six', 'seven']

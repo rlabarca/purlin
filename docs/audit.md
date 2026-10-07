@@ -17,7 +17,7 @@ flowchart LR
 
 **1. Heuristic spot tests.** Purlin flags tests that check nothing, check the code against
 itself, or never check the result the proof expects. It reads the tests as text. No AI is asked
-and no test runs. The six checks are in
+and no test runs. The seven checks are in
 [the heuristic spot tests reference](../references/review_criteria.md#heuristic-spot-tests).
 
 **2. Plant one bug.** For each proof, an AI writes the one small bug its test is most likely
@@ -69,6 +69,36 @@ the same bug again before any new one.
 A rule with several proofs reads `weak` while any finding is left. With none left, it reads
 `strong` where one of its proofs has a caught bug.
 [Settling a finding](../references/review_criteria.md#settling-a-finding) gives each step.
+
+## For an AI proof, the audit plants a wrong output
+
+The test of an AI proof reads an output. So the audit changes a copy of an output a run kept,
+until what the proof says no longer holds, and hands the test that copy. No model is asked
+for an output again.
+
+```
+PROOF-4: the test still passes when reply.md:12 reads "The report holds two findings."
+PROOF-4: the AI says this breaks: the sample report; the proof says the reply names three findings; the changed output names two
+```
+
+| The proof | A wrong output caught shows | It does not show |
+|---|---|---|
+| Exact, `@ai` | the test noticed one output going wrong | that the prompt or the skill is a good one |
+| Graded, `@ai` with `@graded` | the grader rejected one wrong output | that the grader is right every time |
+
+- **No bug is planted in the prompt or the skill itself.** The audit tests the check, and for
+  a graded proof the grader.
+- **What the AI was given is never changed.** The change is in the reply or in a file the
+  session wrote.
+- **A grader that accepts the wrong output leaves the test passing.** The rule reads `weak`.
+- **The kept output must be on this machine.** A fresh clone holds the results and not the
+  folders. Nothing is planted there, and the audit says why.
+- **A seventh spot test reads the tag.** It flags the test of a graded proof that never asks
+  for the grade.
+
+[testing-ai.md](testing-ai.md) walks an AI proof, [graded-by-ai.md](graded-by-ai.md) is the
+page on a grade, and [A wrong output](../references/review_criteria.md#a-wrong-output) gives
+each step.
 
 ## What you can count on
 
