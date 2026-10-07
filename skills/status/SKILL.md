@@ -94,7 +94,14 @@ Left to do:
 ```
 
 The sentence counts the rules that pass their tests, then the share the audit found strong where
-it read any. `Left to do` holds one line per kind of work, in the order it is done, with its count
+it read any. Where a rule passes with a proof an AI graded, its cell reads `graded` and the
+sentence counts it:
+
+```
+40 rules. 40 pass their tests, 6 of them graded by an AI.
+```
+
+`graded` counts as passing. `Left to do` holds one line per kind of work, in the order it is done, with its count
 and its command. Print the lines the status holds. Never recount them: the command line and
 the dashboard must show one answer from one computation.
 
@@ -155,6 +162,24 @@ specs/auth/login.md: 3 rules
     PROOF-3  hand check
 ```
 
+An AI proof, one tagged `@ai(...)`, has one line per model its tag names, each with the word
+it reads on that model and how many of its model runs passed there; a proof an AI graded reads
+`graded` where it passes:
+
+```
+specs/auth/login.md: 2 rules
+  RULE-1  passed  not audited
+    PROOF-1  passed  tests/test_login.py::test_proof_1
+  RULE-2  not run  waiting
+    not run: slow: runs with purlin:test --all
+    not run: claude-sonnet-5-5: no run yet
+    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2
+    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  tests/test_login.py::test_proof_2
+```
+
+A rule passes only where its AI proof passed on every model it names.
+`references/spec_quality_guide.md`, "When a rule is stuck", has each reason.
+
 The script prints first every line the status has about the spec, its warnings and then its
 lines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work
 this spec's rules wait for.
@@ -171,6 +196,7 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> rules to fix`, `to write a test for` or `to strengthen` | `→ Run: purlin:build` |
 | `<n> rules to test` | `→ Run: purlin:test` |
 | `<n> slow proofs to run` | `→ Run: purlin:test --all` |
+| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `→ Run: purlin:test --all`. It reaches a real model and takes minutes: say so first |
 | `<n> rules to test on <systems>` | `→ Run purlin:test on <systems>`. It is an instruction, not a command line: do as `skills/test/SKILL.md`, Step 5 says |
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign` | Nothing is left to do, so print no `→ Run:` line. A sign-off is optional: run `purlin:sign` only when a person asks for one |
