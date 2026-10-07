@@ -1164,7 +1164,8 @@ def proof_run(project_root, feature, proof_id, tests, timeout=None,
             project_root, suite, files, log,
             timeout=timeout or ARM_TIMEOUT_DEFAULT, marked=scan,
             action='audit', keep=keep, environment=environment,
-            own_group=own_group, option=_others_left_out(suite, files, scan, feature, proof_id,
+            own_group=own_group,
+            option=_others_left_out(suite, files, scan, feature, proof_id,
                                     tests)))
     entries = marker_results(scan, suites, runs).get((feature, proof_id), [])
     if tests:
