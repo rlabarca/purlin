@@ -432,6 +432,10 @@ def test_a_proof_that_is_not_graded_needs_no_grade(tmp_path):
     assert 'grade' not in READS_THE_REPLY
     assert findings(tmp_path, path, 'test_note', proof) == []
     assert findings(tmp_path, path, 'test_note') == []
+    # The same proof read from a spec, through the spot tests over a project: nothing is found.
+    project(tmp_path, {'note': ['the reply names the barcode']}, {
+        'tests/test_note.py': '# purlin: note PROOF-1' + textwrap.dedent(READS_THE_REPLY)})
+    assert plain_checks.check_project(str(tmp_path), out=io.StringIO()) == []
 
 
 # purlin: plain_checks PROOF-36
