@@ -348,6 +348,36 @@ class TestTheProjectsName:
             _first_line(root)
 
 
+# -- How many times an AI proof's test runs ---------------------------------
+
+RUNS_NOT_READ = ('.purlin/config.json: setting not read. runs is not a whole '
+                 'number from 1 up. Correct it in the file.')
+
+
+class TestRuns:
+
+    @staticmethod
+    def _read(project, raw):
+        _write_bytes(project, b'{"version": "0.10.0", "tests": []%s}' % raw)
+        config = resolve_config(project)
+        return config_engine.runs(config), settings_warnings(config)
+
+    # purlin: config_engine PROOF-52
+    def test_a_whole_number_is_read_and_none_is_no_number(self, project):
+        assert self._read(project, b', "runs": 5') == (5, [])
+        assert self._read(project, b'') == (None, [])
+
+    # purlin: config_engine PROOF-53
+    def test_zero_is_read_as_not_set_and_warned_of(self, project):
+        assert self._read(project, b', "runs": 0') == (None, [RUNS_NOT_READ])
+
+    # purlin: config_engine PROOF-54
+    def test_no_other_value_is_a_number_of_runs(self, project):
+        for raw in (b'true', b'"3"', b'2.5', b'-1'):
+            assert self._read(project, b', "runs": ' + raw) == (
+                None, [RUNS_NOT_READ]), raw
+
+
 # -- Keys the file holds that this version does not read --------------------
 
 class TestKeysThisVersionDoesNotRead:

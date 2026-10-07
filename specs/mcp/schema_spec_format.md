@@ -1,14 +1,14 @@
 # Feature: schema_spec_format
 
 > Description: The spec format: the two sections every spec carries, the rule and proof
->   grammar, the metadata fields, the `@manual`, `@slow` and `@env` tags, and
+>   grammar, the metadata fields, the `@manual`, `@slow`, `@env`, `@ai` and `@graded` tags, and
 >   the mistakes it warns of. Every surface that reads a spec
 >   reads it through one parser, so a spec means the same thing to the status table, the
 >   dashboard and the evidence file.
 > Scope: scripts/mcp/purlin/specs.py, scripts/mcp/purlin/fingerprint.py, references/formats/spec_format.md, references/formats/anchor_format.md
 > Stack: python/stdlib, one regex parser in scripts/mcp/purlin/specs.py
-> Highest-Rule: 43
-> Highest-Proof: 91
+> Highest-Rule: 47
+> Highest-Proof: 102
 
 ## Rules
 
@@ -16,9 +16,9 @@
 - RULE-3: A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them; a list item under `## Proof` of any other form is not read as a proof
 - RULE-6: `> Scope:` is a comma-separated list of file paths, parsed into a list in the order written
 - RULE-7: The file name is the spec's name, whatever its first line says, and a name holds letters, digits, `_` and `-` and does not start with `-`; a spec whose name holds any other character is still read, and warned of in one line ending on the `git mv` that renames its file
-- RULE-9: A proof line carries at most one `@manual` tag, at most one `@slow` tag and at most one `@env` tag, in any order, read off the end of the line; `@slow` says the proof's test takes a long time
+- RULE-9: A proof line carries at most one each of the tags `@manual`, `@slow`, `@env`, `@ai` and `@graded`, in any order, read off the end of the line; `@slow` says the proof's test takes a long time
 - RULE-10: `@env` takes `windows`, `macos` or `linux` and nothing else; any other value is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name
-- RULE-40: Only `@manual`, `@slow` or `@env(...)` at the end of a proof line is read as a tag, and not when it follows a comma, `and` or `or`; any other trailing at-word with no value in brackets, a bare `@windows` apart, stops the reading, so the proof's text stays whole and the proof is neither manual, slow nor tied to a system
+- RULE-40: Only `@manual`, `@slow`, `@env(...)`, `@ai(...)` or `@graded(...)` at the end of a proof line is read as a tag, and not when it follows a comma, `and` or `or`; any other trailing at-word with no value in brackets, a bare `@windows` apart, stops the reading, so the proof's text stays whole and the proof is neither manual, slow nor tied to a system
 - RULE-13: Two specs with one file name in different folders are warned of: only one is read, and the warning names both files, the one read, and the `git mv` that renames the other
 - RULE-15: A spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading
 - RULE-19: The code part of a feature spec's fingerprint hashes exactly the files `> Scope:` names, so an edit to any other file leaves it unchanged and a code change is told from a rule change
@@ -28,6 +28,10 @@
 - RULE-43: A list item under `## Proof` that cannot be read is quoted in its warning by its first 4 words, with the reason: a tag standing before the rule ids goes last, and any other line is not `- PROOF-N (RULE-N): <text>`
 - RULE-41: Rule and proof numbers are never reused: `> Highest-Rule:` and `> Highest-Proof:` record the highest number the spec has ever held, a new rule or proof takes one more than the highest of that line and every number the spec holds, and a gap in the numbers is reported as nothing
 - RULE-42: `> Stack:`, `> Highest-Rule:` and `> Highest-Proof:` change no part of a spec's fingerprint and no rule or proof count
+- RULE-44: `@ai(<model>, ...)` names the models a proof is shown on, one or several, read in the order written, and may hold `runs=<n>`, the proof's own count of runs; `@graded(<model>)` beside it names the one model that grades; a model's name holds letters, digits, `.`, `_`, `-`, `:` and `/`; a proof that names a model is slow with or without `@slow`, and any other proof names no model, no grader and no count
+- RULE-45: An `@ai` naming no model, a `@graded` naming no model or standing with no `@ai`, and a model's name holding any other character are each warned of as `spec to repair`, naming the proof and `purlin:spec`, and every rule of the spec reads `failed` until the tag is corrected
+- RULE-46: `@ai` or `@graded` beside `@manual` is warned of as `tags that conflict`, and the proof is read as `@manual` alone: no model, no grader, not slow
+- RULE-47: A `runs=` in `@ai(...)` that is not a whole number from 1 up is warned of as `tag not read`, naming the proof and `purlin:spec`, and the proof is read with its models and no count of its own
 - RULE-27: The spec format page opens with the line `> Format-Version: <n>`, `<n>` a whole number
 
 ## Proof
@@ -46,6 +50,7 @@
 - PROOF-38 (RULE-10): The proof text `Lock the file @env(windows-2022)` is read with the text `Lock the file`, not `@manual`, with no operating system and one tag it does not read, `@env(windows-2022)`
 - PROOF-28 (RULE-40): The proof text `Lock the file @manual @smoke` is read whole: `@smoke` stops the reading, so the `@manual` before it stays in the text, and the proof is not `@manual`, with no operating system
 - PROOF-29 (RULE-40): The proof text `Check the documented tags @manual, @env`, whose last at-word follows a comma, is read whole, not `@manual`, with no operating system and no tag it does not read
+- PROOF-96 (RULE-40): The proof text `Check the documented tags @manual, @ai(claude-opus-5-5)`, whose last at-word follows a comma, is read whole, not `@manual`, naming no model, with no tag it does not read
 - PROOF-52 (RULE-13): A project holding `specs/auth/login.md` and `specs/admin/login.md` is reported with `login: two specs with one name. Only specs/auth/login.md is read. Run git mv specs/admin/login.md specs/admin/<new name>.md.`
 - PROOF-13 (RULE-15): A spec carrying a heading `## What it does` above its `## Rules` is read: the status report names the spec, carries no line containing `is not numbered` and never mentions `What it does`, and the spec's rules read exactly `RULE-1`
 - PROOF-23 (RULE-19): In a project tracking `src/app.py` and `src/other.py`, a spec scoped `src/app.py` keeps the code part of its fingerprint unchanged when `src/other.py` is edited
@@ -64,4 +69,14 @@
 - PROOF-69 (RULE-41): The spec format page says a spec whose `> Highest-Proof:` reads `12`, and whose `PROOF-10` to `PROOF-12` were deleted, gives its next proof `PROOF-13`
 - PROOF-62 (RULE-42): A spec carrying `> Highest-Rule: 12` has the same fingerprint, all three parts, as the same spec with that line taken out
 - PROOF-66 (RULE-42): The `> Stack:` of a spec is rewritten from `python/stdlib` to `node/express`; all three parts of its fingerprint equal the ones taken before
+- PROOF-92 (RULE-44): A proof line ending `the reply names the three findings @ai(claude-opus-5-5)` is read with the text `the reply names the three findings`, the models exactly `claude-opus-5-5`, no grader, no count of runs, slow, and not `@manual`
+- PROOF-93 (RULE-44): A proof line ending `@ai(claude-opus-5-5, bedrock/us.anthropic.claude-sonnet-5-5:0, runs=10)` is read with the models `claude-opus-5-5` then `bedrock/us.anthropic.claude-sonnet-5-5:0`, in that order, and the count of runs `10`, a whole number
+- PROOF-94 (RULE-44): A proof line ending `@graded(claude-haiku-4-5-20251001) @env(linux) @ai(claude-opus-5-5)` is read exactly as one ending `@ai(claude-opus-5-5) @env(linux) @graded(claude-haiku-4-5-20251001)` is: the models exactly `claude-opus-5-5`, the grader `claude-haiku-4-5-20251001`, on `linux`, slow
+- PROOF-95 (RULE-44): A proof line ending `Lock the file @env(windows)` is read with no model, an empty list, no grader, no count of runs, and not slow
+- PROOF-97 (RULE-45): A spec `login` whose `PROOF-1 (RULE-1)` ends `@ai` is reported with `login PROOF-1 (RULE-1): spec to repair. @ai names no model. Run purlin:spec login.`, and the reasons its every rule reads `failed` are exactly `PROOF-1 carries @ai naming no model`
+- PROOF-98 (RULE-45): A spec `login` whose `PROOF-1 (RULE-1)` ends `@ai(claude-opus-5-5) @graded` is reported with `login PROOF-1 (RULE-1): spec to repair. @graded names no model. Run purlin:spec login.`, and the reasons its every rule reads `failed` are exactly `PROOF-1 carries @graded naming no model`
+- PROOF-99 (RULE-45): A spec `login` whose `PROOF-1 (RULE-1)` ends `@graded(claude-haiku-4-5-20251001)`, with no `@ai`, is reported with `login PROOF-1 (RULE-1): spec to repair. @graded stands with no @ai. Run purlin:spec login.`, the reasons its every rule reads `failed` are exactly `PROOF-1 carries @graded with no @ai`, and the proof is read with no grader
+- PROOF-102 (RULE-45): A spec `login` whose `PROOF-1 (RULE-1)` ends `@ai(claude opus)` is reported with `login PROOF-1 (RULE-1): spec to repair. A model's name holds letters, digits, ., _, -, : and /. Run purlin:spec login.`, and the reasons its every rule reads `failed` are exactly `PROOF-1 carries a model's name that cannot be read`
+- PROOF-100 (RULE-46): A spec `checkout` whose `PROOF-2 (RULE-2)` ends `@manual @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)` is reported with `checkout PROOF-2 (RULE-2): tags that conflict. It is read as @manual, not @ai or @graded. Run purlin:spec checkout.`; its `PROOF-2` is read as `@manual`, with no model, no grader and not slow, and no rule of the spec is given a reason to read `failed`
+- PROOF-101 (RULE-47): A spec `login` whose `PROOF-1 (RULE-1)` ends `@ai(claude-opus-5-5, runs=0)` is reported with `login PROOF-1 (RULE-1): tag not read. runs=0 is not a whole number from 1 up. Run purlin:spec login.`; its `PROOF-1` is read with the models exactly `claude-opus-5-5` and no count of runs, and no rule of the spec is given a reason to read `failed`
 - PROOF-64 (RULE-27): The first line of the spec format page reads `> Format-Version: ` followed by a whole number and nothing else

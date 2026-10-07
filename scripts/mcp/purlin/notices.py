@@ -65,6 +65,8 @@ KINDS = (
     ('no_test', 'rule to write a test for'),
     ('evidence_missing', 'evidence missing'),
     ('other_system', 'proofs not run here'),
+    # A model an AI proof names that gave no answer.
+    ('model_not_reached', 'model not reached'),
     ('untied', 'test comment with no test'),
     ('title_unread', 'test title not read'),
     ('ambiguous', 'test name not unique'),

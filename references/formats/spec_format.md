@@ -1,4 +1,4 @@
-> Format-Version: 24
+> Format-Version: 25
 
 # Spec format
 
@@ -192,7 +192,7 @@ rule ids:
 
 A list item under `## Proof` of any other form is not read as a proof. The
 status warns of it in one line that gives the reason and quotes the line's first 4 words.
-Where `@manual`, `@slow` or `@env(` stands between `PROOF-N` and the rule ids:
+Where `@manual`, `@slow`, `@ai`, `@graded` or `@env(` stands between `PROOF-N` and the rule ids:
 
 ```
 login: proof line not read. A tag goes last: "- PROOF-7 @manual (RULE-7): ...". Run purlin:spec login.
@@ -229,8 +229,8 @@ Append `@manual` to a proof that no test can settle:
 | (none) | A marked test settles the proof, whatever it needs to run |
 | `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell, and in its passed cell where its every proof is `@manual`. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
 
-`@manual`, `@slow` and `@env` are the only tags a proof line carries, at most
-one of each, in any order, at the end of the line. Any other trailing `@<name>` is not a tag: it stays
+`@manual`, `@slow`, `@env`, `@ai` and `@graded` are the only tags a proof line
+carries, at most one of each, in any order, at the end of the line. Any other trailing `@<name>` is not a tag: it stays
 in the proof text.
 
 ### The slow tag
@@ -258,6 +258,45 @@ status warns `<spec> PROOF-N (RULE-N): tags that conflict. It is read as
 
 Adding or removing `@slow` is no change of a proof's wording, so it names no
 test comment as one to correct.
+
+### The AI tags
+
+`@ai(...)` marks a proof about what an AI does with a prompt or a skill, and
+names the models the proof is shown on. `@graded(...)` beside it says a model
+grades the output against the proof's own sentence, and names that model:
+
+```
+- PROOF-4 (RULE-2): With the sample report, the reply names the three findings by their ids @ai(claude-opus-5-5)
+- PROOF-5 (RULE-3): The summary states no fact the sample report does not hold @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+- PROOF-6 (RULE-4): Asked for a refund over the limit, the reply refuses and names the limit @ai(claude-opus-5-5, claude-sonnet-5-5, runs=10)
+```
+
+| Tag | Value | What it says |
+|-----|-------|--------------|
+| `@ai(<model>, ...)` | One model or several, separated by commas, and at most one `runs=<n>`, `<n>` a whole number from 1 up | The proof's test runs on each model named, in the order written, and the proof passes when it passes on every one. `runs=<n>` is how many times the test runs on each model. Without it the `runs` setting of `.purlin/config.json` says, and 3 where that is not set |
+| `@graded(<model>)` | One model | That model grades the output. `@ai` names the model tested, so `@graded` always stands beside an `@ai` |
+
+A model's name holds letters, digits, `.`, `_`, `-`, `:` and `/`. A model named
+twice in one `@ai(...)` is read once.
+
+A proof that names a model is an AI proof. It is a proof like any other, with
+one marked test, and it is a slow proof with or without `@slow`: everything
+"The slow tag" says of a slow proof holds for it. `@slow` beside `@ai` is
+allowed and adds nothing. `@ai` may stand with `@env(...)`.
+
+The status names each mistake in one line:
+
+| Mistake | The line | How the proof is read |
+|---------|----------|-----------------------|
+| `@ai` naming no model | `<spec> PROOF-N (RULE-N): spec to repair. @ai names no model. Run purlin:spec <spec>.` | Every rule of the spec reads `failed`, with the reason `PROOF-N carries @ai naming no model` |
+| `@graded` naming no model | `<spec> PROOF-N (RULE-N): spec to repair. @graded names no model. Run purlin:spec <spec>.` | Every rule of the spec reads `failed`, with the reason `PROOF-N carries @graded naming no model` |
+| `@graded` with no `@ai` beside it | `<spec> PROOF-N (RULE-N): spec to repair. @graded stands with no @ai. Run purlin:spec <spec>.` | Every rule of the spec reads `failed`, with the reason `PROOF-N carries @graded with no @ai` |
+| A name holding any other character | `<spec> PROOF-N (RULE-N): spec to repair. A model's name holds letters, digits, ., _, -, : and /. Run purlin:spec <spec>.` | Every rule of the spec reads `failed`, with the reason `PROOF-N carries a model's name that cannot be read` |
+| `@ai` or `@graded` beside `@manual` | `<spec> PROOF-N (RULE-N): tags that conflict. It is read as @manual, not @ai or @graded. Run purlin:spec <spec>.` | As `@manual` alone. The line names each of `@slow`, `@ai` and `@graded` the proof carries |
+| `runs=` that is not a whole number from 1 up | `<spec> PROOF-N (RULE-N): tag not read. runs=0 is not a whole number from 1 up. Run purlin:spec <spec>.` | With its models and no `runs=` |
+
+A spec to repair stays so until the tag is corrected, as a number written
+twice does.
 
 ### Operating system tags
 

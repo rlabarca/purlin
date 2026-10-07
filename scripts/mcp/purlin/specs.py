@@ -18,6 +18,11 @@ can settle the rule, and `@slow` where the proof's test takes a long time:
 `@env` takes `windows`, `macos` or `linux` and nothing else. A proof with no
 `@env` is satisfied by a run on any operating system.
 
+A proof about an AI's behaviour names the models it is shown on, and beside
+them the model that grades where one does. It is a slow proof:
+
+    - PROOF-5 (RULE-3): The summary states no fact the report does not hold @ai(claude-opus-5-5, runs=5) @graded(claude-haiku-4-5-20251001)
+
 The tags 0.9.5 wrote, a bare `@windows` and a stamped `@manual(...)`, are
 ignored, and the file that carried one is named once in the run's warnings.
 """
@@ -65,16 +70,23 @@ _PROOF_LINE_RE = re.compile(
     r'^-\s+(PROOF-\d+)\s*\((RULE-\d+(?:,\s*RULE-\d+)*)\):\s*(.+)')
 
 # A trailing tag is metadata appended after the description: ` @manual`,
-# ` @slow`, ` @env(linux)`. It must not match a description whose prose merely ends in
+# ` @slow`, ` @env(linux)`, ` @ai(<model>)`, ` @graded(<model>)`. It must not match a description whose prose merely ends in
 # an @word, e.g. "verify the doc lists @manual, @env and @word", so the
 # tag may not follow a list connector (`,`, `and`, `or`).
 _PROOF_TAG_RE = re.compile(r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$')
 
 ENVIRONMENTS = ('windows', 'macos', 'linux')
 
+# What a model's name holds, in `@ai(...)` and `@graded(...)`.
+MODEL = r'[A-Za-z0-9._:/-]+'
+_MODEL_RE = re.compile(MODEL)
+# What opens the count of runs inside `@ai(...)`, and what the count holds.
+RUNS_PREFIX = 'runs='
+_RUNS_RE = re.compile(r'[0-9]+')
+
 # A tag standing between a proof's id and its rule ids, where no tag is read.
 _TAG_BEFORE_RULES_RE = re.compile(
-    r'^-\s+PROOF-\d+\s*(?:@manual\b|@slow\b|@env\()')
+    r'^-\s+PROOF-\d+\s*(?:@manual\b|@slow\b|@ai\b|@graded\b|@env\()')
 
 # A line git leaves in a file whose merge stopped on a conflict: seven of one
 # marker character at the start of the line, then a space or the line's end.
@@ -112,21 +124,46 @@ _SCOPE_LINE_RE = re.compile(r'^>[ \t]*Scope:', re.MULTILINE)
 # ---------------------------------------------------------------------------
 
 def split_proof_tags(desc):
-    """`(clean_desc, manual, env, unknown, slow)` for one proof line's description.
+    """`(clean_desc, manual, env, unknown, slow)` for one proof line's
+    description: those five of `proof_tags`' answer."""
+    read = proof_tags(desc)
+    return (read['text'], read['manual'], read['env'], read['unknown'],
+            read['slow'])
+
+
+def proof_tags(desc):
+    """One proof line's description, read into its text and its tags:
+    `{text, manual, env, unknown, slow, ai, graded, runs, written, mistakes}`.
 
     Tags are read right to left. `@env(<os>)` names the operating system the
     proof must be proved on, at most once, one of `windows`, `macos`,
     `linux`; `@manual` says no test settles the rule; `@slow` says the
-    proof's test takes a long time. Any other trailing
+    proof's test takes a long time. `@ai(<model>, ...)` names the models
+    the proof is shown on, in order, as `ai`, with `runs=<n>` among them
+    the proof's own count, `runs`; `@graded(<model>)` names the model that
+    grades, `graded`. A proof that names a model is slow. Any other trailing
     `@<name>` is not a tag: reading stops there and it stays in the text.
     `unknown` lists the tags this release does not read, so the caller can
     name the file once rather than warning per line.
+
+    `written` lists which of `@slow`, `@ai` and `@graded` the line carries,
+    in that order: the tags `@manual` cannot stand with. `mistakes` is one
+    `(kind, what is wrong, reason)` per mistake in `@ai` and `@graded`, the
+    kind a key of `notices.KINDS` and the reason, where the mistake makes
+    the spec one to repair, a `broken_reasons` phrase to fill with the
+    proof's id. A `@graded` with no model named beside it by `@ai` reads no
+    grader, and a `runs=` that is not a whole number from 1 up no count.
     """
     desc = desc.rstrip()
     manual = False
     slow = False
     env = None
     unknown = []
+    ai = None
+    graded = None
+    runs = None
+    grader_tag = False
+    mistakes = []
     while True:
         m = _PROOF_TAG_RE.search(desc)
         if not m:
@@ -142,6 +179,38 @@ def split_proof_tags(desc):
                 unknown.append('@env(%s)' % value)
         elif name == 'windows':
             unknown.append('@windows')
+        elif name == 'ai' and ai is not None:
+            unknown.append('@ai(...)')
+        elif name == 'ai':
+            ai = []
+            parts = [part.strip() for part in (args or '').split(',')]
+            for part in [part for part in parts if part]:
+                if part.startswith(RUNS_PREFIX):
+                    count = part[len(RUNS_PREFIX):].strip()
+                    if _RUNS_RE.fullmatch(count) and int(count) >= 1:
+                        runs = int(count)
+                    else:
+                        mistakes.append(('tag_unread', RUNS_NOT_READ % part,
+                                         None))
+                elif not _MODEL_RE.fullmatch(part):
+                    mistakes.append(MODEL_NAME_MISTAKE)
+                elif part not in ai:
+                    ai.append(part)
+            if not ai and MODEL_NAME_MISTAKE not in mistakes:
+                mistakes.append(('to_repair', AI_NO_MODEL, AI_NO_MODEL_REASON))
+        elif name == 'graded' and grader_tag:
+            unknown.append('@graded(...)')
+        elif name == 'graded':
+            grader_tag = True
+            value = (args or '').strip()
+            if _MODEL_RE.fullmatch(value):
+                graded = value
+            elif value:
+                if MODEL_NAME_MISTAKE not in mistakes:
+                    mistakes.append(MODEL_NAME_MISTAKE)
+            else:
+                mistakes.append(('to_repair', GRADED_NO_MODEL,
+                                 GRADED_NO_MODEL_REASON))
         elif args:
             # A tag with arguments that is not @env is a stamp, which the
             # format does not carry; a stamped `@manual` still reads manual.
@@ -154,7 +223,15 @@ def split_proof_tags(desc):
         else:
             break
         desc = desc[:m.start()].rstrip()
-    return desc, manual, env, unknown, slow
+    if grader_tag and ai is None:
+        mistakes.append(('to_repair', GRADED_NO_AI, GRADED_NO_AI_REASON))
+    written = [tag for tag, there in (('@slow', slow), ('@ai', ai is not None),
+                                      ('@graded', grader_tag)) if there]
+    ai = ai or []
+    return {'text': desc, 'manual': manual, 'env': env, 'unknown': unknown,
+            'slow': slow or bool(ai), 'ai': ai,
+            'graded': graded if ai else None, 'runs': runs if ai else None,
+            'written': written, 'mistakes': mistakes}
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +371,11 @@ def scan_specs(project_root):
     (`'Requires'`, `'Global'` and `'Scope'`, in that order, for each field
     the spec carries and Purlin does not read), `rules` (`{RULE-N: text}`),
     `rule_order`,
-    `proofs` (`{PROOF-N: {rules, text, manual, env}}`), `proof_env`,
+    `proofs` (`{PROOF-N: {rules, text, manual, env, slow, ai, graded,
+    runs}}`, the last five as `proof_tags` reads them, and a proof tagged
+    `@manual` beside `@slow`, `@ai` or `@graded` as `@manual` alone),
+    `tag_mistakes` (`[{proof, kind, wrong, reason}]`, one per mistake in a
+    proof's tags, in the order written), `proof_env`,
     `proofs_by_rule`, `source`, `source_path`, `pinned`,
     `has_rules_section`, `unnumbered_lines`, `unknown_tags`, `highest_rule`
     and `highest_proof` (the number on `> Highest-Rule:` and
@@ -362,7 +443,7 @@ def _parse_spec(name, rel_path, content):
     proofs_by_rule = {}
     unread_proof_lines = []
     doubled_proofs = []
-    slow_and_manual = []
+    tag_mistakes = []
     proof_section = extract_section(content, '## Proof')
     if proof_section:
         first = _section_first_line(content, '## Proof')
@@ -374,20 +455,30 @@ def _parse_spec(name, rel_path, content):
                 continue
             proof_id = m.group(1)
             rule_ids = _split_list(m.group(2))
-            text, manual, env, unknown, slow = split_proof_tags(
-                m.group(3).strip())
-            unknown_tags.extend(unknown)
-            if slow and manual:
-                # A hand check has no test to leave out of a run.
-                slow = False
-                if proof_id not in slow_and_manual:
-                    slow_and_manual.append(proof_id)
+            read = proof_tags(m.group(3).strip())
+            text, env = read['text'], read['env']
+            unknown_tags.extend(read['unknown'])
+            mistakes = read['mistakes']
+            if read['manual'] and read['written']:
+                # A hand check has no test to leave out of a run, and none
+                # to show on a model.
+                read.update(slow=False, ai=[], graded=None, runs=None)
+                mistakes = [('tags_conflict', READ_AS_MANUAL % _either(
+                    read['written']), None)]
+            for kind, wrong, reason in mistakes:
+                found = {'proof': proof_id, 'kind': kind, 'wrong': wrong,
+                         'reason': reason % proof_id if reason else None}
+                if found not in tag_mistakes:
+                    tag_mistakes.append(found)
             if proof_id in proofs and proof_id not in doubled_proofs:
                 doubled_proofs.append(proof_id)
             proof_lines.setdefault(proof_id, []).append(
                 {'line': first + offset, 'text': text})
             proofs[proof_id] = {'rules': rule_ids, 'text': text,
-                                'manual': manual, 'env': env, 'slow': slow}
+                                'manual': read['manual'], 'env': env,
+                                'slow': read['slow'], 'ai': read['ai'],
+                                'graded': read['graded'],
+                                'runs': read['runs']}
             proof_env[proof_id] = env
             for rule_id in rule_ids:
                 proofs_by_rule.setdefault(rule_id, []).append(proof_id)
@@ -456,7 +547,7 @@ def _parse_spec(name, rel_path, content):
         'highest_rule': _highest(_HIGHEST_RULE_RE, content),
         'highest_proof': _highest(_HIGHEST_PROOF_RE, content),
         'unread_proof_lines': unread_proof_lines,
-        'slow_and_manual': slow_and_manual,
+        'tag_mistakes': tag_mistakes,
         'heading_name': heading_match.group(1) if heading_match else None,
     }
 
@@ -513,7 +604,14 @@ PROOF_LINE_UNREAD = '%s: "%s".'
 TAG_AT_END = 'A tag goes last'
 NOT_A_PROOF_LINE = 'It is not `- PROOF-N (RULE-N): <text>`'
 HEADING_NAMES_OTHER = 'It names %s.'
-SLOW_AND_MANUAL = 'It is read as @manual, not @slow.'
+# A mistake in a proof's tags. `@manual` beside the tags it cannot stand
+# with, each named: `not @slow`, `not @ai or @graded`.
+READ_AS_MANUAL = 'It is read as @manual, not %s.'
+AI_NO_MODEL = '@ai names no model.'
+GRADED_NO_MODEL = '@graded names no model.'
+GRADED_NO_AI = '@graded stands with no @ai.'
+MODEL_NAME_REFUSED = "A model's name holds letters, digits, ., _, -, : and /."
+RUNS_NOT_READ = '%s is not a whole number from 1 up.'
 UNREAD_FIELD = 'Every anchor covers the whole project, so %s is not read.'
 REMOTE_UNREAD = 'Its source carries %s.'
 REMOTE_UNREAD_DO = 'Ask its owners to take %s out, then run purlin:anchor sync %s.'
@@ -527,6 +625,13 @@ UNKNOWN_TAGS_MANY = 'Found in %d specs, the first %s.'
 # Why every rule of a spec reads `failed`: `broken_reasons` gives them.
 DOUBLED_REASON = '%s is written twice in the spec'
 CONFLICT_REASON = 'the spec holds a line left from a merge conflict'
+AI_NO_MODEL_REASON = '%s carries @ai naming no model'
+GRADED_NO_MODEL_REASON = '%s carries @graded naming no model'
+GRADED_NO_AI_REASON = '%s carries @graded with no @ai'
+MODEL_NAME_REASON = "%s carries a model's name that cannot be read"
+# A name in `@ai(...)` or `@graded(...)` holding a character a model's name
+# cannot, as `proof_tags` lists it: once per proof line.
+MODEL_NAME_MISTAKE = ('to_repair', MODEL_NAME_REFUSED, MODEL_NAME_REASON)
 
 # How many words of a line under `## Proof` that is not read its warning
 # quotes: enough to find the line, its id and what stands after it.
@@ -538,13 +643,17 @@ def spec_mistakes(project_root, features):
 
     `features` is `scan_specs`' answer. The lines are warned of; a number
     written twice and a line left from a merge conflict also make every rule
-    of the spec read `failed` (`broken_reasons`). They come in the order of
+    of the spec read `failed` (`broken_reasons`), as does an `@ai` or a
+    `@graded` that names no model. They come in the order of
     the mistakes, each sorted by feature: two specs with one name, a name
     holding a character a name cannot (with the `git mv` that renames the
     file), a rule id written twice, a proof id written twice, the lines
     left from a merge conflict (one line per spec), a line under `## Proof`
     that is not a proof line (its first 4 words quoted, with the reason), a first line
-    naming another feature, a proof tagged both `@slow` and `@manual`, then
+    naming another feature, each mistake in a proof's tags
+    (`tag_mistakes`: `@manual` beside `@slow`, `@ai` or `@graded`, an `@ai`
+    or a `@graded` naming no model, a `@graded` with no `@ai`, a `runs=`
+    that is no whole number from 1 up), then
     the fields Purlin does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A remote anchor carrying any of the three has one
     line naming them all and its source, sorted with the `> Scope:` lines.
@@ -610,9 +719,9 @@ def spec_mistakes(project_root, features):
             lines.append(_mistake('heading', name,
                                   HEADING_NAMES_OTHER % other))
     for name in sorted(features):
-        for proof_id in features[name].get('slow_and_manual') or ():
-            lines.append(_proof_mistake('tags_conflict', features[name],
-                                        name, proof_id, SLOW_AND_MANUAL))
+        for found in features[name].get('tag_mistakes') or ():
+            lines.append(_proof_mistake(found['kind'], features[name], name,
+                                        found['proof'], found['wrong']))
     for field in ('Requires', 'Global'):
         for name in sorted(features):
             info = features[name]
@@ -646,12 +755,15 @@ def broken_reasons(info):
     """Why every rule of this spec reads `failed`, or [] when nothing does.
 
     One `DOUBLED_REASON` per id of `doubled_rules`, then one per id of
-    `doubled_proofs`, each in the order first written, then `CONFLICT_REASON`
-    once where `conflict_lines` is not empty."""
+    `doubled_proofs`, each in the order first written, then the reason of
+    each of `tag_mistakes` that has one, an `@ai` or a `@graded` naming no
+    model, then `CONFLICT_REASON` once where `conflict_lines` is not empty."""
     reasons = [DOUBLED_REASON % rule_id
                for rule_id in info.get('doubled_rules') or ()]
     reasons += [DOUBLED_REASON % proof_id
                 for proof_id in info.get('doubled_proofs') or ()]
+    reasons += [found['reason'] for found in info.get('tag_mistakes') or ()
+                if found['reason']]
     if info.get('conflict_lines'):
         reasons.append(CONFLICT_REASON)
     return reasons
@@ -661,6 +773,14 @@ def _remote(info):
     """True for a remote anchor, one pulled from another repository: it carries
     `> Source:`."""
     return bool(info.get('is_anchor') and info.get('source'))
+
+
+def _either(tags):
+    """`@slow, @ai or @graded`: the tags joined `, ` with ` or ` before the
+    last."""
+    if len(tags) == 1:
+        return tags[0]
+    return ', '.join(tags[:-1]) + ' or ' + tags[-1]
 
 
 def _join_fields(fields):

@@ -1,13 +1,14 @@
 """Config resolver for Purlin projects.
 
 A project has one settings file, `.purlin/config.json`, committed to git. It
-holds `version` and `tests` and nothing else; the project's name is read from
+holds `version`, `tests` and `runs` and nothing else; the project's name is read from
 the project's own files each time (`purlin.project.project_name`) and never
 written. resolve_config reads the file whole; update_config sets one top-level
 key in it and keeps every other key it held. A file that exists and cannot be
 read is never read as empty: both raise ConfigUnreadable with the sentence
 config_problem gives, so a save never overwrites a file a person can still fix.
-settings_warnings names every other key the file carries, in one line.
+settings_warnings names every other key the file carries, in one line, and a
+`runs` that is no number of runs in another.
 """
 
 import json
@@ -15,7 +16,7 @@ import os
 
 
 # The keys `.purlin/config.json` holds, in the order setup writes them.
-KNOWN_KEYS = ('version', 'tests')
+KNOWN_KEYS = ('version', 'tests', 'runs')
 
 # The keys Purlin 0.9.5 wrote, each of which `purlin:init --update` takes out
 # of the file.
@@ -27,25 +28,45 @@ SETTINGS_NOT_READ = 'This version does not read %s.'
 SETTINGS_RUN_UPDATE = 'Run purlin:init --update.'
 SETTINGS_REMOVE = 'Remove it from the file.'
 SETTINGS_REMOVE_MANY = 'Remove them from the file.'
+RUNS_NOT_READ = 'runs is not a whole number from 1 up.'
+SETTINGS_CORRECT = 'Correct it in the file.'
+
+
+def runs(config):
+    """How many times the settings say an AI proof's test runs on each
+    model: `runs`, a whole number from 1 up, or None where `config` holds
+    none or holds anything else. A proof's own `runs=` wins over it, and
+    `purlin.outputs.RUNS` stands where neither is set."""
+    value = (config or {}).get('runs')
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 1:
+        return value
+    return None
 
 
 def settings_warnings(config):
-    """The one warning naming every key `config` holds but `version` and `tests`.
+    """The warnings about the keys of `config`, `[]` where it has none.
 
-    `[]` when it holds no other key. The keys are joined `, ` in the file's
-    order. The line ends on `purlin:init --update` where the upgrade takes out
-    every key it names, else on removing it by hand.
+    One line names every key it holds but `version`, `tests` and `runs`,
+    joined `, ` in the file's order. The line ends on `purlin:init --update`
+    where the upgrade takes out every key it names, else on removing it by
+    hand. One more names a `runs` that `runs` does not read.
     """
-    others = [key for key in (config or {}) if key not in KNOWN_KEYS]
-    if not others:
-        return []
-    if all(key in UPGRADE_KEYS for key in others):
-        fix = SETTINGS_RUN_UPDATE
-    else:
-        fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY
+    config = config or {}
     from purlin import notices
-    return [notices.line('setting_unread', SETTINGS_FILE,
-                         SETTINGS_NOT_READ % ', '.join(others), fix)]
+    warnings = []
+    others = [key for key in config if key not in KNOWN_KEYS]
+    if others:
+        if all(key in UPGRADE_KEYS for key in others):
+            fix = SETTINGS_RUN_UPDATE
+        else:
+            fix = SETTINGS_REMOVE if len(others) == 1 else SETTINGS_REMOVE_MANY
+        warnings.append(notices.line('setting_unread', SETTINGS_FILE,
+                                     SETTINGS_NOT_READ % ', '.join(others),
+                                     fix))
+    if 'runs' in config and runs(config) is None:
+        warnings.append(notices.line('setting_unread', SETTINGS_FILE,
+                                     RUNS_NOT_READ, SETTINGS_CORRECT))
+    return warnings
 
 
 # How `resolve_project_root` found the root it returned, in the order it

@@ -3,13 +3,13 @@
 > Description: One settings file, `.purlin/config.json`, committed with the
 >   project. The resolver reads it whole and the settings tool writes one key
 >   into it, atomically. The same module decides where the project root is
->   and names how it found it. The file holds `version` and `tests`; the
+>   and names how it found it. The file holds `version`, `tests` and `runs`; the
 >   project's name is read from the project's own files each time and never
 >   written.
 > Scope: scripts/mcp/config_engine.py, scripts/mcp/purlin/project.py
 > Stack: python/stdlib, json
-> Highest-Rule: 21
-> Highest-Proof: 51
+> Highest-Rule: 22
+> Highest-Proof: 54
 
 ## Rules
 
@@ -18,7 +18,8 @@
 - RULE-10: A write is atomic: the whole file is written beside the target and then moved onto it, so a write that fails at any point leaves the previous contents whole, removes the file it wrote beside the target, and says so
 - RULE-14: A `.purlin/config.json` that cannot be read is named by the sentence `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`, and a write while it cannot be read is refused with that sentence, the file left byte for byte as it was
 - RULE-19: The project's name is read from the project's own files each time and never written, the first found of: `name` under `[project]`, then under `[tool.poetry]`, in `pyproject.toml`; `name` in `package.json`; the name of the first `*.csproj` file at the root; the last segment of the `origin` remote's URL; the folder's name
-- RULE-20: Each key `.purlin/config.json` holds other than `version` and `tests` is named in one warning, with `Run purlin:init --update.` where the upgrade has a step for it and `Remove it from .purlin/config.json.` otherwise
+- RULE-20: Each key `.purlin/config.json` holds other than `version`, `tests` and `runs` is named in one warning, with `Run purlin:init --update.` where the upgrade has a step for it and `Remove it from the file.` otherwise
+- RULE-22: `runs` is a whole number from 1 up, how many times an AI proof's test runs on each model; with no `runs` the settings name no number, and any other value is read as not set and named in one warning
 - RULE-21: The project root is `PURLIN_PROJECT_ROOT` when it names a folder that exists, else the nearest ancestor of the start folder holding `.purlin/`, else the working directory, and it comes with the name of how it was found, `env`, `climb` or `cwd`, so a guessed root is never handed back as found
 
 ## Proof
@@ -39,6 +40,9 @@
 - PROOF-49 (RULE-19): A project in the folder `labconnect`, holding no `pyproject.toml`, `package.json` or `*.csproj` and no git remote, opens its status `Purlin status: labconnect,`
 - PROOF-50 (RULE-20): A settings file holding `version`, `tests`, `pre_push` and `digest`, in that order, is read with exactly the one warning `.purlin/config.json: setting not read. This version does not read pre_push, digest. Run purlin:init --update.`
 - PROOF-51 (RULE-20): A settings file holding `version`, `tests` and `colour`, a key the upgrade has no step for, is read with exactly the one warning `.purlin/config.json: setting not read. This version does not read colour. Remove it from the file.`
+- PROOF-52 (RULE-22): A settings file holding `version`, `tests` and `"runs": 5` is read with the number of runs `5` and no warning; one holding `version` and `tests` alone is read with no number of runs and no warning
+- PROOF-53 (RULE-22): A settings file holding `version`, `tests` and `"runs": 0` is read with no number of runs and exactly the one warning `.purlin/config.json: setting not read. runs is not a whole number from 1 up. Correct it in the file.`
+- PROOF-54 (RULE-22): A `runs` of `true`, of `"3"`, of `2.5` and of `-1` is each read as no number of runs, each with that one warning
 - PROOF-28 (RULE-21): With a marker at `<tmp>/project/.purlin/` and `PURLIN_PROJECT_ROOT` naming `<tmp>/elsewhere`, an existing folder with no marker, starting from `<tmp>/project/src` gives `<tmp>/elsewhere`, found by `env`; the root asked for alone is the same
 - PROOF-18 (RULE-21): With `PURLIN_PROJECT_ROOT` unset and `.purlin/` markers in both `<tmp>/outer` and `<tmp>/outer/inner`, starting from `<tmp>/outer/inner/src` gives the nearest, `<tmp>/outer/inner`, and not `<tmp>/outer`
 - PROOF-30 (RULE-21): With `PURLIN_PROJECT_ROOT` unset, the working directory `<tmp>/work` and no marker in or above it or `<tmp>/bare`, starting from `<tmp>/bare` gives `<tmp>/work`, found by `cwd`; the root asked for alone is the same
