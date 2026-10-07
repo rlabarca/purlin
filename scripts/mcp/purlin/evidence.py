@@ -12,8 +12,8 @@ This module reads and never writes. It answers four questions: which sections
 exist, whether each is current against a fingerprint taken now and which
 parts are out of date, which audit entry answers a rule whose rule, proof and
 test hashes are known, and which section is the newest across both sources.
-It also reads what a section says about each proof, an AI proof's result
-from the runs it holds on each model, and which tests it
+It also reads what a section says about each proof, where an AI proof's
+result is read off the runs it holds on each model, and which tests it
 lists, and which operating system this machine is, so a writer and a reader
 spell it the same way, and the words a person reads for each operating
 system.
