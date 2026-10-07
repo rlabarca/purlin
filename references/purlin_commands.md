@@ -109,12 +109,23 @@ purlin_ai.py grade --feature <name> --proof PROOF-N
 
 | Command | Purpose | Writes | Prints |
 |---------|---------|--------|--------|
-| `run` | Ask the model for one output. `--skill` or `--plugin` starts a real Claude Code session with that one skill or plugin loaded, in a copy of `--project`. `--instructions` sends those files as the system prompt of one call with no tools, which is how a prompt or a Claude project's instructions are tested. The message is `--input <file>` or `--say "<text>"` | The output folder: `reply.md`, the last thing the AI said; `transcript.jsonl`, what the session did; `files/`, each file the session wrote or changed in the copy; and `purlin.json`, the helper's own record | The folder's path, alone |
-| `record` | Hand over an output the test made its own way, with its own key or another tool. The test reads `PURLIN_AI_MODEL` to know which model to ask | The same folder, copied from `--from <folder>`, where only `reply.md` is required, and recorded as made by the project's own test on the model `--model` names, or `PURLIN_AI_MODEL` | The folder's path, alone |
-| `grade` | Have the grader the proof's `@graded(...)` names judge the output of this test against the proof's own sentence, read from the spec. The grader is shown the sentence, `reply.md` and the files under `files/`, and nothing else: not the input, not the instructions | The grade, in the folder's `purlin.json` | `accept: <one reason>` or `reject: <one reason>` |
+| `run` | Ask the model for one output. `--skill` or `--plugin` starts a real Claude Code session with that one skill or plugin loaded, in a copy of `--project`. `--instructions` sends those files as the system prompt of one call with no tools, which is how a prompt or a Claude project's instructions are tested. The message is `--input <file>` or `--say "<text>"` | The output folder: `reply.md`, the last thing the AI said; `transcript.jsonl`, what the session did; `files/`, each file the session wrote or changed in the copy; `input/`, what the AI was given; and `purlin.json`, the helper's own record | The folder's path, alone |
+| `record` | Hand over an output the test made its own way, with its own key or another tool. The test reads `PURLIN_AI_MODEL` to know which model to ask | The same folder, copied from `--from <folder>`, `input/` included where it holds one, where only `reply.md` is required, and recorded as made by the project's own test on the model `--model` names, or `PURLIN_AI_MODEL` | The folder's path, alone |
+| `grade` | Have the grader the proof's `@graded(...)` names judge the output of this test against the proof's own sentence, read from the spec. The grader is shown the sentence, then what the AI was given, the files under `input/`, then what it produced, `reply.md` and the files under `files/`, and nothing else. It judges by the sentence alone: the input is there to check the output against | The grade, in the folder's `purlin.json` | `accept: <one reason>` or `reject: <one reason>` |
 
 One test makes one output: a second `run` or `record` in the same test is refused. Every other
 line the helper prints goes to standard error and opens `purlin_ai.py: `.
+
+`input/` keeps what the AI was given beside what it produced, so a reader of the evidence
+sees what was graded:
+
+| Under `input/` | What it holds |
+|---|---|
+| `message.md` | The message, as it was sent |
+| `instructions/` | Each `--instructions` file, under its own file name. A second file of one name is kept as `<name>-2<extension>`, a third as `<name>-3<extension>` |
+| `project/` | Each file of `--project` as it was before the session started, at its path in the sample. Not there where no `--project` is given |
+
+The skill or the plugin itself is not kept. A run the model did not answer keeps no `input/`.
 
 A run sets the variables: `references/formats/marker_format.md`, "The test of an AI proof",
 gives `PURLIN_AI`, `PURLIN_AI_MODEL` and `PURLIN_AI_OUT`. The audit also sets
@@ -134,7 +145,10 @@ Its limits:
   else, leaves no trace there.
 - `--instructions` gets 300 seconds. On Windows a long system prompt rides on the command line,
   which holds about 32,000 characters.
-- The grader is shown at most 50 files, each cut to 20,000 characters.
+- The grader is always shown the message and the reply. Of the other files it is shown 50 at
+  most, the files under `files/` first and then the rest of `input/`, and the others by name
+  alone. Each text is cut to 20,000 characters.
+- `input/project/` leaves out `.git/` at the top of the sample and every symbolic link.
 - A claude.ai project cannot be driven from outside. Its instructions are tested with
   `--instructions`; what claude.ai itself adds to them is not.
 

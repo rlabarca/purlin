@@ -187,9 +187,32 @@ def test_the_refusal_blames_nobody():
 ```
 
 Why: the amount is a value, so PROOF-5 checks it exactly, in a test of its own. Who is blamed
-needs judgment, so PROOF-6 is graded, and its sentence says all the grader needs: it is shown
-the reply and the files the session wrote, not the request. The test makes one output, then
-asserts `grade` exits 0.
+needs judgment, so PROOF-6 is graded, and its sentence is the whole criterion. The test makes
+one output, then asserts `grade` exits 0.
+
+### A graded check against the input
+
+```
+- RULE-2: The summary skill states nothing the report does not hold
+- PROOF-3 (RULE-2): The summary states no fact the sample report does not hold @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+```
+
+```python
+# purlin: summary_skill PROOF-3
+@needs_the_helper
+def test_the_summary_states_no_fact_the_report_does_not_hold():
+    output('run',
+           '--skill', os.path.join(HERE, '..', 'skills', 'summary'),
+           '--project', os.path.join(HERE, 'samples', 'lab'),
+           '--say', 'Summarise report.md.')
+    graded = helper('grade', '--feature', 'summary_skill', '--proof', 'PROOF-3')
+    assert graded.returncode == 0, graded.stdout + graded.stderr
+```
+
+Why: no test can list every fact a summary might invent, so the proof is graded. The grader is
+shown what the AI was given, the message and the sample holding `report.md`, beside what it
+produced, so the sentence can compare the two. The sentence is still the whole criterion: the
+input is what the output is checked against, never a second set of rules.
 
 ### An output the project makes its own way
 

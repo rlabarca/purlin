@@ -362,13 +362,17 @@ A good AI proof names a sample input and the exact thing to check in the output.
   `F-103` and no other id @ai(claude-opus-5-5)"
 
 A graded proof's sentence is the whole criterion, so it stands alone. The grader is shown the
-sentence, the reply and the files the session wrote, and nothing else: not the sample input,
-not the instructions, not a guide the sentence points at. Write what must be true of the
-output in words a reader of the output alone can judge.
+sentence, what the AI was given (the message, the instructions and the sample) and what it
+produced (the reply and the files the session wrote), and nothing else. So a sentence may
+compare the output with the input. It may not lean on anything the grader is not shown, such
+as a guide the sentence points at. Write what must be true of the output in words a reader
+of the input and the output can judge.
 
 - Poor: "The reply follows the tone guide @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)"
 - Good: "Asked for a refund over the limit, the reply refuses, gives the limit as the reason
   and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)"
+- Good: "The summary states no fact the sample report does not hold @ai(claude-opus-5-5)
+  @graded(claude-haiku-4-5-20251001)"
 
 What an AI proof shows, and what it does not:
 

@@ -32,12 +32,14 @@ other page points here rather than defining it again.
   **model run**: one start of an AI proof's test on one model. The `runs` setting and a tag's
   `runs=<n>` count model runs, 3 on each model where neither says. It is not a run.
   **output**: what the AI produced in one model run, kept as one folder: `reply.md`,
-  `transcript.jsonl`, `files/` and the helper's record, `purlin.json`.
+  `transcript.jsonl`, `files/`, what the AI was given, under `input/`, and the helper's record,
+  `purlin.json`.
   **helper**: `scripts/ai/purlin_ai.py`, the program an AI proof's test starts to make an
   output, to hand one over, or to have one graded.
 - **graded**: said of an AI proof with `@graded(<grader>)` beside its `@ai`: a second model,
-  the **grader**, judges the output against the proof's own sentence and nothing else. It is
-  also the word such a proof reads where it passes, and the word a rule's passed cell reads
+  the **grader**, is shown the proof's sentence, what the AI was given and what it produced, and
+  judges the output by the sentence alone. It is also the word such a proof reads where it
+  passes, and the word a rule's passed cell reads
   where the rule passes and one of its proofs is graded, in place of `passed`. It counts as
   passing.
 - **system**: an operating system. A spec, the evidence and the package store it as `windows`,

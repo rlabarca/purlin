@@ -337,8 +337,10 @@ reads `not run`.
 and the second and each later test of one proof to `<n>.<t>`. A character
 of the model's name that is not a letter, a digit, `.`, `_` or `-` is
 written `_`. The run empties the folder before each start. The folder holds
-`reply.md`, `transcript.jsonl`, `files/` and `purlin.json`, the helper's
-record, which is no part of the sha256. `.purlin/runtime/` is ignored by
+`reply.md`, `transcript.jsonl`, `files/`, `input/`, which is what the AI was
+given, and `purlin.json`, the helper's record, which is no part of the
+sha256. `input/` is part of it, so one sha256 names what the AI produced
+together with what it was given. `.purlin/runtime/` is ignored by
 git, so the folder stays on the machine that ran the test, found by its
 sha256. A run removes each such folder whose sha256 no evidence file on
 disk names.
