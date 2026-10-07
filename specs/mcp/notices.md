@@ -7,7 +7,7 @@
 > Scope: scripts/mcp/purlin/notices.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib
 > Highest-Rule: 8
-> Highest-Proof: 16
+> Highest-Proof: 17
 
 ## Rules
 
@@ -24,6 +24,7 @@
 
 - PROOF-1 (RULE-1): A spec `login` carries `> Requires: api` and writes `RULE-2` twice; the status prints `login RULE-2: spec to repair. It is written twice, and the second is read. Run purlin:spec login.` and `login: line not read. Every anchor covers the whole project, so > Requires: is not read. Run purlin:spec login.`, each on a line of its own
 - PROOF-2 (RULE-1): A spec `login` whose scope names `src/gone.py`, a file git does not have, gives one line of information, `login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.`
+- PROOF-17 (RULE-1): A line of the kind `model_not_reached` about `claude-opus-5-5`, with `The login expired.` wrong and `purlin:test --all` to run, reads `claude-opus-5-5: model not reached. The login expired. Run purlin:test --all.`
 - PROOF-3 (RULE-2): No two kinds share their words; the kinds `to_correct`, `to_repair`, `to_fix` and `no_test` print `test comment to correct`, `spec to repair`, `rule to fix` and `rule to write a test for`, the words `Left to do` prints for one of each, and every other kind's words hold 2 to 5 words
 - PROOF-4 (RULE-3): A test comment at `tests/test_login.py:1` names `login PROOF-9`, which the spec `login` does not have; the one comment named as naming nothing reads `login PROOF-9: test comment to correct. tests/test_login.py:1 names it, and no spec has it. Run purlin:build.`
 - PROOF-5 (RULE-4): In a git project, `login`'s `PROOF-1 (RULE-1)` reads `The package holds exactly the sixteen keys the rule names` when the test under the comment at `tests/test_login.py:1` is committed, and a later commit changes `sixteen` to `seventeen`; the command that lists the test comments to correct prints `login PROOF-1 (RULE-1): test comment to correct. "sixteen" became "seventeen" after tests/test_login.py:1 last changed (<sha7>). Run purlin:build login.`, `<sha7>` the test's commit, then `1 test comment to correct.`

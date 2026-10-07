@@ -84,6 +84,14 @@ class TestTheShape:
             'Run purlin:build login, or purlin:spec login to correct the '
             'path.'], information
 
+    # purlin: notices PROOF-17
+    def test_a_model_not_reached_takes_the_same_shape(self):
+        assert notices.line(
+            'model_not_reached', 'claude-opus-5-5', 'The login expired.',
+            notices.run('purlin:test --all')) == (
+            'claude-opus-5-5: model not reached. The login expired. Run '
+            'purlin:test --all.')
+
     # purlin: notices PROOF-3
     def test_every_kind_has_its_own_few_words(self):
         words = [text for _key, text in notices.KINDS]

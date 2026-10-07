@@ -151,17 +151,19 @@ somewhere else gets read before it is adopted.
 
 ## Config field ownership
 
-`.purlin/config.json` holds two settings, and which command owns each.
+`.purlin/config.json` holds three settings, and which command owns each.
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
 | `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
 | `tests` | `purlin:test`, at the first run, once you answer yes to its question, or with `--write-tests` | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
+| `runs` | You, by hand. No command writes it | `scripts/run/purlin_run.py`, for how many times the test of an AI proof runs on each model its `@ai(...)` names. A proof's own `runs=` wins over it; see `references/formats/spec_format.md`, "The AI tags" | Not set, which reads as 3. `templates/config.json` does not carry it |
 
 `purlin:init` is the only command that writes the settings unprompted. `purlin:test` writes
 `tests` once you confirm it, and every other command reads. The project's name is read from the
 project's own files each time; it is not a setting. Any
-other key is not read, and the status names it with its fix. This table must name every field
+other key is not read, and the status names it with its fix. `runs` is a whole number from 1
+up; any other value is read as not set, and the status names it. This table must name every field
 `templates/config.json` carries: a field written into new projects but absent here has no owner
 on this page.
 

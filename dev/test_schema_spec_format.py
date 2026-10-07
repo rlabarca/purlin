@@ -382,6 +382,149 @@ def test_an_at_word_after_a_comma_is_prose():
 
 
 # ---------------------------------------------------------------------------
+# RULE-44 to RULE-47: the models a proof is shown on, and its grader
+# ---------------------------------------------------------------------------
+
+OPUS = 'claude-opus-5-5'
+HAIKU = 'claude-haiku-4-5-20251001'
+
+
+def _tagged(tmp_path, tail, text='the reply names the three findings'):
+    """`login`, whose `PROOF-1 (RULE-1)` is `text` then `tail`: the proof as
+    the scan reads it, the reasons every rule reads `failed`, and the
+    status's lines."""
+    root = _project(tmp_path)
+    _login(root, proofs='- PROOF-1 (RULE-1): %s %s\n' % (text, tail))
+    info = purlin_specs.scan_specs(str(root))['login']
+    return (info['proofs']['PROOF-1'], purlin_specs.broken_reasons(info),
+            purlin_status.sync_status(str(root)).splitlines())
+
+
+# purlin: schema_spec_format PROOF-92
+def test_ai_names_the_model_and_makes_the_proof_slow(tmp_path):
+    proof, reasons, _lines = _tagged(tmp_path, '@ai(%s)' % OPUS)
+    assert proof == {'rules': ['RULE-1'],
+                     'text': 'the reply names the three findings',
+                     'manual': False, 'env': None, 'slow': True,
+                     'ai': [OPUS], 'graded': None, 'runs': None}, proof
+    assert reasons == []
+
+
+# purlin: schema_spec_format PROOF-93
+def test_ai_names_several_models_in_order_and_its_own_runs(tmp_path):
+    other = 'bedrock/us.anthropic.claude-sonnet-5-5:0'
+    proof, _reasons, _lines = _tagged(
+        tmp_path, '@ai(%s, %s, runs=10)' % (OPUS, other))
+    assert proof['ai'] == [OPUS, other], proof
+    assert proof['runs'] == 10 and type(proof['runs']) is int, proof
+
+
+# purlin: schema_spec_format PROOF-94
+def test_ai_and_graded_are_read_in_either_order(tmp_path):
+    one, _r, _l = _tagged(tmp_path / 'a', '@graded(%s) @env(linux) @ai(%s)'
+                          % (HAIKU, OPUS))
+    other, _r, _l = _tagged(tmp_path / 'b', '@ai(%s) @env(linux) @graded(%s)'
+                            % (OPUS, HAIKU))
+    assert one == other
+    assert one == {'rules': ['RULE-1'],
+                   'text': 'the reply names the three findings',
+                   'manual': False, 'env': 'linux', 'slow': True,
+                   'ai': [OPUS], 'graded': HAIKU, 'runs': None}, one
+
+
+# purlin: schema_spec_format PROOF-95
+def test_any_other_proof_names_no_model(tmp_path):
+    proof, _reasons, _lines = _tagged(tmp_path, '@env(windows)',
+                                      text='Lock the file')
+    assert proof == {'rules': ['RULE-1'], 'text': 'Lock the file',
+                     'manual': False, 'env': 'windows', 'slow': False,
+                     'ai': [], 'graded': None, 'runs': None}, proof
+
+
+# purlin: schema_spec_format PROOF-96
+def test_an_ai_tag_after_a_comma_is_prose(tmp_path):
+    desc = 'Check the documented tags @manual, @ai(%s)' % OPUS
+    assert _read(desc) == {'text': desc, 'manual': False, 'env': None,
+                           'unknown': []}
+    proof, reasons, _lines = _tagged(tmp_path, '@manual, @ai(%s)' % OPUS,
+                                     text='Check the documented tags')
+    assert proof == {'rules': ['RULE-1'], 'text': desc, 'manual': False,
+                     'env': None, 'slow': False, 'ai': [], 'graded': None,
+                     'runs': None}, proof
+    assert reasons == []
+
+
+def _to_repair(tmp_path, tail, wrong, reason):
+    """The proof of `_tagged`, after checking the status carries its one
+    `spec to repair` line and the spec's rules read `failed` for `reason`."""
+    proof, reasons, lines = _tagged(tmp_path, tail)
+    assert lines.count('login PROOF-1 (RULE-1): spec to repair. %s Run '
+                       'purlin:spec login.' % wrong) == 1, lines
+    assert reasons == [reason], reasons
+    return proof
+
+
+# purlin: schema_spec_format PROOF-97
+def test_ai_naming_no_model_is_a_spec_to_repair(tmp_path):
+    _to_repair(tmp_path, '@ai', '@ai names no model.',
+               'PROOF-1 carries @ai naming no model')
+
+
+# purlin: schema_spec_format PROOF-98
+def test_graded_naming_no_model_is_a_spec_to_repair(tmp_path):
+    _to_repair(tmp_path, '@ai(%s) @graded' % OPUS, '@graded names no model.',
+               'PROOF-1 carries @graded naming no model')
+
+
+# purlin: schema_spec_format PROOF-99
+def test_graded_with_no_ai_is_a_spec_to_repair(tmp_path):
+    proof = _to_repair(tmp_path, '@graded(%s)' % HAIKU,
+                       '@graded stands with no @ai.',
+                       'PROOF-1 carries @graded with no @ai')
+    assert proof['graded'] is None, proof
+
+
+# purlin: schema_spec_format PROOF-102
+def test_a_models_name_holding_a_space_is_a_spec_to_repair(tmp_path):
+    _to_repair(tmp_path, '@ai(claude opus)',
+               "A model's name holds letters, digits, ., _, -, : and /.",
+               "PROOF-1 carries a model's name that cannot be read")
+
+
+# purlin: schema_spec_format PROOF-100
+def test_ai_and_graded_with_manual_conflict_and_read_as_manual(tmp_path):
+    root = _project(tmp_path)
+    _write(root, 'specs/test/checkout.md',
+           '# Feature: checkout\n\n'
+           '## Rules\n- RULE-1: The cart checks out\n'
+           '- RULE-2: The receipt looks right\n\n'
+           '## Proof\n- PROOF-1 (RULE-1): Check out three items; verify 30.00\n'
+           '- PROOF-2 (RULE-2): Print the receipt and read it @manual '
+           '@ai(%s) @graded(%s)\n' % (OPUS, HAIKU))
+    lines = purlin_status.sync_status(str(root)).splitlines()
+    assert lines.count(
+        'checkout PROOF-2 (RULE-2): tags that conflict. It is read as '
+        '@manual, not @ai or @graded. Run purlin:spec checkout.') == 1, lines
+    info = purlin_specs.scan_specs(str(root))['checkout']
+    assert info['proofs']['PROOF-2'] == {
+        'rules': ['RULE-2'], 'text': 'Print the receipt and read it',
+        'manual': True, 'env': None, 'slow': False, 'ai': [], 'graded': None,
+        'runs': None}, info['proofs']['PROOF-2']
+    assert purlin_specs.broken_reasons(info) == []
+
+
+# purlin: schema_spec_format PROOF-101
+def test_runs_that_is_no_whole_number_is_not_read(tmp_path):
+    proof, reasons, lines = _tagged(tmp_path, '@ai(%s, runs=0)' % OPUS)
+    assert lines.count(
+        'login PROOF-1 (RULE-1): tag not read. runs=0 is not a whole number '
+        'from 1 up. Run purlin:spec login.') == 1, lines
+    assert proof['ai'] == [OPUS], proof
+    assert proof['runs'] is None, proof
+    assert reasons == []
+
+
+# ---------------------------------------------------------------------------
 # RULE-10: the three systems, and what is not read
 # ---------------------------------------------------------------------------
 
