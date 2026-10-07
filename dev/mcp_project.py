@@ -131,7 +131,8 @@ class Project(object):
                  audited=True, fingerprint=None):
         """One section of a feature's evidence file, in its source folder.
 
-        `proofs` is `[{'id', 'rule', 'status'}]`, what the run saw. The
+        `proofs` is `[{'id', 'rule', 'status'}]`, what the run saw, an AI
+        proof's entry also holding `models` (`_ai_entry`). The
         section carries the fingerprint taken now, so it is current until the
         spec, the scoped code or the tests change. `source` is `ci` or
         `local` and defaults to `ci` when `ci=True`. A `ci` section is the
@@ -159,10 +160,12 @@ class Project(object):
             'fingerprint': fingerprint or purlin_fingerprint.fingerprint(
                 self.root, feature),
             'rules': {},
-            'proofs': [{'id': entry.get('id'), 'rule': entry.get('rule'),
-                        'result': entry.get('status'), 'env': None,
-                        'manual': False,
-                        'test': _test_of(entry, feature)}
+            'proofs': [dict({'id': entry.get('id'), 'rule': entry.get('rule'),
+                             'result': entry.get('status'), 'env': None,
+                             'manual': False,
+                             'test': _test_of(entry, feature)},
+                            **({'models': entry['models']}
+                               if 'models' in entry else {}))
                        for entry in proofs]}
         if source == 'ci':
             data['platforms'][os_name]['email'] = CI_EMAIL
@@ -277,6 +280,54 @@ def _entry(proof_id, rule_id, status='pass', feature='login',
     return {'feature': feature, 'id': proof_id, 'rule': rule_id,
             'status': status, 'test_file': test_file,
             'test_name': 'test_' + proof_id.lower().replace('-', '_')}
+
+
+# The two models the AI proofs of these tests name, and the one that grades.
+OPUS = 'claude-opus-5-5'
+SONNET = 'claude-sonnet-5-5'
+GRADER = 'claude-haiku-4-5-20251001'
+OUTPUT = 'a' * 64
+NOT_REACHED = 'The model gave no answer.'
+
+
+def ai_spec(tags='@ai(%s)' % OPUS):
+    """`SPEC` with `tags` ending the line of `PROOF-2`, which makes it an
+    AI proof."""
+    return SPEC.rstrip('\n') + ' ' + tags + '\n'
+
+
+def _run(result, grader=None):
+    """One run of an AI proof's test, as the evidence holds it."""
+    if result == 'not run':
+        return {'result': result, 'why': NOT_REACHED}
+    run = {'result': result, 'output': OUTPUT, 'made': 'helper'}
+    if grader:
+        run['grade'] = {'model': grader, 'accepted': result == 'pass',
+                        'reason': 'It names the limit.'}
+    return run
+
+
+def _model(name, *results, **kwargs):
+    """One model's entry under an AI proof: a run per word of `results`,
+    each graded by `grader` where one is named."""
+    grader = kwargs.get('grader')
+    return {'model': name, 'passed': results.count('pass'),
+            'of': len(results), 'graded': bool(grader),
+            'runs': [_run(result, grader) for result in results]}
+
+
+def _ai_entry(proof_id, rule_id, *models, **kwargs):
+    """An AI proof's entry, its own result the one its models give: `fail`
+    where a run failed, else `status`, which a test names where a model of
+    the tag has no counting result, else `pass`."""
+    failed = any(run['result'] == 'fail'
+                 for model in models for run in model['runs'])
+    waits = any(run['result'] == 'not run'
+                for model in models for run in model['runs'])
+    status = ('fail' if failed else kwargs.get('status')
+              or ('not run' if waits else 'pass'))
+    return dict(_entry(proof_id, rule_id, status=status),
+                models=list(models))
 
 
 def _rpc(root, *requests, **kwargs):

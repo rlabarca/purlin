@@ -14,13 +14,15 @@ import tempfile
 
 import pytest
 
-from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, Project, SPEC,
+from mcp_project import (GRADER, NO_PROOF_SPEC, NOT_REACHED, OPUS, OUTPUT,
+                         PROJECT_ROOT, Project, SONNET, SPEC, _ai_entry,
                          _commit_tests, _entry, _git, _listed, _marked_tests,
-                         _report_held, _write, project,
+                         _model, _report_held, _write, ai_spec, project,
                          spec_with_a_hand_check)
 from sign_project import _Out, signing_key
 # `mcp_project` puts `scripts/mcp` on the path, `sign_project` `scripts/review`.
 import sign as sign_module
+from purlin import evidence as purlin_evidence
 from purlin import payload as purlin_payload
 from purlin import states as purlin_states
 from purlin import status as purlin_status
@@ -909,9 +911,9 @@ class TestBuckets:
 class TestPayload:
 
     # purlin: states PROOF-31
-    def test_schema_nineteen_carries_exactly_the_eighteen_keys(self, project):
+    def test_schema_twenty_carries_exactly_the_eighteen_keys(self, project):
         data = project.payload()
-        assert data['schema_version'] == 19
+        assert data['schema_version'] == 20
         assert sorted(data) == sorted((
             'schema_version', 'generated_at', 'generated_by', 'project',
             'version', 'branch', 'commit', 'dirty', 'summary', 'features',
@@ -1027,7 +1029,8 @@ class TestPayload:
         assert data['summary']['rules'] == 2
         assert data['summary']['passed'] == 1, data['summary']
         assert data['summary']['untested'] == 1, data['summary']
-        assert data['summary']['steps'] == {'passed': 1, 'by_hand': 0}
+        assert data['summary']['steps'] == {'passed': 1, 'graded': 0,
+                                            'by_hand': 0}
         assert data['summary']['sentence'] == sentence, data['summary']
         assert [(item['text'], item['command'], item['count'])
                 for item in data['left']] == [
@@ -1328,6 +1331,232 @@ class TestATestCommentToCorrect:
                     if 'test comment to correct' in line], data['warnings']
         assert 'to_correct' not in [item['kind'] for item in data['left']], \
             data['left']
+
+    # purlin: states PROOF-343
+    def test_a_change_to_the_ai_and_graded_tags_names_no_test_comment(self):
+        made = _age_project()
+        found = []
+        try:
+            assert AGE_SPEC.count('PROOF-1 (RULE-1)') == 1
+            for tags in ('@ai(%s) @graded(%s)' % (OPUS, GRADER),
+                         '@ai(%s, runs=5)' % SONNET):
+                made.spec(''.join(
+                    '%s %s\n' % (line.rstrip('\n'), tags)
+                    if line.startswith('- PROOF-1 ') else line
+                    for line in AGE_SPEC.splitlines(True)),
+                    name='sample_age', category='lab')
+                _commit(made.root, 'spec(sample_age): PROOF-1 %s' % tags)
+                data = made.payload()
+                proof = made.rule('RULE-1', 'sample_age')['proofs'][0]
+                found.append((proof['ai'], proof['graded'],
+                              [line for line in data['warnings']
+                               if 'test comment to correct' in line],
+                              [item['kind'] for item in data['left']
+                               if item['kind'] == 'to_correct']))
+        finally:
+            made.close()
+        assert found == [([OPUS], GRADER, [], []),
+                         ([SONNET], None, [], [])], found
+
+
+# ---------------------------------------------------------------------------
+# An AI proof
+# ---------------------------------------------------------------------------
+
+AI_TEST = {'file': 'tests/test_login.py', 'name': 'test_proof_2'}
+PASSED_RUN = {'result': 'pass', 'output': OUTPUT, 'made': 'helper'}
+GRADED_TAGS = '@ai(%s) @graded(%s)' % (OPUS, GRADER)
+SLOW = 'slow: runs with purlin:test --all'
+
+
+def _ai_project(tags, *models, **kwargs):
+    """`login` with `PROOF-2` ending `tags`, both proofs marked, and one
+    committed section holding `PROOF-1` as passed and `models` for
+    `PROOF-2`. `runs` is the `runs` setting."""
+    made = Project(spec=ai_spec(tags),
+                   extra_config=({'runs': kwargs['runs']}
+                                 if kwargs.get('runs') else None))
+    _commit_tests(made, 'PROOF-1', 'PROOF-2')
+    made.evidence([_entry('PROOF-1', 'RULE-1'),
+                   _ai_entry('PROOF-2', 'RULE-2', *models,
+                             status=kwargs.get('status'))])
+    return made
+
+
+def _read_ai(tags, *models, **kwargs):
+    """`(payload, RULE-2, PROOF-2)` of `_ai_project`."""
+    made = _ai_project(tags, *models, **kwargs)
+    try:
+        data = made.payload()
+    finally:
+        made.close()
+    rule = _listed(data, 'RULE-2')
+    return data, rule, rule['proofs'][0]
+
+
+class TestAnAIProof:
+
+    # purlin: states PROOF-330
+    def test_three_passing_runs_on_its_one_model_read_passed(self):
+        _data, rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                      _model(OPUS, 'pass', 'pass', 'pass'))
+        assert proof == {
+            'id': 'PROOF-2', 'manual': False, 'slow': True, 'env': None,
+            'ai': [OPUS], 'graded': None, 'runs': 3,
+            'text': 'POST /login with a bad password; verify 401 and the '
+                    'body "denied"',
+            'tests': [dict(AI_TEST, result='pass')], 'carried': {},
+            'models': [{'model': OPUS, 'word': 'passed', 'passed': 3,
+                        'of': 3, 'runs': [PASSED_RUN] * 3}],
+            'result': 'passed'}, proof
+        passed = rule['cells']['passed']
+        assert (passed['word'], passed['missing_models']) == ('passed', []), \
+            passed
+
+    # purlin: states PROOF-331
+    def test_one_failing_run_fails_the_model_and_the_proof(self):
+        _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'fail', 'pass'))
+        assert proof['result'] == 'failed', proof
+        assert [(m['model'], m['word'], m['passed'], m['of'])
+                for m in proof['models']] == [(OPUS, 'failed', 2, 3)], proof
+
+    # purlin: states PROOF-332
+    def test_a_model_with_no_entry_reads_not_run(self):
+        _data, _rule, proof = _read_ai(
+            '@ai(%s, %s)' % (OPUS, SONNET),
+            _model(OPUS, 'pass', 'pass', 'pass'), status='not run')
+        assert proof['result'] == 'not run', proof
+        assert proof['models'] == [
+            {'model': OPUS, 'word': 'passed', 'passed': 3, 'of': 3,
+             'runs': [PASSED_RUN] * 3},
+            {'model': SONNET, 'word': 'not run', 'passed': 0, 'of': 0,
+             'runs': []}], proof['models']
+
+    # purlin: states PROOF-333
+    def test_a_run_that_is_not_run_leaves_the_model_not_run(self):
+        _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass', 'not run'))
+        assert proof['result'] == 'not run', proof
+        model = proof['models'][0]
+        assert (model['word'], model['passed'], model['of']) == (
+            'not run', 2, 3), model
+        assert model['runs'][2] == {'result': 'not run',
+                                    'why': NOT_REACHED}, model
+
+    # purlin: states PROOF-334
+    def test_fewer_runs_than_the_setting_now_asks_read_not_run(self):
+        _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass', 'pass'),
+                                       runs=5)
+        assert (proof['runs'], proof['result']) == (5, 'not run'), proof
+        model = proof['models'][0]
+        assert (model['word'], model['passed'], model['of']) == (
+            'not run', 3, 3), model
+
+    # purlin: states PROOF-335
+    def test_a_model_the_tag_dropped_is_not_read(self):
+        _data, _rule, proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass', 'pass'),
+                                       _model(SONNET, 'fail'))
+        assert proof['result'] == 'passed', proof
+        assert proof['models'] == [
+            {'model': OPUS, 'word': 'passed', 'passed': 3, 'of': 3,
+             'runs': [PASSED_RUN] * 3}], proof['models']
+
+    # purlin: states PROOF-336
+    def test_the_proof_s_own_runs_win_over_the_setting(self):
+        _data, _rule, proof = _read_ai('@ai(%s, runs=2)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass'), runs=5)
+        assert (proof['runs'], proof['result']) == (2, 'passed'), proof
+
+    # purlin: states PROOF-337
+    def test_a_proof_with_no_ai_tag_carries_the_four_keys_empty(self):
+        data, _rule, _proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'pass', 'pass'))
+        proof = _listed(data, 'RULE-1')['proofs'][0]
+        assert (proof['ai'], proof['graded'], proof['runs'],
+                proof['models']) == ([], None, None, []), proof
+
+    # purlin: states PROOF-338
+    def test_a_failed_model_is_named_after_where_it_failed(self):
+        _data, rule, _proof = _read_ai('@ai(%s)' % OPUS,
+                                       _model(OPUS, 'pass', 'fail', 'pass'))
+        passed = rule['cells']['passed']
+        assert passed['word'] == 'failed', passed
+        assert passed['reasons'] == [
+            'failing: %s, local' % purlin_states.system_word(
+                purlin_evidence.host_os()),
+            '%s: 2 of 3 passed' % OPUS], passed
+        assert rule['left'] == 'to_fix', rule['left']
+
+    # purlin: states PROOF-339
+    def test_a_model_still_to_run_is_named_with_what_it_waits_for(self):
+        found = []
+        for tags, models, runs in (
+                ('@ai(%s, %s)' % (OPUS, SONNET),
+                 [_model(OPUS, 'pass', 'pass', 'pass')], None),
+                ('@ai(%s)' % OPUS,
+                 [_model(OPUS, 'pass', 'pass', 'not run')], None),
+                ('@ai(%s)' % OPUS,
+                 [_model(OPUS, 'pass', 'pass', 'pass')], 5)):
+            _data, rule, _proof = _read_ai(tags, *models, runs=runs,
+                                           status='not run')
+            passed = rule['cells']['passed']
+            found.append((passed['word'], passed['reasons'],
+                          passed['missing_models']))
+        assert found == [
+            ('not run', [SLOW, '%s: no run yet' % SONNET], [SONNET]),
+            ('not run', [SLOW, '%s: 2 of 3 run' % OPUS], [OPUS]),
+            ('not run', [SLOW, '%s: 3 of 5 run' % OPUS], [OPUS])], found
+
+
+class TestAGradedProof:
+
+    # purlin: states PROOF-340
+    def test_a_rule_that_passes_with_a_graded_proof_reads_graded(self):
+        data, rule, proof = _read_ai(
+            GRADED_TAGS, _model(OPUS, 'pass', 'pass', 'pass', grader=GRADER))
+        assert (rule['cells']['passed']['word'], rule['bucket'],
+                rule['cells']['strong']['word']) == (
+            'graded', 'passed', 'not audited'), rule['cells']
+        assert (proof['graded'], proof['result'],
+                proof['models'][0]['word']) == (GRADER, 'graded', 'graded'), \
+            proof
+        assert proof['models'][0]['runs'][0]['grade'] == {
+            'model': GRADER, 'accepted': True,
+            'reason': 'It names the limit.'}, proof['models']
+        assert data['summary']['steps'] == {'passed': 2, 'graded': 1,
+                                            'by_hand': 0}, data['summary']
+        assert data['met'] is True, data['left']
+
+    # purlin: states PROOF-341
+    def test_a_graded_proof_beside_a_failing_one_does_not_read_graded(self):
+        made = Project(spec=TWO_PROOFS_SPEC.rstrip('\n') + ' ' + GRADED_TAGS
+                       + '\n')
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([
+                _entry('PROOF-1', 'RULE-1', status='fail'),
+                _ai_entry('PROOF-2', 'RULE-1',
+                          _model(OPUS, 'pass', 'pass', 'pass',
+                                 grader=GRADER))])
+            data = made.payload()
+        finally:
+            made.close()
+        rule = _listed(data, 'RULE-1')
+        assert rule['cells']['passed']['word'] == 'failed', rule['cells']
+        assert rule['proofs'][1]['result'] == 'graded', rule['proofs']
+        assert data['summary']['steps'] == {'passed': 0, 'graded': 0,
+                                            'by_hand': 0}, data['summary']
+
+    # purlin: states PROOF-342
+    def test_passes_is_true_of_passed_and_graded_alone(self):
+        words = ('passed', 'graded', 'partial', 'failed', 'no test',
+                 'not run', 'out of date', 'checked at sign-off',
+                 'hand check')
+        assert [word for word in words if purlin_states.passes(word)] == [
+            'passed', 'graded']
 
 
 # ---------------------------------------------------------------------------

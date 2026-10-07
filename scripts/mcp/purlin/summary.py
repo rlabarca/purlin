@@ -12,7 +12,8 @@ The status opens on the project and the two facts:
     Sign-off: signed 0.1.0, 4 commits since
 
 It ends on one sentence, counting each rule once under the spec that owns
-it, anchors' included, and how many pass their tests; then how many are
+it, anchors' included, and how many pass their tests, with how many of those
+a model graded where any is; then how many are
 checked at sign-off, the rules checked by hand alone that no sign-off has
 noted on their wording as it is; where a rule that passes has an audit
 entry, it gives the share the audit found strong and then each count. No
@@ -22,14 +23,16 @@ share counts no rule of an anchor and the counts after it count every rule:
     40 rules. 40 pass their tests. The audit found 34 of 40 rules strong (85%): 34 strong, 4 weak, 2 spot-checked.
     48 rules. 48 pass their tests. The audit found 40 of 40 rules strong (100%): 40 strong, 8 spot-checked.
     10 rules. 9 pass their tests. 1 is checked at sign-off.
+    40 rules. 40 pass their tests, 6 of them graded by an AI.
 
 `Left to do` follows it: one line per kind of work, in the order the work is
 done, each with its count and the command that clears it. A kind at zero is
 left out, and each rule is counted under one kind, the first that applies;
 `specs to repair` counts specs, `test comments to correct` comments above
-tests, `slow proofs to run` the proofs tagged `@slow` that no run has
+tests, `slow proofs to run` the slow proofs that no run has
 answered for, and `features whose results are not committed` features, not
-rules.
+rules. `rules to test on <model>` has one line per model: the rules an AI
+proof of which a run has tried and that hold no counting result on it.
 `rules to write a proof for` and `rules to strengthen` are not blocking: the
 tests read `met` beside them.
 
@@ -64,11 +67,13 @@ from purlin import facts, states                               # noqa: E402
 # The kinds of work left, in the order the work is done and the lines read.
 # Each is `(kind, one, many, command)`: the words after the count for one
 # and for any other count, and the command that clears it. `%s` in the
-# words and the command of `to_test_remote` is the systems it waits for. `to_repair` counts
+# words and the command of `to_test_remote` is the systems it waits for, and
+# in the words of `to_test_model` the one model its line is about. `to_repair` counts
 # the specs that write a number twice or hold a line left from a merge
 # conflict, `to_correct` the comments above tests, `to_run_slow` the proofs
-# tagged `@slow` that read `not run`, `to_commit` the features whose results
-# are written and not committed; every other kind counts rules.
+# that are slow and read `not run`, an AI proof among them until a run has
+# tried it, `to_commit` the features whose results are written and not
+# committed; every other kind counts rules.
 KINDS = (
     ('to_repair', 'spec to repair', 'specs to repair', 'purlin:spec'),
     ('no_proof', 'rule to write a proof for', 'rules to write a proof for',
@@ -81,6 +86,8 @@ KINDS = (
     ('to_test', 'rule to test', 'rules to test', 'purlin:test'),
     ('to_run_slow', 'slow proof to run', 'slow proofs to run',
      'purlin:test --all'),
+    ('to_test_model', 'rule to test on %s', 'rules to test on %s',
+     'purlin:test --all'),
     ('to_test_remote', 'rule to test on %s', 'rules to test on %s',
      'run purlin:test on %s'),
     ('to_commit', 'feature whose results are not committed',
@@ -92,7 +99,7 @@ KINDS = (
 # The kinds that stop the tests being met. A rule with no proof line, or one
 # the audit found weak, still lets them read `met`.
 BLOCKING = ('to_repair', 'to_correct', 'to_fix', 'no_test', 'to_test',
-            'to_run_slow', 'to_test_remote', 'to_commit')
+            'to_run_slow', 'to_test_model', 'to_test_remote', 'to_commit')
 
 OPENING = 'Purlin status: %s, plugin %s'
 TESTS_LINE = 'Tests: %s'
@@ -107,6 +114,11 @@ AUDIT_LINE = 'The audit found %d of %d rules strong (%d%%): %s.'
 # The same line where no rule the audit read can be found strong, each being
 # an anchor's: there is nothing to take a share of, so it lists what was found.
 AUDIT_FOUND = 'The audit found %s.'
+# What the sentence's second part ends on where a passed cell reads
+# `graded`: for one rule that passes, for one of several, for any other count.
+GRADED_ALONE = ', graded by an AI'
+GRADED_ONE = ', 1 of them graded by an AI'
+GRADED_MANY = ', %d of them graded by an AI'
 # The sentence's third part, where a passed cell reads `checked at sign-off`.
 BY_HAND_ONE = '1 is checked at sign-off.'
 BY_HAND_MANY = '%d are checked at sign-off.'
@@ -147,7 +159,10 @@ def rule_kind(rule, here_os, broken=None):
     first. Otherwise the first that applies: a passed cell reading `failed`
     or `partial`, `no test`, `out of date` or `not run` where this machine
     can run part of it, `not run` for other systems only, no proof line with
-    its tests passing, a weak audit. A hand check adds no kind, a passed
+    its tests passing, a weak audit. A rule that reads `not run` for slow
+    proofs alone, one of them an AI proof a run has tried, answers
+    `to_test_model`: `left` counts it once per model of
+    `missing_models`. A hand check adds no kind, a passed
     cell reading `checked at sign-off` included, and neither does a rule no
     audit has read. A rule that waits for slow proofs alone answers
     `to_run_slow`, which `left` counts by proof and not by rule.
@@ -170,9 +185,11 @@ def rule_kind(rule, here_os, broken=None):
         missing = passed.get('missing_env') or []
         if missing and here_os not in missing:
             return 'to_test_remote'
-        return 'to_run_slow' if _waits_for_slow_alone(rule, here_os) \
-            else 'to_test'
-    if word != 'passed':
+        if not _waits_for_slow_alone(rule, here_os):
+            return 'to_test'
+        return 'to_test_model' if passed.get('missing_models') \
+            else 'to_run_slow'
+    if not states.passes(word):
         # `out of date`: the next run here clears it, unless slow proofs
         # are all the rule has.
         return 'to_run_slow' if _waits_for_slow_alone(rule, here_os) \
@@ -193,45 +210,51 @@ def _waits_for_slow_alone(rule, here_os):
     """True when every proof of the rule that has not passed is a slow
     proof this machine can run."""
     waiting = [proof for proof in rule.get('proofs') or ()
-               if not proof.get('manual') and proof.get('result') != 'passed']
+               if not proof.get('manual')
+               and not states.passes(proof.get('result'))]
     return bool(waiting) and all(_slow_here(proof, here_os)
                                  for proof in waiting)
 
 
 def slow_to_run(features, here_os):
-    """`{(feature, proof id)}` for each `@slow` proof that reads `not run`
-    and is not tagged for another system than this machine's."""
+    """`{(feature, proof id)}` for each slow proof that reads `not run`
+    and is not tagged for another system than this machine's. An AI proof a
+    run has tried is not one: its rule waits for a model, which
+    `to_test_model` counts."""
     return {(feature.get('name'), proof.get('id'))
             for feature in features or ()
             for rule in feature.get('rules') or ()
             for proof in rule.get('proofs') or ()
-            if _slow_here(proof, here_os) and proof.get('result') == 'not run'}
+            if _slow_here(proof, here_os) and proof.get('result') == 'not run'
+            and not states.tried(proof.get('models'))}
+
+
+def _word(rule):
+    return ((rule.get('cells') or {}).get('passed') or {}).get('word')
 
 
 def _passes(rule):
-    return ((rule.get('cells') or {}).get('passed') or {}).get(
-        'word') == 'passed'
+    return states.passes(_word(rule))
 
 
 def steps(own_rules):
-    """`{"passed": p, "by_hand": h}` over the rules given.
+    """`{"passed": p, "graded": g, "by_hand": h}` over the rules given.
 
-    `p` counts the rules whose passed cell reads `passed`, and `h` those
-    whose passed cell reads `checked at sign-off`: a rule is in one or
-    neither.
+    `p` counts the rules that pass their tests, whose passed cell reads
+    `passed` or `graded`; `g` those of them whose cell reads `graded`; and
+    `h` the rules whose passed cell reads `checked at sign-off`: a rule is
+    in `p` or in `h` or in neither.
     """
-    by_hand = sum(
-        1 for rule in own_rules or ()
-        if ((rule.get('cells') or {}).get('passed') or {}).get('word')
-        == states.CHECKED_AT_SIGNOFF)
-    return {'passed': sum(1 for rule in own_rules or () if _passes(rule)),
-            'by_hand': by_hand}
+    words = [_word(rule) for rule in own_rules or ()]
+    return {'passed': sum(1 for word in words if states.passes(word)),
+            'graded': words.count(states.GRADED),
+            'by_hand': words.count(states.CHECKED_AT_SIGNOFF)}
 
 
 def audit_counts(own_rules):
     """The five counts of `AUDIT_WORDS` over the rules that pass.
 
-    Each counts the rules whose passed cell reads `passed` and whose strong
+    Each counts the rules that pass their tests (`states.passes`) and whose strong
     cell reads that word, so a rule checked by hand alone is in none.
     """
     counts = {key: 0 for key, _word in AUDIT_WORDS}
@@ -310,7 +333,10 @@ def has_audit(counts):
 
 
 def sentence(summary, anchors=None):
-    """`<N> rules. <p> pass their tests.`, then `BY_HAND_ONE` or
+    """`<N> rules. <p> pass their tests.`, its second part ending
+    `, <g> of them graded by an AI.` where a passed cell reads `graded`
+    (`GRADED_ONE` for one, `GRADED_ALONE` where one rule passes and it is
+    the graded one), then `BY_HAND_ONE` or
     `BY_HAND_MANY` where a passed cell reads `checked at sign-off`, then
     `audit_line` where a rule that passes has an audit entry: one read
     `strong`, `weak`, `spot-checked` or `out of date`. `anchors` is
@@ -318,9 +344,14 @@ def sentence(summary, anchors=None):
     total = summary.get('rules') or 0
     count = (summary.get('steps') or {}).get('passed') or 0
     by_hand = (summary.get('steps') or {}).get('by_hand') or 0
+    graded = (summary.get('steps') or {}).get('graded') or 0
     parts = ['%d %s.' % (total, _words('rule', 'rules', total)),
-             '%d %s.' % (count, _words('passes its tests',
-                                        'pass their tests', count))]
+             '%d %s%s.' % (count, _words('passes its tests',
+                                          'pass their tests', count),
+                           '' if not graded
+                           else GRADED_ALONE if count == 1
+                           else GRADED_ONE if graded == 1
+                           else GRADED_MANY % graded)]
     if by_hand:
         parts.append(BY_HAND_ONE if by_hand == 1 else BY_HAND_MANY % by_hand)
     audit = summary.get('audit') or {}
@@ -347,7 +378,9 @@ def left(features, here_os, corrections=0, uncommitted=()):
     proofs, or a proof reworded since the test last changed. `uncommitted`
     names the features whose results are written and not committed, counted
     once no other work stops the tests being met. `to_run_slow` counts the
-    slow proofs `slow_to_run` names. A kind at zero is left out.
+    slow proofs `slow_to_run` names. `to_test_model` has one entry per
+    model, by name, each counting the rules that wait for it and carrying
+    `model`. A kind at zero is left out.
     """
     counts = {}
     if corrections:
@@ -356,6 +389,7 @@ def left(features, here_os, corrections=0, uncommitted=()):
     if slow:
         counts['to_run_slow'] = len(slow)
     systems = set()
+    models = {}
     to_repair = set()
     for feature in features or ():
         for rule in feature.get('rules') or ():
@@ -367,6 +401,10 @@ def left(features, here_os, corrections=0, uncommitted=()):
                 to_repair.add(feature.get('name'))
                 counts[kind] = len(to_repair)
                 continue
+            if kind == 'to_test_model':
+                for name in ((rule.get('cells') or {}).get('passed')
+                             or {}).get('missing_models') or ():
+                    models[name] = models.get(name, 0) + 1
             counts[kind] = counts.get(kind, 0) + 1
             if kind == 'to_test_remote':
                 systems.update(((rule.get('cells') or {}).get('passed')
@@ -377,6 +415,13 @@ def left(features, here_os, corrections=0, uncommitted=()):
     for kind, one, many, command in KINDS:
         count = counts.get(kind)
         if not count:
+            continue
+        if kind == 'to_test_model':
+            out.extend({'kind': kind, 'count': models[name],
+                        'text': '%d %s' % (models[name], _words(
+                            one, many, models[name]) % name),
+                        'command': command, 'model': name}
+                       for name in sorted(models))
             continue
         words = _words(one, many, count)
         if kind == 'to_test_remote':

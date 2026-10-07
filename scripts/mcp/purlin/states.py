@@ -5,8 +5,10 @@ One rule, read top to bottom.
     passed  Met when every proof has a passing test in an evidence section
             that is current: its spec, code and tests fingerprint equals the
             one taken now. Only current sections decide the cell.
-            `passed`, `partial`, `failed`, `no test`, `not run`,
-            `out of date`, `checked at sign-off`. A rule no proof line names
+            `passed`, `graded`, `partial`, `failed`, `no test`, `not run`,
+            `out of date`, `checked at sign-off`. `graded` is `passed` for
+            a rule one of whose proofs a model grades (`@graded`): it counts
+            wherever `passed` does (`passes`). A rule no proof line names
             is answered by the
             tests marked with the rule's own id, and reads `no test` with
             the reason `no proof written` when there are none. A rule some
@@ -23,12 +25,16 @@ One rule, read top to bottom.
             starts its test. An anchor's proof whose
             every tied test skipped with `nothing to check:` counts as
             passed, its reason kept; on any other spec it reads `not run`.
+            An AI proof (`@ai`) is a slow proof read once per model of its
+            tag (`model_results`): it passes where every model passed, and
+            the cell carries `missing_models`, the models a proof a run has
+            tried holds no counting result on.
 
     strong  What the AI audit found, and nothing waits on it. `strong`,
             `weak`, `spot-checked`, `out of date`, `not audited`, `checked
             at sign-off` for a rule with a hand check, and `no proof` for a
             rule whose passing test answers no proof. `waiting` while the
-            passed cell reads neither `passed` nor `checked at sign-off`,
+            passed cell reads none of `passed`, `graded` and `checked at sign-off`,
             because the audit reads a test that passes. The word comes from the rule's audit entry: its
             `verdict` while the entry is current, a weak entry giving its
             findings as the reasons and a spot-checked one saying why no bug
@@ -69,6 +75,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from purlin import evidence as evidence_module
+from purlin import outputs as outputs_module
 
 # The two cells, in the order the chain reads them. Every rule carries both.
 CELLS = ('passed', 'strong')
@@ -153,6 +160,21 @@ NO_PROOF_WRITTEN = 'no proof written'
 NO_PROOF = 'no proof'
 NO_PROOF_REASON = 'the rule has a test and no proof'
 
+# The passed cell's word for a rule that passes with a proof a model grades,
+# and a graded proof's own word where it passes. `passes` reads both words.
+GRADED = 'graded'
+PASSING = ('passed', GRADED)
+
+# The passed cell's reasons for one model of an AI proof: the model, then
+# how many of its runs passed where one failed, or how many gave a result
+# where the proof still waits for some.
+MODEL_FAILED = '%s: %d of %d passed'               # claude-opus-5-5, 2, 3
+MODEL_RUN = '%s: %d of %d run'                     # claude-opus-5-5, 3, 5
+
+# The fields of one run of an AI proof's test that a model's result carries,
+# as the evidence holds them.
+RUN_FIELDS = ('result', 'output', 'made', 'why', 'grade')
+
 # The buckets a rollup counts, one per rule.
 BUCKETS = ('untested', 'failing', 'partial', 'by_hand', 'passed')
 
@@ -162,7 +184,10 @@ def rule_cells(inp):
 
     `inp` carries:
 
-    `proofs`        `[{'id', 'manual', 'slow', 'env', 'text', 'tests'}, ...]`
+    `proofs`        `[{'id', 'manual', 'slow', 'env', 'text', 'tests'}, ...]`,
+                    an AI proof also holding `ai`, the models of its tag,
+                    `graded`, its grader or None, and `runs`, how many runs
+                    are asked now
     `rule_id`       the rule's own id, which a test may be marked with when
                     the rule has no proof
     `marked`        the proof and rule ids of the rule's feature that a
@@ -186,7 +211,8 @@ def rule_cells(inp):
                     a line left from a merge conflict; [] for a sound spec
     """
     inp = dict(inp, sections=read_sections(inp.get('sections'),
-                                           inp.get('anchor')))
+                                           inp.get('anchor'),
+                                           inp.get('proofs')))
     proofs = inp.get('proofs') or []
     if inp.get('spec_broken'):
         return _broken(inp)
@@ -200,13 +226,27 @@ def rule_cells(inp):
     }
 
 
-def read_sections(sections, anchor=False):
+def passes(word):
+    """True for a word that says the tests pass: `passed`, or `graded`.
+
+    The one test of it. A passed cell's word, a proof's `result` and a
+    model's word are each read through it, so a graded result counts
+    wherever a passed one does.
+    """
+    return word in PASSING
+
+
+def read_sections(sections, anchor=False, proofs=()):
     """The sections with each proof's word read once, as `results`.
 
     `pass`, `fail` or `not run` per proof id. A proof whose every tied test
     skipped with `nothing to check:` reads `pass` on an anchor and `not run`
-    on any other spec, its reason under `nothing`.
+    on any other spec, its reason under `nothing`. An AI proof among
+    `proofs` reads what its models read in the section (`_section_models`):
+    `fail` where one failed, else `not run` where one of its tag has no
+    counting result, else `pass`; they are kept under `models`.
     """
+    ai = [proof for proof in proofs or () if proof.get('ai')]
     out = []
     for entry in sections or ():
         if 'results' in entry:
@@ -219,8 +259,165 @@ def read_sections(sections, anchor=False):
                 nothing[proof_id] = reason or ''
                 word = 'pass' if anchor else 'not run'
             results[proof_id] = word
-        out.append(dict(entry, results=results, nothing=nothing))
+        models = {}
+        for proof in ai:
+            if proof.get('id') not in results:
+                continue
+            found = _section_models(proof, entry.get('section'))
+            models[proof.get('id')] = found
+            words = [found[name]['word'] if name in found else 'not run'
+                     for name in proof['ai']]
+            results[proof.get('id')] = (
+                'fail' if 'failed' in words
+                else 'pass' if all(word == 'passed' for word in words)
+                else 'not run')
+        out.append(dict(entry, results=results, nothing=nothing,
+                        models=models))
     return out
+
+
+def runs_asked(proof, setting=None):
+    """How many runs an AI proof asks of each model now: its own `runs=`,
+    else `setting`, the `runs` setting as `config_engine.runs` reads it,
+    else `outputs.RUNS`."""
+    return proof.get('runs') or setting or outputs_module.RUNS
+
+
+_MODEL_WORST = {'failed': 2, 'not run': 1, 'passed': 0}
+
+
+def _section_models(proof, section):
+    """`{model: {word, passed, of, runs}}` for the models of an AI proof's
+    tag that one section holds an entry for.
+
+    A model reads `failed` where any of its runs failed; else `not run`
+    where it holds no run, a run that is `not run`, or fewer runs than
+    `runs_asked` gives; else `passed`. `passed` and `of` are the entry's
+    own, counted from its runs where it holds none. An entry for a model the
+    tag does not name is left out. Where several tests back the proof, the
+    worst of them answers for a model, and a test with no entry for it
+    reads `not run`.
+    """
+    asked = runs_asked(proof)
+    held = [{model['model']: model for model in reversed(
+                 [model for model in entry.get('models') or ()
+                  if isinstance(model, dict)])}
+            for entry in (section or {}).get('proofs') or ()
+            if isinstance(entry, dict) and entry.get('id') == proof.get('id')
+            and entry.get('test')]
+    found = {}
+    for name in proof['ai']:
+        if not any(name in models for models in held):
+            continue
+        reads = [_model_read(models.get(name), asked) for models in held]
+        found[name] = max(reads, key=lambda read: _MODEL_WORST[read['word']])
+    return found
+
+
+def _model_read(model, asked):
+    """`{word, passed, of, runs}` for one model entry of the evidence, None
+    for a test that holds none."""
+    runs = [run for run in (model or {}).get('runs') or ()
+            if isinstance(run, dict)]
+    results = [run.get('result') for run in runs]
+    if 'fail' in results:
+        word = 'failed'
+    elif len(runs) < asked or any(result != 'pass' for result in results):
+        word = 'not run'
+    else:
+        word = 'passed'
+    return {'word': word,
+            'passed': _count(model, 'passed', results.count('pass')),
+            'of': _count(model, 'of', len(runs)),
+            'runs': [{key: run[key] for key in RUN_FIELDS if key in run}
+                     for run in runs]}
+
+
+def _count(model, key, counted):
+    """A model entry's own whole number under `key`, else `counted`."""
+    value = (model or {}).get(key)
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return counted
+
+
+def model_results(proof, sections, anchor=False):
+    """`[{model, word, passed, of, runs}]` for an AI proof, one entry per
+    model of its tag in the tag's order; `[]` for any other proof.
+
+    Read from the one current section that decides the proof's own word,
+    among those of the operating system it names or of every system where
+    it names none: the first that failed it, else the first that passed it,
+    else the newest that holds a run of one of its models. `word` is
+    `failed`, `not run`, or `passed`, which reads `graded` for a graded
+    proof. A model no such section holds an entry for reads `not run` with
+    `passed` 0, `of` 0 and no runs. `runs` holds each run's `RUN_FIELDS`.
+    """
+    if not proof.get('ai'):
+        return []
+    env = proof.get('env')
+    read = [entry for entry in read_sections(sections, anchor, [proof])
+            if entry.get('current') and (not env or entry.get('os') == env)
+            and proof.get('id') in entry.get('models', {})]
+    chosen = None
+    for word in ('fail', 'pass'):
+        chosen = chosen or next(
+            (entry for entry in read
+             if entry['results'].get(proof.get('id')) == word), None)
+    if chosen is None:
+        chosen = max((entry for entry in read
+                      if tried(entry['models'][proof.get('id')].values())),
+                     key=lambda entry: str(entry['section'].get('at') or ''),
+                     default=None)
+    found = chosen['models'][proof.get('id')] if chosen else {}
+    out = []
+    for name in proof['ai']:
+        entry = dict(found.get(name) or {'word': 'not run', 'passed': 0,
+                                         'of': 0, 'runs': []}, model=name)
+        if entry['word'] == 'passed' and proof.get('graded'):
+            entry['word'] = GRADED
+        out.append(entry)
+    return out
+
+
+def tried(models):
+    """True where a run has tried an AI proof: one of its models, as
+    `model_results` gives them, holds a run."""
+    return any(entry.get('runs') for entry in models or ())
+
+
+def _model_reasons(proofs, current, anchor=False):
+    """`(failed, waiting, missing)` over the AI proofs of a rule a run has
+    tried, each reason once, in the order the proofs and their tags give.
+
+    `failed` holds `MODEL_FAILED` for each model a run failed on. `waiting`
+    holds, for each model that reads `not run`, `NO_RUN_YET` where it has no
+    run and `MODEL_RUN` where some of its runs are still to make; `missing`
+    names those models.
+    """
+    failed, waiting, missing = [], [], []
+    for proof in proofs or ():
+        found = model_results(proof, current, anchor)
+        if not tried(found):
+            continue
+        asked = runs_asked(proof)
+        for entry in found:
+            name = entry['model']
+            if entry['word'] == 'failed':
+                reason = MODEL_FAILED % (name, entry['passed'], entry['of'])
+                if reason not in failed:
+                    failed.append(reason)
+            elif entry['word'] == 'not run':
+                counted = sum(1 for run in entry['runs']
+                              if run.get('result') in ('pass', 'fail'))
+                reason = (MODEL_RUN % (name, counted,
+                                       max(entry['of'], asked))
+                          if entry['runs'] else NO_RUN_YET % name)
+                if reason not in waiting:
+                    waiting.append(reason)
+                if name not in missing:
+                    missing.append(name)
+    return failed, waiting, missing
 
 
 def section_results(section):
@@ -310,8 +507,8 @@ def _passed_cell(inp):
     """
     written = inp.get('proofs') or []
     cell = {'word': 'no test', 'source': None, 'current': False,
-            'counts': False, 'missing_env': [], 'platforms': {},
-            'nothing_to_check': [], 'reasons': []}
+            'counts': False, 'missing_env': [], 'missing_models': [],
+            'platforms': {}, 'nothing_to_check': [], 'reasons': []}
 
     if not written:
         # A rule with no proof is answered by the tests marked with its own
@@ -364,10 +561,14 @@ def _passed_cell(inp):
         # honest word, it is not met, and like a failure it comes first.
         return _partial(cell, platforms)
 
+    # What the models of the rule's AI proofs read, where a run tried them.
+    model_failed, model_reasons, missing_models = _model_reasons(
+        proofs, current, inp.get('anchor'))
     failing = _failing_where(proofs, current)
     if failing:
         cell['word'] = 'failed'
-        cell['reasons'] = ['failing: %s' % where for where in failing]
+        cell['reasons'] = (['failing: %s' % where for where in failing]
+                           + model_failed)
         cell['source'] = _named_source(entry['source'] for entry in current)
         cell['current'] = True
         cell['counts'] = True
@@ -399,10 +600,13 @@ def _passed_cell(inp):
         if missing_env:
             cell['word'] = 'not run'
             cell['missing_env'] = list(missing_env)
+            cell['missing_models'] = missing_models
             cell['reasons'] = [NO_RUN_YET % system_word(env)
-                               for env in missing_env] + said
+                               for env in missing_env] + model_reasons + said
             return cell
-        cell['word'] = 'passed'
+        # A rule one of whose proofs a model grades passes as `graded`.
+        cell['word'] = (GRADED if any(proof.get('graded') for proof in proofs)
+                        else 'passed')
         cell['reasons'] = said
         return cell
 
@@ -411,8 +615,9 @@ def _passed_cell(inp):
     marked = inp.get('marked') or ()
     if any(proof.get('tests') or proof.get('id') in marked for proof in proofs):
         cell['word'] = 'not run'
+        cell['missing_models'] = missing_models
         cell['reasons'] = ([SLOW_REASON] if _slow_waiting(proofs, ran)
-                           else []) + said
+                           else []) + model_reasons + said
     return cell
 
 
@@ -500,7 +705,9 @@ def proof_result(proof, sections, marked=(), anchor=False):
     `hand check` for a `@manual` proof, which no test answers. Otherwise the
     current sections from the operating system the proof names, or from every
     system where it names none: `failed` where one of them failed it and
-    `passed` where one passed it. With no current answer it reads `not run`
+    `passed` where one passed it, which reads `graded` for a proof a model
+    grades. An AI proof is read per section as `read_sections` reads it.
+    With no current answer it reads `not run`
     where a marker in the test files ties it to a test, and `no test` where
     none does, which is how the rollup counts a proof with no test.
     """
@@ -508,12 +715,12 @@ def proof_result(proof, sections, marked=(), anchor=False):
         return HAND_CHECK
     env = proof.get('env')
     seen = [_results(entry).get(proof.get('id'))
-            for entry in read_sections(sections, anchor)
+            for entry in read_sections(sections, anchor, [proof])
             if entry.get('current') and (not env or entry.get('os') == env)]
     if 'fail' in seen:
         return 'failed'
     if 'pass' in seen:
-        return 'passed'
+        return GRADED if proof.get('graded') else 'passed'
     return 'not run' if proof.get('id') in (marked or ()) else 'no test'
 
 
@@ -713,12 +920,13 @@ def _strong_cell(inp, passed):
 
     proofs = inp.get('proofs') or ()
     if proofs and all(proof.get('manual') for proof in proofs) \
-            and passed['word'] in ('passed', CHECKED_AT_SIGNOFF):
+            and (passes(passed['word'])
+                 or passed['word'] == CHECKED_AT_SIGNOFF):
         cell['word'] = CHECKED_AT_SIGNOFF
         cell['reasons'] = _hand_reasons(inp)
         return cell
 
-    if passed['word'] != 'passed':
+    if not passes(passed['word']):
         # The audit reads a test that passes, so until the tests pass there
         # is nothing for it to find fault with: the cell waits, and is not
         # weak.
@@ -787,9 +995,12 @@ def _strong_cell(inp, passed):
 # ---------------------------------------------------------------------------
 
 def cell_is_met(name, cell):
-    """True when one cell reads the word that meets it."""
+    """True when one cell reads a word that meets it: `passes` for the
+    passed cell, the cell's own name for the strong cell."""
     if not cell:
         return False
+    if name == 'passed':
+        return passes(cell['word'])
     return cell['word'] == name
 
 

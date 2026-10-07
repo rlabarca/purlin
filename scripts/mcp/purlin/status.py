@@ -61,7 +61,8 @@ from purlin import (board as board_module, drift as drift_module,
                     payload as payload_module,
                     notices,
                     project as project_module, report_data,
-                    specs as specs_module, summary as summary_module)
+                    specs as specs_module, states as states_module,
+                    summary as summary_module)
 
 ARROW = '→'
 DOT = board_module.DOT
@@ -555,7 +556,7 @@ def nothing_lines(data):
             continue
         for rule in feature.get('rules') or ():
             passed = (rule.get('cells') or {}).get('passed') or {}
-            if passed.get('word') != 'passed':
+            if not states_module.passes(passed.get('word')):
                 continue
             for item in passed.get('nothing_to_check') or ():
                 lines.append(notices.line(

@@ -20,8 +20,9 @@ from purlin import PURLIN_VERSION  # noqa: E402
 from purlin import evidence as purlin_evidence  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 from purlin import summary  # noqa: E402
-from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, SPEC,  # noqa: E402
-                         Project, _commit_tests, _entry, _git, _write,
+from mcp_project import (NO_PROOF_SPEC, ONE_RULE_SPEC, OPUS,  # noqa: E402
+                         SONNET, SPEC, Project, _ai_entry, _commit_tests,
+                         _entry, _git, _model, _write, ai_spec,
                          spec_with_a_hand_check)
 from sign_project import _Out, signing_key  # noqa: E402
 # `sign_project` puts `scripts/review` on the path.
@@ -513,6 +514,105 @@ class TestSlowProofsToRun:
         assert lines[2:] == [
             '  2 slow proofs to run: purlin:test --all',
             '  1 rule to test on Windows: run purlin:test on Windows'], lines
+
+
+def ai_rule(*missing):
+    """A rule that reads `not run` for its one AI proof, which a run has
+    tried and which holds no counting result on the models of `missing`."""
+    made = rule('not run')
+    made['cells']['passed']['missing_models'] = list(missing)
+    made['proofs'] = [{
+        'id': 'PROOF-1', 'manual': False, 'slow': True, 'env': None,
+        'result': 'not run',
+        'models': [{'model': name, 'word': 'not run', 'passed': 1, 'of': 1,
+                    'runs': [{'result': 'pass'}]} for name in missing]}]
+    return made
+
+
+class TestAGradedRuleInTheSentence:
+
+    # purlin: summary PROOF-71
+    def test_six_graded_of_forty_end_the_second_part(self):
+        rules = [rule()] * 34 + [rule('graded', strong='not audited')] * 6
+        assert ending(rules) == [
+            '40 rules. 40 pass their tests, 6 of them graded by an AI.',
+            SIGN_OPTIONAL]
+
+    # purlin: summary PROOF-72
+    def test_one_graded_rule_comes_before_the_audit_s_sentence(self):
+        rules = ([rule('graded', strong='strong')]
+                 + [rule(strong='strong')] * 33 + [rule(strong='weak')] * 4
+                 + [rule(strong='spot-checked')] * 2)
+        assert ending(rules)[0] == (
+            '40 rules. 40 pass their tests, 1 of them graded by an AI. '
+            'The audit found 34 of 40 rules strong (85%): 34 strong, '
+            '4 weak, 2 spot-checked.')
+
+    # purlin: summary PROOF-73
+    def test_the_one_rule_that_passes_graded_and_graded_before_by_hand(self):
+        assert ending([rule('graded', strong='not audited')])[0] == (
+            '1 rule. 1 passes its tests, graded by an AI.')
+        rules = ([rule()] * 7 + [rule('graded', strong='not audited')] * 2
+                 + [rule('checked at sign-off', strong='checked at sign-off',
+                         manual=True)])
+        assert ending(rules)[0] == (
+            '10 rules. 9 pass their tests, 2 of them graded by an AI. '
+            '1 is checked at sign-off.')
+
+
+class TestRulesToTestOnAModel:
+
+    # purlin: summary PROOF-74
+    def test_three_rules_waiting_for_one_model_are_one_line(self):
+        made = payload([feature([ai_rule(OPUS)] * 3)])
+        assert summary.ending(made).splitlines() == [
+            '3 rules. 0 pass their tests.', 'Left to do:',
+            '  3 rules to test on claude-opus-5-5: purlin:test --all']
+        assert made['last_line'] is None
+
+    # purlin: summary PROOF-75
+    def test_one_rule_waiting_for_two_models_is_a_line_for_each_by_name(self):
+        assert ending([ai_rule(SONNET, OPUS)])[1:] == [
+            'Left to do:',
+            '  1 rule to test on claude-opus-5-5: purlin:test --all',
+            '  1 rule to test on claude-sonnet-5-5: purlin:test --all']
+
+    # purlin: summary PROOF-76
+    def test_an_ai_proof_no_run_has_tried_is_a_slow_proof_to_run(self):
+        made = Project(spec=ai_spec())
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([_entry('PROOF-1', 'RULE-1')])
+            lines = _status(made)
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: not met', lines
+        assert lines[-2:] == ['Left to do:',
+                              '  1 slow proof to run: purlin:test --all'], \
+            lines
+
+    # purlin: summary PROOF-77
+    def test_a_model_with_no_result_is_one_rule_to_test_on_it(self):
+        made = Project(spec=ai_spec('@ai(%s, %s)' % (OPUS, SONNET)))
+        try:
+            _commit_tests(made, 'PROOF-1', 'PROOF-2')
+            made.evidence([
+                _entry('PROOF-1', 'RULE-1'),
+                _ai_entry('PROOF-2', 'RULE-2',
+                          _model(OPUS, 'pass', 'pass', 'pass'),
+                          status='not run')])
+            lines = _status(made)
+            left = made.payload()['left']
+        finally:
+            made.close()
+        assert lines[1] == 'Tests: not met', lines
+        assert lines[-3:] == [
+            '2 rules. 1 passes its tests.', 'Left to do:',
+            '  1 rule to test on claude-sonnet-5-5: purlin:test --all'], lines
+        assert left == [{'kind': 'to_test_model', 'count': 1,
+                         'text': '1 rule to test on claude-sonnet-5-5',
+                         'command': 'purlin:test --all',
+                         'model': 'claude-sonnet-5-5'}], left
 
 
 class TestWhatLetsTheTestsBeMet:

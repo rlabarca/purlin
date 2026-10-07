@@ -45,8 +45,10 @@ ONE_TO_CORRECT = '1 test comment to correct.'
 MANY_TO_CORRECT = '%d test comments to correct.'
 
 # A proof line, read the same way at any commit: its id and its words after
-# the rule it proves, tags included, `@slow` apart: it says when the test
-# runs and nothing the test must show.
+# the rule it proves, tags included, `@slow`, `@ai(...)` and `@graded(...)`
+# apart: they say when the test runs, on which models and who grades it, and
+# nothing the test must show. A change to one of them puts the results out
+# of date through the fingerprint instead.
 _PROOF_RE = re.compile(r'^-\s+(PROOF-\d+)\s*\([^)]*\)[^:\n]*:[ \t]*(.*)$', re.M)
 _UNCOMMITTED = '0' * 40
 
@@ -127,18 +129,22 @@ def reader(project_root, paths=()):
 
 
 def proof_words(text):
-    """`{PROOF-N: its words}` of a spec's text, whitespace folded, `@slow` left out."""
-    return {proof_id: _without_slow(' '.join(words.split()))
+    """`{PROOF-N: its words}` of a spec's text, whitespace folded, `@slow`,
+    `@ai(...)` and `@graded(...)` left out."""
+    return {proof_id: _without_run_tags(' '.join(words.split()))
             for proof_id, words in _PROOF_RE.findall(text or '')}
 
 
-def _without_slow(words):
-    """A proof's words with its `@slow` tag taken out, every other tag kept."""
+# The tags that say how a proof's test is run, each with what it names.
+_RUN_TAG_RE = re.compile(r'\s+@(?:slow|ai|graded)\b(?:\([^)]*\))?')
+
+
+def _without_run_tags(words):
+    """A proof's words with its `@slow`, `@ai(...)` and `@graded(...)` tags
+    taken out, every other tag kept."""
     from purlin import specs as specs_module
-    text, _manual, _env, _unknown, slow = specs_module.split_proof_tags(words)
-    if not slow:
-        return words
-    return text + re.sub(r'\s+@slow\b', '', words[len(text):], count=1)
+    text = specs_module.proof_tags(words)['text']
+    return text + _RUN_TAG_RE.sub('', words[len(text):])
 
 
 def test_source(path, text, test):

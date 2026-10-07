@@ -1,4 +1,4 @@
-"""The structured project payload, schema 19.
+"""The structured project payload, schema 20.
 
 One reader assembles specs and evidence into the cells of every rule, and
 every surface renders that: the status table, the dashboard, the evidence
@@ -6,7 +6,7 @@ package and the drift report. A surface that parsed the rendered table would
 be coupled to a layout; this is the shape they all read instead.
 
     {
-      "schema_version": 19,
+      "schema_version": 20,
       "generated_at": "2026-10-01T12:00:00Z",
       "generated_by": "sync_status",
       "project": "labconnect",
@@ -20,7 +20,7 @@ be coupled to a layout; this is the shape they all read instead.
                   "weak": 1, "spot_checked": 0, "audit_out_of_date": 0,
                   "not_audited": 1, "manual": 0,
                   "incomplete": 0,
-                  "steps": {"passed": 5, "by_hand": 0},
+                  "steps": {"passed": 5, "graded": 0, "by_hand": 0},
                   "audit": {"strong": 3, "weak": 1, "spot_checked": 0,
                             "out_of_date": 0, "not_audited": 1},
                   "sentence": "8 rules. 5 pass their tests. The audit found 3 of 5 rules strong (60%): 3 strong, 1 weak, 1 not audited."},
@@ -60,7 +60,8 @@ be coupled to a layout; this is the shape they all read instead.
             "bucket": "passed", "flags": {...},
             "cells": {"passed": {...}, "strong": {...}},
             "proofs": [{"id": "PROOF-1", "manual": false, "slow": false,
-                        "env": null,
+                        "env": null, "ai": [], "graded": null,
+                        "runs": null, "models": [],
                         "text": "...", "result": "passed",
                         "tests": [{"file": "tests/test_login.py",
                                    "name": "test_sign_in",
@@ -105,6 +106,26 @@ or `hand check`, as `states.proof_result` reads it, and each of its tests the
 `result` a current run gave it, `pass` or `fail`, or `not run` where no
 current run lists it.
 
+An AI proof carries `ai`, the models its `@ai(...)` tag names in order;
+`graded`, the model its `@graded(...)` tag names, or null; `runs`, how many
+runs it asks of each model now, its own `runs=`, else the `runs` setting,
+else 3; and `models`, one entry per model of the tag in its order, as
+`states.model_results` reads them:
+
+    {"model": "claude-opus-5-5", "word": "passed", "passed": 3, "of": 3,
+     "runs": [{"result": "pass", "output": "<sha256>", "made": "helper"}]}
+
+`word` is `passed`, `graded` for a graded proof, `failed` or `not run`;
+`passed` and `of` are the evidence's own counts; each run holds `result`
+and, where the evidence holds them, `output`, `made`, `why` and `grade`. A
+model with no entry in the evidence reads `not run`, 0 of 0, with no runs.
+Any other proof carries `ai: []`, `graded: null`, `runs: null` and
+`models: []`. A graded proof that passes has the `result` `graded`, and a
+rule that passes with one has a passed cell reading `graded`:
+`states.passes` is true of both words. A passed cell carries
+`missing_models`, the models an AI proof a run has tried holds no counting
+result on, and each `to_test_model` entry of `left` carries `model`.
+
 Each proof carries `carried`, `{os: commit}`: for each operating system
 whose current section holds the proof's results as carried forward, every
 one of them, the full sha of the commit the newest was taken at
@@ -128,7 +149,8 @@ or `> Scope: names nothing that exists`), its rollup carries `incomplete:
 true`, and `summary.incomplete` counts such specs. An anchor is never
 incomplete. Every cell reads as usual.
 
-`summary.steps` counts the rules that pass their tests under `passed` and
+`summary.steps` counts the rules that pass their tests under `passed`, those
+of them whose passed cell reads `graded` under `graded`, and
 those whose passed cell reads `checked at sign-off` under `by_hand`,
 `summary.audit` the strong cell's word among the rules that pass under
 `strong`, `weak`, `spot_checked`, `out_of_date` and `not_audited`, an
@@ -190,7 +212,8 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-from config_engine import resolve_config, settings_warnings
+from config_engine import resolve_config, runs as runs_setting, \
+    settings_warnings
 from purlin import (PURLIN_VERSION,
                     evidence as evidence_module,
                     facts as facts_module,
@@ -203,7 +226,7 @@ from purlin import (PURLIN_VERSION,
                     summary as summary_module,
                     wording as wording_module)
 
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
 
@@ -256,7 +279,9 @@ def build_payload(project_root, generated_by='sync_status', config=None,
     warnings.extend(entry['text'] for entry in stale)
     corrections = (len(markers_module.marker_problems(scanned, features))
                    + len(stale))
-    sources = {'suites': suites, 'tests': {}, 'blobs': {}}
+    # `runs` is the `runs` setting, which a proof's own `runs=` wins over.
+    sources = {'suites': suites, 'tests': {}, 'blobs': {},
+               'runs': runs_setting(config)}
 
     feature_entries = []
     own_results = {}
@@ -553,6 +578,9 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
             'manual': proof['manual'],
             'slow': bool(proof.get('slow')),
             'env': proof['env'],
+            'ai': list(proof.get('ai') or ()),
+            'graded': proof.get('graded'),
+            'runs': None,
             'text': proof['text'],
             'tests': [_with_failure({'file': f, 'name': n,
                                       'result': ran.get((f, n), 'not run')},
@@ -560,6 +588,9 @@ def _rule_entry(project_root, owner, owner_info, rule_id, owner_evidence,
                       for f, n in _backing_tests(sections, proof_id)],
             'carried': _carried_from(sections, proof_id, proof['env']),
         }
+        if entry['ai']:
+            entry['runs'] = states.runs_asked(proof, sources.get('runs'))
+        entry['models'] = states.model_results(entry, sections, anchor)
         entry['result'] = states.proof_result(entry, sections, marked, anchor)
         proof_dicts.append(entry)
 
