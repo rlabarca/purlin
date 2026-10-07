@@ -19,8 +19,8 @@
 >   and the rule reads `weak`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 78
-> Highest-Proof: 191
+> Highest-Rule: 80
+> Highest-Proof: 195
 
 ## Rules
 
@@ -74,6 +74,8 @@
 - RULE-76: Where the bug's recorded change can no longer be planted, the model is asked for one new bug for that proof in the rule's request, as for any proof whose code changed
 - RULE-77: A rule named with `--settle` whose entry holds a finding of the spot tests is read whether or not it keeps a bug as `survived`: the spot tests run over its tests as they stand, no model is asked for a rule that needs no new bug, each proof's result taken on the same test and code is kept, and the verdict is set as in any audit
 - RULE-78: Where the spot tests of a settle find nothing in a test the rule's entry holds a finding of theirs for, the audit prints under the rule, before any other line, `  <file>::<test>: the spot tests now find nothing.`, and the evidence does not hold that line
+- RULE-79: A caller that names a model and a system prompt of its own starts the same call with `--model <name>` before `--system-prompt` and its own system prompt as the last argument; the audit names neither
+- RULE-80: A call's answer carries what the program printed, and for a call that failed what the program itself said of it: the `result` of a JSON that reports an error, else its standard error where it exited with an error
 
 ## Proof
 
@@ -194,3 +196,7 @@
 - PROOF-189 (RULE-77): `RULE-7` reads `weak` on the one finding `tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing.`, keeps no bug as `survived`, and nothing has changed since; named with `--settle`, the audit prints `sample_intake RULE-7   weak`, then that finding, and no `nothing to settle`; `claude` is started `0` times, and the entry of `RULE-7` is as it was
 - PROOF-190 (RULE-65): The entry of `PROOF-11` reads `not made`; its test is changed to check the proof's two numbers and `RULE-7` is settled; the entry of `RULE-7` holds no bug, and the second line under the rule reads `  PROOF-11: no bug is on record for its test as it stands. Run purlin:audit sample_intake to plant one.`
 - PROOF-191 (RULE-77): `RULE-4` reads `weak` on the one finding `tests/test_intake.py::test_72_hours_is_accepted: the check cannot fail: assert True.`, and the bug of `PROOF-6` reads `caught`; the test of `PROOF-7` is changed to check the status `accepted` and `RULE-4` is settled; `RULE-4` reads `strong`, the entry of `PROOF-6` is as it was, and `claude` is started `0` times
+- PROOF-192 (RULE-79): The model is asked with the model `claude-haiku-4-5-20251001` and the system prompt `Answer in one word.`, with `claude` found at `/bin/claude`; the program started is exactly `/bin/claude -p --output-format json --max-turns 1 --tools "" --strict-mcp-config --safe-mode --setting-sources "" --disable-slash-commands --no-session-persistence --model claude-haiku-4-5-20251001 --system-prompt` and then `Answer in one word.`
+- PROOF-193 (RULE-80): `claude` exits with the code 1 having printed a JSON whose `is_error` is true and whose `result` reads `Invalid API key · Please run /login`; the answer's reason reads `claude exited with an error`, and what the program said reads `Invalid API key · Please run /login`
+- PROOF-194 (RULE-80): `claude` exits with the code 1, prints nothing and writes `error: unknown option '--modle'` to its standard error; what the program said reads `error: unknown option '--modle'` and a line feed
+- PROOF-195 (RULE-80): `claude` exits 0 and prints `{"result": "yes"}`; the answer reads `yes`, what the program printed reads `{"result": "yes"}` and a line feed, and what the program said is empty

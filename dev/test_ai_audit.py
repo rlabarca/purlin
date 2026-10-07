@@ -2622,3 +2622,62 @@ class TestASettleReadsTheSpotTestsAgain:
         assert entry['verdict'] == 'strong', entry
         assert made.rule_lines('RULE-4') == [
             'sample_intake RULE-4   strong'], made.lines
+
+
+class TestACallerOfItsOwnModelAndSystemPrompt:
+    """`ask_model` with a model and a system prompt, as
+    `scripts/ai/purlin_ai.py` calls it."""
+
+    @staticmethod
+    def _answers(stdout='', stderr='', code=0):
+        """A runner that keeps what it was started with and answers as
+        `claude` would."""
+        seen = []
+
+        def runner(command, **kwargs):
+            seen.append(command)
+            return subprocess.CompletedProcess(command, code, stdout, stderr)
+        return runner, seen
+
+    # purlin: ai_audit PROOF-192
+    def test_the_model_goes_before_the_callers_own_system_prompt(self):
+        runner, seen = self._answers('{"result": "yes"}\n')
+        audit_module.ask_model(
+            'Is it?', command='/bin/claude', runner=runner, cwd='.',
+            model='claude-haiku-4-5-20251001', system='Answer in one word.')
+        assert seen == [[
+            '/bin/claude', '-p', '--output-format', 'json', '--max-turns',
+            '1', '--tools', '', '--strict-mcp-config', '--safe-mode',
+            '--setting-sources', '', '--disable-slash-commands',
+            '--no-session-persistence', '--model',
+            'claude-haiku-4-5-20251001', '--system-prompt',
+            'Answer in one word.']]
+
+    # purlin: ai_audit PROOF-193
+    def test_an_error_the_json_reports_is_what_the_program_said(self):
+        runner, _seen = self._answers(json.dumps({
+            'is_error': True,
+            'result': 'Invalid API key \u00b7 Please run /login'}), code=1)
+        found = audit_module.ask_model('Is it?', command='/bin/claude',
+                                       runner=runner, cwd='.')
+        assert found['why'] == 'claude exited with an error'
+        assert found['said'] == 'Invalid API key \u00b7 Please run /login'
+
+    # purlin: ai_audit PROOF-194
+    def test_standard_error_is_what_a_program_that_exited_said(self):
+        runner, _seen = self._answers(
+            stderr="error: unknown option '--modle'\n", code=1)
+        found = audit_module.ask_model('Is it?', command='/bin/claude',
+                                       runner=runner, cwd='.')
+        assert found['said'] == "error: unknown option '--modle'\n"
+
+    # purlin: ai_audit PROOF-195
+    def test_an_answer_carries_what_the_program_printed(self):
+        runner, _seen = self._answers('{"result": "yes"}\n',
+                                      stderr='a warning\n')
+        found = audit_module.ask_model('Is it?', command='/bin/claude',
+                                       runner=runner, cwd='.')
+        assert found['answer'] == 'yes'
+        assert found['printed'] == '{"result": "yes"}\n'
+        assert found['said'] == ''
+

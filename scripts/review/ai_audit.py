@@ -495,8 +495,9 @@ def empty_folder():
         shutil.rmtree(folder, ignore_errors=True)
 
 
-def ask_model(prompt, command=None, runner=None, cwd=None):
-    """One call: `{'answer', 'model', 'why'}`.
+def ask_model(prompt, command=None, runner=None, cwd=None, model=None,
+              system=None):
+    """One call: `{'answer', 'model', 'why', 'printed', 'said'}`.
 
     The request goes on stdin and stdin is closed after it, so the command
     line never carries it. `claude` is started in `cwd`, the audit's empty
@@ -504,20 +505,35 @@ def ask_model(prompt, command=None, runner=None, cwd=None):
     None when the model answered, and names the cause otherwise: an answer
     that is empty, is not JSON or reports an error is `NO_ANSWER`. `runner`
     stands in for `subprocess.run` in a test.
+
+    `model` names the model to ask, as `--model <name>` before
+    `--system-prompt`, and `system` is the system prompt sent in place of
+    `SYSTEM_PROMPT`; the audit gives neither. `printed` is the program's
+    standard output, and `said` what the program itself said of a call
+    that failed: the `result` of a JSON that reports an error, else its
+    standard error where it exited with an error, else ''.
     """
     command = command or claude_path()
     if not command:
-        return {'answer': None, 'model': None, 'why': NOT_ON_PATH}
+        return {'answer': None, 'model': None, 'why': NOT_ON_PATH,
+                'printed': '', 'said': ''}
     if cwd is None:
         with empty_folder() as folder:
-            return _call(prompt, command, runner or subprocess.run, folder)
-    return _call(prompt, command, runner or subprocess.run, cwd)
+            return _call(prompt, command, runner or subprocess.run, folder,
+                         model, system)
+    return _call(prompt, command, runner or subprocess.run, cwd, model,
+                 system)
 
 
-def _call(prompt, command, runner, cwd):
-    found = {'answer': None, 'model': None, 'why': None}
+def _call(prompt, command, runner, cwd, model=None, system=None):
+    found = {'answer': None, 'model': None, 'why': None, 'printed': '',
+             'said': ''}
+    argv = [command] + list(COMMAND[1:-1])
+    if model:
+        argv.extend(['--model', model])
+    argv.extend([COMMAND[-1], system or SYSTEM_PROMPT])
     try:
-        result = runner([command] + list(COMMAND[1:]) + [SYSTEM_PROMPT],
+        result = runner(argv,
                         input=prompt, capture_output=True, text=True,
                         encoding='utf-8', errors='replace', cwd=cwd,
                         env=dict(os.environ, **ENVIRONMENT),
@@ -530,13 +546,19 @@ def _call(prompt, command, runner, cwd):
         found['why'] = EXITED
     if result is None:
         return found
-    if result.returncode != 0:
-        found['why'] = EXITED
-        return found
+    found['printed'] = result.stdout or ''
     try:
         body = json.loads(result.stdout or '')
     except ValueError:
         body = None
+    if isinstance(body, dict) and body.get('is_error') \
+            and isinstance(body.get('result'), str):
+        found['said'] = body['result']
+    elif result.returncode != 0:
+        found['said'] = result.stderr or ''
+    if result.returncode != 0:
+        found['why'] = EXITED
+        return found
     if not isinstance(body, dict):
         found['why'] = NO_ANSWER
         return found
