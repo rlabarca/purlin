@@ -155,6 +155,24 @@ operating system. Those three are the whole vocabulary. A proof with no `@env` i
 a run on any operating system; a proof with one has its passed cell met only when a run on
 that system passes it.
 
+A proof about what an AI does with a prompt, a skill, an agent definition or a Claude
+project's instructions is an AI proof. Its tag names the model it is shown on, and a second
+tag names the model that grades it, where one does:
+
+```
+- PROOF-9 (RULE-9): With the sample report, the reply names the three findings by their ids @ai(claude-opus-5-5)
+- PROOF-10 (RULE-10): Asked for a refund over the limit, the reply refuses and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+```
+
+`references/spec_quality_guide.md`, "A proof about what an AI does", sets the three kinds of
+check side by side, exact, graded and by hand, and says what a good one names;
+`references/formats/spec_format.md`, "The AI tags", is the syntax. Write each as an exact
+check where the proof can name the thing to look for in the output. Where a sentence about
+what an AI does could be checked exactly, graded or by hand, **Stop and ask** which. In the
+same question, ask which model or models each AI proof is shown on, and which model
+grades a graded one. Never pick a model yourself: the model is what is being validated.
+Write `runs=<n>` in a tag only where the person asks for a count of their own.
+
 ## Ids
 
 A new rule takes one more than the highest of these:

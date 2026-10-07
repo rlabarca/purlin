@@ -4,7 +4,7 @@ One test for each proof of `specs/skills/skill_spec.md`. The check of the
 names is `must_name` in `dev/skill_checks.py`.
 """
 
-from skill_checks import flat, must_name, read, skill_path
+from skill_checks import flat, must_name, read, skill_path, under_heading
 
 SKILL = skill_path('spec')
 
@@ -33,3 +33,30 @@ def test_the_spec_skill_says_where_the_two_highest_lines_go():
     ids = text[text.index('\n## Ids\n'):]
     ids = ids[:ids.index('\n## ', 1)]
     assert WHERE_THE_LINES_GO in flat(ids)
+
+
+AI_LINES = (
+    '- PROOF-9 (RULE-9): With the sample report, the reply names the three '
+    'findings by their ids @ai(claude-opus-5-5)',
+    '- PROOF-10 (RULE-10): Asked for a refund over the limit, the reply '
+    'refuses and blames nobody @ai(claude-opus-5-5) '
+    '@graded(claude-haiku-4-5-20251001)')
+ASKS = ('Where a sentence about what an AI does could be checked exactly, '
+        'graded or by hand, **Stop and ask** which.',
+        'Never pick a model yourself: the model is what is being validated.')
+
+
+def _proofs():
+    return under_heading(read(SKILL), 'Proofs')
+
+
+# purlin: skill_spec PROOF-64
+def test_the_part_on_proofs_shows_the_two_tags_with_their_models():
+    lines = _proofs().splitlines()
+    assert [line for line in AI_LINES if line not in lines] == []
+
+
+# purlin: skill_spec PROOF-65
+def test_the_part_on_proofs_asks_which_check_and_picks_no_model():
+    part = flat(_proofs())
+    assert [sentence for sentence in ASKS if sentence not in part] == []
