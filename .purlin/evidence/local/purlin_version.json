@@ -159,7 +159,7 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-07T18:35:37Z",
+        "at": "2026-10-07T18:37:54Z",
         "bugs": {
           "PROOF-16": {
             "after": "SERVER_INFO = {\"name\": \"purlin\", \"version\": \"0.10.0\"}",
@@ -176,36 +176,25 @@
             "after": "                \"serverInfo\": {\"name\": \"purlin\", \"version\": \"0.10.0\"},",
             "aim": "past the test",
             "before": "                \"serverInfo\": SERVER_INFO,",
-            "bug_key": "248e5e675b4dc5351cf58239e7ade7ba3177eb69327d162764c055c45991ad17",
+            "bug_key": "22a35ced08de27db57e4e6b25b352815167ecd0b67377dce5fd373bf768b5047",
             "case": "a copied package beside a VERSION file reading 9.8.7, loaded in a fresh process; the proof says its server reports 9.8.7; the changed server answers the handshake with 0.10.0",
             "file": "scripts/mcp/purlin/server.py",
             "line": 208,
-            "result": "survived",
-            "test_key": "a63db9291b64ac9e033d14423ac7ffdb8d0530df9e9be4d6b9185a19ad7da5ba",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "844c5fafaa85fa2175c41ded5b8ac214c3cc71118ad21b745d2f53a75d92a4f2",
-        "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
+        "commit": "2a50307156414b4923393cde295fc2fda4fa6eaa",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-2: the test copies the package beside a VERSION file reading 9.8.7 and compares the two reported values with the list of 9.8.7 twice, which is the proof's case and both of its results.",
-          "PROOF-2: the two values come from a helper whose source is not shown, so where the server's value is read from, its stored record or its handshake answer, cannot be told from the test's own lines.",
-          "PROOF-16: the test starts the copied server as its own process, sends the handshake, and compares the whole server record with the name purlin and version 9.8.7, so a wrong name or a wrong version fails it.",
-          "PROOF-16: the test also requires the server to exit cleanly, which the proof does not name.",
-          "The spot tests found nothing, and both tests take the expected value 9.8.7 from a literal, not from the code.",
-          "Neither proof covers the \"at import time\" part of the rule beyond a fresh process, and neither names the case of a missing VERSION file."
-        ],
-        "findings": [
-          "PROOF-2: the test still passes when scripts/mcp/purlin/server.py:208 reads \"\"serverInfo\": {\"name\": \"purlin\", \"version\": \"0.10.0\"},\"",
-          "PROOF-2: the AI says this breaks: a copied package beside a VERSION file reading 9.8.7, loaded in a fresh process; the proof says its server reports 9.8.7; the changed server answers the handshake with 0.10.0"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "cee4b79bdecb10f08fd9848c0fa74d929b666c7df3633b14da38caf2a709b199",
         "rule_hash": "a952f42cdc6cc36aaabf559289201e34c7955cdb52969d82e530e039cb277936",
-        "test_hash": "19cdf4c43e035887eb8f73cd6e613d8f47c5e42cbe4215e853aa21c24837cdda",
-        "verdict": "weak"
+        "test_hash": "94c88d9ff7195ca1b0324dd89a6ca30bc8a7660edbcc9c4839f6d0ccca8db5c0",
+        "verdict": "strong"
       },
       "RULE-3": {
         "at": "2026-10-07T18:35:37Z",
@@ -309,14 +298,14 @@
   "feature": "purlin_version",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T18:28:28Z",
-      "commit": "8a8532a4d943ce21632d32573478bed86a68f9ed",
-      "dirty": false,
+      "at": "2026-10-07T18:37:44Z",
+      "commit": "2a50307156414b4923393cde295fc2fda4fa6eaa",
+      "dirty": true,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "844c5fafaa85fa2175c41ded5b8ac214c3cc71118ad21b745d2f53a75d92a4f2",
         "spec": "ec359b7b281610d4db6875143ff256fb84a3c9881442c25f9c4ffce45f7d7525",
-        "tests": "c161b365e6fab147a330970678e6ee19e9e236d7e3334e3820b83ab0a8cfbf51"
+        "tests": "07b4faa8740c7e4b598247d85ee1a9e4594dadea51f6ee02e4bbe97f229376e4"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -328,14 +317,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_version_file_holds_one_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -357,7 +346,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -372,14 +361,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.105,
+                "duration": 0.163,
                 "name": "test_a_copied_package_reports_the_version_file_beside_it",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -394,14 +383,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.122,
+                "duration": 0.094,
                 "name": "test_the_copied_server_names_that_version_on_the_handshake",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -416,14 +405,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.47,
+                "duration": 0.395,
                 "name": "test_a_project_init_sets_up_is_stamped_with_the_version_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -438,14 +427,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_the_plugin_manifest_carries_the_version_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -467,7 +456,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -482,14 +471,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.327,
+                "duration": 0.124,
                 "name": "test_the_bump_writes_the_version_file_and_both_json_files",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -504,14 +493,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.479,
+                "duration": 0.289,
                 "name": "test_the_bump_moves_the_docs_examples_tag_and_the_check_names_its_drift",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -526,14 +515,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_version",
-                "duration": 0.18,
+                "duration": 0.064,
                 "name": "test_the_check_names_the_location_that_drifted",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
@@ -555,7 +544,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "74e4d32a4ef1f36f88926a03ee122763b89e49ce36a13bfd205f59cd0b8fd5fd"
+              "sha256": "d05b14b4d6a05c47accde24645365a5cfb3767a0fcfbd3730808379132967c5a"
             }
           },
           "result": "pass",
