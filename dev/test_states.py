@@ -385,6 +385,7 @@ class TestThePlatformsInThePassedCell:
             cell = made.cell('RULE-1', 'passed')
         finally:
             made.close()
+        assert sorted(cell['platforms']) == ['linux', 'windows'], cell
         assert cell['platforms']['windows'] == {
             'word': 'not run', 'source': None, 'at': None}, cell
         assert cell['platforms']['linux']['word'] == 'passed', cell
@@ -441,6 +442,8 @@ class TestThePlatformsInThePassedCell:
             'no test', None, {}), cell
         named = [w for w in data['warnings'] if path in w]
         assert len(named) == 1, data['warnings']
+        # Exactly one line: the warnings hold no other.
+        assert len(data['warnings']) == 1, data['warnings']
         assert named[0].startswith(
             '.purlin/evidence/ci/login.json: evidence file ignored. '), named
 
@@ -991,7 +994,10 @@ class TestPayload:
     # purlin: states PROOF-37
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
+        # The payload as it stood before the write, key for key.
+        written = json.loads(json.dumps(data))
         path = purlin_payload.write_report_data(project.root, data)
+        assert sorted(data) == sorted(written), 'the write changed the payload'
         # The bytes, before a text read on Windows folds `\r\n` into `\n`.
         with open(path, 'rb') as handle:
             raw = handle.read()
@@ -1003,7 +1009,8 @@ class TestPayload:
         read_back = json.loads(text[len('const PURLIN_DATA = '):-len(';\n')])
         assert read_back['commit'] == data['commit']
         # The whole payload, key for key.
-        assert read_back == json.loads(json.dumps(data)), 'not the payload'
+        assert sorted(read_back) == sorted(written), sorted(read_back)
+        assert read_back == written, 'not the payload'
 
     # purlin: states PROOF-98
     def test_two_passing_rules_on_committed_evidence_are_met_and_end_on_sign(
@@ -1232,8 +1239,19 @@ class TestTheTestHash:
                 '    aged = age(1520)\n\n    assert aged == "rejected"\n')
             longer = made.rule('RULE-1', 'sample_age')
             second = made.rule('RULE-2', 'sample_age')
+            # An edit that ends one line of the second test `\r\n`.
+            path = os.path.join(made.root, 'tests', 'test_age.py')
+            with open(path, 'rb') as handle:
+                raw = handle.read()
+            assert raw.count(b'    aged = age(1520)\n') == 1 and (
+                b'\r' not in raw), raw
+            with open(path, 'wb') as handle:
+                handle.write(raw.replace(b'    aged = age(1520)\n',
+                                         b'    aged = age(1520)\r\n'))
+            ended = made.rule('RULE-1', 'sample_age')
         finally:
             made.close()
+        assert ended['test_hash'] == first['test_hash']
         assert first['test_hash_kind'] == 'test', first['test_hash_kind']
         assert after['test_hash'] == first['test_hash']
         assert len(first['test_hash']) == 64, first['test_hash']
@@ -1257,11 +1275,16 @@ class TestTheTestHash:
             _edit_age_test(made, '        assert age(91) == 91\n',
                            '        assert age(91) == \\\n            91\n')
             broken = made.rule('RULE-1', 'sample_age')['test_hash']
+            # An edit to the body that changes the case of one letter.
+            _edit_age_test(made, '        assert age(91) == \\\n',
+                           '        assert Age(91) == \\\n')
+            cased = made.rule('RULE-1', 'sample_age')['test_hash']
         finally:
             made.close()
         assert after != first
-        assert len({first, after, indented, broken}) == 4, (
-            first, after, indented, broken)
+        assert cased != broken
+        assert len({first, after, indented, broken, cased}) == 5, (
+            first, after, indented, broken, cased)
 
 
 # ---------------------------------------------------------------------------
@@ -1491,10 +1514,12 @@ class TestAnAIProof:
                                        _model(OPUS, 'pass', 'fail', 'pass'))
         passed = rule['cells']['passed']
         assert passed['word'] == 'failed', passed
+        # The system as a person reads it, written out here.
+        system = {'macos': 'macOS', 'linux': 'Linux/Unix',
+                  'windows': 'Windows'}[purlin_evidence.host_os()]
         assert passed['reasons'] == [
-            'failing: %s, local' % purlin_states.system_word(
-                purlin_evidence.host_os()),
-            '%s: 2 of 3 passed' % OPUS], passed
+            'failing: %s, local' % system,
+            'claude-opus-5-5: 2 of 3 passed'], passed
         assert rule['left'] == 'to_fix', rule['left']
 
     # purlin: states PROOF-339
@@ -1711,6 +1736,10 @@ class TestASpecAheadOfItsCode:
         assert line in lines, lines
         assert data['information'] == [line], data['information']
         assert line not in data['warnings'], data['warnings']
+        # The page draws each line from its notice: this one is drawn as
+        # information, never as a warning.
+        assert [entry['tone'] for entry in data['notices']
+                if entry['text'] == line] == ['neutral'], data['notices']
 
 
 # ---------------------------------------------------------------------------
