@@ -34,6 +34,11 @@ def test_the_status_skill_names_each_of_its_six_commands():
     text = flat(read(SKILL))
     assert [name for name in COMMANDS if name not in text] == []
     assert must_name('status', commands=COMMANDS) == []
+    # Each is named whole: `purlin:specs` is not `purlin:spec`, and
+    # `purlin:test --commits` is not `purlin:test --commit`.
+    assert [name for name in COMMANDS
+            if not re.search(r'(?<![\w:-])%s(?![\w:-])' % re.escape(name),
+                             text)] == []
 
 
 # purlin: skill_status PROOF-38
@@ -48,6 +53,12 @@ def test_the_status_skill_names_its_two_paths():
     text = flat(read(SKILL))
     assert [name for name in PATHS if name not in text] == []
     assert must_name('status', paths=PATHS) == []
+    # Each is named as the path it is, from the plugin's root: a path that
+    # follows another folder, as `.claude/skills/spec/SKILL.md` does, or
+    # that goes on past its last letter, is another path.
+    assert [name for name in PATHS
+            if not re.search(r'(?:(?<=\}/)|(?<![\w./<>*-]))%s(?![\w/-])'
+                             % re.escape(name), text)] == []
 
 
 # purlin: skill_status PROOF-41
@@ -187,3 +198,6 @@ def test_the_skill_shows_the_graded_summary_and_the_row_for_a_model():
     rows = [line for line in lines if line.startswith('|')
             and all(name in line for name in ON_A_MODEL)]
     assert len(rows) == 1, rows
+    # The next step is that command whole, closed where it ends:
+    # `purlin:test --all-models` is another command.
+    assert '`→ Run: purlin:test --all`' in rows[0], rows[0]
