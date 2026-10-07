@@ -283,7 +283,8 @@ and a commit an AI helped with that carries no such line reads `[]`.
 An output is what a result was read from. There are two kinds. A `report` is
 a test suite's report as the suite wrote it, one file. An `ai-output` is the
 folder holding what an AI produced in one run of an AI proof's test:
-`reply.md`, `transcript.jsonl`, `files/` and the record `purlin.json`. Each
+`reply.md`, `transcript.jsonl`, `files/`, `input/`, which holds what the AI
+was given, and the record `purlin.json`. Each
 `outputs` entry:
 
 | Field | Type | What it holds |
