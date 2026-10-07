@@ -71,7 +71,8 @@ package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" 
   proof, `<spec> RULE-N` for a rule, `<spec>` for a spec or an anchor, and the thing itself, a
   tag or a file, where the line is about no one spec.
 - **The kind** is 2 to 5 words, the same every time. Where the status names that work under
-  `Left to do`, the kind is that name: `test comment to correct`, `spec to repair`.
+  `Left to do`, the kind is that name: `test comment to correct`, `spec to repair`, `rule to fix`,
+  `rule to write a test for`.
 - **What is wrong** is short. A reworded proof shows the words that changed alone, each side
   cut to 8 words with ` ...`, or `was reworded` where the two wordings share too little. A rule
   or a proof is never printed whole.
@@ -79,8 +80,10 @@ package PROOF-3 (RULE-3): test comment to correct. "sixteen" became "seventeen" 
 - It is one line, and a path or a name is never cut.
 
 On the dashboard the name is in the machine typeface and the kind is a label. Three or more of
-one kind fold into one notice that opens on the kind:
+one kind fold into one line that opens on the kind, on the dashboard, in the status and in a
+test run:
 `proof line not read: 4 specs, export, invoice and 2 more. Run purlin:status for each.`
+`purlin:status <name>` prints every line of that spec whole.
 
 ## Short and plain
 

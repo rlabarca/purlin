@@ -1313,8 +1313,8 @@
       "about": "invoice",
       "feature": "invoice",
       "rule": null,
-      "rest": "2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice.",
-      "text": "invoice: rule line with no number. 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
+      "rest": "2 lines under ## Rules are not numbered. Run purlin:spec invoice.",
+      "text": "invoice: rule line with no number. 2 lines under ## Rules are not numbered. Run purlin:spec invoice."
     }
   ],
   "os_words": {
@@ -1374,6 +1374,6 @@
   },
   "version": "0.10.0",
   "warnings": [
-    "invoice: rule line with no number. 2 lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`. Run purlin:spec invoice."
+    "invoice: rule line with no number. 2 lines under ## Rules are not numbered. Run purlin:spec invoice."
   ]
 }

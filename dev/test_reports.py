@@ -613,8 +613,8 @@ class TestThroughARun:
             '# purlin: login PROOF-2\ndef test_x():\n    pass\n'),
             _spec('login', 2))
         assert ('test_x: test name not unique. It matches 2 tests in '
-                'tests/test_login.py, so its result is not counted. Give the '
-                'tests different names, then run purlin:test.') in out.splitlines(), out
+                'tests/test_login.py. Give the tests different names, then '
+                'run purlin:test.') in out.splitlines(), out
         assert {key[0]: value for key, value in results.items()} == {
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
@@ -696,7 +696,7 @@ class TestThroughARun:
     def test_an_exit_suite_gives_each_file_its_exit_code(self, exit_run):
         root, code, out = exit_run
         assert code == 1
-        assert 'Evidence is missing' not in out, out
+        assert 'evidence missing' not in out, out
         assert _results(_evidence(root)) == {
             ('PROOF-1', 'tests/good.sh::good.sh'): 'pass',
             ('PROOF-2', 'tests/good.sh::good.sh'): 'pass',
@@ -782,8 +782,10 @@ class TestThroughARun:
         root = _silent_project(tmp_path, '.purlin/runtime/reports/pytest.xml')
         code, out = _run(root, '--all', '--test')
         assert code == 1
-        assert ('Evidence is missing: the pytest suite wrote no report at '
-                '.purlin/runtime/reports/pytest.xml.') in out
+        assert ('pytest suite: evidence missing. It wrote no report at '
+                '.purlin/runtime/reports/pytest.xml. Check the suite in '
+                '.purlin/config.json, then run purlin:test.'
+                ) in out.splitlines(), out
 
     @staticmethod
     def _names_nothing(tmp_path, marker):
@@ -864,9 +866,10 @@ class TestThroughARun:
         code, out = self._report_written(
             tmp_path, "mkdir -p .purlin/runtime/reports && "
                       "printf 'not xml' > {report}")
-        assert ('Evidence is missing: the pytest suite wrote a report at '
-                '.purlin/runtime/reports/pytest.xml that is not junit: '
-                'syntax error: line 1, column 0') in out, out
+        assert ('pytest suite: evidence missing. '
+                '.purlin/runtime/reports/pytest.xml is not junit. Check the '
+                'suite in .purlin/config.json, then run purlin:test.'
+                ) in out.splitlines(), out
         assert code == 1, out
 
 
@@ -1108,8 +1111,7 @@ class TestAJavaScriptTitle:
             spec=_spec('login', 1))
         lines = out.splitlines()
         assert ('tests/login.test.ts:4: test title not read. It is not one '
-                'plain string, so its result cannot be matched. Write it as '
-                'one string.') in lines, out
+                'plain string. Write it as one string.') in lines, out
         assert 'Markers: 0 tied to a test, 1 not tied.' in lines, out
         assert code == 1, out
 

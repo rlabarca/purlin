@@ -587,11 +587,12 @@ class TestAnchorsBehind:
         assert rows == [{'anchor': 'policy', 'source': missing,
                          'pinned': 'abc1234', 'status': 'error',
                          'error': reason}], rows
+        shown = reason.split('. ')[0]
+        assert len(shown) > 80, shown
         assert _lines(report).count(
-            'policy: anchor source not read. Its source could not be read '
-            '(%s). Check its > Source: line, then run purlin:anchor sync '
-            'policy.'
-            % reason) == 1, _lines(report)
+            'policy: anchor source not read. Reading it gave "%s...". Check '
+            'its > Source: line, then run purlin:anchor sync policy.'
+            % shown[:80].rstrip()) == 1, _lines(report)
 
 
 # ---------------------------------------------------------------------------
@@ -712,9 +713,9 @@ class TestNumbersWrittenTwice:
             'PROOF-7 (RULE-1): Y')})
         report = _report(checkout)
         assert ('login PROOF-7: number written twice. Neither line is on '
-                'origin/main, and the one that reaches it first keeps the '
-                'number. Renumber the other to PROOF-8 and move its test '
-                'comments with it.') in _lines(report), _lines(report)
+                'origin/main, and the first there keeps it. Renumber the '
+                'other to PROOF-8 and move its test comments with it.'
+                ) in _lines(report), _lines(report)
 
     # purlin: drift PROOF-85
     def test_a_number_written_twice_by_a_merge_is_never_a_proof_changed(
@@ -727,7 +728,8 @@ class TestNumbersWrittenTwice:
                 if line.startswith('login PROOF-4: number written twice.')], \
             _lines(report)
         assert not [line for line in _lines(report)
-                    if line.startswith('login PROOF-4 changed')], _lines(report)
+                    if line.startswith('login PROOF-4')
+                    and ': changed.' in line], _lines(report)
         assert _view(report)['proofs_changed'] == []
 
     # purlin: drift PROOF-90
@@ -1021,12 +1023,17 @@ class TestProofsChanged:
             'login': ['PROOF-5', 'PROOF-6']}
 
     # purlin: drift PROOF-68
-    def test_a_pull_rewording_proof_1_quotes_both_wordings(self, tmp_path):
+    def test_a_pull_rewording_proof_1_shows_the_words_that_changed(
+            self, tmp_path):
         report = _pulled_proofs(
             tmp_path, dict(FOUR, **{'PROOF-1': 'An age of 90 minutes'}))
-        assert ('login PROOF-1 changed: it read "An age of 150 minutes" and '
-                'now reads "An age of 90 minutes".') in _lines(report), \
+        assert ('login PROOF-1 (RULE-1): changed. "150" became "90".'
+                in _lines(report)), _lines(report)
+        assert not any('An age of' in line for line in _lines(report)), \
             _lines(report)
+        assert _view(report)['proofs_changed'] == [{
+            'feature': 'login', 'id': 'PROOF-1',
+            'old': 'An age of 150 minutes', 'new': 'An age of 90 minutes'}]
         assert _view(report)['proofs_changed'] == [{
             'feature': 'login', 'id': 'PROOF-1',
             'old': 'An age of 150 minutes', 'new': 'An age of 90 minutes'}]
@@ -1041,3 +1048,10 @@ class TestProofsChanged:
             _lines(report)
         assert _view(report)['proofs_moved'] == [
             {'feature': 'login', 'from': 'PROOF-4', 'to': 'PROOF-6'}]
+
+    # purlin: drift PROOF-91
+    def test_a_pull_rewording_proof_2_whole_says_it_was_reworded(
+            self, tmp_path):
+        report = _pulled_proofs(tmp_path, dict(FOUR, **{'PROOF-2': 'Deux'}))
+        assert ('login PROOF-2 (RULE-1): changed. It was reworded.'
+                in _lines(report)), _lines(report)

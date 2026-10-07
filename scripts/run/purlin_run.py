@@ -199,6 +199,7 @@ from purlin import (console as console_module,                # noqa: E402
                     fingerprint as fingerprint_module,
                     frameworks as frameworks_module,
                     markers as markers_module,
+                    notices,
                     payload as payload_module,
                     project as project_module,
                     specs as specs_module,
@@ -224,8 +225,8 @@ USAGE = (
 # What the run says about the proofs tagged for an operating system it is
 # not on, one line per system, each in the words a person reads. A proof
 # with no test tied to it is not counted: it has its rule's no-test line.
-NEEDS_ONE = '1 proof needs %s; this machine is %s. Run purlin:test on %s.'
-NEEDS_MANY = '%d proofs need %s; this machine is %s. Run purlin:test on %s.'
+NEEDS_ONE = '1 proof needs it, and this machine is %s.'
+NEEDS_MANY = '%d proofs need it, and this machine is %s.'
 
 # How long one arm may take before it is killed. An hour is longer than any
 # shipped suite and far shorter than a hosted pipeline's six-hour job limit, so
@@ -269,33 +270,22 @@ NO_SUCH_SPEC = ('purlin: no spec named %s under specs/. Run purlin:status to '
 SUITE_PROBLEM = ('purlin: %s. Fix the tests setting in .purlin/config.json, '
                  'then run purlin:test.')
 
-# What the run says of each piece of evidence it could not take, after
-# `Evidence is missing: `, each with the step that puts it right. The
+# What the run says of each piece of evidence it could not take, each a
+# line of the kind `evidence missing` with the step that puts it right. A
+# suite's line is about `<suite> suite`: what it did, then what to do. The
 # timeouts name the command the run was started by, `test` or `audit`.
-TIMED_OUT_ON = ('the %s suite timed out after %d s on %s. Run purlin:%s '
-                '--arm-timeout <seconds> to give it longer.')
-TIMED_OUT_AFTER = ('the %s suite timed out after %d s. Run purlin:%s '
-                   '--arm-timeout <seconds> to give it longer.')
-NO_REPORT = ('the %s suite %s. Check its command and report in the tests '
-             'setting of .purlin/config.json, then run purlin:test.')
-ONE_MARKER_MISSING = ('1 marker has no passing or failing result: %s. Check '
-                      'that its test ran and was not skipped, then run '
-                      'purlin:test.')
-MARKERS_MISSING = ('%d markers have no passing or failing result: %s. Check '
-                   'that their tests ran and were not skipped, then run '
-                   'purlin:test.')
-
-# A marker whose test ran and is named differently in the report: the
-# feature, the id, the file, the marker's line, the title and the report's
-# name. At most `RAN_AS_SHOWN` are named and the rest counted.
-RAN_AS = ('%s %s at %s:%d: its test ran, and the report names it '
-          'differently. The title reads "%s" and the report reads "%s". '
-          'Write the title as the report reads, then run purlin:test.')
-RAN_AS_MORE_ONE = ('1 more marker whose test ran is named differently in '
-                   'the report. Correct those above, then run purlin:test.')
-RAN_AS_MORE = ('%d more markers whose tests ran are named differently in '
-               'the report. Correct those above, then run purlin:test.')
-RAN_AS_SHOWN = 5
+SUITE = '%s suite'
+TIMED_OUT_ON = 'It timed out after %d s on %s.'
+TIMED_OUT_AFTER = 'It timed out after %d s.'
+TIMED_OUT_DO = 'Run purlin:%s --arm-timeout <seconds>.'
+NO_REPORT_DO = 'Check the suite in .purlin/config.json, then run purlin:test.'
+# A marker whose test has no passing or failing result: its file and line.
+NO_RESULT = 'The test at %s:%d has no result.'
+NO_RESULT_DO = 'Check that it ran and was not skipped, then run purlin:test.'
+# A marker whose test ran and is named differently in the report: the file,
+# the marker's line and the report's name.
+RAN_AS = 'The report names the test at %s:%d "%s".'
+RAN_AS_DO = 'Write that as its title, then run purlin:test.'
 
 # What the run prints as each suite starts, flushed before the tool starts:
 # the suite and the command as run. An `exit` suite runs its command once
@@ -323,10 +313,14 @@ STILL_DO = ('Commit them, then run purlin:test --all --commit again: a '
 UNCOMMITTED_SHOWN = 10
 
 # What the run says about each rule of the features it ran that fails or
-# has no test, before the status.
-RULE_FAILS = '%s %s fails: %s. Run purlin:build %s.'
-RULE_HAS_NO_TEST = '%s %s has no test. Run purlin:build %s.'
-RULE_HAS_NO_TEST_FOR = '%s %s has no test for %s. Run purlin:build %s.'
+# has no test, before the status: a line of the kind `Left to do` counts the
+# rule under. A failing rule names its first failing test and counts the
+# rest; a rule with proofs no test is tied to names them; a rule with no
+# proof and no test says nothing more than its kind.
+RULE_FAILS = '%s fails.'
+RULE_FAILS_MORE = '%s and %d more fail.'
+NO_TEST_FOR_ONE = '%s has no test.'
+NO_TEST_FOR_MANY = '%s have no test.'
 
 # What a run that left slow proofs' tests out says before it starts, and
 # what it says of each suite whose command could not leave them out.
@@ -512,10 +506,11 @@ def needs_lines(foreign, index, os_name):
     for env in evidence_reader.PLATFORMS:
         count = counts.get(env)
         there = evidence_reader.os_word(env)
-        if count == 1:
-            lines.append(NEEDS_ONE % (there, here, there))
-        elif count:
-            lines.append(NEEDS_MANY % (count, there, here, there))
+        if count:
+            lines.append(notices.line(
+                'other_system', there,
+                NEEDS_ONE % here if count == 1 else NEEDS_MANY % (count, here),
+                notices.run('purlin:test on %s' % there)))
     return lines
 
 
@@ -702,8 +697,9 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
             ran.append(command)
             code = _run(command, project_root, log, timeout)
             if code == TIMED_OUT:
-                done.failures.append(TIMED_OUT_ON % (suite.name, timeout, path,
-                                                     action))
+                done.failures.append(notices.line(
+                    'evidence_missing', SUITE % suite.name,
+                    TIMED_OUT_ON % (timeout, path), TIMED_OUT_DO % action))
                 continue
             done.file_results[path] = (reports_module.PASS if code == 0
                                        else reports_module.FAIL)
@@ -720,7 +716,9 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     code, stdout = _run(command, project_root, log, timeout, keep_stdout=True)
     done.keep_log(log[mark:], [command])
     if code == TIMED_OUT:
-        done.failures.append(TIMED_OUT_AFTER % (suite.name, timeout, action))
+        done.failures.append(notices.line(
+            'evidence_missing', SUITE % suite.name,
+            TIMED_OUT_AFTER % timeout, TIMED_OUT_DO % action))
     done.failed_tests = code not in (0, TIMED_OUT)
     if option and code == frameworks_module.PYTEST_NOTHING_COLLECTED \
             and frameworks_module.tool_of(suite) == 'pytest':
@@ -732,7 +730,8 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
         # Loud failure A: the suite ran and there is no report to read. A
         # suite that exits non-zero over a report it wrote has only failing
         # tests, which the report itself says.
-        done.failures.append(NO_REPORT % (suite.name, problem))
+        done.failures.append(notices.line(
+            'evidence_missing', SUITE % suite.name, problem, NO_REPORT_DO))
         return done
     for source, (sha, data, extension) in reports_module.sources(
             suite.format, project_root, report, stdout).items():
@@ -1278,15 +1277,16 @@ def rule_problems(features, sections, index):
     """One line per rule of the features run that fails or has no test.
 
     Read from the words this run's sections give each rule, so the lines,
-    the evidence and the exit code say the same. A failing rule names each
-    of its tests that failed here. A rule that has no test names each of
-    its proofs no test is tied to; only a rule with no proof, and no test
-    marked with its own id, reads `has no test.` alone.
+    the evidence and the exit code say the same. A failing rule names the
+    first of its tests that failed here and counts the rest. A rule that
+    has no test names each of its proofs no test is tied to; a rule with no
+    proof, and no test marked with its own id, is named by its kind alone.
     """
     lines = []
     for name, section in sections.items():
         info = features.get(name) or {}
         by_rule = info.get('proofs_by_rule') or {}
+        build = notices.run('purlin:build %s' % name)
         for rule_id in info.get('rule_order') or ():
             word = (section.get('rules') or {}).get(rule_id)
             if word == 'failed':
@@ -1298,8 +1298,12 @@ def rule_problems(features, sections, index):
                         if entry['status'] == reports_module.FAIL \
                                 and test not in failing:
                             failing.append(test)
-                lines.append(RULE_FAILS % (name, rule_id, ', '.join(failing),
-                                           name))
+                wrong = (RULE_FAILS % failing[0] if len(failing) == 1
+                         else RULE_FAILS_MORE % (failing[0], len(failing) - 1)
+                         if failing else None)
+                lines.append(notices.line(
+                    'to_fix', '%s %s' % (name, rule_id), wrong, build,
+                    feature=name, rule=rule_id))
             elif word == 'no test':
                 listed = [entry for entry in section.get('proofs') or ()
                           if entry.get('rule') == rule_id
@@ -1309,12 +1313,28 @@ def rule_problems(features, sections, index):
                 for entry in listed:
                     if not entry.get('test') and entry['id'] not in untested:
                         untested.append(entry['id'])
-                if untested:
-                    lines.append(RULE_HAS_NO_TEST_FOR % (
-                        name, rule_id, ', '.join(untested), name))
-                else:
-                    lines.append(RULE_HAS_NO_TEST % (name, rule_id, name))
+                wrong = (None if not untested
+                         else NO_TEST_FOR_ONE % untested[0]
+                         if len(untested) == 1
+                         else NO_TEST_FOR_MANY % ', '.join(untested))
+                lines.append(notices.line(
+                    'no_test', '%s %s' % (name, rule_id), wrong, build,
+                    feature=name, rule=rule_id))
     return lines
+
+
+def missing_line(features, feature, marker_id, wrong, do):
+    """One marker whose test left no result, as a line of the kind
+    `evidence missing`: about the proof, `<spec> PROOF-N (RULE-N)`, or the
+    rule where the marker names a rule."""
+    if marker_id.startswith('RULE-'):
+        about, rule, proof = '%s %s' % (feature, marker_id), marker_id, None
+    else:
+        about, rule = notices.about_proof(features.get(feature), feature,
+                                          marker_id)
+        proof = marker_id
+    return notices.line('evidence_missing', about, wrong, do,
+                        feature=feature, rule=rule, proof=proof)
 
 
 def work_paths(scan, features, selected):
@@ -1629,7 +1649,6 @@ def main(argv=None):
     index = marker_results(scan, suites, runs, plan.held)
     ran_suites = {done.suite.name for done in runs}
     missing = []
-    renamed = []
     for (feature, marker_id), entries in sorted(index.items()):
         if feature not in selected or (feature, marker_id) in foreign_ids:
             continue
@@ -1648,13 +1667,15 @@ def main(argv=None):
                 continue
             if entry.get('ran_as'):
                 # The test ran: the report holds it under another spelling.
-                renamed.append(RAN_AS % (
-                    feature, marker_id, entry['test_file'], entry['line'],
-                    entry.get('title') or '', entry['ran_as']))
+                missing.append(missing_line(
+                    features, feature, marker_id,
+                    RAN_AS % (entry['test_file'], entry['line'],
+                              entry['ran_as']), RAN_AS_DO))
                 continue
-            missing.append('%s %s at %s:%d' % (feature, marker_id,
-                                               entry['test_file'],
-                                               entry['line']))
+            missing.append(missing_line(
+                features, feature, marker_id,
+                NO_RESULT % (entry['test_file'], entry['line']),
+                NO_RESULT_DO))
     untied = 0
     tied = 0
     for path, found in sorted(scan.items()):
@@ -1666,8 +1687,9 @@ def main(argv=None):
         for marker in found.untied:
             if marker.feature in selected and (
                     remote_proofs is None or marker.key() in remote_proofs):
-                missing.append('%s %s at %s:%d' % (marker.feature, marker.id,
-                                                   path, marker.line))
+                missing.append(missing_line(
+                    features, marker.feature, marker.id,
+                    NO_RESULT % (path, marker.line), NO_RESULT_DO))
     # A marker naming nothing a spec has fails the run, whatever the tests did.
     wrong = reports_module.marker_problems(scan, features)
     # A run over every feature says how many test files it left out for
@@ -1681,28 +1703,18 @@ def main(argv=None):
     if unmarked:
         print(unmarked)
     if scan:
-        for line in reports_module.untied_lines(scan) + wrong:
+        for line in reports_module.untied_lines(scan):
             print(line)
-        if args.action != 'ci':
-            # A test comment to correct changes no exit code: it is work
-            # left, which the status counts.
-            for entry in wording_module.stale_comments(project_root, features,
-                                                       scanned=scan):
-                print(entry['text'])
-    if missing:
-        # Loud failure B: a marker of a feature this run covers has no result.
-        # Five are named and the rest counted: a reader acts on the first few
-        # either way.
-        shown = ', '.join(missing[:5])
-        more = ('' if len(missing) <= 5
-                else ', and %d more' % (len(missing) - 5))
-        failures.append(ONE_MARKER_MISSING % (shown + more)
-                        if len(missing) == 1
-                        else MARKERS_MISSING % (len(missing), shown + more))
-    failures.extend(renamed[:RAN_AS_SHOWN])
-    if len(renamed) > RAN_AS_SHOWN:
-        more = len(renamed) - RAN_AS_SHOWN
-        failures.append(RAN_AS_MORE_ONE if more == 1 else RAN_AS_MORE % more)
+        # A test comment to correct changes no exit code: it is work left,
+        # which the status counts. Three or more of them fold into one line
+        # (`notices.folded`), as the status folds them.
+        stale = ([] if args.action == 'ci' else
+                 [entry['text'] for entry in wording_module.stale_comments(
+                     project_root, features, scanned=scan)])
+        for line in notices.folded(wrong + stale):
+            print(line)
+    # Loud failure B: a marker of a feature this run covers has no result.
+    failures.extend(missing)
     ran = [done.suite.name for done in runs]
 
     print(ran_line(ran, len(selected),
@@ -1731,8 +1743,8 @@ def main(argv=None):
     exit_code = 1 if (tests_failed or wrong or broken_specs(features)) else 0
     if failures:
         print('')
-        for failure in failures:
-            print('Evidence is missing: %s' % failure)
+        for failure in notices.folded(failures):
+            print(failure)
 
     # A `--ci` run commits its `ci/` files alone: the specs, tests and
     # settings it ran are the commit it was started on.
@@ -1748,7 +1760,7 @@ def main(argv=None):
     problems = rule_problems(features, sections, index)
     if problems:
         print('')
-        for line in problems:
+        for line in notices.folded(problems):
             print(line)
 
     if args.action == 'ci':

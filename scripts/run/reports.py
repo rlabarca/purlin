@@ -64,9 +64,9 @@ NOT_RUN = 'not run'
 # The words the run prints about a marker it could not use, and about a case
 # it could not count. Each line says what to do.
 TIED_TO_NO_TEST = 'No test follows %s:%d.'
-UNREADABLE_TITLE = 'It is not one plain string, so its result cannot be matched.'
+UNREADABLE_TITLE = 'It is not one plain string.'
 UNREADABLE_TITLE_DO = 'Write it as one string.'
-AMBIGUOUS = 'It matches %d tests in %s, so its result is not counted.'
+AMBIGUOUS = 'It matches %d tests in %s.'
 AMBIGUOUS_DO = 'Give the tests different names, then run purlin:test.'
 
 # The outcomes TRX writes that mean the test ran and did not pass, and those
@@ -356,12 +356,11 @@ def read_report(fmt, project_root, report, stdout=''):
     for source, full in files:
         text = (stdout or '') if full is None else _read(full)
         if text is None:
-            return [], 'wrote a report at %s that could not be read' % report
+            return [], '%s could not be read.' % report
         try:
             found = reader(text.lstrip('\ufeff'))
-        except (ElementTree.ParseError, ValueError) as error:
-            return [], 'wrote a report at %s that is not %s: %s' % (
-                report, fmt, error)
+        except (ElementTree.ParseError, ValueError):
+            return [], '%s is not %s.' % (report, fmt)
         for case in found:
             case.source = source
         cases.extend(found)
@@ -382,11 +381,11 @@ def _report_files(fmt, project_root, report):
                  for name in sorted(os.listdir(full))
                  if name.lower().endswith(_DIRECTORY_EXTENSIONS[fmt])]
         if not files:
-            return [], 'wrote no report in %s' % report
+            return [], 'It wrote no report in %s.' % report
         return files, None
     if os.path.isfile(full):
         return [(report, full)], None
-    return [], 'wrote no report at %s' % report
+    return [], 'It wrote no report at %s.' % report
 
 
 # The extension a kept copy of the command's standard output is given.

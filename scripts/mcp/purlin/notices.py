@@ -9,16 +9,24 @@ What it is about comes first, as a person looks it up: `<spec> PROOF-N
 or an anchor, and the thing itself, a tag or a file, where the line is about
 no one spec. The kind is the same few words every time, and `KINDS` is the
 one list of them; where the status names that work under `Left to do`, the
-kind is that name. What is wrong is short, and the line ends on the command
-to run, or, where nothing is to be run, on what to do. A line is one line.
+kind is that name. What is wrong is short, and left out where the kind says
+it; the line ends on the command to run, or, where nothing is to be run, on
+what to do. A line is one line, and none runs long because of its
+explanation: what is wrong is a few words, a list is its first entry and a
+count, and another tool's message is its first sentence (`first_sentence`).
+A path, a name and a command are never cut.
 
 `line` builds a line, as a `Notice`: the text, which every surface prints as
 it is, with what it is about, its kind and the spec, rule and proof it names
 beside it. `entries` gives those parts for the dashboard's data, which draws
 the name and the kind apart from the rest. `grouped` folds three or more
 entries of one kind into one, the kind first (`GROUP_MANY`), so the board
-stays short; the terminal prints every line. `changed_words` says what
-changed between two wordings of a proof without printing either whole.
+stays short, and `folded` is the same fold over the lines the terminal
+prints: the status and a test run print a kind's lines whole up to two, and
+`purlin:status <name>`, where the folded line sends a reader, prints every
+line of that spec whole. `changed_words` says what
+changed between two wordings of a proof without printing either whole, and
+`change_sentence` is that as the sentence every surface prints.
 """
 
 # Every kind of warning and of information, `(key, words)`. The words are
@@ -50,7 +58,13 @@ KINDS = (
     ('source_not_spec', 'anchor source not a spec'),
     ('spec_uncommitted', 'spec change not committed'),
     ('tree_dirty', 'changes not committed'),
-    # What a test run adds.
+    # What a test run adds: each rule of the features it ran that is left to
+    # do, under the name `Left to do` counts it by; each piece of evidence
+    # it could not take; and the proofs tagged for another system.
+    ('to_fix', 'rule to fix'),
+    ('no_test', 'rule to write a test for'),
+    ('evidence_missing', 'evidence missing'),
+    ('other_system', 'proofs not run here'),
     ('untied', 'test comment with no test'),
     ('title_unread', 'test title not read'),
     ('ambiguous', 'test name not unique'),
@@ -75,8 +89,14 @@ GROUP_MANY = '%s: %d specs, %s, %s and %d more. Run purlin:status for each.'
 # How many words of a wording `changed_words` shows on each side.
 WORDS_SHOWN = 8
 CUT = '...'
+# How many characters of another tool's own message a line quotes.
+CHARS_SHOWN = 80
 BECAME = '"%s" became "%s"'
 REWORDED = 'was reworded'
+# The sentence a change is said in: what changed, then what follows it in the
+# same sentence. `CHANGE_REWORDED` where the change is too large to show.
+CHANGE = '%s%s.'
+CHANGE_REWORDED = 'It %s%s.'
 
 
 class Notice(str):
@@ -94,11 +114,13 @@ class Notice(str):
 def line(kind, about, wrong, do=None, feature=None, rule=None, proof=None):
     """`<about>: <kind>. <wrong> <do>` as a `Notice`.
 
-    `wrong` and `do` are whole sentences; `do` is left out where the line
-    says what to do nowhere else."""
-    text = '%s: %s. %s' % (about, WORDS[kind], wrong)
-    if do:
-        text += ' ' + do
+    `wrong` and `do` are whole sentences. `wrong` is left out where the
+    kind already says it, and `do` where the line says what to do nowhere
+    else."""
+    text = '%s: %s.' % (about, WORDS[kind])
+    for sentence in (wrong, do):
+        if sentence:
+            text += ' ' + sentence
     made = Notice(text)
     made.about = about
     made.kind = kind
@@ -130,6 +152,20 @@ def shown(text, limit=WORDS_SHOWN):
     if len(words) <= limit:
         return ' '.join(words)
     return ' '.join(words[:limit]) + ' ' + CUT
+
+
+def first_sentence(text, limit=CHARS_SHOWN):
+    """Another tool's own message as a line quotes it: its first sentence,
+    without its full stop, cut at `limit` characters with `...` where it is
+    longer. Git's message for a source it cannot read is one."""
+    text = ' '.join((text or '').split())
+    end = text.find('. ')
+    if end >= 0:
+        text = text[:end]
+    text = text.rstrip('.')
+    if len(text) > limit:
+        return text[:limit].rstrip() + CUT
+    return text
 
 
 def changed_words(old, new):
@@ -164,6 +200,15 @@ def changed_words(old, new):
     return BECAME % (shown(' '.join(was)), shown(' '.join(now)))
 
 
+def change_sentence(old, new, tail=''):
+    """`changed_words` as a whole sentence: `"sixteen" became "seventeen".`,
+    or `It was reworded.` where the change is too large to show. `tail` is
+    what follows in the same sentence, before its full stop."""
+    changed = changed_words(old, new)
+    return (CHANGE_REWORDED if changed == REWORDED else CHANGE) % (changed,
+                                                                   tail)
+
+
 def entries(lines, tone):
     """One entry per line for the dashboard's data: `{tone, kind, label,
     about, feature, rule, rest, text}`. `rest` is the line after its name and
@@ -183,6 +228,18 @@ def entries(lines, tone):
                     'rule': getattr(item, 'rule', None),
                     'rest': rest, 'text': text})
     return out
+
+
+def folded(lines):
+    """The lines as the terminal prints them: three or more of one kind,
+    each naming a spec, folded into the one line `grouped` gives, where the
+    first of them stood. Every other line is handed back as it was."""
+    lines = list(lines or ())
+    found = entries(lines, None)
+    for entry, item in zip(found, lines):
+        entry['line'] = item
+    return [entry['line'] if 'line' in entry else entry['text']
+            for entry in grouped(found)]
 
 
 def grouped(found):

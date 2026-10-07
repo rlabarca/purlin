@@ -77,7 +77,7 @@ A failing test is a result, recorded as `fail`. The run prints the end of the su
 output and names the rule:
 
 ```
-cart RULE-2 fails: tests/test_cart.py::test_sum. Run purlin:build cart.
+cart RULE-2: rule to fix. tests/test_cart.py::test_sum fails. Run purlin:build cart.
 ```
 
 After the table, it ends on:
@@ -91,7 +91,7 @@ Left to do:
 - **`Tests` reads `met` when nothing left to do blocks it.** A rule to strengthen and a rule
   to write a proof for do not block.
 - **A missing result is never read as a pass.** Where a marked test was skipped, or a suite
-  left no report, the run prints a line starting `Evidence is missing:` and exits 1.
+  left no report, the run prints a line of the kind `evidence missing` and exits 1.
 - **A run that exits 1 says why in one line.**
   [purlin_commands.md](../references/purlin_commands.md#exit-codes) lists each exit code, and
   [evidence_and_signoff.md](../references/evidence_and_signoff.md#what-is-left-to-do) each
@@ -201,7 +201,7 @@ On your own machine such a proof is neither a pass nor a failure. Its rule reads
 and the run says:
 
 ```
-1 proof needs Windows; this machine is macOS. Run purlin:test on Windows.
+Windows: proofs not run here. 1 proof needs it, and this machine is macOS. Run purlin:test on Windows.
 ```
 
 ### One example: GitHub, started from your desk

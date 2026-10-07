@@ -140,10 +140,9 @@ The run prints, in this order:
 2. Each test comment to correct.
 3. `Ran <suite> on <n> features.`, ending ` and carried <k> forward. purlin:test --clean runs
    every test.` where `--all` carried features forward.
-4. One line per rule that fails or has no test. It is one of:
-   - `<feature> RULE-<n> fails: <file>::<test>. Run purlin:build <feature>.`
-   - `<feature> RULE-<n> has no test. Run purlin:build <feature>.`
-   - `<feature> <RULE-N> has no test for <PROOF-N>[, <PROOF-M>...]. Run purlin:build <feature>.`
+4. One line per rule that fails or has no test, as `references/purlin_commands.md`, "Exit codes",
+   gives them: `<feature> <RULE-N>: rule to fix. ...` or
+   `<feature> <RULE-N>: rule to write a test for. ...`
 5. The status `purlin:status` builds.
 
 For a failed test the run also prints the last 60 lines of the suite's own output.
@@ -156,10 +155,11 @@ A test comment to correct reads `<feature> <PROOF-N> (<RULE-N>): test comment to
 "<old words>" became "<new words>" after <file>:<line> last changed (<sha7>). Run purlin:build
 <feature>.` It clears once the test itself changes.
 
-Loud failures come first. `Evidence is missing: <what>.` means one of two things:
+Loud failures come first. A line of the kind `evidence missing` means one of two things:
 
-- a suite left no readable report;
-- a marker has no pass or fail: its test was skipped, the report lacks it, or no test follows it.
+- `<suite> suite: evidence missing. ...`: the suite left no readable report, or timed out;
+- `<feature> <PROOF-N> (<RULE-N>): evidence missing. ...`: a marker has no pass or fail. Its
+  test was skipped, the report lacks it or names it differently, or no test follows it.
 
 A marker naming nothing a spec has reads `<feature> <ID>: test comment to correct. <file>:<line>
 names it, and no spec has it. Run purlin:build.`
@@ -167,10 +167,10 @@ names it, and no spec has it. Run purlin:build.`
 ## Step 5: another operating system
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating system.
-On a machine that does not match, the run prints one line per system, `<n> proofs need <System>;
-this machine is <System>. Run purlin:test on <System>.` That is an instruction, not a command
-line: `purlin:test` on a machine of that system meets it, and so does the project's own run
-there. An untagged proof runs anywhere. A system
+On a machine that does not match, the run prints one line per system, `<System>: proofs not run
+here. <n> proofs need it, and this machine is <System>. Run purlin:test on <System>.` That is an
+instruction, not a command line: `purlin:test` on a machine of that system meets it, and so does
+the project's own run there. An untagged proof runs anywhere. A system
 that is neither Windows nor macOS is `linux`, shown as `Linux/Unix`. A rule reads `partial` where
 two systems that each ran disagree.
 
@@ -198,7 +198,7 @@ step:
 | What the run ends on | The line to print |
 |----------------------|-------------------|
 | `Left to do:` and its lines | `→ Run: <the command on its first line>` |
-| A line `<feature> RULE-<n> fails: ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
+| A line `<feature> <RULE-N>: rule to fix. ...` above the status | `→ Run: purlin:build <feature>` (fix the code or the test) |
 | `<n> features whose results are not committed: purlin:test --commit` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign` | Nothing is left to do, so print no `→ Run:` line. A sign-off is optional: run `purlin:sign` only when a person asks for one |
 | `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`, as Step 1 passes it. `purlin:sign` refuses these results as they stand |

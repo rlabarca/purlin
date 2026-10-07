@@ -12,7 +12,7 @@
 
 ## Rules
 
-- RULE-22: The tags and fields 0.9.5 wrote that the format does not carry (a bare `@windows`, a stamped `@manual(...)`, `> Visual-Reference:` and `> Visual-Hash:`) are ignored rather than refused, a stamped `@manual(...)` still reading as `@manual`, and the status carries one warning naming at most five carrying files, counting the rest, and `purlin:init --update`
+- RULE-22: The tags and fields 0.9.5 wrote that the format does not carry (a bare `@windows`, a stamped `@manual(...)`, `> Visual-Reference:` and `> Visual-Hash:`) are ignored rather than refused, a stamped `@manual(...)` still reading as `@manual`, and the status carries one warning naming the tags, how many specs carry them, the first of those files, and `purlin:init --update`
 - RULE-9: A `> Source:` value is read two ways: a git URL followed by a path in that repository gives the two separately, and anything else comes back whole as the source rather than split on its first word
 - RULE-10: A `> Path:` line supplies the path in the source repository when `> Source:` carries the URL alone
 - RULE-11: A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha
@@ -23,7 +23,7 @@
 
 - PROOF-24 (RULE-22): A spec's proof line reads `Look at it @manual(a@b.c, 2026-03-31, abc1234)`; the spec is read rather than refused, the proof's text is `Look at it`, the proof is manual, and the spec's unknown tags are exactly `@manual(...)`
 - PROOF-25 (RULE-22): A spec carrying `> Visual-Reference: ./mock.png` and the one rule `It renders` is read rather than refused, with exactly that rule, and its unknown tags are exactly `> Visual-Reference:`
-- PROOF-9 (RULE-22): A project holds `specs/auth/login.md`, whose proof ends with a bare `@windows`, and `specs/auth/mockup.md`, whose proof ends `@manual(a@b.c, 2026-03-31, abc1234)`; the status report carries exactly one warning, `specs/auth/login.md, specs/auth/mockup.md: tag not read. This release ignores @manual(...), @windows. Run purlin:init --update.`
+- PROOF-9 (RULE-22): A project holds `specs/auth/login.md`, whose proof ends with a bare `@windows`, and `specs/auth/mockup.md`, whose proof ends `@manual(a@b.c, 2026-03-31, abc1234)`; the status report carries exactly one warning, `@manual(...), @windows: tag not read. Found in 2 specs, the first specs/auth/login.md. Run purlin:init --update.`
 - PROOF-10 (RULE-9): An anchor carrying `> Source: https://github.com/acme/p.git specs/no_eval.md` is read with the source `https://github.com/acme/p.git` and the path `specs/no_eval.md`
 - PROOF-31 (RULE-9): An anchor carrying `> Source: --upload-pack=touch x specs/a.md`, whose first word is not a git URL, is read with the source `--upload-pack=touch x specs/a.md` whole and no path, rather than split on a space
 - PROOF-11 (RULE-10): An anchor carrying `> Source: https://github.com/acme/p.git`, the URL alone, and `> Path: specs/no_eval.md` is read with the source `https://github.com/acme/p.git` and the path `specs/no_eval.md`

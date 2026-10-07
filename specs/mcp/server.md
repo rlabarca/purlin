@@ -8,7 +8,7 @@
 > Scope: scripts/mcp/purlin/server.py, scripts/mcp/purlin/project.py, scripts/run/purlin_status.py, scripts/run/purlin_drift.py, .claude-plugin/plugin.json, scripts/purlin_python.sh
 > Stack: python/stdlib, json
 > Highest-Rule: 46
-> Highest-Proof: 191
+> Highest-Proof: 192
 
 ## Rules
 
@@ -27,7 +27,7 @@
 - RULE-38: A tool called on the plugin's own folder, or a folder under it, is refused with one line and reports nothing, unless the server was started in that folder, under it, or in another checkout of the same repository
 - RULE-39: `scripts/run/purlin_status.py --project-root <dir>` prints the status the `sync_status` tool answers for that folder and exits 0, and where the tool would refuse it prints only that refusal and exits 1
 - RULE-40: `scripts/run/purlin_drift.py --project-root <dir>` prints the lines of the view the `drift` tool answers, one per line, takes `--since` as the tool does, and refuses as the tool refuses
-- RULE-41: `purlin_status.py --spec <name>` prints first the warnings that name that spec, where it has any, then an empty line and the spec's view, and exits 1 where it printed a warning and 0 where it printed none; a name no spec of the checkout has prints only `<name>: no spec of this checkout has that name. Run purlin:status to see its specs.` and exits 1
+- RULE-41: `purlin_status.py --spec <name>` prints first every line the status has about that spec, its warnings and then its lines of information, each whole, where it has any, then an empty line and the spec's view, and exits 1 where it printed a warning and 0 where it printed none; a name no spec of the checkout has prints only `<name>: no spec of this checkout has that name. Run purlin:status to see its specs.` and exits 1
 - RULE-42: The spec's view opens on `<spec path>: <n> rules`, `1 rule` for one, then gives one line per rule in the order the spec writes them, `  <RULE-N>  <passed cell's word>  <strong cell's word>`, for an anchor as for a feature
 - RULE-43: Under a rule's line, each reason of a cell whose word is neither `passed`, `strong`, `not audited` nor `waiting` reads `    <the cell's word>: <reason>`, the passed cell's reasons first; a cell reading one of those four shows no reason, since none names work to do
 - RULE-44: After the reasons, each proof of the rule reads `    <PROOF-N>  <the proof's result>  <file>::<test name>`, each further test of the proof on a line of its own, set under the first; a proof with no test reads `    <PROOF-N>  <the proof's result>`; a rule no proof line names lists each test marked with its own id as `    <RULE-N>  <file>::<test name>`
@@ -69,6 +69,7 @@
 - PROOF-175 (RULE-41): `login` carries `> Requires: api`; `purlin_status.py --project-root <dir> --spec login` prints first `login: line not read. Every anchor covers the whole project, so > Requires: is not read. Run purlin:spec login.`, then an empty line, then `specs/auth/login.md: 2 rules`, and exits 1
 - PROOF-176 (RULE-41): `login` holds 2 rules and 3 proofs and no mistake; `purlin_status.py --project-root <dir> --spec login` prints first `specs/auth/login.md: 2 rules`, holds no line naming a mistake, and exits 0
 - PROOF-177 (RULE-40): After a pull that adds `RULE-3` to `login`, `purlin_drift.py --project-root <dir>` prints the line naming the range, then `1 rule added: login RULE-3.`, and exits 0
+- PROOF-192 (RULE-41): `login`'s `> Scope:` names `src/gone.py`, a file git does not have; `purlin_status.py --project-root <dir> --spec login` prints first `login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.`, then an empty line, then `specs/auth/login.md: 2 rules`, and exits 0
 - PROOF-178 (RULE-41): In a project whose one spec is `login`, `purlin_status.py --project-root <dir> --spec signup` prints only `signup: no spec of this checkout has that name. Run purlin:status to see its specs.` and exits 1
 - PROOF-179 (RULE-42): `login` of 2 rules, `RULE-1`'s test passed in a current section and `RULE-2` with no test; `--spec login` prints `specs/auth/login.md: 2 rules` first, and its rule lines are `  RULE-1  passed  not audited` and then `  RULE-2  no test  waiting`
 - PROOF-180 (RULE-42): The anchor `security` of 1 rule that no test carries; `--spec security` prints `specs/_anchors/security.md: 1 rule` first and `  RULE-1  no test  waiting` second

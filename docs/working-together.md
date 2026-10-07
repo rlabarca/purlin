@@ -62,7 +62,7 @@ same for everyone. It writes nothing and fetches nothing.
 It names:
 
 - rules added, changed and removed;
-- proofs added, moved, or reworded, with both wordings;
+- proofs added, moved, or reworded, with the words that changed;
 - a test comment whose proof was reworded after the test last changed;
 - a rule or proof number two branches both took;
 - a remote anchor behind its source.

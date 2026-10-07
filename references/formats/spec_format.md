@@ -25,7 +25,7 @@ its file. The new name is the old one with each such character, and a leading
 `-`, written `_`:
 
 ```
-sample.age: spec name not allowed. A name holds letters, digits, _ and -, so no test comment can name this one. Run git mv specs/intake/sample.age.md specs/intake/sample_age.md.
+sample.age: spec name not allowed. A name holds letters, digits, _ and -. Run git mv specs/intake/sample.age.md specs/intake/sample_age.md.
 ```
 
 Two specs with one name in different folders are warned of: only one is read,
@@ -96,7 +96,7 @@ Purlin cannot tell a file not yet written from a typo:
 
 ```
 login: spec ahead of its code. src/gone.py is not written yet. Run purlin:build login, or purlin:spec login to correct the path.
-states: spec ahead of its code. 3 files are not written yet: facts.py, project.py, wording.py. Run purlin:build states, or purlin:spec states to correct the path.
+states: spec ahead of its code. 3 files are not written yet, the first facts.py. Run purlin:build states, or purlin:spec states to correct the path.
 ```
 
 The line clears once git has every file the scope names. An anchor's scope is
@@ -191,17 +191,17 @@ rule ids:
 ```
 
 A list item under `## Proof` of any other form is not read as a proof. The
-status warns of it in one line that gives the reason and quotes the line's first 8 words.
+status warns of it in one line that gives the reason and quotes the line's first 4 words.
 Where `@manual`, `@slow` or `@env(` stands between `PROOF-N` and the rule ids:
 
 ```
-login: proof line not read. A tag goes at the end of the line: "- PROOF-7 @manual (RULE-7): A rejection message for ...". Run purlin:spec login.
+login: proof line not read. A tag goes last: "- PROOF-7 @manual (RULE-7): ...". Run purlin:spec login.
 ```
 
 For any other line:
 
 ```
-login: proof line not read. A proof line reads `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule named". Run purlin:spec login.
+login: proof line not read. It is not `- PROOF-N (RULE-N): <text>`: "- PROOF-7: no rule ...". Run purlin:spec login.
 ```
 
 A proof id written twice is warned of; the proof is read once, with the text of
@@ -253,8 +253,8 @@ any other does. An anchor's proof takes the tag the same way.
 
 `@slow` may stand with `@env(...)`. With `@manual` it is a mistake: a hand
 check has no test to leave out, so the proof is read as `@manual` and the
-status warns `<spec> PROOF-N (RULE-N): tags that conflict. It is tagged @slow
-and @manual, and is read as @manual. Run purlin:spec <spec>.`
+status warns `<spec> PROOF-N (RULE-N): tags that conflict. It is read as
+@manual, not @slow. Run purlin:spec <spec>.`
 
 Adding or removing `@slow` is no change of a proof's wording, so it names no
 test comment as one to correct.

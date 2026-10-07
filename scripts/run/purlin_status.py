@@ -11,9 +11,10 @@ refusal and exits 1 (`project.refusal`): a folder with no
 folder named from a working directory outside it. `--project-root` defaults
 to the working directory.
 
-`--spec NAME` shows one spec. It prints first each of the status's warnings
-that opens `NAME: ` or names the spec's file, the code that checks every spec
-checking this one, then an empty line; then the spec's view, which opens on
+`--spec NAME` shows one spec. It prints first each line the status has about
+the spec, its warnings and then its lines of information, every one whole:
+the status folds three or more of a kind into one line, which sends a reader
+here. Then an empty line; then the spec's view, which opens on
 its path and how many rules it has and gives one line per rule:
 
     specs/auth/login.md: 2 rules
@@ -111,12 +112,12 @@ def spec_lines(project_root, name):
         return [NOT_A_SPEC % name], 1
     path = info.get('spec_path') or ''
     data = payload_module.build_payload(project_root)
-    warnings = [line for line in data['warnings']
-                if getattr(line, 'feature', None) == name
-                or (path and path in line)]
+    warnings, information = status_module.spec_notices(project_root, data,
+                                                       name)
     feature = next((entry for entry in data['features']
                     if entry['name'] == name), None)
-    lines = warnings + [''] if warnings else []
+    said = warnings + information
+    lines = said + [''] if said else []
     lines.extend(view_lines(feature or {'spec_path': path, 'rules': []}))
     return lines, 1 if warnings else 0
 

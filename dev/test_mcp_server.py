@@ -395,6 +395,19 @@ class TestTheStatusScript:
             '    PROOF-2  no test\n'
             '    PROOF-3  no test\n'), printed
 
+    # purlin: server PROOF-192
+    def test_a_line_of_information_is_printed_first_and_exits_0(self, project):
+        project.spec(SPEC.replace('> Scope: src/login.py',
+                                  '> Scope: src/gone.py'))
+        code, printed = _script(STATUS_PY, project.root, '--spec', 'login')
+        assert printed.splitlines()[:3] == [
+            'login: spec ahead of its code. src/gone.py is not written yet. '
+            'Run purlin:build login, or purlin:spec login to correct the '
+            'path.',
+            '',
+            'specs/auth/login.md: 2 rules'], printed
+        assert code == 0, printed
+
     # purlin: server PROOF-178
     def test_a_name_no_spec_has_is_said_so(self, project):
         code, printed = _script(STATUS_PY, project.root, '--spec', 'signup')

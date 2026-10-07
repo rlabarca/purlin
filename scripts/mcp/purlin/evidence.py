@@ -103,7 +103,7 @@ REWRITE_CI = 'Start the run that wrote it again.'
 NOT_JSON = 'It is not valid JSON.'
 NOT_AN_OBJECT = 'It is not a JSON object.'
 OTHER_SCHEMA = 'It carries the schema %s, not %s.'
-OTHER_SOURCE = 'It names the source %s and sits in %s/.'
+OTHER_SOURCE = 'It names the source %s.'
 
 
 def _ignored(path, feature, why, fix):
@@ -148,8 +148,8 @@ def load(project_root, feature):
                 _shown(data.get('schema')), SCHEMA), fix))
             continue
         if data.get('source') != source:
-            warnings.append(_ignored(path, feature, OTHER_SOURCE % (
-                _shown(data.get('source')), source), fix))
+            warnings.append(_ignored(path, feature, OTHER_SOURCE % _shown(
+                data.get('source')), fix))
             continue
         files[source] = data
     return {'feature': feature, 'files': files, 'paths': paths,

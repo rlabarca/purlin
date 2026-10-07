@@ -527,6 +527,12 @@ def _twice(*parsed):
             for item in ((spec or {}).get('doubled_lines') or {})}
 
 
+# A proof the range changed: `<spec> PROOF-N (RULE-N)`, then the words that
+# changed, or that it was reworded (`notices.change_sentence`). Neither
+# wording is printed whole.
+PROOF_CHANGED = '%s: changed. %s'
+
+
 def _proofs_view(before, after):
     """The proofs the range added, changed and moved, and their lines.
 
@@ -570,8 +576,10 @@ def _proofs_view(before, after):
             _plural(_rule_count(view['proofs_added']), 'proof'),
             _rules_text(view['proofs_added'])))
     for entry in changed:
-        lines.append('%s %s changed: it read "%s" and now reads "%s".' % (
-            entry['feature'], entry['id'], entry['old'], entry['new']))
+        about, _rule = notices.about_proof(after.get(entry['feature']),
+                                           entry['feature'], entry['id'])
+        lines.append(PROOF_CHANGED % (about, notices.change_sentence(
+            entry['old'], entry['new'])))
     for entry in moved:
         lines.append('%s %s moved to %s.' % (entry['feature'], entry['from'],
                                              entry['to']))
@@ -581,7 +589,8 @@ def _proofs_view(before, after):
 # What an anchor's line says is wrong, after `<anchor>: <kind>.`
 PIN_BEHIND = 'The pin %s is behind its source, now %s.'
 PIN_MISSING = 'It names a source and no pin.'
-SOURCE_UNREAD = 'Its source could not be read (%s).'
+# Git's own message for it, its first sentence (`notices.first_sentence`).
+SOURCE_UNREAD = 'Reading it gave "%s".'
 SOURCE_UNREAD_DO = 'Check its > Source: line, then run purlin:anchor sync %s.'
 SOURCE_REFUSED = 'Its > Source: line %s.'
 SOURCE_NOT_SPEC = "%s is not a spec in Purlin's format kept in a git repository."
@@ -611,7 +620,8 @@ def pin_line(row):
         return notices.line('pin_missing', name, PIN_MISSING, sync,
                             feature=name)
     return notices.line('source_unread', name,
-                        SOURCE_UNREAD % row.get('error', 'unknown'),
+                        SOURCE_UNREAD % notices.first_sentence(
+                            row.get('error', 'unknown')),
                         SOURCE_UNREAD_DO % name, feature=name)
 
 
@@ -625,9 +635,9 @@ _REMOTES = 'refs/remotes/'
 # written twice.`: which line keeps it, then what to do, the line that moves
 # shown by its first words.
 NUMBER_KEPT = 'The line on %s keeps it.'
-NUMBER_NEITHER = 'Neither line is on %s, and the one that reaches it first keeps the number.'
+NUMBER_NEITHER = 'Neither line is on %s, and the first there keeps it.'
 NUMBER_ON_DEFAULT = '%s itself writes it twice.'
-NUMBER_NO_DEFAULT = 'This checkout has no copy of a default branch to say which line keeps it.'
+NUMBER_NO_DEFAULT = 'No default branch here says which line keeps it.'
 RENUMBER_OTHER = 'Renumber the other to %s and move its test comments with it.'
 RENUMBER_SECOND = 'Renumber the second to %s and move its test comments with it.'
 RENUMBER_UNMERGED = ('Renumber the one not yet merged to %s and move its test '

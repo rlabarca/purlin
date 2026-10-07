@@ -389,7 +389,7 @@ run_upstream "$PROJECT7" add "$BARE7" --path specs/security.md --name ext_securi
 printf '%s' "$LOCAL_ANCHOR" > "$PROJECT7/specs/_anchors/local_security.md"
 commit_project "$PROJECT7" "pin a source that carries a scope"
 status_out=$(run_status "$PROJECT7")
-expected="ext_security: line not read. Its source, $BARE7, carries > Scope:, which Purlin does not read on an anchor. Ask its owners to take it out, then run purlin:anchor sync ext_security."
+expected="ext_security: line not read. Its source carries > Scope:. Ask its owners to take it out, then run purlin:anchor sync ext_security."
 ok=true
 detail="$status_out"
 grep -q '^> Scope: src/api.py$' "$PROJECT7/specs/_anchors/ext_security.md" || {
