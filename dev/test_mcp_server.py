@@ -111,10 +111,17 @@ class TestTransport:
         requests = [_call('sync_status', root, req_id=1),
                     _call('drift', dict(root, since='1'), req_id=2),
                     _call('purlin_config', dict(root, action='read'), req_id=3)]
-        stdout, _stderr = _child(
+        raw, _stderr = _child_bytes(
             project.root, ''.join(json.dumps(r) + '\n' for r in requests))
-        lines = stdout.splitlines()
+        # The bytes, split at the line feed alone: three lines, each ended
+        # by one, and nothing after the last.
+        stdout = raw.decode('utf-8')
+        assert stdout.endswith('\n'), raw[-20:]
+        lines = stdout[:-1].split('\n')
         assert len(lines) == 3, stdout
+        assert not [line for line in lines
+                    if line != line.strip('\r') or '\r' in line.strip('\r')
+                    ], stdout
         answers = [json.loads(line) for line in lines]
         assert [(a['jsonrpc'], a['id']) for a in answers] == [
             ('2.0', 1), ('2.0', 2), ('2.0', 3)], stdout
