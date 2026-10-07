@@ -175,35 +175,50 @@
         "verdict": "strong"
       },
       "RULE-34": {
-        "at": "2026-10-07T18:46:10Z",
-        "bugs": {},
+        "at": "2026-10-07T21:54:54Z",
+        "bugs": {
+          "PROOF-64": {
+            "after": "\u2192 Run: `purlin:build sample_intake_v2` to strengthen the four tests and settle each rule.",
+            "aim": "past the test",
+            "before": "\u2192 Run: `purlin:build sample_intake` to strengthen the four tests and settle each rule.",
+            "bug_key": "28d651f9e4ecf04c96891a758d6d87908fc23814bf668d83fce5289eea3fa70f",
+            "case": "the never-audited sample lab given `Run purlin:audit sample_intake. Work only in this folder.`; the proof says the reply holds `purlin:build sample_intake`; the changed reply names `purlin:build sample_intake_v2`, a feature the project does not have",
+            "file": "reply.md",
+            "line": 33,
+            "output": "4195cf0445de15fe27085bd155e1e22424c1c348e4b570071755b70443c077ad",
+            "result": "survived",
+            "test_key": "b6d133349832ae53e938b8a92c1f097d31bd1ac023e38ae3c2577404e7b44c24",
+            "why": ""
+          }
+        },
         "code_hash": "a9d37efb32ffcaf0369c43c2805566e5d83cb83043c0f6e760ea6dcd47babf81",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-64: the test starts from the sample lab with no audit entries, hands a session the audit request, and checks the three results the proof names: the evidence file is among the files the session changed, `RULE-7` reads `weak` there, and the reply holds `purlin:build sample_intake`.",
-          "PROOF-64: the test compares each of those results with a literal the proof names, so a changed verdict or a reply without the build command fails it.",
-          "PROOF-64: the prompt and the evidence path come from the constants `AUDIT` and `EVIDENCE`, and the lab's state from a helper in another file, so the test's own lines do not show that the prompt is the one the proof quotes or that the test of `PROOF-11` checks nothing.",
-          "PROOF-64: the test reads only the verdict of `RULE-7`, so it does not show whether the audit itself wrote the entry or whether the entry carries a finding about the test of `PROOF-11`.",
-          "PROOF-64: the spot tests found nothing, which fits a test that asserts on literals the proof names and holds no always-true check, swallowed error or mock of what it checks."
+          "PROOF-64: the test builds the sample lab with no audit entry, asserts that it holds none, and hands the session the proof's message, so the starting situation and the action are the proof's.",
+          "PROOF-64: the test asserts the evidence file is among the files the session changed and compares the verdict of `RULE-7` in that file with `weak`, which are the two results the proof names for the evidence.",
+          "PROOF-64: the test looks for `purlin:build sample_intake` anywhere in the reply as a run of characters, so a reply that names the build for a longer feature name beginning with those characters still passes.",
+          "PROOF-64: the test never reads why `RULE-7` is weak, so an entry that reads `weak` for a reason other than the test of `PROOF-11` checking nothing still passes; the proof names that only as the starting situation.",
+          "Findings: the spot tests found nothing, and the test holds four assertions that can fail and the values `RULE-7`, `weak` and `purlin:build sample_intake` that the proof names."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-64: the test still passes when reply.md:33 reads \"\u2192 Run: `purlin:build sample_intake_v2` to strengthen the four tests and settle each rule.\"",
+          "PROOF-64: the AI says this breaks: the never-audited sample lab given `Run purlin:audit sample_intake. Work only in this folder.`; the proof says the reply holds `purlin:build sample_intake`; the changed reply names `purlin:build sample_intake_v2`, a feature the project does not have"
+        ],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No wrong output was planted: this machine keeps no passing output of PROOF-64. Run purlin:test --clean to take one here."
-        ],
+        "no_bug": [],
         "proof_hash": "7cd1ccc2218e0a321e68b51d1c47bb5db88868f676c854f7dc227b4a84a21ade",
         "rule_hash": "71f6c3d0a424924ddc47bb584aaa2da2259fae4e9fb153aa599ebb2981e0ce47",
         "test_hash": "8683c271acf69daef45133776c7cd6f9789c52c2fcf8e810b8113e720141f710",
-        "verdict": "spot-checked"
+        "verdict": "weak"
       }
     }
   },
   "feature": "skill_audit",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T18:39:36Z",
-      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+      "at": "2026-10-07T21:49:16Z",
+      "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -214,12 +229,6 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -227,14 +236,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_audit",
-                "duration": 0.006,
+                "duration": 0.001,
                 "name": "test_a_reader_finds_each_command_and_path_named_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",
@@ -242,12 +251,6 @@
           "test": "dev/test_skill_audit.py::test_a_reader_finds_each_command_and_path_named_the_settle_included"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -255,14 +258,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_audit",
-                "duration": 0.003,
+                "duration": 0.001,
                 "name": "test_a_copy_without_the_criteria_is_reported",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",
@@ -270,12 +273,6 @@
           "test": "dev/test_skill_audit.py::test_a_copy_without_the_criteria_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -290,7 +287,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",
@@ -298,12 +295,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_two_lines_a_settle_prints"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -318,7 +309,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",
@@ -326,12 +317,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_refusal_and_the_sound_sentence"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -346,7 +331,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",
@@ -354,12 +339,6 @@
           "test": "dev/test_skill_audit.py::test_the_skill_and_the_criteria_hold_the_line_for_a_bug_planted_again"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:39:36Z",
-            "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -367,14 +346,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_audit",
-                "duration": 0.008,
+                "duration": 0.0,
                 "name": "test_the_skill_says_what_is_planted_for_an_ai_proof",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "d0cf2cd250a15248149effb89a9dd48244eafe1f329b7bb9d73eafaeda2faadf"
             }
           },
           "result": "pass",

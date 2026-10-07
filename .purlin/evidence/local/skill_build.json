@@ -114,57 +114,81 @@
         "verdict": "strong"
       },
       "RULE-24": {
-        "at": "2026-10-07T18:46:10Z",
-        "bugs": {},
-        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "at": "2026-10-07T21:54:54Z",
+        "bugs": {
+          "PROOF-55": {
+            "after": "    assert record['age_hours'] == 25.5",
+            "aim": "past the test",
+            "before": "    assert record['age_hours'] == 25",
+            "bug_key": "d33d07dc9a7459582a669b1b9b4742e8646591020637a82a078684bc7ffd3a08",
+            "case": "the session's changed tests/test_intake.py; the proof says its test of PROOF-5 holds the number 25; the changed output's test of PROOF-5 compares the age with 25.5 and holds no number 25",
+            "file": "files/tests/test_intake.py",
+            "line": 41,
+            "output": "acafc8d42cec75e13595c8747fc8127d7ac4e9bf0bd3af34a232c16e247a5b78",
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "82f4f5dab661b5484874d29503279bcae05fea067b9f629d579a5e176f7f98e7",
+        "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-55: the test first confirms the sample lab's test of `PROOF-5` does not match the age pattern, then hands the session the strengthen request and reads the files the session changed.",
-          "PROOF-55: it checks that `tests/test_intake.py` is among the changed files and that its test of `PROOF-5` matches the age pattern, which is defined outside the test's own lines and is taken here to stand for the proof's `25`.",
-          "PROOF-55: it checks that no changed file is under `specs/`, that the evidence file is among the changed files, and that its `RULE-3` entry reads `strong` with the bug of `PROOF-5` as `caught`, so each result the proof names is compared.",
-          "PROOF-55: the test reads the number `25` as text in the test of `PROOF-5` and reads the evidence as written, so an output where `25` sits in that test without being asserted, or where the evidence was written without the settle having run, would still pass.",
-          "PROOF-55: the starting state the proof names, `RULE-3` reading `weak` with a bug that survived, is left to the sample lab helper; the test's own lines check only that `25` is absent beforehand.",
-          "Findings: the spot tests found nothing, which fits a test that asserts on each value the proof names; whether those assertions are tight enough is left to the wrong output."
+          "PROOF-55: the test hands the session the proof's message, then reads the list of changed files, the PROOF-5 test in the changed tests/test_intake.py, and the RULE-3 entry of the kept evidence file.",
+          "PROOF-55: the test compares the verdict with `strong` and the PROOF-5 bug's result with `caught`, so a change to either word fails it.",
+          "PROOF-55: the test asserts that no changed file is under specs/ and that the evidence file is among the changed files, as the proof names.",
+          "PROOF-55: the test looks for `25` with a pattern defined outside its own lines, so whether a longer number containing those digits, such as 25.5, satisfies it cannot be seen from the test.",
+          "PROOF-55: the test does not run the changed tests/test_intake.py, so a PROOF-5 test that holds the digits but no longer checks an age of 25 can still pass."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No wrong output was planted: this machine keeps no passing output of PROOF-55. Run purlin:test --clean to take one here."
-        ],
+        "no_bug": [],
         "notes": [
-          "PROOF-55 is longer than 60 words and holds several results from one session: the changed test, the untouched specs and the evidence entry."
+          "PROOF-55 is longer than 60 words."
         ],
         "proof_hash": "e81fff362f2b9f182304d172c617989f59c918fbdc17ad15d1dc68a778b205a9",
         "rule_hash": "a32721f73e6adb460a8d2c3a2c47b31e2460f167fbc9d019ddb9f8cd9fbfc4de",
         "test_hash": "5190f319d32570e961a1e1d87026825aa6bf5832259b8218f0e5e81f05f31bf1",
-        "verdict": "spot-checked"
+        "verdict": "strong"
       },
       "RULE-25": {
-        "at": "2026-10-07T18:46:10Z",
-        "bugs": {},
-        "code_hash": "75cf23cf99778fa689ba77ff46eefe938b85b95f2c5430bd2f45f053e7d561b1",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "at": "2026-10-07T21:54:54Z",
+        "bugs": {
+          "PROOF-56": {
+            "after": "> PROOF-5 (RULE-3): A sample collected at `2026-03-01T08:00` is received the next morning, 25 and a half hours later; its age is `25` hours",
+            "aim": "past the test",
+            "before": "> PROOF-5 (RULE-3): A sample collected at `2026-03-01T08:00` is received at `2026-03-02T09:30`, 25 and a half hours later; its age is `25` hours",
+            "bug_key": "5c7ac4e3423d70b537863aa77552d35a32f6de783c622762e3afc283c2c4c320",
+            "case": "the session asked to strengthen RULE-3; the proof says the reply's sharper sentence for PROOF-5 names a collection time, a receipt time and the age in hours; the changed reply's sentence names a collection time and the age and no receipt time",
+            "file": "reply.md",
+            "line": 11,
+            "output": "7387c8aecbb332e3aa2f88e4eb4d8cd3f90d40d4b2b957f6837a999e0170dd79",
+            "result": "survived",
+            "test_key": "df875637b765f67b414beb900b5e04fbc8c7471a0b0b220ed121e2d49fab7d0d",
+            "why": ""
+          }
+        },
+        "code_hash": "82f4f5dab661b5484874d29503279bcae05fea067b9f629d579a5e176f7f98e7",
+        "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-56: the test runs the session on the sample lab and compares the files it changed under `specs`, `tests` and `src` with three empty lists, which is the proof's \"changes no file under `specs/`, `tests/` or `src/`\".",
-          "PROOF-56: the test itself reads no word of the reply, so the three things the proof says the reply holds (that `PROOF-5` names too little, a sharper sentence naming a collection time, a receipt time and the age in hours, and `purlin:spec`) are observed only through the grader's return code of 0.",
-          "PROOF-56: the grade call is given the feature and proof names and not the session's output, so which output the grader reads is settled in a helper in another file and cannot be seen from the test's own lines.",
-          "PROOF-56: the starting situation, the lab with the loose `PROOF-5` and `RULE-3` audited as `weak`, and the prompt sent are set by a helper called with `loose=True` and by the constant `STRENGTHEN`, neither of which is shown, so the test's own lines do not show that `RULE-3` reads `weak` before the session starts.",
-          "The spot tests found nothing: the test asserts twice, calls grade for its graded proof, and takes neither expected value from the code under test."
+          "PROOF-56: the test compares the files the session changed under `specs`, `tests` and `src` with three empty lists, so a change to any of them fails it.",
+          "PROOF-56: the test reads no word of the reply itself; whether the reply says the proof names too little, proposes a sentence with a collection time, a receipt time and an age, and names `purlin:spec` rests wholly on the grader's return code.",
+          "PROOF-56: a grader that accepts a proposed sentence missing one of the three named parts, such as the receipt time, leaves the test passing.",
+          "PROOF-56: the test does not check that `RULE-3` read `weak` before the session, which the fixture is trusted to arrange."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-56: the test still passes when reply.md:11 reads \"> PROOF-5 (RULE-3): A sample collected at `2026-03-01T08:00` is received the next morning, 25 and a half hours later; its age is `25` hours\"",
+          "PROOF-56: the AI says this breaks: the session asked to strengthen RULE-3; the proof says the reply's sharper sentence for PROOF-5 names a collection time, a receipt time and the age in hours; the changed reply's sentence names a collection time and the age and no receipt time"
+        ],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No wrong output was planted: this machine keeps no passing output of PROOF-56. Run purlin:test --clean to take one here."
-        ],
+        "no_bug": [],
         "notes": [
           "PROOF-56 is longer than 60 words."
         ],
         "proof_hash": "2f85a34e0be4d3da39916545856c13378a24e7998765029fba5f7f893566d1e6",
         "rule_hash": "e9ea7a6be90277e3b3566b2e381f1d7d4cd451e46b19c53d9689b50923785406",
         "test_hash": "ba470b378e33d03ea904a58d29aadb0d8446f17182b1eefdbbf80f21bb27994b",
-        "verdict": "spot-checked"
+        "verdict": "weak"
       }
     }
   },
