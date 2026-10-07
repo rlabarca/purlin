@@ -2,18 +2,17 @@
   "audit": {
     "rules": {
       "RULE-16": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-10-07T18:48:00Z",
         "bugs": {
           "PROOF-37": {
             "after": "9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:specs, put the comment above the test, and take the old tag out.\n  packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4\n  ...\n```\n\nThe line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are\nlisted and the rest counted. `purlin:sign` refuses while one remains.\n\n## With a name\n\nNaming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name\nas part of a spec file name; when several match, list them and ask which one, and when none\ndoes, print the whole table. The tool shows every spec at once, so for one spec run the script\nwith the spec's name, the file name without `.md`:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>\n```\n\nPrint what it prints. It opens on the spec's path and how many rules it has, then gives one line\nper rule with its two cells. Under a cell that names work to do come its reasons, each after\nthe cell's word (`passed`, `strong`, `not audited` and `waiting` name none, so they give none);\nthen one line per proof with its result and its tests:\n\n```\nspecs/auth/login.md: 3 rules\n  RULE-1  passed  strong\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  no test  waiting\n    no test: no test for PROOF-2\n    PROOF-2  no test\n  RULE-3  checked at sign-off  checked at sign-off\n    checked at sign-off: no sign-off has checked it yet\n    PROOF-3  hand check\n```\n\nAn AI proof, one tagged `@ai(...)`, has one line per model its tag names, each with the word\nit reads on that model and how many of its model runs passed there; a proof an AI graded reads\n`graded` where it passes:\n\n```\nspecs/auth/login.md: 2 rules\n  RULE-1  passed  not audited\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  not run  waiting\n    not run: slow: runs with purlin:test --all\n    not run: claude-sonnet-5-5: no run yet\n    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2\n    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  tests/test_login.py::test_proof_2\n```\n\nA rule passes only where its AI proof passed on every model it names.\n`references/spec_quality_guide.md`, \"When a rule is stuck\", has each reason.\n\nThe script prints first every line the status has about the spec, its warnings and then its\nlines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work\nthis spec's rules wait for.\n\n## Step 4: name the next step\n\nThe next step is the first line of `Left to do`. Add no line of your own; a\n`\u2192 Run: purlin:init --update` the tool printed comes first.\n\n| The first line after the sentence | Next step |\n|-----------------------------------|-----------|\n| `<n> specs to repair` or `<n> rules to write a proof for` | `\u2192 Run: purlin:specs` |",
             "aim": "past the test",
             "before": "9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.\n  packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4\n  ...\n```\n\nThe line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are\nlisted and the rest counted. `purlin:sign` refuses while one remains.\n\n## With a name\n\nNaming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name\nas part of a spec file name; when several match, list them and ask which one, and when none\ndoes, print the whole table. The tool shows every spec at once, so for one spec run the script\nwith the spec's name, the file name without `.md`:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>\n```\n\nPrint what it prints. It opens on the spec's path and how many rules it has, then gives one line\nper rule with its two cells. Under a cell that names work to do come its reasons, each after\nthe cell's word (`passed`, `strong`, `not audited` and `waiting` name none, so they give none);\nthen one line per proof with its result and its tests:\n\n```\nspecs/auth/login.md: 3 rules\n  RULE-1  passed  strong\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  no test  waiting\n    no test: no test for PROOF-2\n    PROOF-2  no test\n  RULE-3  checked at sign-off  checked at sign-off\n    checked at sign-off: no sign-off has checked it yet\n    PROOF-3  hand check\n```\n\nAn AI proof, one tagged `@ai(...)`, has one line per model its tag names, each with the word\nit reads on that model and how many of its model runs passed there; a proof an AI graded reads\n`graded` where it passes:\n\n```\nspecs/auth/login.md: 2 rules\n  RULE-1  passed  not audited\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  not run  waiting\n    not run: slow: runs with purlin:test --all\n    not run: claude-sonnet-5-5: no run yet\n    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2\n    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  tests/test_login.py::test_proof_2\n```\n\nA rule passes only where its AI proof passed on every model it names.\n`references/spec_quality_guide.md`, \"When a rule is stuck\", has each reason.\n\nThe script prints first every line the status has about the spec, its warnings and then its\nlines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work\nthis spec's rules wait for.\n\n## Step 4: name the next step\n\nThe next step is the first line of `Left to do`. Add no line of your own; a\n`\u2192 Run: purlin:init --update` the tool printed comes first.\n\n| The first line after the sentence | Next step |\n|-----------------------------------|-----------|\n| `<n> specs to repair` or `<n> rules to write a proof for` | `\u2192 Run: purlin:spec` |",
-            "bug_key": "0faef7b75e5777afde1391c53b9d8b33b07aa3c1f29c46152e17b9ede31b5198",
+            "bug_key": "bba87e5c3016b5513d76077f4b2a7d539c968f5623b0f45a8f9f9deac1f50e99",
             "case": "the status skill as shipped; the proof says it names `purlin:spec`; the changed skill names `purlin:specs` in both places and `purlin:spec` nowhere as a command",
             "file": "skills/status/SKILL.md",
             "line": 129,
-            "result": "survived",
-            "test_key": "f4aabf248ee27b73d9906f232d4ef233701f9963a2940cb64b600a3c866580f0",
+            "result": "caught",
             "why": ""
           },
           "PROOF-38": {
@@ -31,39 +30,25 @@
             "after": "twice, follow `Renumbering` in `.claude/skills/spec/SKILL.md`.",
             "aim": "past the test",
             "before": "twice, follow `Renumbering` in `skills/spec/SKILL.md`.",
-            "bug_key": "05dfc6c251b1efc54f91ec3a5ca6c2f357de553f968e112b8f57e4896385f5f4",
+            "bug_key": "c22f18435869cefbfdbbed58379cbc616113aeb1ad2024f75d7174fc29030539",
             "case": "the status skill as shipped; the proof says it names `skills/spec/SKILL.md`; the changed skill names `.claude/skills/spec/SKILL.md`, a different path",
             "file": "skills/status/SKILL.md",
             "line": 118,
-            "result": "survived",
-            "test_key": "fcb502d2cbdfa4703764ebbcf7a6155411e89e8860017757895a4d2ee1d8ba59",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "commit": "e6c8e027edf391d124da3f6373ecbd61a321d931",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-37: the test looks for each name of COMMANDS as a run of characters in the flattened skill and asks the check for an empty list, so a longer command that contains a name, such as `purlin:specs`, may still count as naming `purlin:spec`.",
-          "PROOF-37: the six commands come from a COMMANDS constant the request does not show, so the test names the proof's values only if that constant holds them.",
-          "PROOF-37: `purlin:test` is contained in `purlin:test --commit` and `purlin:test --all`, so the test cannot tell the plain command from the longer ones.",
-          "PROOF-38: the test takes every `purlin:sign` out of a copy and compares the whole list of problems with the one sentence the proof names, so a missing, extra or reworded problem fails it.",
-          "PROOF-39: the test looks for each path of PATHS as a run of characters in the flattened skill and asks the check for an empty list, so a longer path that contains one of them may still pass.",
-          "PROOF-39: the two paths come from a PATHS constant the request does not show, and each stands in the skill exactly once.",
-          "Findings: none, and the spot tests have nothing to report on tests that each compare a computed list with a literal."
-        ],
-        "findings": [
-          "PROOF-37: the test still passes when skills/status/SKILL.md:129 reads \"9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:specs, put the comment above the test, and take the old tag out.\"",
-          "PROOF-37: the AI says this breaks: the status skill as shipped; the proof says it names `purlin:spec`; the changed skill names `purlin:specs` in both places and `purlin:spec` nowhere as a command",
-          "PROOF-39: the test still passes when skills/status/SKILL.md:118 reads \"twice, follow `Renumbering` in `.claude/skills/spec/SKILL.md`.\"",
-          "PROOF-39: the AI says this breaks: the status skill as shipped; the proof says it names `skills/spec/SKILL.md`; the changed skill names `.claude/skills/spec/SKILL.md`, a different path"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "dcf86ee5498d3535d5f8f3401b9ddce2bafe273d30065b2843073c6499370b82",
         "rule_hash": "f54a8eebca1195015fac7dcadb8d6885f1e4f488f5d0c01dd3685439f5c98334",
-        "test_hash": "84de575da1d48e89cd07a038221942e928b25d7aa057f8e5469094488e85532c",
-        "verdict": "weak"
+        "test_hash": "8dbe2d57c8dd9f0ef4cf058c48d06d4580497354ab1fe1a7590026742bfe9866",
+        "verdict": "strong"
       },
       "RULE-17": {
         "at": "2026-10-07T18:46:10Z",
@@ -246,57 +231,45 @@
         "verdict": "strong"
       },
       "RULE-21": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-10-07T18:48:00Z",
         "bugs": {
           "PROOF-49": {
             "after": "| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all-models`. It reaches a real model and takes minutes: say so first |",
             "aim": "past the test",
             "before": "| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all`. It reaches a real model and takes minutes: say so first |",
-            "bug_key": "e524db6259ae7cbf8bfeaaf859c5893651c4bbf2d1a56643496679cb5d69143c",
+            "bug_key": "923605c95c93f561c66a9a532059de78733e98d7b95425086f85490a620b85b9",
             "case": "the table row for `<n> rules to test on <model>` in the shipped status skill; the proof says its next step is `\u2192 Run: purlin:test --all`; the changed skill gives `\u2192 Run: purlin:test --all-models`",
             "file": "skills/status/SKILL.md",
             "line": 199,
-            "result": "survived",
-            "test_key": "f37b86d77763995c9b950349f4643b76d177a32ad2a32f8b9e44484980f3dce8",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "commit": "e6c8e027edf391d124da3f6373ecbd61a321d931",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-49: the test reads the shipped skill's lines and requires the graded summary as one whole line, so a change to that sentence fails it.",
-          "PROOF-49: the test counts the table rows that contain every string of ON_A_MODEL and requires exactly one, so a missing or doubled row fails it.",
-          "PROOF-49: the row's strings are matched as parts of the line, not as whole cells, so a next step that only begins with `\u2192 Run: purlin:test --all` and goes on to name another command still passes.",
-          "PROOF-49: the values of GRADED_SUMMARY and ON_A_MODEL are defined outside the test's own lines, so this reading cannot confirm they are the strings the proof names."
-        ],
-        "findings": [
-          "PROOF-49: the test still passes when skills/status/SKILL.md:199 reads \"| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all-models`. It reaches a real model and takes minutes: say so first |\"",
-          "PROOF-49: the AI says this breaks: the table row for `<n> rules to test on <model>` in the shipped status skill; the proof says its next step is `\u2192 Run: purlin:test --all`; the changed skill gives `\u2192 Run: purlin:test --all-models`"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-49 holds two cases, the graded summary line and the table row for a model."
-        ],
         "proof_hash": "4436e38ba54eb3d219e2462c6dce21e9eb7cde0d32b77999971cdf4c66425f84",
         "rule_hash": "91a19f65d0e8f4d3acaa48282308cdd67da1e0ec210cfb881112e1d6f74b0572",
-        "test_hash": "08f06339fd781e7b8c56dac959596d21d5caaf26e2160c8b506a46eaa5dfac63",
-        "verdict": "weak"
+        "test_hash": "538e3ef370f1548a83653312d78bd4dc463c8dd6eb6997e98ce5f3d7f05ac12e",
+        "verdict": "strong"
       }
     }
   },
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T18:39:36Z",
-      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+      "at": "2026-10-07T18:47:48Z",
+      "commit": "e6c8e027edf391d124da3f6373ecbd61a321d931",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
         "spec": "cefb3e6bb62799a4eb36dc43c38860b9094c192b12ca9e719f1b2f91aed4a120",
-        "tests": "4d594109eda2bd8e16469945dd848db445f2c604809a321d83fe85c5a7bcb512"
+        "tests": "e10ebc3ed81fdaabf40dc2de71164e3bc9b95b0b0ac70c23ef87d6143d3efb2f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -315,7 +288,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -337,7 +310,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -359,7 +332,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -381,7 +354,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -396,14 +369,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_copy_without_those_words_holds_no_such_sentence",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -425,7 +398,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -447,7 +420,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -462,14 +435,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.786,
+                "duration": 0.752,
                 "name": "test_the_example_is_what_the_script_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -484,14 +457,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.808,
+                "duration": 0.783,
                 "name": "test_a_copy_with_one_word_changed_differs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -506,14 +479,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.473,
+                "duration": 0.469,
                 "name": "test_the_second_example_is_what_the_script_prints_for_an_ai_proof",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -528,14 +501,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.482,
+                "duration": 0.493,
                 "name": "test_a_copy_with_one_count_changed_differs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
@@ -557,7 +530,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
+              "sha256": "792eded8522fb6dc3bfddfead3e10fa0c3ecd1b3aad11bfc58580970d00b2ee7"
             }
           },
           "result": "pass",
