@@ -2,43 +2,52 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-06T15:57:32Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-1": {
-            "after": "2. `## Proof`: numbered proof blueprints, `PROOF-N (RULE-N): description`\n3. ## Notes: free text on the feature, one paragraph",
+            "after": "These two and a third, Notes, are the whole structure. A spec carrying some other heading still",
             "aim": "past the test",
-            "before": "2. `## Proof`: numbered proof blueprints, `PROOF-N (RULE-N): description`",
-            "bug_key": "b1ff417718b28f714f101e1c54332d6bdeaea338c29efa187a372b60dff237f2",
-            "case": "the spec format reference read under `## Required sections`; the proof says exactly two sections, `## Rules` and `## Proof`, and no third; the changed reference lists a third required section, ## Notes",
+            "before": "These two are the whole structure. A spec carrying some other heading still",
+            "bug_key": "0f55ba4e1461960efa272e510f915929e4cc3772fd174734670556ee800ff81a",
+            "case": "the spec format reference under `## Required sections`; the proof says it names exactly two sections, `## Rules` and `## Proof`, and no third; the changed text names a third section, Notes, in prose",
             "file": "references/formats/spec_format.md",
-            "line": 63,
-            "result": "caught",
+            "line": 64,
+            "result": "survived",
+            "test_key": "24a98a8378d0443e6735ebe4338624da685cc82d95aa348a1346b83cc1180adb",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "03a2016081ebf298babb246dd05e3371ce51489b",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-1: the test reads the text under `## Required sections` and compares the backticked section names, the list items and every word that follows a hash mark with `## Rules` and `## Proof`, which is the proof's case and its result.",
+          "PROOF-1: a third section named in a sentence with no hash mark and no backticks, outside the numbered list, is read by none of the four comparisons, so such a text still passes.",
+          "PROOF-1: the test does not read the sentence \"Every spec has these two sections\" or \"These two are the whole structure\", so the count written in words is never compared.",
+          "The spot tests found nothing, and the test holds failable assertions on the values the proof names."
+        ],
+        "findings": [
+          "PROOF-1: the test still passes when references/formats/spec_format.md:64 reads \"These two and a third, Notes, are the whole structure. A spec carrying some other heading still\"",
+          "PROOF-1: the AI says this breaks: the spec format reference under `## Required sections`; the proof says it names exactly two sections, `## Rules` and `## Proof`, and no third; the changed text names a third section, Notes, in prose"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "22815a274aa3022ad9818b3b79fcbc0282cb54d83121daed62ac2f2b4c72cbc9",
         "rule_hash": "0074c199a04b8340aee391263c2385b8f4fc20b8b4c972c4e34d3ec270d0e33c",
         "test_hash": "fdf3ea0e9c5d3e2958bdb58eaf38aab7ca2cc98a34c7b6c1ddd55b8daa9efb4b",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-10": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-10": {
             "after": "ENVIRONMENTS = ('win', 'macos', 'linux')",
             "aim": "plain",
             "before": "ENVIRONMENTS = ('windows', 'macos', 'linux')",
-            "bug_key": "a5930fe7ba9f97bb7868e72b5b26e05251a7a1236effb413ac4c6d8d3990b26d",
+            "bug_key": "363ecc009f4f677de4535189cb9b63fde948f52454ae7b62774a3b52cbc6e363",
             "case": "the proof text `Lock the file @env(windows)`; the proof says it is read on `windows` with no tag it does not read; the changed code gives no operating system and one unread tag, `@env(windows)`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 71,
+            "line": 78,
             "result": "caught",
             "why": ""
           },
@@ -46,21 +55,23 @@
             "after": "            elif value.split('-')[0] in ENVIRONMENTS:",
             "aim": "plain",
             "before": "            elif value in ENVIRONMENTS:",
-            "bug_key": "5494696a054e3377524f4d3ab3051167491e9f1a55e873eb315fac6b7546710e",
-            "case": "the proof text `Lock the file @env(windows-2022)`; the proof says no operating system and one unread tag `@env(windows-2022)`; the changed code gives the operating system `windows-2022` and no unread tag",
+            "bug_key": "6df78cfab32536a89413f09cb23243e56e97b24897eca32454bbb30eb64b079e",
+            "case": "the proof text `Lock the file @env(windows-2022)`; the proof says no operating system and one unread tag, `@env(windows-2022)`; the changed code gives the operating system `windows-2022` and no unread tag",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 137,
+            "line": 176,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-10: the test reads `Lock the file @env(windows)` and compares the whole result with the text `Lock the file`, not manual, the operating system `windows` and an empty unknown list, which is every value the proof names.",
-          "PROOF-38: the test reads `Lock the file @env(windows-2022)` and compares the whole result with the text `Lock the file`, not manual, no operating system and the one unknown tag `@env(windows-2022)`, which is every value the proof names.",
-          "The spot tests found nothing, and both tests take their expected values from literals, so a wrong text, tag or operating system fails either one."
+          "PROOF-10: the test reads `Lock the file @env(windows)` and compares the whole answer with the text `Lock the file`, not manual, the system `windows` and an empty unknown list, which is every value the proof names.",
+          "PROOF-38: the test reads `Lock the file @env(windows-2022)` and compares the whole answer with the text `Lock the file`, not manual, no system and the unknown list holding `@env(windows-2022)`, which is every value the proof names.",
+          "Both tests go through a helper, `_read`, whose source is not shown, so which keys of the answer it keeps is taken from the compared dictionaries alone.",
+          "The rule's refusal is shown for one value, a runner name, and its acceptance for `windows` only; `macos` and `linux` are not exercised by either proof.",
+          "Findings: none, and nothing in either test contradicts that, since each asserts against literals that the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -71,57 +82,58 @@
         "verdict": "strong"
       },
       "RULE-13": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-52": {
-            "after": "                                      kept.rsplit('/', 1)[0]))",
+            "after": "                SAME_NAME_DO % (dropped, kept.rsplit('/', 1)[0])))",
             "aim": "plain",
-            "before": "                                      dropped.rsplit('/', 1)[0]))",
-            "bug_key": "8440faf16254777c53cd024b7487cdce11dbf7966a78df60e1db64a869f2ca2d",
-            "case": "a project holding specs/auth/login.md and specs/admin/login.md; the proof says the warning ends `git mv specs/admin/login.md specs/admin/<new name>.md`; the changed code gives `git mv specs/admin/login.md specs/auth/<new name>.md`",
+            "before": "                SAME_NAME_DO % (dropped, dropped.rsplit('/', 1)[0])))",
+            "bug_key": "c9e89443835f4b6ed308fc6c9cb59a9a512077518bed2b373972e92389f4f513",
+            "case": "a project holding specs/auth/login.md and specs/admin/login.md; the proof says the warning ends `Run git mv specs/admin/login.md specs/admin/<new name>.md.`; the changed code gives `Run git mv specs/admin/login.md specs/auth/<new name>.md.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 556,
+            "line": 678,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-52: the test writes `specs/auth/login.md` and `specs/admin/login.md`, runs the status, and asserts that the whole warning the proof names is one of the output's lines, so both file names, the file read and the `git mv` are each compared.",
-          "PROOF-52: the spot tests found nothing, and the test leaves no part of the proof's sentence unchecked for a change to slip past."
+          "PROOF-52: the test writes `specs/auth/login.md` and `specs/admin/login.md`, runs the status, and asserts that the whole warning line the proof names is one of the lines printed.",
+          "PROOF-52: that one line holds both files, the one read and the `git mv`, so a change to any of them gives a different line and fails the test.",
+          "PROOF-52: the spot tests found nothing, and the test's expected line is a literal written in the test, not taken from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "8cc097f6dda72ff0e985fa0308737e198a6693f93d5d0647c611a1a69b0c8ac5",
+        "proof_hash": "25cb403a69ca716d2593a00c6d7381833ad062c4d541a337794d99778edc32da",
         "rule_hash": "32bf16c8c399336a3a50428e14b3a81379b7c9f116321f6da4a680fd717a57e7",
-        "test_hash": "5d86188f387d725adbc14e33681eb3ef4092d80d057eef40926fad7985ba263a",
+        "test_hash": "4e53caa0044a6f99a097e563b57ce8fcb241024d1ffc14429fc5f35ed1dfa004",
         "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-13": {
-            "after": "    rules_section = extract_section(content, '## Rules')\n    if rules_section is not None and content.find('\\n## ') == content.lower().find('\\n## rules'):",
+            "after": "    rules_section = extract_section(content, '## Rules')\n    if rules_section is not None and (\n            content.find('\\n## ') == content.lower().find('\\n## rules')):",
             "aim": "plain",
             "before": "    rules_section = extract_section(content, '## Rules')\n    if rules_section is not None:",
-            "bug_key": "a3a923676aa49a337060e936ce9849d0a963a56cd8db1cef65273267c786aaa2",
-            "case": "a spec with `## What it does` above its `## Rules`; the proof says its rules read exactly `RULE-1`; the changed code reads no rules from it",
+            "bug_key": "6170b6e9cfd6e235ba1429e15fe92573abb19b077d0ed047f3113c5c1023777c",
+            "case": "a spec with `## What it does` above its `## Rules`; the proof says the spec's rules read exactly RULE-1; the changed code reads no rules for it",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 340,
+            "line": 423,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-13: the test writes a spec with `## What it does` above `## Rules`, runs the status and checks all four results the proof names: the report holds the spec's name, no line holds `is not numbered`, `What it does` appears nowhere, and the rule ids equal `['RULE-1']`.",
-          "PROOF-13: the test compares rule ids only, so a change to the rule's text or to the spec's proofs under the extra heading would pass, though the proof names neither.",
-          "PROOF-13: the spot tests found nothing, and the test leaves no way past the proof's case, so the planted bug is the plainest one that stops the rules being read."
+          "PROOF-13: the test writes a spec with `## What it does` above `## Rules`, runs the status, and asserts each of the four results the proof names: the spec's name is in the report, no line holds `is not numbered`, `What it does` is absent, and the rule ids equal `['RULE-1']`.",
+          "PROOF-13: the test compares the rule ids and not the rule's text, which the proof does not name either, so the test observes everything the proof names.",
+          "PROOF-13: the spot tests found nothing, and the test's four assertions are each failable and take their expected values from literals, not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -132,41 +144,40 @@
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-23": {
             "after": "    files = project_files(project_root)\n    return _files_part(project_root, files)",
             "aim": "plain",
             "before": "    files, _ = expand_scope(project_root, scope)\n    return _files_part(project_root, files)",
-            "bug_key": "37f7eefa8c62c592ad73ad5e1bbc58905f0563b9acbeedc4cbca85fb278a3dd5",
-            "case": "a spec scoped `src/app.py`, with `src/other.py` edited; the proof says the code part stays unchanged; the changed code hashes every tracked file, so the code part changes",
+            "bug_key": "55ac310587accc45ffbc855b15d3de24be0df05404bee27aa999d2c576288926",
+            "case": "a spec scoped `src/app.py` with `src/other.py` edited; the proof says the code part of the fingerprint is unchanged; the changed code hashes every tracked file, so the code part changes",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 174,
             "result": "caught",
             "why": ""
           },
           "PROOF-24": {
-            "after": "    ids = blob_ids(project_root, sorted(set(paths)))\n    return _hash_lines('%s' % path for path in ids)",
+            "after": "    return _hash_lines(files)",
             "aim": "plain",
-            "before": "    ids = blob_ids(project_root, sorted(set(paths)))\n    return _hash_lines('%s %s' % (path, ids[path]) for path in ids)",
-            "bug_key": "67084b6a596fcfdda472c03b29096ab340608c345bb92d1ae3a718c7e713581c",
-            "case": "a spec scoped `src/app.py`, with `src/app.py` edited; the proof says the code part changes; the changed code hashes the paths alone, so the code part stays the same",
+            "before": "    return _files_part(project_root, files)",
+            "bug_key": "7f4f7392386f020608067d83b822104a1d7af22c5d886f2fbad9dc95674b8d78",
+            "case": "a spec scoped `src/app.py` with `src/app.py` edited; the proof says the code part of the fingerprint changes; the changed code hashes only the paths in scope, so the code part stays the same",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 125,
+            "line": 175,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-23: the test edits `src/other.py`, takes the fingerprint again and compares its code part with the one taken before, which is the case and the result the proof names.",
-          "PROOF-23: the starting project comes from a helper not shown, so whether both files are tracked and the spec is scoped `src/app.py` cannot be read from the test itself.",
-          "PROOF-24: the test edits `src/app.py` and asserts the code part differs from the one taken before, which is the case and the result the proof names.",
-          "PROOF-24: the test compares for inequality only, so any change to the code part satisfies it, which is all the proof asks.",
-          "Neither test reads the spec part of the fingerprint, so the rule's clause that a code change is told from a rule change is shown only through the code part.",
-          "The spot tests found nothing, and both tests hold a failable comparison against a value taken before the edit."
+          "PROOF-23: the test edits `src/other.py`, takes the fingerprint again and compares its code part for equality with the one taken before the edit, which is the proof's case and its result.",
+          "PROOF-24: the test edits `src/app.py`, takes the fingerprint again and compares its code part for inequality with the one taken before the edit, which is the proof's case and its result.",
+          "PROOF-23 and PROOF-24: the project, the spec's scope and the earlier code part come from the helper `_scoped_project`, whose source is not shown, so the reading cannot confirm that both files are tracked or that the spec is scoped `src/app.py`.",
+          "PROOF-23: the equality check would also pass if the earlier and later code parts were both the hash of an empty scope, and only PROOF-24's test would notice that.",
+          "The spot tests found nothing, and both tests hold a failable comparison of a value taken after an edit against one taken before it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -177,29 +188,28 @@
         "verdict": "strong"
       },
       "RULE-27": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-64": {
-            "after": "> Format-Version: v24",
+            "after": "> Format-Version: 25-draft",
             "aim": "plain",
-            "before": "> Format-Version: 24",
-            "bug_key": "ed842f9ff896aa0f4a3c0904ff6ba06af3ac5f80f5304c99cdafb794ef132c98",
-            "case": "the first line of the spec format page; the proof says `> Format-Version: ` followed by a whole number and nothing else; the changed page's first line reads `> Format-Version: v24`",
+            "before": "> Format-Version: 25",
+            "bug_key": "7b2f9bb3db01866ce34959b4d39c43af77e3d34960bdb8ddfd656de58521f2f1",
+            "case": "the first line of the spec format page; the proof says `> Format-Version: ` followed by a whole number and nothing else; the changed page's first line reads `> Format-Version: 25-draft`",
             "file": "references/formats/spec_format.md",
             "line": 1,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-64: the test reads the first line of references/formats/spec_format.md, strips only its line ending and requires the whole line to match `> Format-Version: ` followed by one or more digits, which is the result the proof names.",
-          "PROOF-64: the full match leaves no room for a missing number, a non-digit, trailing text, a trailing space or a different first line, so the planted bug is the plain one.",
-          "PROOF-64: nothing is done before the observation; the proof reads a page that is kept by hand, so the test checks the page's content and not any behaviour of the code.",
-          "PROOF-64: the proof names no particular number, so a first line holding a wrong version number, such as `> Format-Version: 3`, still passes.",
-          "Findings: the spot tests found nothing, and the test holds a failable assertion that contains the proof's backticked value `> Format-Version: `."
+          "PROOF-64: the test opens the spec format page itself, reads its first line with only the line ending removed, and requires the whole line to be `> Format-Version: ` followed by one or more of the digits 0 to 9, which is the case and the result the proof names.",
+          "PROOF-64: because the whole line must match, a missing version line, a number that is not whole, or anything after the number each fails the test, so there is no way past it and the planted bug is the plain one.",
+          "PROOF-64: the test accepts any whole number, as the proof does, so a wrong but well-formed version number is outside what both the proof and the test say.",
+          "Findings: the spot tests found nothing, and the test holds a failable assertion on the value pattern the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -210,16 +220,16 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-16": {
-            "after": "            for rule_id in rule_ids[:1]:",
+            "after": "            for rule_id in rule_ids[:1]:\n                proofs_by_rule.setdefault(rule_id, []).append(proof_id)",
             "aim": "plain",
-            "before": "            for rule_id in rule_ids:",
-            "bug_key": "df8288388fddf537f3dd7c68de70a8eeb09d0e93023fe8d47a895f3d2b7f9217",
-            "case": "the line `PROOF-2 (RULE-2, RULE-3): One flow drives both` in a spec holding RULE-1 to RULE-3; the proof says PROOF-2 is the one proof of RULE-2 and of RULE-3; the changed code gives RULE-3 no proof, PROOF-2 being listed under RULE-2 alone",
+            "before": "            for rule_id in rule_ids:\n                proofs_by_rule.setdefault(rule_id, []).append(proof_id)",
+            "bug_key": "1bccf1450c135e53edab34f0c7525cf7a056281e78e2cace8c7185d6d3acedf9",
+            "case": "the line `PROOF-2 (RULE-2, RULE-3): One flow drives both` in a spec holding RULE-1, RULE-2 and RULE-3; the proof says PROOF-2 is the one proof of RULE-2 and of RULE-3; the changed code makes it a proof of RULE-2 alone and RULE-3 has no proof",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 390,
+            "line": 483,
             "result": "caught",
             "why": ""
           },
@@ -227,23 +237,24 @@
             "after": "    r'^-\\s+(PROOF-\\d+)\\s*\\(?((?:RULE-\\d+(?:,\\s*RULE-\\d+)*)?)\\)?:\\s*(.+)')",
             "aim": "plain",
             "before": "    r'^-\\s+(PROOF-\\d+)\\s*\\((RULE-\\d+(?:,\\s*RULE-\\d+)*)\\):\\s*(.+)')",
-            "bug_key": "e4f83488750cda3e4151394e9c5de7451a8b13936cb68d51af343708391a4117",
-            "case": "the line `PROOF-3: No rule named` in a spec holding RULE-1 to RULE-3; the proof says it is not read as a proof and the spec has no proof PROOF-3; the changed code reads it as the proof PROOF-3, naming no rule",
+            "bug_key": "b91796f3f5a8dcb7d32262ff886ef56b3f5e2db4f472caad75b9eb2ca7a6f073",
+            "case": "the line `PROOF-3: No rule named` in a spec holding RULE-1, RULE-2 and RULE-3; the proof says the spec has no proof PROOF-3; the changed code reads the line as a proof PROOF-3 that names no rule",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 63,
+            "line": 70,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-16: the test reads the rules listed for `PROOF-2` and the proofs listed for `RULE-2` and for `RULE-3`, and compares each with the exact list the proof names, so a line read for one rule only, or a second proof counted for either rule, fails it.",
-          "PROOF-16: the spec the test parses is built by a helper whose source is not shown, so whether it holds the proof's exact line and its three rules cannot be read from the test alone.",
-          "PROOF-17: the test checks that `PROOF-3` is absent from the proofs the spec is read to hold, which is the result the proof names; it does not look at whether the line is reported as unreadable, which the proof does not name either.",
-          "PROOF-17: the test relies on the same unseen helper to put the line `PROOF-3: No rule named` in the spec; if the helper left the line out, the test would pass without exercising the case.",
-          "The spot tests found nothing, and both tests hold a failable assertion on the value their proof names."
+          "PROOF-16: the test reads the rules of `PROOF-2` as exactly `RULE-2` and `RULE-3`, and the proofs of each of those rules as exactly `PROOF-2`, which is what the proof names.",
+          "PROOF-16: the spec the test parses is written by the helper `_flow_spec`, which is not shown, so the reading cannot confirm it holds `RULE-1`, `RULE-2`, `RULE-3` and the proof's exact line.",
+          "PROOF-17: the test reads that `PROOF-3` is absent from the spec's proofs, which is the result the proof names.",
+          "PROOF-17: the test does not look at the proofs listed per rule or at the lines reported as unread, so it rests on the proofs alone.",
+          "PROOF-17: whether the line `PROOF-3: No rule named` is in the parsed spec depends on `_flow_spec`, which is not shown; if the line were absent the test would pass with nothing done.",
+          "The spot tests report no finding, and each test holds an assertion that can fail against a literal value the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -254,26 +265,28 @@
         "verdict": "strong"
       },
       "RULE-32": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-76": {
             "after": "        'scope': (_split_list(scope_match.group(1))\n                  if scope_match else []),",
             "aim": "plain",
             "before": "        'scope': (_split_list(scope_match.group(1))\n                  if scope_match and not is_anchor else []),",
-            "bug_key": "a96fd497c3713c7082ab9789401279c71ae927bbb0c5a8aa1fc135b454b6add5",
-            "case": "an anchor `security` carrying `> Scope: src/app.py, src/db.py`; the proof says its scope is empty, naming no path; the changed code gives the scope ['src/app.py', 'src/db.py']",
+            "bug_key": "410cc67034edb4536a7bed876efabfd23291306b1ea52baf7b77d72c72102516",
+            "case": "an anchor `security` carrying `> Scope: src/app.py, src/db.py`; the proof says its scope is read empty, naming no path; the changed code gives the scope `['src/app.py', 'src/db.py']`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 431,
+            "line": 524,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-76: the test writes an anchor `security` carrying `> Scope: src/app.py, src/db.py`, scans the specs and compares the anchor's scope with the empty list, which is the case and the result the proof names, so a scope naming any path fails it.",
-          "PROOF-76: the spot tests found nothing, and the test holds a failable comparison against a literal the code cannot influence; it does not observe the warning about the line, which the proof does not name either."
+          "PROOF-76: the test writes an anchor `security` carrying `> Scope: src/app.py, src/db.py`, scans the specs and compares the anchor's scope with the empty list, which is the case and the result the proof names.",
+          "PROOF-76: the comparison is with a literal `[]`, so any path read from the line fails the test, and no change that breaks the proof's case gets past it.",
+          "PROOF-76: the test reads the scope alone, so the warning the rule's surrounding text mentions for such a line is not observed here, and the proof does not name it.",
+          "Findings: the spot tests found nothing, and the test holds an assertion that can fail and both values the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -284,93 +297,94 @@
         "verdict": "strong"
       },
       "RULE-38": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-2": {
-            "after": "            if line.startswith('* ') and not _RULE_RE.match(line):",
+            "after": "UNNUMBERED_ONE = '1 line under ## Rules has no number.'",
             "aim": "plain",
-            "before": "            if line.startswith('- ') and not _RULE_RE.match(line):",
-            "bug_key": "e5b17809ae572db6869332631dfee953b33bd0727d0c6b64560e705ac9333089",
-            "case": "a spec test_feat whose rules hold RULE-1 and the line `- some constraint without RULE-N prefix`; the proof says the warning `test_feat: 1 line under ## Rules is not numbered; ...` is reported; the changed code collects no unnumbered line and gives no such warning",
+            "before": "UNNUMBERED_ONE = '1 line under ## Rules is not numbered.'",
+            "bug_key": "7528c366fa8747b3fa8d0628afe77b836000f9986a9fcc6797814691a3ffd165",
+            "case": "a spec test_feat with RULE-1 and one unnumbered line under ## Rules; the proof says the warning reads `1 line under ## Rules is not numbered.`; the changed code gives `1 line under ## Rules has no number.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 355,
+            "line": 618,
             "result": "caught",
             "why": ""
           },
           "PROOF-71": {
-            "after": "UNREAD_REQUIRES = ('%s: > Requires: is ignored, because every anchor covers '",
+            "after": "UNREAD_FIELD = 'Every anchor covers the whole project, so %s is ignored.'",
             "aim": "plain",
-            "before": "UNREAD_REQUIRES = ('%s: > Requires: is not read, because every anchor covers '",
-            "bug_key": "6e5d179d62e875be867ca200e9e9be310a078b9683c8f88496e41ba93a318b48",
-            "case": "a feature login carrying `> Requires: api`; the proof says `login: > Requires: is not read, because every anchor covers the whole project. Run purlin:spec login.`; the changed code gives `login: > Requires: is ignored, because every anchor covers the whole project. Run purlin:spec login.`",
+            "before": "UNREAD_FIELD = 'Every anchor covers the whole project, so %s is not read.'",
+            "bug_key": "bcb528c5fa72ea8bcda16e4d797ce56392a51fd137450a68a9c2b359f5d246f5",
+            "case": "a feature login carrying `> Requires: api`; the proof says the warning reads `Every anchor covers the whole project, so > Requires: is not read.`; the changed code gives `Every anchor covers the whole project, so > Requires: is ignored.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 510,
+            "line": 615,
             "result": "caught",
             "why": ""
           },
           "PROOF-78": {
-            "after": "                'the line is' if len(fields) != 1 else 'the lines are',\n                info['source'], 'it' if len(fields) != 1 else 'them', name))",
+            "after": "REMOTE_UNREAD_DO = 'Ask its owners to remove %s, then run purlin:anchor sync %s.'",
             "aim": "plain",
-            "before": "                'the line is' if len(fields) == 1 else 'the lines are',\n                info['source'], 'it' if len(fields) == 1 else 'them', name))",
-            "bug_key": "0fb6786509226e0b849ab1dc0f00dec19ae82afe3b94e9623152e831491aa998",
-            "case": "the remote anchor security_baseline carrying `> Scope: src/`; the proof says the line reads `so the line is read as nothing`; the changed code gives `so the lines are read as nothing` and `take them out`",
+            "before": "REMOTE_UNREAD_DO = 'Ask its owners to take %s out, then run purlin:anchor sync %s.'",
+            "bug_key": "53b40309e17c301c7547a102f52afccc8d71c3bb4b3f1514e673b907d8878d9a",
+            "case": "the remote anchor security_baseline carrying `> Scope: src/`; the proof says the warning ends `Ask its owners to take it out, then run purlin:anchor sync security_baseline.`; the changed code gives `Ask its owners to remove it, then run purlin:anchor sync security_baseline.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 607,
+            "line": 617,
             "result": "caught",
             "why": ""
           },
           "PROOF-87": {
-            "after": "            if slow and manual:\n                # A hand check has no test to leave out of a run.\n                slow = True",
+            "after": "                read.update(ai=[], graded=None, runs=None)",
             "aim": "plain",
-            "before": "            if slow and manual:\n                # A hand check has no test to leave out of a run.\n                slow = False",
-            "bug_key": "2b7c83597c597ab61761bfff66cb59a3dccd0c488252c97418f5e2cf61a291b5",
-            "case": "a spec checkout whose PROOF-2 ends `@manual @slow`; the proof says PROOF-2 is read as `@manual` and not slow; the changed code reads it as both manual and slow",
+            "before": "                read.update(slow=False, ai=[], graded=None, runs=None)",
+            "bug_key": "f858f9bee34cbb808a5199fc7d85a8a9021eec87592df64c6523a9d20aa963ce",
+            "case": "a spec checkout whose PROOF-2 ends `@manual @slow`; the proof says PROOF-2 is read as @manual and not slow; the changed code reads it as @manual and slow",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 380,
+            "line": 465,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-2: the test writes the spec the proof names, with the unnumbered line and RULE-1, and looks for the whole warning line among the lines of the status, so a different count, wording or spec name fails it.",
-          "PROOF-71: the test writes a login spec carrying `> Requires: api` and looks for the proof's whole warning line among the lines of the status, so a missing or reworded warning fails it.",
-          "PROOF-78: the test writes the remote anchor with the proof's source and `> Scope: src/` and looks for the proof's whole line among the lines of the status, so a wrong source, a plural wording or a wrong fix fails it.",
-          "PROOF-87: the test writes a checkout spec whose PROOF-2 ends `@manual @slow`, looks for the proof's whole warning line in the status, and reads the parsed proof as manual and not slow, so both results the proof names are observed.",
-          "The spot tests found nothing, and each test compares the literal text its proof names, taken from the proof and not from the code."
+          "PROOF-2: the test writes the spec the proof names, with `RULE-1` and the unnumbered line, and looks for the whole warning line among the status lines, so a change to the name, the count or the fix fails it.",
+          "PROOF-71: the test gives `login` a `> Requires: api` line and looks for the proof's whole warning line among the status lines, so any other wording fails it.",
+          "PROOF-78: the test builds the remote anchor with `> Scope: src/` and a source ending `specs/baseline.md`, and looks for the proof's whole warning line; the source's address comes from a constant defined outside the lines shown, so whether it is the proof's address cannot be read here.",
+          "PROOF-87: the test looks for the proof's whole warning line and then reads the parsed `PROOF-2` as manual and as not slow, so it observes both results the proof names.",
+          "No finding of the spot tests stands against these four tests, and each compares a literal written in the test, not a value taken from the code.",
+          "The four proofs shown cover an unnumbered rule line, a `> Requires:` line, a remote anchor's `> Scope:` line and the `@slow` with `@manual` conflict; the rule's other mistakes, such as a list item under `## Proof` that is not a proof line, a first line naming another feature, a `> Global:` line and a local anchor's `> Scope:` line, are not among them."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "f7c3d94b595f2a7a9e1fdd15344637eb1681e79d1ffc4baad414385f3ad28ebe",
+        "proof_hash": "6e766356b881509e005d28f4c1df1ba93084b84fa2dee61906482626e82daae7",
         "rule_hash": "e41e740b6d5a8e0e5fceaafbe701186eee2a2a038344f646e8ce08226adde383",
-        "test_hash": "81152261bea31d8764fa0924e2d91b93d5fcaa6a2a494cb9c1c8211a9b64c1b6",
+        "test_hash": "79ceedd76991415c9df85b624dc2bd9bdc937e03f927f693bd25027df55ec5dc",
         "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-46": {
             "after": "            rules.setdefault(rule_id, m.group(2).strip())",
             "aim": "plain",
             "before": "            rules[rule_id] = m.group(2).strip()",
-            "bug_key": "a736d30b6f337d5810aa43076854a2edb0730dc0ca90cd68108bcd9162e1e4a0",
-            "case": "a spec whose rules read RULE-1, RULE-2: Old text and RULE-2: New text; the proof says RULE-2 reads New text; the changed code gives RULE-2 reading Old text",
+            "bug_key": "b6d705f882218b14fd3379d0313685c059f9c75e6c2ef38d801805051e50ce28",
+            "case": "a spec whose rules read RULE-1, RULE-2: Old text and RULE-2: New text; the proof says RULE-2 reads New text; the changed code reads RULE-2 as Old text",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 349,
+            "line": 432,
             "result": "caught",
             "why": ""
           },
           "PROOF-81": {
-            "after": "PROOF_WRITTEN_TWICE = ('%s: %s is written twice; the first is read. '",
+            "after": "            if proof_id in proofs and proof_id in doubled_proofs:",
             "aim": "plain",
-            "before": "PROOF_WRITTEN_TWICE = ('%s: %s is written twice; the second is read. '",
-            "bug_key": "9f062b6d12fab1fb5f63b8f81b917a20a521574604c550a91fb4622687e45a6a",
-            "case": "a spec login whose ## Proof holds PROOF-4 twice; the proof says the warning reads \"login: PROOF-4 is written twice; the second is read. Run purlin:spec login.\"; the changed code gives \"login: PROOF-4 is written twice; the first is read. Run purlin:spec login.\"",
+            "before": "            if proof_id in proofs and proof_id not in doubled_proofs:",
+            "bug_key": "9c1678caae450517aa5d8c02e633ac216d7a812022cd716c01a40a43527c7804",
+            "case": "a spec login whose Proof holds PROOF-4 twice; the proof says it is reported with login PROOF-4: spec to repair. It is written twice, and the second is read.; the changed code reports no such line",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 488,
+            "line": 473,
             "result": "caught",
             "why": ""
           },
@@ -378,106 +392,124 @@
             "after": "            for number, line in enumerate(content.splitlines(), 0)",
             "aim": "plain",
             "before": "            for number, line in enumerate(content.splitlines(), 1)",
-            "bug_key": "94e8e138f98cf63c12ff7560a15256772782e1a5be3f6d643e5a86b1490b996c",
-            "case": "a spec login holding one line ======= at line 12; the proof says the warning names \"at line 12\"; the changed code gives \"at line 11\"",
+            "bug_key": "e4909489cebb5606e4beefa348b4c76b3795cbbd18ad8fc9671d63f684f8c485",
+            "case": "a spec login holding one line ======= at line 12; the proof says the report reads at line 12; the changed code reports at line 11",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 452,
+            "line": 545,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-46: the test writes the three rule lines, looks for the whole warning sentence among the status lines, and compares the feature's rules with exactly `RULE-1` reading `One` and `RULE-2` reading `New text`, so the warning, the count of rules and the second line's text are all observed.",
-          "PROOF-46: the test builds its spec through a helper whose source is not shown, so whether the file stands at `specs/test/login.md` as the proof names is not visible here.",
-          "PROOF-81: the test writes `PROOF-4` twice under two different rules, looks for the whole warning sentence among the status lines, and checks that the scanned proofs hold only `PROOF-4` with the text `New text`, which is what the proof names.",
-          "PROOF-82: the test writes a spec whose twelfth line is `=======`, by the list it passes to a helper not shown, and looks for the whole warning sentence with `line 12` and the quoted line among the status lines, so a wrong line number or wording fails it.",
-          "The spot tests found nothing, and each test compares literal values taken from its proof instead of values computed by the code."
+          "PROOF-46: the test writes the three rule lines the proof names, looks for the exact warning sentence as a whole line of the status, and compares the full list of rule ids and texts with `RULE-1` and `RULE-2` reading `New text`, so it observes everything the proof names.",
+          "PROOF-81: the test writes `PROOF-4` twice under two rules, looks for the exact warning sentence as a whole line of the status, and checks that the spec holds one `PROOF-4` whose text is `New text`, which is what the proof names.",
+          "PROOF-82: the test writes a spec whose twelfth line is `=======` and looks for the exact sentence with `at line 12` as a whole line of the status, so a wrong line number or a wrong count fails it.",
+          "The spot tests found nothing, and each test compares literal values that come from the proof and not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "d3febcdaf73dd37470aee8d406e64947f16d8e72fb7ed02c51b8a6e937e93ea2",
+        "proof_hash": "fcbdc9e8d5226ada917897b2cabbda7bf28f6cc6601b3bf1c16bac2eac93c343",
         "rule_hash": "b54641214aff59a0ef5761fdad164370e98a13e12381f763e70b26ed1ee03b44",
-        "test_hash": "a89878f26e9b3d41285617374d0f3c1013b326ea7e53c795040ff101cc7f560c",
+        "test_hash": "938ff0e099b1f2ccdc08508711bdb48653dcbd0a8c3139c7a534b02fdab233fe",
         "verdict": "strong"
       },
       "RULE-40": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-28": {
             "after": "        elif name == 'slow':\n            slow = True\n        else:\n            unknown.append('@%s' % name)",
             "aim": "plain",
             "before": "        elif name == 'slow':\n            slow = True\n        else:\n            break",
-            "bug_key": "ac5718306365e58c60506a4d13ff9c5f3167df64940ac2bb21a94bf24b43a0ba",
-            "case": "the proof text `Lock the file @manual @smoke`; the proof says the text is read whole and the proof is not `@manual`; the changed code gives the text `Lock the file`, `@manual` set and `@smoke` listed as an unread tag",
+            "bug_key": "bb9ab20fba1917b9292fe14afd8a22af982344942c03f23d9a0735dec58addc9",
+            "case": "the proof text `Lock the file @manual @smoke`; the proof says it is read whole and is not `@manual`; the changed code strips both at-words, gives the text `Lock the file`, reads the proof as `@manual` and lists `@smoke` as a tag it does not read",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 153,
+            "line": 224,
             "result": "caught",
             "why": ""
           },
           "PROOF-29": {
+            "after": "_PROOF_TAG_RE = re.compile(r'(?<!\\band)(?<!\\bor)(?<!;)\\s+@(\\w+)(?:\\(([^)]*)\\))?\\s*$')",
+            "aim": "plain",
+            "before": "_PROOF_TAG_RE = re.compile(r'(?<!\\band)(?<!\\bor)(?<!,)\\s+@(\\w+)(?:\\(([^)]*)\\))?\\s*$')",
+            "bug_key": "7f11606957908d48f75694274237937e394883dd9077140c6fcbe9fdb0221f8d",
+            "case": "the proof text `Check the documented tags @manual, @env`; the proof says it is read whole with no tag it does not read; the changed code strips `@env` after the comma, gives the text `Check the documented tags @manual,` and lists `@env()` as a tag it does not read",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 76,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-96": {
             "after": "_PROOF_TAG_RE = re.compile(r'(?<!\\band)(?<!\\bor)\\s+@(\\w+)(?:\\(([^)]*)\\))?\\s*$')",
             "aim": "plain",
             "before": "_PROOF_TAG_RE = re.compile(r'(?<!\\band)(?<!\\bor)(?<!,)\\s+@(\\w+)(?:\\(([^)]*)\\))?\\s*$')",
-            "bug_key": "4a05235d821543b65274a5f267e345080f632a94cd9616905cf0abeed60aa58c",
-            "case": "the proof text `Check the documented tags @manual, @env`; the proof says it is read whole with no tag it does not read; the changed code gives the text `Check the documented tags @manual,` and the unread tag `@env()`",
+            "bug_key": "87de96e4cb0b0f58cf6e1d5fe3d090aa0720ac08ae15a5813939257ee9077cbb",
+            "case": "the proof text `Check the documented tags @manual, @ai(claude-opus-5-5)`; the proof says it is read whole, naming no model; the changed code reads `@ai(...)` after the comma as a tag, gives the text `Check the documented tags @manual,` and names the model claude-opus-5-5",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 69,
+            "line": 76,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-28: the test reads `Lock the file @manual @smoke` and compares the whole text, `manual` as false, `env` as none and an empty list of unread tags against literals, which is every result the proof names.",
-          "PROOF-28: the helper `_read` is not shown and the compared result has no `slow` key, so the rule's \"nor slow\" is not observed by this test.",
-          "PROOF-29: the test reads `Check the documented tags @manual, @env` and compares the whole text, `manual` as false, `env` as none and an empty list of unread tags against literals, which is every result the proof names.",
-          "PROOF-29: the test covers the comma only, so the rule's `and` and `or` connectors are not observed by either test.",
-          "The spot tests found nothing, and both tests hold a failable comparison against values written in the test rather than taken from the code."
+          "PROOF-28: the test reads `Lock the file @manual @smoke` and compares the whole text, `manual` false, no operating system and an empty list of unread tags, which is everything the proof names.",
+          "PROOF-28: the rule also says the proof is not slow, and the test's comparison holds no `slow` value, so a change that wrongly marked the proof slow would still pass.",
+          "PROOF-29: the test reads `Check the documented tags @manual, @env` and compares the whole text, `manual` false, no operating system and an empty list of unread tags, which is everything the proof names.",
+          "PROOF-96: the test compares the same four values for the `@ai(...)` text, then reads the line through a spec and compares the whole proof, including an empty list of models, no grader, no run count and `slow` false, which covers what the proof names.",
+          "PROOF-96: the model name comes from the constant `OPUS`, whose definition is not shown, where the proof writes `claude-opus-5-5`; the expected text is built from the same constant, so the comparison holds either way.",
+          "No finding of the spot tests is listed, and each test compares literal expected values the code cannot influence."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "7604f18b8035e69716daf43c27246a977b9f30f4dadc167acb1137e8eea38be5",
-        "rule_hash": "b24df766618b4e2b5d31d9e4dad91035ca9a501a638c96d2bd8a68ecdde73974",
-        "test_hash": "b6882dcf77be6c7d22b7fc1b512137fe98c8fce7f1b46a580618afd6dcd82104",
+        "proof_hash": "d3f3659b1bc48f0a0117800f183b94387728f6e6dd938c00e038c15b7647705e",
+        "rule_hash": "2af494658212955ed4014e643152cf414801ff5ae536513261a092d26e1cda99",
+        "test_hash": "4584f056acc6f3b8abc894e3aeff7402d1ff2ac49dcc3e5ec3a2f424a42d4610",
         "verdict": "strong"
       },
       "RULE-41": {
-        "at": "2026-10-06T15:57:32Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-14": {
             "after": "_RULE_RE = re.compile(r'^-\\s+(RULE-\\d):\\s*(.+)', re.MULTILINE)",
             "aim": "plain",
             "before": "_RULE_RE = re.compile(r'^-\\s+(RULE-\\d+):\\s*(.+)', re.MULTILINE)",
-            "bug_key": "0a6d6456009d7f4307d9cc5c532675102d78b469388766a8c6ff5787e5f504aa",
-            "case": "a spec with RULE-1, RULE-3 and RULE-20, each with a proof; the proof says no line containing `is not numbered` and rules exactly RULE-1, RULE-3, RULE-20; the changed code reads only RULE-1 and RULE-3 and leaves the RULE-20 line as an unnumbered line",
+            "bug_key": "61ef7d4b72340bd5851747300e47896e6d957d092da9654e96f2a97d4fb46caf",
+            "case": "a spec with rules RULE-1, RULE-3 and RULE-20, each with a proof; the proof says no line contains `is not numbered` and the rules read RULE-1, RULE-3, RULE-20; the changed code reports 1 line under ## Rules as not numbered and reads only RULE-1 and RULE-3",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 61,
+            "line": 68,
             "result": "caught",
             "why": ""
           },
           "PROOF-69": {
-            "after": "A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, never gives its next proof `PROOF-13`.",
-            "aim": "past the test",
+            "after": "A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof `PROOF-10`.",
+            "aim": "plain",
             "before": "A spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted, leaving `PROOF-9` its highest, gives its next proof `PROOF-13`.",
-            "bug_key": "b7a84af74e2ddf781216e24aa9d801930de0ef6861e3fbd66037294f40c5408b",
-            "case": "the page on a spec whose `> Highest-Proof:` reads `12` with `PROOF-10` to `PROOF-12` deleted; the proof says the page gives its next proof `PROOF-13`; the changed page says such a spec never gives its next proof `PROOF-13`",
+            "bug_key": "310985c91e07b9bbbc4270cd3f201d57826844ed00f860497878e302b44565dd",
+            "case": "a spec whose `> Highest-Proof:` reads `12` and whose `PROOF-10` to `PROOF-12` were deleted; the proof says the page gives its next proof `PROOF-13`; the changed page gives `PROOF-10`",
             "file": "references/formats/spec_format.md",
             "line": 214,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "03a2016081ebf298babb246dd05e3371ce51489b",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-14: the test writes a spec with rules `RULE-1`, `RULE-3` and `RULE-20`, reads the status for any line containing `is not numbered` and compares the feature's rule ids with the exact list in order, so both results the proof names are checked.",
+          "PROOF-14: the test covers a gap in the rule numbers only, so a gap in the proof numbers reported as a problem would pass it.",
+          "PROOF-69: the test reads the spec format page's sentences and compares the one sentence on the deleted `PROOF-10` to `PROOF-12` word for word, so any change to that sentence fails it.",
+          "PROOF-69: the proof reads a sentence of a page and nothing is done before the observation, so it holds whether or not any software gives a new proof the number `PROOF-13`.",
+          "No proof of the rule shown here adds a rule or a proof to a spec and observes the number it takes or the `> Highest-Rule:` line being raised.",
+          "The spot tests found nothing, and neither test shows a pattern they look for."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -487,39 +519,40 @@
         "verdict": "strong"
       },
       "RULE-42": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-62": {
-            "after": "    if info.get('highest_rule') is not None:\n        lines.append('%s highest-rule %s' % (path, info['highest_rule']))\n    return sorted(lines)",
+            "after": "    return sorted(lines + ['%s highest-rule %s' % (path, info.get('highest_rule'))])",
             "aim": "plain",
             "before": "    return sorted(lines)",
-            "bug_key": "ce935d95d063bb952ff51d4373701b6d82570f4ccf762bdb70d948c12690e831",
+            "bug_key": "a7387b0215d6f6909d58be61d49f654382596788554a3694e619abe1afa2d400",
             "case": "a spec carrying `> Highest-Rule: 12` against the same spec without that line; the proof says all three fingerprint parts are the same; the changed code gives a different spec part",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 286,
+            "line": 296,
             "result": "caught",
             "why": ""
           },
           "PROOF-66": {
-            "after": "    return _hash_lines(spec_lines(feature, features)\n                       + [_text(_info(feature, features).get('stack'))])",
+            "after": "    return _hash_lines(spec_lines(feature, features) + [_text(_info(feature, features).get('stack'))])",
             "aim": "plain",
             "before": "    return _hash_lines(spec_lines(feature, features))",
-            "bug_key": "ac5c604e5aa03cd0b18879c853449e8d852609a19fb34d5c51c4eff83f91fe42",
+            "bug_key": "1a058e6e1fa27c5f3262736681202add878cdc2bac26ea6f35f5a69722443eb3",
             "case": "a spec whose `> Stack:` is rewritten from python/stdlib to node/express; the proof says all three fingerprint parts equal the ones taken before; the changed code gives a different spec part",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 291,
+            "line": 301,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-62: the test takes the fingerprint of a three-rule spec, rewrites it with `> Highest-Rule: 12` added, and compares the whole fingerprint for equality, so a change to any of the three parts fails it.",
-          "PROOF-66: the test takes the fingerprint with `> Stack: python/stdlib`, rewrites the line to `node/express`, and compares the whole fingerprint for equality, so a change to any of the three parts fails it.",
-          "PROOF-62 and PROOF-66: both expected values come from the fingerprint function itself, taken on a different spec text, which is the comparison the proofs name and not a check of the code against itself on the same input.",
-          "No proof of the rule names `> Highest-Proof:`, and none observes a rule or proof count, so those two parts of the rule are not shown by either test."
+          "PROOF-62: the test takes the fingerprint of a three-rule spec, rewrites the spec with `> Highest-Rule: 12` added, and compares the whole fingerprint with the first, so all three parts are checked for the proof's case.",
+          "PROOF-66: the test takes the fingerprint with `> Stack: python/stdlib`, rewrites the line to `node/express`, and compares the whole fingerprint with the first, so all three parts are checked for the proof's case.",
+          "PROOF-62 and PROOF-66: each expected value is the fingerprint the code gave before the edit, which is what the proofs name, so a fingerprint that is wrong in the same way both times would still pass.",
+          "RULE-42: no proof names `> Highest-Proof:`, and no proof observes a rule or proof count, so those parts of the rule are not shown by either test.",
+          "Findings: the spot tests found nothing, and each test holds a failable comparison of two separately taken fingerprints."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -530,72 +563,272 @@
         "verdict": "strong"
       },
       "RULE-43": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-90": {
-            "after": "TAG_AT_END = 'a tag goes at the end of a line'",
+            "after": "TAG_AT_END = 'A tag goes first'",
             "aim": "plain",
-            "before": "TAG_AT_END = 'a tag goes at the end of the line'",
-            "bug_key": "581c19b697d10eace1a616ac8ac15e5462054f882a35a1624d222bbcc0d64331",
-            "case": "login's proofs hold `- PROOF-7 @manual (RULE-7): ...`; the proof says the status line gives the reason `a tag goes at the end of the line`; the changed code gives `a tag goes at the end of a line`",
+            "before": "TAG_AT_END = 'A tag goes last'",
+            "bug_key": "4d847711d7c0a940b71126a1c2a860109c11cd16de92ac53484c1d70b054560c",
+            "case": "`login`'s proofs hold `- PROOF-7 @manual (RULE-7): ...`; the proof says the status carries `login: proof line not read. A tag goes last: \"- PROOF-7 @manual (RULE-7): ...\". Run purlin:spec login.`; the changed code gives `A tag goes first` in that line",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 499,
+            "line": 604,
             "result": "caught",
             "why": ""
           },
           "PROOF-91": {
-            "after": "NOT_A_PROOF_LINE = 'a proof line reads `- PROOF-N (RULE-N) <text>`'",
+            "after": "NOT_A_PROOF_LINE = 'It is not `- PROOF-N: <text>`'",
             "aim": "plain",
-            "before": "NOT_A_PROOF_LINE = 'a proof line reads `- PROOF-N (RULE-N): <text>`'",
-            "bug_key": "8b508a5834f778d1e6c2537f6f7ee569a05df6472c3f6337dd762d8a9cbcd88b",
-            "case": "login's proofs hold `- PROOF-7: no rule named`; the proof says the status line gives the reason ``a proof line reads `- PROOF-N (RULE-N): <text>` ``; the changed code gives ``a proof line reads `- PROOF-N (RULE-N) <text>` ``",
+            "before": "NOT_A_PROOF_LINE = 'It is not `- PROOF-N (RULE-N): <text>`'",
+            "bug_key": "03f3e410912716efa92cad7583ad5db6644d14037be509f30054af37d3637eda",
+            "case": "`login`'s proofs hold `- PROOF-7: no rule named`; the proof says the status carries ``It is not `- PROOF-N (RULE-N): <text>`: \"- PROOF-7: no rule ...\"``; the changed code gives ``It is not `- PROOF-N: <text>`: \"- PROOF-7: no rule ...\"``",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 500,
+            "line": 605,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-90: the test writes the proof's `@manual` line into `login`'s spec, takes the status and asserts the whole warning line the proof names is one of its lines, so a change to the reason, the quoted line or the closing words fails it.",
-          "PROOF-91: the test writes `- PROOF-7: no rule named` into `login`'s spec, takes the status and asserts the whole warning line the proof names is one of its lines, so a change to the reason, the quoted line or the closing words fails it.",
-          "PROOF-90: the test covers only `@manual` standing before the rule ids, as the proof does, so a tag of `@slow` or `@env(` in that place is observed by neither.",
-          "PROOF-91: the quoted line is 24 characters long, so the test would not notice a warning that cut a longer unread line short; PROOF-90's 96-character line is the one that shows the line is quoted whole.",
-          "The spot tests found nothing, and both tests compare the proof's literal text against a status line produced by the code, so neither expected value comes from the code under test."
+          "PROOF-90: the test writes the proof's line with `@manual` before the rule ids into `login`, reads the status and looks for the whole warning line the proof names among its lines, so the reason, the 4 quoted words and the fix are all compared.",
+          "PROOF-91: the test writes `- PROOF-7: no rule named` into `login`, reads the status and looks for the whole warning line the proof names among its lines, so the form given as the reason and the 4 quoted words are both compared.",
+          "Findings: the spot tests found nothing, and each test holds the values its proof names in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "3fcd01edf90675c946e526045f6509352373d9a2abf6d6a6aa94458d1af849f8",
-        "rule_hash": "f041fd6127b2736e813ec12fb2bdd8a1cb22682d6f3297bd7a9f454b16b55272",
-        "test_hash": "995b08829d6e4c7b98d664f0335d6acdb42d314846e862327d98ba249cd7a417",
+        "proof_hash": "6edab8e7f25d43d571d5f4dacb01043aebcf89aff4ac6a8ac22143db795a3a15",
+        "rule_hash": "dd1c03cc424e91a5d62fcd91e317353a8f20f58c8676ce57fa0084658d542677",
+        "test_hash": "d8c42d9b5401b19de8033604b4a049d40ce04b57e0fb48f4b091f103a34e4841",
         "verdict": "strong"
       },
-      "RULE-6": {
-        "at": "2026-10-06T15:44:24Z",
+      "RULE-44": {
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
-          "PROOF-6": {
-            "after": "        'scope': (_split_list(scope_match.group(1))[::-1]",
+          "PROOF-92": {
+            "after": "            'slow': slow, 'ai': ai,",
             "aim": "plain",
-            "before": "        'scope': (_split_list(scope_match.group(1))",
-            "bug_key": "d6580de9ed1d290006c578bd06ee717b8d9fbbeb27e28ab8f6c9eeb002dd5445",
-            "case": "a spec carrying `> Scope: src/alpha.py, src/zeta.py`; the proof says exactly two paths, `src/alpha.py` then `src/zeta.py`; the changed code gives `src/zeta.py` then `src/alpha.py`",
+            "before": "            'slow': slow or bool(ai), 'ai': ai,",
+            "bug_key": "f776c6efb041b10a74780f4e1c806459618b99da08a9b39ea85b14225428329f",
+            "case": "a proof line ending `@ai(claude-opus-5-5)`; the proof says it is read slow; the changed code reads it not slow",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 430,
+            "line": 232,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-93": {
+            "after": "                        runs = int(count) - 1",
+            "aim": "plain",
+            "before": "                        runs = int(count)",
+            "bug_key": "a575e83c400187993a4a27af7528a57e19e1c20d2119288964883351c1b73c44",
+            "case": "a proof line ending `@ai(claude-opus-5-5, bedrock/us.anthropic.claude-sonnet-5-5:0, runs=10)`; the proof says the count of runs is 10; the changed code gives 9",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 191,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-94": {
+            "after": "            'graded': None, 'runs': runs if ai else None,",
+            "aim": "plain",
+            "before": "            'graded': graded if ai else None, 'runs': runs if ai else None,",
+            "bug_key": "3c7e3584a967214164da68c8d06103db162a1fa42bdf0e5830e396164ae895d1",
+            "case": "a proof line ending `@graded(claude-haiku-4-5-20251001) @env(linux) @ai(claude-opus-5-5)`; the proof says the grader is claude-haiku-4-5-20251001; the changed code gives no grader",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 233,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-95": {
+            "after": "    ai = ai or None",
+            "aim": "plain",
+            "before": "    ai = ai or []",
+            "bug_key": "65dcf1a00b89e65ba434c06d55bbf0f3352673b27e4bd628166ec7c6a985ebd6",
+            "case": "a proof line ending `Lock the file @env(windows)`; the proof says the models are an empty list; the changed code gives no list at all (None)",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 230,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-6: the test reads the scope of a spec carrying `src/alpha.py, src/zeta.py` and compares the whole list with `['src/alpha.py', 'src/zeta.py']`, so the count, the paths and their order are all checked against the values the proof names.",
-          "PROOF-6: the expected list is a literal in the test, not taken from the code, so a change to how the scope is split, trimmed or ordered for this case fails the comparison.",
-          "PROOF-6: the test reaches the parser through the helper `_scope_of`, whose source is not shown, so what it writes into the spec and which reader it calls cannot be read here.",
-          "The spot tests found nothing, and nothing in the test shown contradicts that: it holds one failable assertion on the proof's own values."
+          "PROOF-92: the test compares the whole proof as read with a literal holding the text, the one model, no grader, no count, slow and not manual, and also that no reason is given, so each value the proof names is checked.",
+          "PROOF-93: the test compares the models with a two-item list in order and the count with `10` as a whole number, which is what the proof names; it reads nothing else of the proof.",
+          "PROOF-94: the test reads both orderings, compares them with each other and compares the first with a literal holding the model, the grader, `linux` and slow, so every value the proof names is checked.",
+          "PROOF-95: the test compares the whole proof as read with a literal holding an empty list of models, no grader, no count and not slow, so each value the proof names is checked.",
+          "The source of the helper `_tagged` that every test calls is not shown, so what it writes and how it reads the line is taken from its name and arguments.",
+          "No proof of the rule names a failure case: the rule limits what a model's name holds, and no proof shows a name holding another character.",
+          "The spot tests found nothing, and each test holds failable comparisons against literals."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-94 reads two proof lines, one in each order of the tags, and names the results of both."
+        ],
+        "proof_hash": "1f4ba2f08f71c94c5e74c774e2be919c203aed2febf6d17c13055b76835cfbc8",
+        "rule_hash": "216a1e64b4c71806ffb253580090afe9cc91af39f6858290526274721e6d10bc",
+        "test_hash": "8e6a813997e810c4fc5d4529ad3503c50f143a3b0843a2172bb341b753540d0f",
+        "verdict": "strong"
+      },
+      "RULE-45": {
+        "at": "2026-10-07T18:44:49Z",
+        "bugs": {
+          "PROOF-102": {
+            "after": "            if not ai:",
+            "aim": "past the test",
+            "before": "            if not ai and MODEL_NAME_MISTAKE not in mistakes:",
+            "bug_key": "7045d60ae9a62b7c16a8e0cd0ad7bd3f14b021571481a716bd8c8e7b5267a3ae",
+            "case": "a spec `login` whose PROOF-1 (RULE-1) ends `@ai(claude opus)`; the proof says the reasons are exactly `PROOF-1 carries a model's name that cannot be read`; the changed code also gives `PROOF-1 carries @ai naming no model` and a second line, `@ai names no model.`",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 199,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-97": {
+            "after": "                mistakes.append(('tag_unread', AI_NO_MODEL, AI_NO_MODEL_REASON))",
+            "aim": "past the test",
+            "before": "                mistakes.append(('to_repair', AI_NO_MODEL, AI_NO_MODEL_REASON))",
+            "bug_key": "69e99d60e8a306c93f93db616827325930c69d120475603fc9818ec6783fd3ea",
+            "case": "a spec `login` whose PROOF-1 (RULE-1) ends `@ai`; the proof says the line reads `login PROOF-1 (RULE-1): spec to repair. @ai names no model. Run purlin:spec login.`; the changed code gives `login PROOF-1 (RULE-1): tag not read. @ai names no model. Run purlin:spec login.`",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 200,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-98": {
+            "after": "    if grader_tag and (ai is None or graded is None):",
+            "aim": "past the test",
+            "before": "    if grader_tag and ai is None:",
+            "bug_key": "72b9ce0fa0ae5bdc1f61b48c7d24e8fa757d1a366d6962f907666b547a5a63ee",
+            "case": "a spec `login` whose PROOF-1 (RULE-1) ends `@ai(claude-opus-5-5) @graded`; the proof says the reasons are exactly `PROOF-1 carries @graded naming no model`; the changed code also gives `PROOF-1 carries @graded with no @ai` and a second line, `@graded stands with no @ai.`",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 226,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-99": {
+            "after": "        mistakes.append(('tags_conflict', GRADED_NO_AI, GRADED_NO_AI_REASON))",
+            "aim": "past the test",
+            "before": "        mistakes.append(('to_repair', GRADED_NO_AI, GRADED_NO_AI_REASON))",
+            "bug_key": "46e2a0ede24d3216d834fdaec256e05b3fe79b3a2ce8a9d432cba82e33241dc3",
+            "case": "a spec `login` whose PROOF-1 (RULE-1) ends `@graded(claude-haiku-4-5-20251001)` with no `@ai`; the proof says the line reads `login PROOF-1 (RULE-1): spec to repair. @graded stands with no @ai. Run purlin:spec login.`; the changed code gives `login PROOF-1 (RULE-1): tags that conflict. @graded stand",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 227,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-97: the test hands the tag `@ai`, the sentence `@ai names no model.` and the reason to a helper whose source is not shown, so whether the words `spec to repair`, `login PROOF-1 (RULE-1)` and `Run purlin:spec login.` are compared cannot be read from the test's own lines.",
+          "PROOF-98: the test hands the tag, the sentence `@graded names no model.` and the reason to the same helper, and its own lines do not show whether the reasons are compared as the whole list or only searched for the one named, so \"exactly\" may go unchecked.",
+          "PROOF-99: the test hands the tag, the sentence and the reason to the helper and itself asserts the proof's grader is none, so the \"read with no grader\" part is checked in the test's own lines while the line's words and the exactness of the reasons rest on the helper.",
+          "PROOF-102: the test hands `@ai(claude opus)`, the sentence about a model's name and the reason to the helper, and nothing in its own lines shows that a second reason or a second warning line for the same proof would fail it.",
+          "The spot tests found nothing; all four tests take their expected sentences and reasons as literals from the proofs, not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "e50f0a0e27b3158ed2ea96c18a484e4bb5a1e5a7aab71a37c881395c194d310a",
+        "rule_hash": "a8fe401ffb8c2bd73f8c62db69f0d181ed846d101cf6c3cd23b981563b599e07",
+        "test_hash": "d6c120bdb0208a0718476be06174e0d1f6943ff2a56a3607066b6278080af2eb",
+        "verdict": "strong"
+      },
+      "RULE-46": {
+        "at": "2026-10-07T18:44:49Z",
+        "bugs": {
+          "PROOF-100": {
+            "after": "                read.update(slow=True, ai=[], graded=None, runs=None)",
+            "aim": "plain",
+            "before": "                read.update(slow=False, ai=[], graded=None, runs=None)",
+            "bug_key": "0c279ee21a8a2791d9e73d876e76ec1fe29f4adb82bbe9baf64f7d41af93a8a9",
+            "case": "spec checkout whose PROOF-2 (RULE-2) ends @manual @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001); the proof says PROOF-2 is read as @manual and not slow; the changed code reads it as slow",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 465,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-100: the test writes a spec whose PROOF-2 ends `@manual @ai(...) @graded(...)`, the same tags in the same order as the proof names, and counts the exact conflict line in the status output as appearing once.",
+          "PROOF-100: the test compares the whole parsed entry for PROOF-2 with a literal holding manual true, slow false, no models, no grader and no runs, so a wrong value in any of those fields fails it.",
+          "PROOF-100: the test checks that the spec has no reason to read `failed` by comparing the list of reasons with an empty list, which covers the proof's last clause.",
+          "PROOF-100: every value the proof names is compared against a literal written in the test, so the planted change is the plainest one, leaving the proof read as slow."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "ddc21844101f2db97622d25b4b0443ff4fb36aa581b6287f30ea21e75e0ed6e1",
+        "rule_hash": "536d67d4ac985981d34f40818f4ac0cdea8a117f255a91668f34720be0b86257",
+        "test_hash": "da92f1e77844dceed2c6cc4c55f5efbacfef20efd6be27184526fe45c1450839",
+        "verdict": "strong"
+      },
+      "RULE-47": {
+        "at": "2026-10-07T18:44:49Z",
+        "bugs": {
+          "PROOF-101": {
+            "after": "                    if _RUNS_RE.fullmatch(count) and int(count) >= 0:",
+            "aim": "plain",
+            "before": "                    if _RUNS_RE.fullmatch(count) and int(count) >= 1:",
+            "bug_key": "76928aee62005d782908ca74c9cb8b3f66c2d3c3d2ae3ca331d7848ffdb2e32c",
+            "case": "a spec `login` whose PROOF-1 (RULE-1) ends `@ai(claude-opus-5-5, runs=0)`; the proof says it is reported with `tag not read. runs=0 is not a whole number from 1 up.` and read with no count of runs; the changed code gives no such line and reads a count of 0",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 190,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-101: the test writes the proof's tag `@ai(claude-opus-5-5, runs=0)` through the helper `_tagged` and requires the proof's whole warning line, word for word, exactly once.",
+          "PROOF-101: the test compares the models with exactly the one model named, requires the count of runs to be none, and requires the list of reasons to read `failed` to be empty, so each result the proof names is observed.",
+          "PROOF-101: the helper `_tagged` is not shown, so where the proof, the reasons and the lines come from is taken on trust.",
+          "PROOF-101: the proof names `runs=0` alone, so a count that is not a number, such as `runs=two`, and the boundary `runs=1` are shown by no proof of the rule.",
+          "Findings: the spot tests found nothing, and the test holds the proof's values `runs=0` and the warning line."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "62bb1fc00fe1a880b325dc6f4d7e45499ac939efa295bd5c327dd9edd8fde681",
+        "rule_hash": "78a8d8b40e414f0b3927503eaa700543575f4acc0e428eba6f2b189d2b7b5d86",
+        "test_hash": "e62b95fec39b418df52eb21ca233dca01184bf5b4c063364a35700189e4a73e5",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-07T18:44:49Z",
+        "bugs": {
+          "PROOF-6": {
+            "after": "        'scope': (_split_list(scope_match.group(1))[::-1]\n                  if scope_match and not is_anchor else []),",
+            "aim": "plain",
+            "before": "        'scope': (_split_list(scope_match.group(1))\n                  if scope_match and not is_anchor else []),",
+            "bug_key": "e8b850de295108ab2a9a0f503d7e296905424bac3dd4207a3b7711eac7ee3472",
+            "case": "a spec carrying `> Scope: src/alpha.py, src/zeta.py`; the proof says exactly two paths, `src/alpha.py` then `src/zeta.py`; the changed code gives `src/zeta.py` then `src/alpha.py`",
+            "file": "scripts/mcp/purlin/specs.py",
+            "line": 523,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-6: the test reads the scope of a spec carrying `src/alpha.py, src/zeta.py` and compares the whole list with `['src/alpha.py', 'src/zeta.py']`, so the count, the paths and their order named by the proof are all observed.",
+          "PROOF-6: the expected list is a literal written in the test, not taken from the code, so a change to the order, the split or the trimming of the paths fails it.",
+          "PROOF-6: the test reaches the parser through the helper `_scope_of`, whose source is not shown, so how the spec is written and read rests on that helper.",
+          "Findings: the spot tests found nothing, and the test's own lines hold an assertion on the proof's two values."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -606,16 +839,16 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-49": {
-            "after": "HEADING_NAMES_OTHER = ('%s: the first line name %s, but the file is %s.md, so '",
+            "after": "HEADING_NAMES_OTHER = 'It names the spec %s.'",
             "aim": "plain",
-            "before": "HEADING_NAMES_OTHER = ('%s: the first line names %s, but the file is %s.md, so '",
-            "bug_key": "16fbbb1bdd8f1bd745cd2ee6965628cd70394766ebc044d1be6691ee33e35af7",
-            "case": "specs/test/login.md whose first line reads `# Feature: checkout`; the proof says the line `login: the first line names checkout, but the file is login.md, so it is read as login. Run purlin:spec login.`; the changed code gives `login: the first line name checkout, ...`",
+            "before": "HEADING_NAMES_OTHER = 'It names %s.'",
+            "bug_key": "1d30d1e747d9cd64464ef2622cac26697b5614104af91539d3c9f7551266efd8",
+            "case": "specs/test/login.md whose first line reads `# Feature: checkout`; the proof says the line reads `login: first line names another spec. It names checkout. Run purlin:spec login.`; the changed code gives `... It names the spec checkout. Run purlin:spec login.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 505,
+            "line": 606,
             "result": "caught",
             "why": ""
           },
@@ -623,10 +856,10 @@
             "after": "    new = _NOT_IN_A_NAME_RE.sub('-', name)",
             "aim": "plain",
             "before": "    new = _NOT_IN_A_NAME_RE.sub('_', name)",
-            "bug_key": "889838a3d69e4f83d2e2453e33f3dde9bfbbb57d723a919fa758570202c3f336",
-            "case": "a project holding specs/intake/sample.age.md; the proof says the warning ends `git mv specs/intake/sample.age.md specs/intake/sample_age.md`; the changed code gives `specs/intake/sample-age.md` as the new name",
+            "bug_key": "1fada5fcccf392dbba5261eb1d2f3ae6685fc6de35bb5f92f581d063beeee4c1",
+            "case": "a project holding specs/intake/sample.age.md; the proof says the line ends `Run git mv specs/intake/sample.age.md specs/intake/sample_age.md.`; the changed code gives `... specs/intake/sample-age.md.`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 53,
+            "line": 60,
             "result": "caught",
             "why": ""
           },
@@ -634,45 +867,43 @@
             "after": "NAME = r'\\w+'",
             "aim": "plain",
             "before": "NAME = r'\\w[\\w-]*'",
-            "bug_key": "b1c6f26f9656f051fe9cce7f799e19afe169f8ae4c0a52518c83d5b7f8e014ac",
-            "case": "specs/intake/sample-age.md holding one rule; the proof says it is read as `sample-age` with no warning naming it; the changed code warns `sample-age: the name holds a character other than letters, digits, _ and -, ...`",
+            "bug_key": "e2bc1d4f489a33676b6ef94df67f1df4202d9e790d686fe3b670e5af933edaca",
+            "case": "specs/intake/sample-age.md holding one rule; the proof says it is read as `sample-age` with no warning naming it; the changed code warns `sample-age: spec name not allowed. ...`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 40,
+            "line": 47,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-49: the test writes a login spec whose first line names checkout, looks for the proof's whole warning as one line of the status, and compares the feature names with `['login']`, so it observes both results the proof names.",
-          "PROOF-88: the test writes `specs/intake/sample.age.md` and looks for the proof's whole warning, with both paths of the `git mv`, as one line of the status, so a wrong new name or wrong wording fails it.",
-          "PROOF-88: the test does not check that the spec is still read as a feature, which the rule says and the proof does not name.",
-          "PROOF-89: the test writes `specs/intake/sample-age.md`, compares the feature names with `['sample-age']`, and checks that no payload warning holds `sample-age` and that the list of spec mistakes is empty.",
-          "PROOF-89: the test reads the warnings from the payload and the list of spec mistakes rather than the printed status the proof names, so it rests on the status printing those same lines.",
-          "The spot tests found nothing, and each test holds its proof's values and can fail.",
-          "No proof of the rule names a spec whose name starts with `-`, so that boundary of the rule is not shown."
+          "PROOF-49: the test writes a login spec whose first line names checkout, looks for the proof's whole line among the status lines and compares the payload's feature names with `login`, so both the name read and the warning are checked.",
+          "PROOF-88: the test writes `specs/intake/sample.age.md` and looks for the proof's whole line, rename included, among the status lines, so a wrong message or a wrong new name fails it.",
+          "PROOF-89: the test compares the payload's feature names with `sample-age`, and reads the payload's warnings and the list of spec mistakes rather than the printed status the proof names, so a warning that reached only the status text would not be seen.",
+          "No proof of the rule names a spec whose name starts with `-`, so the rule's refusal of a leading `-` and its rename to `_` are not shown.",
+          "The spot tests found nothing, and each test asserts a literal value its proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "30602d7e22786beddab8d6909ad50a8f736c7f97f36d51862205c90b188361cc",
-        "rule_hash": "0cf93e1a7c0f1a60f5ccc1abfcd5020dc2a0d56679df3f6baa7a56b2446ca6a6",
-        "test_hash": "25434f59b8fd39842458abaad2fd6977fa92d642342155451537fd57a1f54b8c",
+        "proof_hash": "831e848bdbe42bc0bcb2e1f64ccf8e8541cc4aad5c463ead46966ba860964f44",
+        "rule_hash": "fa0f04f3cc8c02cf78b3bbfab2c56dc703bce7327d708ada00470c868edbc20e",
+        "test_hash": "e1bd42299b172bce96961d7d46c8f961e9e5581c72858801b57bcdca4d759a95",
         "verdict": "strong"
       },
       "RULE-9": {
-        "at": "2026-10-06T15:44:24Z",
+        "at": "2026-10-07T18:44:49Z",
         "bugs": {
           "PROOF-26": {
             "after": "            elif value in ENVIRONMENTS and not manual:",
             "aim": "plain",
             "before": "            elif value in ENVIRONMENTS:",
-            "bug_key": "9c8318e079772504617eca29e9d8b04a16c23ed9b0c9099c44daa11aef019bf7",
-            "case": "the proof text `Lock the file @env(windows) @manual`; the proof says `@manual` on `windows` with no tag it does not read; the changed code gives `@manual` with no operating system and `@env(windows)` as a tag it does not read",
+            "bug_key": "ee958066da8515e7b6fedee33ba3b833c39f9aaa693f04aa21a1f82262361be0",
+            "case": "the proof text `Lock the file @env(windows) @manual`; the proof says `@manual` on `windows` with no tag it does not read, the same as the other order; the changed code gives no operating system and `@env(windows)` as a tag it does not read",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 137,
+            "line": 176,
             "result": "caught",
             "why": ""
           },
@@ -680,10 +911,10 @@
             "after": "        elif name == 'slow':\n            slow = env is None",
             "aim": "plain",
             "before": "        elif name == 'slow':\n            slow = True",
-            "bug_key": "db4e61c6bf81c8b1c77ba6233607108509c5f8d0aee61da407f0dec13feb10f2",
-            "case": "the proof text `Check out a cart of three items @slow @env(linux)`; the proof says it is read as slow on `linux`; the changed code reads it as not slow, on `linux`",
+            "bug_key": "7d93b8f987916ffc94d681278ede584e6fb5a431f6c8f3675039db0eb15a342b",
+            "case": "the proof text `Check out a cart of three items @slow @env(linux)`; the proof says it is read as slow on `linux`; the changed code reads it as not slow on `linux`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 151,
+            "line": 222,
             "result": "caught",
             "why": ""
           },
@@ -691,31 +922,29 @@
             "after": "        elif name == 'manual':\n            manual = False",
             "aim": "plain",
             "before": "        elif name == 'manual':\n            manual = True",
-            "bug_key": "22d8183ce8d3947b2f8e929ec9bff1e5c4064afa986ff15426368693070fda6b",
+            "bug_key": "87631d8553785e34363b9d1d3ab5e16bf93dc1b0cd1a62fe46387e9d7fc7902f",
             "case": "the proof text `Check it by hand @manual`; the proof says it is read as `@manual`; the changed code reads it as not `@manual`, with the text `Check it by hand`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 149,
+            "line": 220,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "d7bde257219c0d61c627d6f4bb8c85b5d5d75a80d4a8cb68cd3c294445e02014",
-        "commit": "1bd6e8607169fbf96b658a8c9b44fda030284104",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "13f9f8c6b99e1ee4608b80c2d3c130b0ce391b867ccd176009620b761d2b0cc2",
+        "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-26: the test reads both orders through the helper `_read` and compares each with the literal text `Lock the file`, `manual` true, `env` `windows` and an empty `unknown`, which is every value the proof names.",
-          "PROOF-26: `_read` is not shown and its expected value holds no slow entry, so a change that also marked this line slow would not be seen by this test.",
-          "PROOF-9: the test compares the reading of `Check it by hand @manual` with the literal text `Check it by hand`, `manual` true, `env` None and an empty `unknown`, which is every value the proof names.",
-          "PROOF-9: as with PROOF-26, the value compared holds no slow entry, so the test does not observe whether the line is also read as slow.",
-          "PROOF-86: the test calls the tag reader directly and asserts slow is true, `env` is `linux`, `manual` is false, the text is `Check out a cart of three items` and `unknown` is empty, which is every value the proof names.",
-          "The spot tests found nothing, and each test compares against literals rather than values taken from the code, so no change that breaks a proof's case gets past its test and each bug is the plain one.",
-          "Of the three proofs shown, none names a line carrying the same tag twice, so the rule's \"at most one\" limit is proved only in the allowed direction here."
+          "PROOF-26: the test reads both orders through a helper not shown and compares each with one literal holding the text `Lock the file`, `@manual`, `windows` and an empty list of unread tags, so it observes every value the proof names.",
+          "PROOF-9: the test compares the reading of `Check it by hand @manual` with a literal holding the text, `@manual`, no operating system and no unread tag, which is every value the proof names.",
+          "PROOF-86: the test reads the proof text directly and checks slow, `linux`, not `@manual`, the text and the empty list of unread tags, each against a literal, so it observes every value the proof names.",
+          "PROOF-26 and PROOF-9: what the helper keeps of the reading beyond text, manual, operating system and unread tags is not shown, so a wrong slow value in those two cases may pass; neither proof names it.",
+          "The rule limits a line to at most one of each tag, and none of these three proofs names a line carrying the same tag twice, nor one carrying `@ai` or `@graded`, so the limit is shown in the allowed direction only."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "f5e05528aa0996ddc364d8431a1762683640d255d274e290b555393737ab1597",
-        "rule_hash": "47cae2f363a0bdbd5dab2a5a36d0ed5c14bd90175fff14f3a88d9ed4f79d1ff5",
+        "rule_hash": "c663d7d922e8639e2a8b9612224ba6bf51b83ad4ae29313568d864f103e2885a",
         "test_hash": "ee29aeaf206cfac64d0c0c351fbf75a9e278056491a27d7c11d646504eeaae33",
         "verdict": "strong"
       }
@@ -724,8 +953,8 @@
   "feature": "schema_spec_format",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:14Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:52Z",
+      "commit": "039f4591c3476879bb4ec0211053d59277ee417b",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -750,7 +979,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -765,14 +994,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.003,
+                "duration": 0.001,
                 "name": "test_a_proof_line_naming_two_rules_is_a_proof_of_both",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -787,14 +1016,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_proof_line_naming_no_rule_is_not_read_as_a_proof",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -809,14 +1038,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_the_scope_is_read_as_a_list_of_its_paths",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -831,14 +1060,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.29,
+                "duration": 0.283,
                 "name": "test_a_first_line_naming_another_feature_is_warned_of",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -853,14 +1082,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.158,
+                "duration": 0.166,
                 "name": "test_a_name_with_another_character_is_warned_of_with_the_rename",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -875,14 +1104,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.107,
+                "duration": 0.129,
                 "name": "test_a_name_with_a_hyphen_is_read_and_not_warned_of",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -904,7 +1133,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -926,7 +1155,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -948,7 +1177,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -970,7 +1199,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -992,7 +1221,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1014,7 +1243,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1036,7 +1265,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1051,14 +1280,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.173,
+                "duration": 0.163,
                 "name": "test_an_ai_tag_after_a_comma_is_prose",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1073,14 +1302,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.16,
+                "duration": 0.285,
                 "name": "test_two_specs_with_one_name_are_warned_of_with_the_rename",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1095,14 +1324,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.295,
+                "duration": 0.323,
                 "name": "test_a_spec_with_a_heading_the_format_does_not_name_is_read_and_nothing_is_reported",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1117,14 +1346,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.128,
+                "duration": 0.106,
                 "name": "test_an_edit_outside_the_scope_leaves_the_code_fingerprint_unchanged",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1139,14 +1368,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.135,
+                "duration": 0.111,
                 "name": "test_an_edit_inside_the_scope_changes_the_code_fingerprint",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1161,14 +1390,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_scope_line_on_an_anchor_is_not_read",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1183,14 +1412,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.18,
+                "duration": 0.166,
                 "name": "test_a_rule_line_with_no_id_is_reported_as_not_numbered",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1205,14 +1434,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.148,
+                "duration": 0.217,
                 "name": "test_a_requires_line_is_warned_of",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1227,14 +1456,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.507,
+                "duration": 1.156,
                 "name": "test_a_remote_anchor_carrying_a_scope_line_names_its_source",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1249,14 +1478,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.163,
+                "duration": 0.223,
                 "name": "test_slow_with_manual_is_warned_of_and_read_as_manual",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1271,14 +1500,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.364,
+                "duration": 0.284,
                 "name": "test_a_rule_number_written_twice_is_warned_of_and_read_once",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1293,14 +1522,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.163,
+                "duration": 0.174,
                 "name": "test_a_proof_number_written_twice_is_warned_of_and_read_once",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1315,14 +1544,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.148,
+                "duration": 0.206,
                 "name": "test_one_line_left_from_a_merge_conflict_is_warned_of_with_its_line",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1337,14 +1566,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.157,
+                "duration": 0.16,
                 "name": "test_a_tag_before_the_rule_ids_is_quoted_by_4_words_with_its_reason",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1359,14 +1588,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.195,
+                "duration": 0.167,
                 "name": "test_a_line_that_is_no_proof_line_is_quoted_with_the_form",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1381,14 +1610,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.325,
+                "duration": 0.308,
                 "name": "test_a_gap_in_the_rule_numbers_is_reported_as_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1410,7 +1639,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1425,14 +1654,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.108,
+                "duration": 0.123,
                 "name": "test_a_highest_rule_line_changes_no_fingerprint",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1447,14 +1676,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.091,
+                "duration": 0.128,
                 "name": "test_a_rewritten_stack_changes_no_fingerprint",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1469,14 +1698,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.224,
+                "duration": 0.165,
                 "name": "test_ai_names_the_model_and_makes_the_proof_slow",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1491,14 +1720,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.196,
+                "duration": 0.162,
                 "name": "test_ai_names_several_models_in_order_and_its_own_runs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1513,14 +1742,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.429,
+                "duration": 0.313,
                 "name": "test_ai_and_graded_are_read_in_either_order",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1535,14 +1764,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.171,
+                "duration": 0.144,
                 "name": "test_any_other_proof_names_no_model",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1557,14 +1786,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.171,
+                "duration": 0.185,
                 "name": "test_ai_naming_no_model_is_a_spec_to_repair",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1579,14 +1808,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.178,
+                "duration": 0.228,
                 "name": "test_graded_naming_no_model_is_a_spec_to_repair",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1601,14 +1830,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.167,
+                "duration": 0.284,
                 "name": "test_graded_with_no_ai_is_a_spec_to_repair",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1623,14 +1852,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.168,
+                "duration": 0.258,
                 "name": "test_a_models_name_holding_a_space_is_a_spec_to_repair",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1645,14 +1874,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.157,
+                "duration": 0.24,
                 "name": "test_ai_and_graded_with_manual_conflict_and_read_as_manual",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1667,14 +1896,14 @@
             "cases": [
               {
                 "class": "dev.test_schema_spec_format",
-                "duration": 0.158,
+                "duration": 0.384,
                 "name": "test_runs_that_is_no_whole_number_is_not_read",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
@@ -1696,7 +1925,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "adcdfd7294be27080f1b31f58b778e0a5d9091d64de6e502f6a75efbfd44f911"
             }
           },
           "result": "pass",
