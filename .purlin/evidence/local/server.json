@@ -884,43 +884,33 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-07T18:53:57Z",
+        "at": "2026-10-07T21:46:15Z",
         "bugs": {
           "PROOF-138": {
             "after": "        if response is not None:\n            sys.stdout.write(json.dumps(response) + '\\r')",
             "aim": "past the test",
             "before": "        if response is not None:\n            sys.stdout.write(json.dumps(response) + '\\n')",
-            "bug_key": "e5818807a97246c7c9ce18049dedd0644177d3b30d177a322d85a478e7b7039b",
+            "bug_key": "99b8d20026f7452596276f286ebb9f1d3e2bfa9839f1fc09c9cc3a27b4426eff",
             "case": "three tool calls with the ids 1, 2 and 3; the proof says stdout holds exactly 3 lines, each a JSON-RPC answer; the changed code ends each answer with a carriage return and no line feed, so stdout holds one unterminated line with three answers on it",
             "file": "scripts/mcp/purlin/server.py",
             "line": 289,
-            "result": "survived",
-            "test_key": "24e27461dbd556a5cd96a881cc6e38e01d99e18d5ad21815736b7297aeaefd7d",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "2ea4a41cbde06203c11925b1bd55aa43fbd69172cc05b327a096d86fee72e07c",
-        "commit": "38a051c09b0cd5faea3158999984de812c7e27c4",
+        "commit": "be8845cab0d17cbb29517baf95b5bd1b8ef73880",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-138: the test starts the server as a child process, sends the three calls and checks that stdout splits into 3 lines, each with `jsonrpc` 2.0, the ids 1, 2 and 3 in order, only the members `id`, `jsonrpc` and `result`, and one non-empty text part.",
-          "PROOF-138: the test counts lines with `splitlines()`, which also splits on a carriage return, so it does not observe that each answer ends in a line feed, as a client reading line by line needs.",
-          "PROOF-138: the test reads the error stream and never checks it, so the rule's second half, the startup line going to stderr, is left to PROOF-159, which runs on Windows alone.",
-          "PROOF-159: the test reads the raw bytes after `initialize`, checks for exactly one line feed at the end and no carriage return, parses the answer with id 1, and looks for the startup line with the version in the error stream, which is what the proof names.",
-          "The spot tests found nothing, and both tests hold assertions that can fail on the values their proofs name."
-        ],
-        "findings": [
-          "PROOF-138: the test still passes when scripts/mcp/purlin/server.py:289 reads \"sys.stdout.write(json.dumps(response) + '\\r')\"",
-          "PROOF-138: the AI says this breaks: three tool calls with the ids 1, 2 and 3; the proof says stdout holds exactly 3 lines, each a JSON-RPC answer; the changed code ends each answer with a carriage return and no line feed, so stdout holds one unterminated line with three answers on it"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-159 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "55e387205ee707788845b40217710c5b3c608599a980d850e80aeb3fefc4817d",
         "rule_hash": "46597e2be4d3a2b3b7c7e1604a77d8f36afbfcb96250c395e6ee7297635ed43a",
-        "test_hash": "0063d5f7481e0a37ef7fba813b166cc830210b4a8ac63529698f842b9b6a4567",
-        "verdict": "weak"
+        "test_hash": "7e3dd65571b28cff1cb929528bb8f9f09312f877dc92f59a29c9664bfbc331a7",
+        "verdict": "strong"
       },
       "RULE-6": {
         "at": "2026-10-07T18:53:57Z",
