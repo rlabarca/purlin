@@ -447,8 +447,10 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             return _result(proof_id, 'not made', FOUND_MORE % (path, count), change)
         if old == new:
             return _result(proof_id, 'not made', NO_DIFFERENCE % path, change)
+        # Each run is in a process group of its own, ended when it is done: a
+        # process the change started does not outlive the audit.
         if purlin_run.proof_result(where, feature, proof_id, tests, timeout,
-                                   environment) != 'pass':
+                                   environment, own_group=True) != 'pass':
             return _result(proof_id, 'not made',
                            BASELINE_OUTPUT if output else BASELINE, change)
         at = text.index(old)
@@ -463,7 +465,7 @@ def _plant_change(project_root, feature, proof_id, tests, scope_files, change, t
             return _result(proof_id, 'not made', outside % path, change)
         line, words = _changed_line(normal, changed, at, old, new)
         ran = purlin_run.proof_result(where, feature, proof_id, tests, timeout,
-                                      environment)
+                                      environment, own_group=True)
         if output and ran != 'pass' and _no_grade(copy):
             # The grader said nothing of the changed output: nothing caught it.
             return _result(proof_id, 'not run', NO_GRADE, change, line)

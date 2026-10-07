@@ -16,8 +16,8 @@
 >   copy, so no model is asked for an output again.
 > Scope: scripts/review/planted_bug.py
 > Stack: python/stdlib (subprocess, tempfile, hashlib, shutil)
-> Highest-Rule: 35
-> Highest-Proof: 77
+> Highest-Rule: 36
+> Highest-Proof: 79
 
 ## Rules
 
@@ -53,6 +53,7 @@
 - RULE-33: The proof's test is run on the copy before the change is made; where it does not pass there, no wrong output is planted and the result reads `not made` with the reason `the test does not pass on the kept output`
 - RULE-34: A wrong output changes `reply.md` or a file under `files/` of the output: any other path, such as one under `input/`, `transcript.jsonl` or `purlin.json`, reads `not made` with the reason `<path> is not in the output`, and a path that leaves the copy with `<path> is outside the copy of the output`; the refusals about the feature's scope and about a change to a comment do not apply to an output
 - RULE-35: The test of a `@graded` proof asks its grader about the changed output: a grader that accepts it leaves the result `survived`, one that rejects it makes it `caught`, and one that gives no answer leaves it `not run` with the reason `the grader gave no answer`
+- RULE-36: Each run of a proof's tests for a planted bug, before the change and with it in place, starts in a process group of its own, and every process still in that group when the run returns or passes its limit is ended, so a process a planted bug started does not outlive the audit; a process that left its group is not reached, and on Windows, where a run has no such group, nothing is ended
 
 ## Proof
 
@@ -131,3 +132,5 @@
 - PROOF-75 (RULE-35): The grader accepts the output of `PROOF-2` as it was kept and exits with an error when asked about the changed one; the result reads `not run` with the reason `the grader gave no answer`
 - PROOF-76 (RULE-34): The answer names `file: input/message.md`, what the AI was given; the result reads `not made` with the reason `input/message.md is not in the output`, and the test of `PROOF-1` is not run
 - PROOF-77 (RULE-34): The answer names `file: purlin.json`; the result reads `not made` with the reason `purlin.json is not in the output`, and the test of `PROOF-1` is not run
+- PROOF-78 (RULE-36): The model's change makes `age` start a process that sleeps 600 seconds and write that process's id down, and the test of `PROOF-1`, which holds only that an age comes back, passes; the result reads `survived`, exactly one id was written, and on macOS and Linux no process with that id is running once the bug's result comes back
+- PROOF-79 (RULE-36): The same change also keeps `age` for 20 seconds, and the tests are given a limit of 2 seconds; the result reads `not run`, exactly one id was written, and on macOS and Linux no process with that id is running once the bug's result comes back

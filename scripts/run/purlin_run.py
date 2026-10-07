@@ -204,6 +204,7 @@ writes.
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -605,8 +606,17 @@ def command_line(command):
     return '$ %s' % ' '.join(command)
 
 
+def _end_group(pid):
+    """End every process still in the process group `pid` leads. A group
+    with nothing left in it is no error."""
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
 def _run(command, project_root, log, timeout, environment=None,
-         keep_stdout=False):
+         keep_stdout=False, own_group=False):
     """Run one command in the project root, echoing it and its output.
 
     The command gets no stdin: a pipeline is nobody's terminal, and a prompt
@@ -615,32 +625,59 @@ def _run(command, project_root, log, timeout, environment=None,
     back so the caller names the timeout as missing evidence. With
     `keep_stdout` the answer is `(code, stdout)`, for a suite whose report
     is its standard output.
+
+    With `own_group` the command starts in a process group of its own, and
+    every process still in that group once the command has returned or
+    passed its limit is ended: the audit asks for it, so a process a planted
+    bug started does not outlive it. A process that left the group is not
+    reached. Windows has no such group, and nothing is ended there.
     """
     log.append(command_line(command))
-    stdout = ''
+    own_group = own_group and os.name != 'nt'
     try:
-        result = subprocess.run([*command], cwd=project_root,
-                                stdin=subprocess.DEVNULL,
-                                capture_output=True, text=True,
-                                encoding='utf-8', errors='replace',
-                                timeout=timeout,
-                                env=environment or arm_environment())
-    except subprocess.TimeoutExpired as expired:
-        for stream in (expired.stdout, expired.stderr):
-            if stream:
-                log.append(stream.decode('utf-8', 'replace')
-                           if isinstance(stream, bytes) else stream)
-        log.append('timed out after %d s' % timeout)
-        return (TIMED_OUT, stdout) if keep_stdout else TIMED_OUT
+        process = subprocess.Popen([*command], cwd=project_root,
+                                   stdin=subprocess.DEVNULL,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, text=True,
+                                   encoding='utf-8', errors='replace',
+                                   env=environment or arm_environment(),
+                                   start_new_session=own_group)
     except (OSError, subprocess.SubprocessError) as error:
         log.append(str(error))
-        return (127, stdout) if keep_stdout else 127
-    for stream in (result.stdout, result.stderr):
+        return (127, '') if keep_stdout else 127
+    timed_out = False
+    try:
+        with process:
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                process.kill()
+                if own_group:
+                    # Before its output is read to the end: a process of
+                    # the group that holds a stream open would keep it open.
+                    _end_group(process.pid)
+                stdout, stderr = process.communicate()
+            except BaseException:
+                # As `subprocess.run` does: the command is not left running
+                # where the wait for it was interrupted.
+                process.kill()
+                raise
+    except (OSError, subprocess.SubprocessError) as error:
+        log.append(str(error))
+        return (127, '') if keep_stdout else 127
+    finally:
+        if own_group:
+            _end_group(process.pid)
+    for stream in (stdout, stderr):
         if stream:
-            log.append(stream.rstrip('\n'))
+            log.append(stream if timed_out else stream.rstrip('\n'))
+    if timed_out:
+        log.append('timed out after %d s' % timeout)
+        return (TIMED_OUT, '') if keep_stdout else TIMED_OUT
     if keep_stdout:
-        return result.returncode, result.stdout or ''
-    return result.returncode
+        return process.returncode, stdout or ''
+    return process.returncode
 
 
 def print_arm_output(name, text):
@@ -691,7 +728,7 @@ class SuiteRun(object):
 
 def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
               marked=None, action='test', option='', held=(), keep=False,
-              environment=None):
+              environment=None, own_group=False):
     """Run one suite and read what it saw. A `SuiteRun`.
 
     `files` is the test files to hand `{files}`, or empty for a suite
@@ -706,7 +743,8 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     was read from is kept under its sha256, `outputs.keep`, for a sign-off
     to commit with the package; the sha256 is taken either way.
     `environment` is the variables to add to what the suite's command gets
-    (`arm_environment`).
+    (`arm_environment`). With `own_group` each command starts in a process
+    group of its own, ended when the command is done (`_run`).
     """
     done = SuiteRun(suite)
     mark = len(log)
@@ -721,7 +759,8 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
             command = [bash_command(), '-c',
                        reports_module.command_for(suite, [path])]
             ran.append(command)
-            code = _run(command, project_root, log, timeout, environment)
+            code = _run(command, project_root, log, timeout, environment,
+                        own_group=own_group)
             if code == TIMED_OUT:
                 done.failures.append(notices.line(
                     'evidence_missing', SUITE % suite.name,
@@ -740,7 +779,7 @@ def run_suite(project_root, suite, files, log, timeout=ARM_TIMEOUT_DEFAULT,
     command = [bash_command(), '-c',
                reports_module.command_for(suite, files, report, option)]
     code, stdout = _run(command, project_root, log, timeout, environment,
-                        keep_stdout=True)
+                        keep_stdout=True, own_group=own_group)
     done.keep_log(log[mark:], [command])
     if code == TIMED_OUT:
         done.failures.append(notices.line(
@@ -1072,7 +1111,7 @@ def keep_slow_results(project_root, name, os_name, fingerprint, entries):
 # ---------------------------------------------------------------------------
 
 def proof_result(project_root, feature, proof_id, tests, timeout=None,
-                 environment=None):
+                 environment=None, own_group=False):
     """Start one proof's own tests alone. `pass`, `fail`, `error` or `not
     run`.
 
@@ -1084,14 +1123,16 @@ def proof_result(project_root, feature, proof_id, tests, timeout=None,
     reads `pass` and no suite reported a failure; else `not run`.
     `environment` is the variables to add to what each suite's command
     gets: the run sets an AI proof's model and folder there, and the audit
-    the output to replay.
+    the output to replay. With `own_group`, which the audit asks for, each
+    command starts in a process group of its own and whatever is left in
+    the group is ended when the command is done (`_run`).
     """
     return proof_run(project_root, feature, proof_id, tests, timeout,
-                     environment)[0]
+                     environment, own_group=own_group)[0]
 
 
 def proof_run(project_root, feature, proof_id, tests, timeout=None,
-              environment=None, log=None, keep=False):
+              environment=None, log=None, keep=False, own_group=False):
     """`(word, entries)` for one start of one proof's own tests: what
     `proof_result` answers, and `marker_results`' entry for each of those
     tests, which holds what the suite's report said of it.
@@ -1123,7 +1164,7 @@ def proof_run(project_root, feature, proof_id, tests, timeout=None,
             project_root, suite, files, log,
             timeout=timeout or ARM_TIMEOUT_DEFAULT, marked=scan,
             action='audit', keep=keep, environment=environment,
-            option=_others_left_out(suite, files, scan, feature, proof_id,
+            own_group=own_group, option=_others_left_out(suite, files, scan, feature, proof_id,
                                     tests)))
     entries = marker_results(scan, suites, runs).get((feature, proof_id), [])
     if tests:

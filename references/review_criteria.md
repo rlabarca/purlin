@@ -234,7 +234,9 @@ proof says. The reason is that one line; an `aim:` line may stand above it.
 
 The change is made in a copy of the project, never in the project itself. Only the proof's own
 tests run there, once before the change and once with it in place, and the copy is deleted
-after.
+after. Each of those runs starts in a process group of its own, and a process the change left
+running in it is ended when the run is done; a process that left its group on purpose is not
+reached, and on Windows, where a run has no such group, nothing is ended.
 
 - **Caught.** A test of the proof ran and failed with the change in place. The test noticed, and
   nothing is added to the rule's findings.
