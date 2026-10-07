@@ -50,7 +50,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T01:17:34Z",
-      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+      "commit": "7ac8557838cee833c32198bb4f3749a4677feb49",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -61,6 +61,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-46",
           "manual": false,
@@ -83,6 +89,12 @@
           "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_its_criteria_and_its_script"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,

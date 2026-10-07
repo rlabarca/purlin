@@ -260,7 +260,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T01:17:34Z",
-      "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+      "commit": "7ac8557838cee833c32198bb4f3749a4677feb49",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -271,6 +271,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -293,6 +299,12 @@
           "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_stamped_manual_still_reads_manual_and_is_listed"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-25",
           "manual": false,
@@ -315,6 +327,12 @@
           "test": "dev/test_specs_reader.py::TestOldTagsAndFields::test_a_visual_reference_field_is_ignored_and_listed"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -337,6 +355,12 @@
           "test": "dev/test_specs_reader.py::TestTheWarning::test_one_warning_names_both_files"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -359,6 +383,12 @@
           "test": "dev/test_specs_reader.py::TestSource::test_a_git_url_and_a_path_are_read_apart"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-31",
           "manual": false,
@@ -381,6 +411,12 @@
           "test": "dev/test_specs_reader.py::TestSource::test_an_option_shaped_source_is_not_split"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-11",
           "manual": false,
@@ -403,6 +439,12 @@
           "test": "dev/test_specs_reader.py::TestSource::test_a_path_field_supplies_the_path_for_a_bare_url"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -425,6 +467,12 @@
           "test": "dev/test_specs_reader.py::TestAnchors::test_an_anchor_carries_its_source_and_its_pin"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -447,6 +495,12 @@
           "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchors_folder_alone_makes_an_anchor"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-34",
           "manual": false,
@@ -469,6 +523,12 @@
           "test": "dev/test_specs_reader.py::TestAnchors::test_the_anchor_heading_alone_makes_an_anchor"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -491,6 +551,12 @@
           "test": "dev/test_specs_reader.py::TestRuleText::test_a_line_break_in_a_rule_keeps_its_hash"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -513,6 +579,12 @@
           "test": "dev/test_specs_reader.py::TestRuleText::test_a_changed_word_changes_a_rules_hash"
         },
         {
+          "carried": {
+            "at": "2026-10-07T01:17:34Z",
+            "commit": "bc2ce7aa12d53ae6cc96f73d93c745a7080b87f6",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
