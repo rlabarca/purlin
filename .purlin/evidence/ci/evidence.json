@@ -2,24 +2,18 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T01:44:09Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T18:20:31Z",
+      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "d727cb9679a31b145ac4ea5c4596cd694ad4aedf012ab0113b6fad0bcb171272",
-        "spec": "be169df72cbe5de889dccffd8a8203bcd1e322efd6cc0cf6603504d79f82b978",
-        "tests": "0327e87f75b1a11e1e61560934b9e0dc0ad23fca8e572b1e1323bb9d8bed3986"
+        "code": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
+        "spec": "6283a756f163c1505d4a460f9506047ac9edd6983bd02fb1e994430b6eb960a0",
+        "tests": "4b89d6cfaccbb15a1a9d4727a79cf56fa2f172f13cc27ffdc029d54b41190207"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-71",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.809,
+                "duration": 0.498,
                 "name": "test_a_crlf_checkout_takes_the_code_part_of_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_fingerprint.py::test_a_crlf_checkout_takes_the_code_part_of_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-84",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.822,
+                "duration": 0.634,
                 "name": "test_an_anchors_code_part_is_the_blob_ids_the_commit_holds",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_fingerprint.py::test_an_anchors_code_part_is_the_blob_ids_the_commit_holds"
         },
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-75",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_on_windows_the_reader_names_its_own_machine_windows",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",

@@ -2,24 +2,18 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T01:44:09Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T18:20:31Z",
+      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "0c2dd1ad5b9296b40e8d52df1d10003b65998bda1a1394959c83879d7235eac5",
-        "spec": "d9fd8344dd8706a14f86dbb1d132c358f1ca2516ce245a2ff2e984a2c1cf0c86",
-        "tests": "a012b88383fae1d914c1ed33893debde6edcad3e47b81cee4d90e61d7e69c45c"
+        "code": "2741e6c0652a67b0a54e4169562cb1348a6939e80d3d95007defe3bdeff2bc59",
+        "spec": "91330bba52bf380953609074e4fe5d3149f3bea34aac764399cf0ba9a34afebe",
+        "tests": "cdde20be42eb4ef86d2d7056da1ea3f227f633ace6243e28c9297ac1bdca4576"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-326",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestNoTestCommand",
-                "duration": 0.129,
+                "duration": 0.117,
                 "name": "test_a_windows_machine_is_suggested_the_launcher",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_run_script.py::TestNoTestCommand::test_a_windows_machine_is_suggested_the_launcher"
         },
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-229",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestTheConsoleCodecNeverEndsTheRun",
-                "duration": 1.077,
+                "duration": 0.915,
                 "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",

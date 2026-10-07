@@ -2,24 +2,18 @@
   "feature": "package",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T01:44:09Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T18:20:31Z",
+      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "9f291cc385e8583473d513efe7c19590b02434223e4300e2df3a76eb64b1ea84",
-        "spec": "8cf775b737ec6426d2d6a19cf96913d3758708bf90fa25f02515eb4741b32fbc",
-        "tests": "cf2cd04cdeaf547927e7ef541aaecabba1d69200af31eb79e6fc23db0ff0173d"
+        "code": "7954727228fb3a356ecbdd3c254d1307f4eff879f120f0abd45463429a724fee",
+        "spec": "01e4a600a001376156915a7fd0949d8b3f8d2a90258e5ac0b188b101585a436d",
+        "tests": "e287b507d19acb5a8db87b7ad29ea5261eab72099fe886739badd90947d95c5d"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_export.TestTheBytes",
-                "duration": 6.94,
+                "duration": 12.526,
                 "name": "test_on_windows_two_clones_give_the_same_bytes",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",

@@ -2,24 +2,18 @@
   "feature": "config_engine",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T01:44:09Z",
-      "commit": "732c9d63a49cac6801fbd200397d9c7f67cc050c",
+      "at": "2026-10-07T18:20:31Z",
+      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "c3a20603790d6c635bc5f439183be0427db4286e9762a330c433e987e701f016",
-        "spec": "74ea3d3a587c2db281c2a53bf98d4eb1620857256d223115462e50e6e06e4b7c",
-        "tests": "71302caf3a63a012b53a0df24e6d57dc50b96bb9daa41f914a3c2e376e3ee550"
+        "code": "055ef39afd2d967d90894a512759ca815130f3c13a48837f3611ad26450371ea",
+        "spec": "a73e99225be2cac60ce1cb340b57d36641cfb94d49ef9a8bc68d5a8e1e947754",
+        "tests": "6685070039da36d8526633e10b0c1970f428452f01b30edf25a735f5e5788d36"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_config_engine.TestWriting",
-                "duration": 0.006,
+                "duration": 0.004,
                 "name": "test_on_windows_a_write_ends_its_lines_with_no_carriage_return",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
-          "carried": {
-            "at": "2026-10-07T01:44:09Z",
-            "commit": "8368133567b3b894661a0418fe619b154ff6e77a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_config_engine.TestAtomicWrite",
-                "duration": 0.034,
+                "duration": 0.028,
                 "name": "test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6910f2c8ff91230db3c62570012a3e4d0221f4fca53ab0c56aab4355b47f10e4"
+              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
             }
           },
           "result": "pass",
