@@ -2,14 +2,14 @@
   "feature": "states",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T18:20:32Z",
-      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
+      "at": "2026-10-07T21:35:31Z",
+      "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "1e8e2be22f3850da85d22d7ef8212ac8ed1ba18a0981996fc24b7ea3b0172628",
         "spec": "9913b475c972a9824f415e93a62df8685dd569ba4ff2e1fee4f926002f183401",
-        "tests": "a6303fc5850f3b4ae76d7f15d48b966a35b0a7fcde9adb85cb7e4c1c785aa6a3"
+        "tests": "17a42176ab1dc94b28b89becfc2777a6cf80dcb8f520ec0f4a700e7acc95aa53"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_backing_tests.TestTheEvidenceNamesTheTests",
-                "duration": 1.38,
+                "duration": 1.441,
                 "name": "test_a_checkout_with_windows_line_endings_keeps_the_hash",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",

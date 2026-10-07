@@ -2,14 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T18:20:31Z",
-      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
+      "at": "2026-10-07T21:35:30Z",
+      "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "83103c5fb843b17d7b3aa8523d53a41cffef0c2c07fba4afcf8a9c2b81e91f0b",
         "spec": "3fbef037992a995d77b2a52edc60c10dba07ec0c8096aa54871aed0454373bb2",
-        "tests": "fddc1bf73b8695d2c57dd6012b1bc5b142b1994c7788bc6e7e4b5774ada2fb87"
+        "tests": "a30dfe7d0a651196e92ca1267c680b370d0cf5917b7116b34474dc8696720c97"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_audit.TestTheCall",
-                "duration": 0.938,
+                "duration": 1.317,
                 "name": "test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",

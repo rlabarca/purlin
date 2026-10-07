@@ -2,14 +2,14 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T18:20:31Z",
-      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
+      "at": "2026-10-07T21:35:31Z",
+      "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "2741e6c0652a67b0a54e4169562cb1348a6939e80d3d95007defe3bdeff2bc59",
         "spec": "91330bba52bf380953609074e4fe5d3149f3bea34aac764399cf0ba9a34afebe",
-        "tests": "cdde20be42eb4ef86d2d7056da1ea3f227f633ace6243e28c9297ac1bdca4576"
+        "tests": "14d97ccbf84aa58e9ed614bef6877116b7d05667699a4e4cc21cc2ee1313a26f"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestNoTestCommand",
-                "duration": 0.117,
+                "duration": 0.147,
                 "name": "test_a_windows_machine_is_suggested_the_launcher",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestTheConsoleCodecNeverEndsTheRun",
-                "duration": 0.915,
+                "duration": 1.197,
                 "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",

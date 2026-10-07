@@ -2,14 +2,14 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T18:20:32Z",
-      "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
+      "at": "2026-10-07T21:35:31Z",
+      "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
         "code": "3cd82e69e8b14017802f66985d4fd440868e0b13db81739c613e8b9faff99de1",
         "spec": "73865824118b20897a2d9bdaa071e4a621534e87f080312e45a4131e62b76405",
-        "tests": "06cee002a86b1732c9d957955830ec6cf6648fdfec42f56c71e4f5db11a4cc65"
+        "tests": "57bde6ed3e201d33a310b48412115a78f2a2bae9d402175155377063eff18c66"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 4.982,
+                "duration": 3.784,
                 "name": "test_on_windows_a_second_run_finds_nothing_and_changes_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 4.559,
+                "duration": 4.879,
                 "name": "test_on_windows_every_backup_keeps_the_bytes_from_before",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",
@@ -65,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 4.571,
+                "duration": 3.352,
                 "name": "test_on_windows_the_conftest_keeps_its_own_line_and_its_ending",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",

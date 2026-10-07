@@ -2,8 +2,8 @@
   "feature": "config_engine",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T18:20:31Z",
-      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+      "at": "2026-10-07T21:35:30Z",
+      "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T18:20:31Z",
-            "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_config_engine.TestWriting",
-                "duration": 0.004,
+                "duration": 0.005,
                 "name": "test_on_windows_a_write_ends_its_lines_with_no_carriage_return",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
-          "carried": {
-            "at": "2026-10-07T18:20:31Z",
-            "commit": "aa7c6113d5bf89139f5565ff78539e4812ea62ad",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_config_engine.TestAtomicWrite",
-                "duration": 0.028,
+                "duration": 0.03,
                 "name": "test_on_windows_a_move_onto_a_file_held_open_leaves_it_whole",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "fda0adbe0699b1e7ebb6e9a726cce73c322fdd2bae5d9a4b31e25f7fefcf2687"
+              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
             }
           },
           "result": "pass",
