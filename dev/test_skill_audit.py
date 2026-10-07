@@ -12,6 +12,7 @@ by hand, and the sweep, reach no model.
 """
 
 import os
+import re
 
 import pytest
 
@@ -106,4 +107,6 @@ def test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule(
     assert EVIDENCE in sample_lab.files_of(output)
     rules = sample_lab.entries(os.path.join(output, 'files'))
     assert rules['RULE-7']['verdict'] == 'weak'
-    assert 'purlin:build sample_intake' in sample_lab.reply_of(output)
+    # The command names the feature whole: `sample_intake_v2` is another.
+    assert re.search(r'purlin:build sample_intake(?![\w-])',
+                     sample_lab.reply_of(output))
