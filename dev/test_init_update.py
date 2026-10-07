@@ -1798,6 +1798,28 @@ def test_a_tag_no_marker_names_and_the_three_kept_tags_stay(tmp_path, capsys):
     assert update.pending(root) == []
 
 
+AI_TAGS_KEPT = TABS_HEAD + (
+    '- PROOF-1 (RULE-1): Ask for a tab; the reply names the tab it\n'
+    '  opened @ai\n'
+    '- PROOF-2 (RULE-2): Ask to close a tab; the reply says which one\n'
+    '  closed @ai(claude-opus-5-5) @graded\n')
+AI_TS_OLD = (
+    "import { it } from 'vitest';\n\n"
+    "it('asking for a tab opens it [proof:tabs:PROOF-1:RULE-1:ai]', "
+    "() => {\n});\n"
+    "it('asking to close a tab closes it "
+    "[proof:tabs:PROOF-2:RULE-2:graded]', () => {\n});\n")
+
+
+# purlin: update PROOF-229
+def test_the_ai_and_graded_tags_stay_where_a_marker_names_them_as_kinds(
+        tmp_path, capsys):
+    root = _tabs(tmp_path, spec=AI_TAGS_KEPT, files=((TABS_TS, AI_TS_OLD),))
+    _apply(root)
+    capsys.readouterr()
+    assert _read(root, TABS) == AI_TAGS_KEPT
+
+
 WINDOWS_THEN_KIND = TABS_HEAD + (
     '- PROOF-1 (RULE-1): Choose a tab; its page shows and the others\n'
     '  are hidden @windows @unit\n')

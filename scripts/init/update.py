@@ -86,7 +86,9 @@ WINDOWS_TAG = 'windows'
 # The kinds of test 0.9.5 named. A project's own markers may name more, such
 # as `browser`; the upgrade reads those from the markers themselves.
 KINDS = ('unit', 'integration', 'e2e')
-KEPT_TAGS = ('manual', 'slow', 'env')
+# The tags this release reads, which the upgrade never drops, whatever kind
+# of test the project's own markers name.
+KEPT_TAGS = ('manual', 'slow', 'env', 'ai', 'graded')
 WORKFLOW_MARKER = '.proofs-'
 WORKFLOWS = 'workflows'
 PRE_PUSH_HOOK = '.git/hooks/pre-push'
@@ -990,8 +992,8 @@ def _detect_kind_tags(root):
             if any(name in kinds for name in _end_tags(texts[rel]))]
 
 def _apply_kind_tags(root, files, args, out):
-    """A proof ends with an operating system, `@slow` or `@manual`, and
-    names no kind of test."""
+    """A proof ends with an operating system, `@slow`, `@manual`, `@ai` or
+    `@graded`, and names no kind of test."""
     texts = dict((rel, _read(os.path.join(root, rel))) for rel in files)
     kinds = _kinds(root, texts.values())
     total = 0
