@@ -2878,6 +2878,21 @@ class TestARunOverEveryFeatureCarriesForward:
         assert _ran(root) == ['test_export'], output
         assert _started(output) == ['pytest'], output
 
+    # purlin: run_script PROOF-369
+    def test_a_spec_that_names_no_files_runs_with_nothing_changed(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _spec(root, 'login', scope=None)
+        _git(root, 'commit', '-q', '-am', 'login names no files')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        # The first run's report is taken away, so the report read below is
+        # the second run's own.
+        (root / REPORTS_REL / 'pytest.xml').unlink()
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _ran(root) == ['test_login'], output
+
     # purlin: run_script PROOF-310
     def test_an_anchor_runs_with_nothing_changed(self, tmp_path):
         root, _sha = _touched_project(tmp_path, names=('export',))

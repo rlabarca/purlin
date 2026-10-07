@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 133
-> Highest-Proof: 368
+> Highest-Proof: 369
 
 ## Rules
 
@@ -186,6 +186,7 @@
 - PROOF-309 (RULE-114): In that checkout `export`'s test is changed to fail and `--all --test --commit` exits 1; run again with nothing changed, it exits 1 and the suite's report holds `test_export` alone
 - PROOF-310 (RULE-114): In a git checkout of the feature `export` and the anchor `shared`, each with one passing test, `--all --test --commit` runs twice with nothing changed between; the second run's report holds `test_shared` alone
 - PROOF-311 (RULE-114): `--feature export --test` runs while `notes.txt` is written and not committed, and the note and the evidence are then committed; `--all --test --commit` then runs `test_export` alone, and `export`'s section reads `dirty` `false`
+- PROOF-369 (RULE-114): In the checkout of `login` and `export`, `login`'s spec is committed with no `> Scope:` line and `--all --test --commit` runs twice with nothing changed between; each run exits 0, and the second run's report holds `test_login` alone
 - PROOF-312 (RULE-115): In a checkout of `login` and `export` whose evidence was committed at `<c>`, `README.md`, which no scope names, is changed and committed; `--all --test --commit` starts no suite; `export`'s section names the new commit, its one result holds `carried` with `<c>` and the first run's `at`, `machine` and `email`, and the section's `at`, `machine`, `email`, `runner`, `dirty`, `fingerprint` and `rules` are as they were
 - PROOF-313 (RULE-115): After that run `README.md` is changed and committed again and `--all --test --commit` runs again; `export`'s section names the newest commit, and its result's `carried` still names `<c>`
 - PROOF-314 (RULE-115): In a checkout of `login` and `export` with nothing committed since their evidence, `--all --test --commit` prints `Evidence unchanged.` and no line beginning `Evidence written`, and leaves both evidence files byte for byte as they were
