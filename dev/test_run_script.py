@@ -919,8 +919,8 @@ def _touched_project(tmp_path, names=('login', 'export')):
     (root / 'tests' / 'test_feat.py').unlink()
     # What `purlin:init` has git ignore, so a run leaves nothing uncommitted
     # and its results are ones a sign-off counts.
-    (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n'
-                                     '.pytest_cache/\n', encoding='utf-8')
+    (root / '.gitignore').write_text(suites.ignored() + '.pytest_cache/\n',
+                                     encoding='utf-8')
     (root / 'src').mkdir()
     for name in names:
         (root / 'src' / ('%s.py' % name)).write_text(
