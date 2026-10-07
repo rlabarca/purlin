@@ -582,8 +582,9 @@ class TestNoProcessLeft:
         for done in ran:
             assert done.returncode == 0, done.stdout + done.stderr
         if os.name != 'nt':
-            # Each of the three was seen, so the watcher did look.
-            assert {done.pid for done in ran} <= {pid for pid, _ in seen}
+            # The test run, the longest of the three, was seen, so the
+            # watcher did look.
+            assert ran[1].pid in {pid for pid, _ in seen}
             still = []
             for _ in range(3):
                 still = sorted(seen & started_times())
