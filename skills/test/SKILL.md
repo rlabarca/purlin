@@ -81,6 +81,12 @@ slow proofs`, naming each; `references/purlin_commands.md` says what each run st
 status then lists `<n> slow proofs to run: purlin:test --all`. A plain run keeps an earlier slow
 result while nothing its spec covers changed, marked `carried`, and it counts like any other.
 
+An AI proof, one tagged `@ai(...)`, is a slow proof. With `--all` or `--clean` the run starts
+its test alone, after the suites, on each model the tag names, and prints
+`Running <feature> <PROOF-N> on <model>, <i> of <n>` as each starts. It takes minutes and
+reaches a real model, so say so before you start a run with `--all` in a project that has one.
+`references/purlin_commands.md` says which results `--all` keeps.
+
 With `--all` or `--clean`, once the anchors' tests have run, the spot tests read again each
 rule of an anchor that passes and holds an audit entry, with no model asked, and the run prints
 `Anchors: the spot tests read <n> audited rules again. <s> spot-checked, <w> weak.` A rule that
@@ -148,7 +154,7 @@ The run prints, in this order:
 For a failed test the run also prints the last 60 lines of the suite's own output.
 
 The `Tests` column counts the words a passed cell can read: `passed`, `partial`, `failed`,
-`no test`, `not run`, `out of date` and `checked at sign-off`. `references/spec_quality_guide.md`, "When a rule is
+`graded`, `no test`, `not run`, `out of date` and `checked at sign-off`. `references/spec_quality_guide.md`, "When a rule is
 stuck", says what each word means, with its reasons, and what moves it.
 
 A test comment to correct reads `<feature> <PROOF-N> (<RULE-N>): test comment to correct.
@@ -163,6 +169,21 @@ Loud failures come first. A line of the kind `evidence missing` means one of two
 
 A marker naming nothing a spec has reads `<feature> <ID>: test comment to correct. <file>:<line>
 names it, and no spec has it. Run purlin:build.`
+
+An AI proof adds three lines:
+
+| The run prints | What it means, and what you do |
+|----------------|--------------------------------|
+| `Running <feature> <PROOF-N> on <model>, <i> of <n>` | The proof's test is starting on that model: model run `<i>` of `<n>`. Wait for it |
+| `<model>: model not reached. <why>. Run purlin:test --all.` | The model, or the proof's grader, gave no answer, so the proof reads `not run` on that model and nothing more was started on it. Check that `claude` is logged in and that the proof's tag spells the model's name as the model is named, then run `purlin:test --all` again. It is never a failure: never change the code or the test for it, and never reword the proof. |
+| `<n> rules to test on <model>: purlin:test --all` | Under `Left to do`: those rules have an AI proof with no result on that model, or fewer than are asked now. `→ Run: purlin:test --all` |
+
+Under `purlin:status <name>` an AI proof has one line per model, such as
+`PROOF-4  failed  2 of 3 on claude-opus-5-5`: one failed model run fails the proof on that model.
+Read the output of each model run under
+`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/`, then diagnose it as any failure. A proof
+that passes with a grader reads `graded`, which counts as passing, and the summary then ends
+`, <n> of them graded by an AI.`
 
 ## Step 5: another operating system
 

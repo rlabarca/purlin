@@ -5,7 +5,8 @@ in `dev/skill_checks.py`; a copy of the skill with one name taken out is read
 through `copy_without`, and the file on disk is never touched.
 """
 
-from skill_checks import copy_without, must_name, same_line, skill_path
+from skill_checks import (copy_without, flat, must_name, read, same_line,
+                          skill_path)
 
 SKILL = skill_path('test')
 
@@ -41,3 +42,27 @@ def test_a_copy_that_passes_no_commit_is_reported():
     assert problems == [
         "skills/test/SKILL.md has no single line carrying all of "
         "'scripts/run/purlin_run.py', '--test', '--all', '--commit'"]
+
+
+AI_LINES = ('Running <feature> <PROOF-N> on <model>, <i> of <n>',
+            '<model>: model not reached. <why>. Run purlin:test --all.',
+            '<n> rules to test on <model>: purlin:test --all')
+
+
+# purlin: skill_test PROOF-58
+def test_the_skill_shows_the_three_lines_a_run_prints_about_an_ai_proof():
+    text = flat(read(SKILL))
+    assert [line for line in AI_LINES if '`%s`' % line not in text] == []
+
+
+NOT_REACHED = (
+    "Check that `claude` is logged in and that the proof's tag spells the "
+    "model's name as the model is named, then run `purlin:test --all` again.",
+    'It is never a failure: never change the code or the test for it, and '
+    'never reword the proof.')
+
+
+# purlin: skill_test PROOF-59
+def test_the_skill_says_what_to_do_about_a_model_not_reached():
+    text = flat(read(SKILL))
+    assert [sentence for sentence in NOT_REACHED if sentence not in text] == []
