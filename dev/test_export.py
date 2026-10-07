@@ -1049,7 +1049,9 @@ class TestTheFingerprint:
     # purlin: package PROOF-45
     def test_check_names_a_file_that_is_not_utf8_json(self, tmp_path, capsys):
         for name, data in (('latin.json', b'{"schema": "caf\xe9"}\n'),
-                           ('text.json', b'not a package\n')):
+                           ('text.json', b'not a package\n'),
+                           ('half.json', b'{"schema": "purlin-package/4"\n'),
+                           ('empty.json', b'')):
             path = str(tmp_path / name)
             with open(path, 'wb') as handle:
                 handle.write(data)
@@ -1337,6 +1339,10 @@ class TestWhatTheTestToolReported:
                 changed.append(KEPT in changed_in_head(clone.root))
             assert written[0] == written[1]
             assert changed == [True, False]
+            # The first's signed commit carries the report itself, byte for byte.
+            assert git_bytes(clones[0].root, 'show', 'HEAD:' + KEPT) == REPORT_BYTES
+            assert git(clones[1].root, 'ls-tree', '-r', '--name-only', 'HEAD',
+                       '--', os.path.dirname(KEPT)).stdout == ''
         finally:
             shutil.rmtree(parent, ignore_errors=True)
             made.close()
@@ -1487,14 +1493,22 @@ class TestAiOutputs:
     # purlin: package PROOF-102
     def test_a_kept_folder_is_found_by_its_sha256(self, tmp_path):
         _folder(tmp_path, RUN_ONE, **{'reply.md': 'other'})
-        folder = _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
-        sha = purlin_outputs.folder_sha256(folder)
+        _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
+        # The folder's sha256 as the format defines it, worked out here: the
+        # sha256 of the one line `<sha256 of hello>  reply.md`.
+        sha = hashlib.sha256(('%s  reply.md\n' % hashlib.sha256(
+            b'hello').hexdigest()).encode('utf-8')).hexdigest()
         assert purlin_outputs.ai_held(str(tmp_path), sha) == RUN_TWO
+        assert purlin_outputs.ai_held(str(tmp_path), sha) == (
+            '.purlin/runtime/ai/login/PROOF-4/model-a/2')
 
     # purlin: package PROOF-103
     def test_a_folder_changed_since_is_not_found(self, tmp_path):
-        folder = _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
-        sha = purlin_outputs.folder_sha256(folder)
+        _folder(tmp_path, RUN_TWO, **{'reply.md': 'hello'})
+        sha = hashlib.sha256(('%s  reply.md\n' % hashlib.sha256(
+            b'hello').hexdigest()).encode('utf-8')).hexdigest()
+        # That folder was asked for and found before it changed.
+        assert purlin_outputs.ai_held(str(tmp_path), sha) == RUN_TWO
         _folder(tmp_path, RUN_TWO, **{'reply.md': 'hullo'})
         assert purlin_outputs.ai_held(str(tmp_path), sha) is None
 
@@ -1523,6 +1537,11 @@ class TestAiOutputs:
         assert purlin_outputs.runs_asked({'runs': 10}, 5) == 10
         assert purlin_outputs.runs_asked({'runs': None}, 5) == 5
         assert purlin_outputs.runs_asked({'runs': None}, None) == 3
+        # The same three answers where a spec's AI proofs are asked together.
+        spec = {'proofs': {'PROOF-1': {'ai': ['model-a'], 'runs': 10},
+                           'PROOF-2': {'ai': ['model-a'], 'runs': None}}}
+        assert purlin_outputs.asked_runs(spec, 5) == {'PROOF-1': 10, 'PROOF-2': 5}
+        assert purlin_outputs.asked_runs(spec, None) == {'PROOF-1': 10, 'PROOF-2': 3}
 
 
 # ---------------------------------------------------------------------------
@@ -1775,7 +1794,7 @@ class TestCheckingTheKeptAIOutputs:
         made = self._signed()
         try:
             self._differs(made, capsys, lambda folder: write(
-                os.path.join(folder, 'files', 'more.txt'), 'more\n'))
+                os.path.join(folder, *'files/more.txt'.split('/')), 'more\n'))
         finally:
             made.close()
 
