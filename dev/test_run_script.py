@@ -3651,9 +3651,10 @@ class TestAiProofs:
                                     for run in (1, 2, 3, 4)]
         assert _models(_ai_entry(root)) == [_passed_model('model-a', runs=4)]
 
-    # purlin: run_script PROOF-366
-    def test_what_the_suites_own_pass_saw_is_no_result_of_the_ai_proof(
-            self, tmp_path):
+    @staticmethod
+    def _runner_project(tmp_path):
+        """The AI project whose one suite, `runner`, starts pytest through
+        `run.py`: a command that gives no way to leave one test out."""
         runner = suites.pytest_suite(name='runner')
         runner['run'] = '%s run.py {files} --junitxml={report}' % suites.PYTHON
         root = _ai_project(tmp_path, '@ai(model-a)', tests=[runner])
@@ -3661,6 +3662,12 @@ class TestAiProofs:
             'import sys\nimport pytest\n'
             "sys.exit(pytest.main(['-q', '-p', 'no:cacheprovider']"
             ' + sys.argv[1:]))\n', encoding='utf-8')
+        return root
+
+    # purlin: run_script PROOF-366
+    def test_what_the_suites_own_pass_saw_is_no_result_of_the_ai_proof(
+            self, tmp_path):
+        root = self._runner_project(tmp_path)
         code, output = _run(root, '--feature', 'feat', '--test')
         assert code == 0, output
         assert _ai_starts(root) == ['bare']
@@ -3670,6 +3677,21 @@ class TestAiProofs:
         assert entry == {'id': 'PROOF-2', 'rule': 'RULE-2', 'env': None,
                          'manual': False, 'result': 'not run',
                          'test': 'tests/test_feat.py::test_reply'}
+
+    # purlin: run_script PROOF-370
+    def test_a_clean_run_keeps_an_output_where_no_test_can_be_left_out(
+            self, tmp_path):
+        root = self._runner_project(tmp_path)
+        code, output = _run(root, '--clean', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['bare', 'model-a 1', 'model-a 2',
+                                    'model-a 3']
+        entry = _ai_entry(root)
+        assert entry['result'] == 'pass', entry
+        assert _models(entry) == [_passed_model('model-a')]
+        kept = (root / '.purlin' / 'runtime' / 'ai' / 'feat' / 'PROOF-2'
+                / 'model-a' / '1' / 'reply.md')
+        assert kept.read_bytes() == b'reply of model-a\n'
 
     # purlin: run_script PROOF-367
     def test_a_graded_proofs_runs_hold_the_grade(self, tmp_path):

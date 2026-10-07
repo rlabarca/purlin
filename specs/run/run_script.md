@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 133
-> Highest-Proof: 369
+> Highest-Proof: 370
 
 ## Rules
 
@@ -237,4 +237,5 @@
 - PROOF-364 (RULE-131): After `--all --test` passes PROOF-2 on both models, `--clean --test` starts the test six more times, and no model holds `carried`
 - PROOF-365 (RULE-131): In a git checkout, after `--all --test --commit` passes PROOF-2, tagged `@ai(model-a)`, on three runs, the settings' `runs` is set to `4` and `--all --test` runs; it starts the test four more times, and `model-a` reads `passed` `4`, `of` `4` and no `carried`
 - PROOF-366 (RULE-132): The suite `runner` runs `python3 run.py {files} --junitxml={report}`, whose command cannot leave a test out, and `feat`'s PROOF-2 is tagged `@ai(model-a)`; `--feature feat --test` starts the test once with no folder named, prints `Started 1 slow test in the runner suite: its command gives Purlin no way to leave one test out.`, and lists PROOF-2 as `not run` with no `models` and no `reported`
+- PROOF-370 (RULE-132): In that project of the suite `runner`, `--clean --test` exits 0 and starts the test once with no folder named and then three times on `model-a`, runs `1`, `2` and `3`; PROOF-2 reads `pass`, its one model `model-a` `passed` `3` of `3` with three passing runs, and `.purlin/runtime/ai/feat/PROOF-2/model-a/1/reply.md`, the output the run keeps, reads `reply of model-a`
 - PROOF-367 (RULE-133): PROOF-2 is tagged `@ai(model-a) @graded(grader-a)` and each record holds the `grade` `{"model": "grader-a", "accepted": true, "reason": "It names the three findings."}`; after `--all --test`, `model-a` reads `graded` `true` and each of its three runs holds that `grade`
