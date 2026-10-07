@@ -883,7 +883,7 @@ class TestAFailingSuiteStatesItsReason:
         code, output = _run(root, '--all', '--test', '--arm-timeout', '1')
         assert code == 1, output
         assert ('pytest suite: evidence missing. It timed out after 1 s. Run '
-                'purlin:test --arm-timeout <seconds> to give it longer.'
+                'purlin:test --arm-timeout <seconds>.'
                 in output.splitlines()), output
 
     # purlin: run_script PROOF-171

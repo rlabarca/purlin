@@ -277,7 +277,7 @@ SUITE_PROBLEM = ('purlin: %s. Fix the tests setting in .purlin/config.json, '
 SUITE = '%s suite'
 TIMED_OUT_ON = 'It timed out after %d s on %s.'
 TIMED_OUT_AFTER = 'It timed out after %d s.'
-TIMED_OUT_DO = 'Run purlin:%s --arm-timeout <seconds> to give it longer.'
+TIMED_OUT_DO = 'Run purlin:%s --arm-timeout <seconds>.'
 NO_REPORT_DO = 'Check the suite in .purlin/config.json, then run purlin:test.'
 # A marker whose test has no passing or failing result: its file and line.
 NO_RESULT = 'The test at %s:%d has no result.'

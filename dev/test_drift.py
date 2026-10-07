@@ -587,11 +587,12 @@ class TestAnchorsBehind:
         assert rows == [{'anchor': 'policy', 'source': missing,
                          'pinned': 'abc1234', 'status': 'error',
                          'error': reason}], rows
+        shown = reason.split('. ')[0]
+        assert len(shown) > 80, shown
         assert _lines(report).count(
-            'policy: anchor source not read. Its source could not be read '
-            '(%s). Check its > Source: line, then run purlin:anchor sync '
-            'policy.'
-            % reason) == 1, _lines(report)
+            'policy: anchor source not read. Reading it gave "%s...". Check '
+            'its > Source: line, then run purlin:anchor sync policy.'
+            % shown[:80].rstrip()) == 1, _lines(report)
 
 
 # ---------------------------------------------------------------------------
@@ -712,9 +713,9 @@ class TestNumbersWrittenTwice:
             'PROOF-7 (RULE-1): Y')})
         report = _report(checkout)
         assert ('login PROOF-7: number written twice. Neither line is on '
-                'origin/main, and the one that reaches it first keeps the '
-                'number. Renumber the other to PROOF-8 and move its test '
-                'comments with it.') in _lines(report), _lines(report)
+                'origin/main, and the first there keeps it. Renumber the '
+                'other to PROOF-8 and move its test comments with it.'
+                ) in _lines(report), _lines(report)
 
     # purlin: drift PROOF-85
     def test_a_number_written_twice_by_a_merge_is_never_a_proof_changed(

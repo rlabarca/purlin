@@ -204,8 +204,8 @@ For each case in the report:
 
 A test whose title is not one plain string, a template holding `${}` or a
 variable, can be matched to no case. A marker above it is not tied, and the
-run prints `<file>:<line>: test title not read. It is not one plain string, so
-its result cannot be matched. Write it as one string.`
+run prints `<file>:<line>: test title not read. It is not one plain string.
+Write it as one string.`
 
 A case that matches more than one test is counted for none of them, and the
 run says so. A case whose test carries no marker is ignored: a test with no
@@ -254,7 +254,7 @@ Purlin never guesses. Each of these is printed as one line, by file and line:
 | `<feature> <ID>: test comment with no test. No test follows <file>:<line>. Run purlin:build.` | `not run` |
 | `<feature> <ID>: test comment to correct. <file>:<line> names it, and no spec has it. Run purlin:build.` | nothing, and fails the run |
 | `<feature> <RULE-N>: test comment to correct. <file>:<line> names the rule, and a comment names one of its proofs. Run purlin:build.` | nothing, and fails the run |
-| `<case>: test name not unique. It matches <n> tests in <files>, so its result is not counted. Give the tests different names, then run purlin:test.` | `not run` for those tests |
+| `<case>: test name not unique. It matches <n> tests in <files>. Give the tests different names, then run purlin:test.` | `not run` for those tests |
 
 The second line covers a feature no spec has, and a proof or a rule its feature's
 spec does not have. A run with either of the two that fail it exits 1, whatever

@@ -770,7 +770,7 @@ def not_written_line(name, *files):
     written yet."""
     status = status_sentences()[1]
     wrong = (status.NOT_WRITTEN_ONE % files[0] if len(files) == 1
-             else status.NOT_WRITTEN_MANY % (len(files), ', '.join(files)))
+             else status.NOT_WRITTEN_MANY % (len(files), files[0]))
     return notice_module().line('not_written', name, wrong,
                                 status.NOT_WRITTEN_DO % (name, name),
                                 feature=name)
@@ -1265,7 +1265,7 @@ def test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices(
     payload['dirty'] = False
     tags = [notice_module().line(
                 'tag_not_here', 'signed/' + version,
-                facts_module.TAG_NOT_HERE % (version, sha),
+                facts_module.TAG_NOT_HERE % sha,
                 facts_module.TAG_NOT_HERE_DO)
             for version, sha in (('0.3.0', 'c3c3c3c'), ('0.2.0', 'b2b2b2b'),
                                  ('0.1.0', 'a1b2c3d'))]
@@ -1386,8 +1386,8 @@ def one_line_of_each_kind(name):
         (words['unnumbered'],
          specs._mistake('unnumbered', name, specs.UNNUMBERED_ONE)),
         (words['same_name'],
-         specs._mistake('same_name', name, specs.SAME_NAME % (
-             'specs/a/%s.md' % name, 'specs/b/%s.md' % name),
+         specs._mistake('same_name', name,
+                        specs.SAME_NAME % ('specs/a/%s.md' % name),
              specs.SAME_NAME_DO % ('specs/b/%s.md' % name, 'specs/b'))),
         (words['name_refused'],
          specs._mistake('name_refused', name, specs.NAME_REFUSED,
@@ -1397,8 +1397,8 @@ def one_line_of_each_kind(name):
          specs._mistake('proof_unread', name, specs.PROOF_LINE_UNREAD % (
              specs.TAG_AT_END, '- PROOF-1 @slow (RULE-1): text'))),
         (words['heading'],
-         specs._mistake('heading', name, specs.HEADING_NAMES_OTHER % (
-             'other', name, name))),
+         specs._mistake('heading', name,
+                        specs.HEADING_NAMES_OTHER % 'other')),
         (words['tags_conflict'],
          specs._proof_mistake('tags_conflict', {}, name, 'PROOF-3',
                               specs.SLOW_AND_MANUAL)),

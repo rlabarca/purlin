@@ -100,7 +100,7 @@ OLD_MARKERS_DATA_ONE = 'Run purlin:status to see what it names.'
 
 # A spec ahead of its code: one line for the spec, as information.
 NOT_WRITTEN_ONE = '%s is not written yet.'
-NOT_WRITTEN_MANY = '%d files are not written yet: %s.'
+NOT_WRITTEN_MANY = '%d files are not written yet, the first %s.'
 NOT_WRITTEN_DO = 'Run purlin:build %s, or purlin:spec %s to correct the path.'
 
 # The feature specs with no `> Scope:` line: one spec, then several.
@@ -586,8 +586,7 @@ def not_written_lines(project_root, features):
         if not unmatched:
             continue
         wrong = (NOT_WRITTEN_ONE % unmatched[0] if len(unmatched) == 1
-                 else NOT_WRITTEN_MANY % (len(unmatched),
-                                          ', '.join(unmatched)))
+                 else NOT_WRITTEN_MANY % (len(unmatched), unmatched[0]))
         lines.append(notices.line('not_written', name, wrong,
                                   NOT_WRITTEN_DO % (name, name), feature=name))
     return lines

@@ -91,9 +91,8 @@ class TestTheWarning:
         _one_proof(project, 'Look at it @manual(a@b.c, 2026-03-31, abc1234)',
                    name='mockup')
         assert project.payload()['warnings'] == [
-            'specs/auth/login.md, specs/auth/mockup.md: tag not read. This '
-            'release ignores @manual(...), @windows. Run purlin:init '
-            '--update.']
+            '@manual(...), @windows: tag not read. Found in 2 specs, the '
+            'first specs/auth/login.md. Run purlin:init --update.']
 
 class TestSource:
 

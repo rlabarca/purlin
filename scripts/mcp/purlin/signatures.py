@@ -164,9 +164,8 @@ def load_signoffs(project_root, version):
 # the version, or the tag, the version and why no sign-off of it counts.
 NO_PACKAGE_AT_TAG = 'Its commit holds no evidence package for %s.'
 NO_PACKAGE_DO = 'Run git tag -d %s.'
-NO_SIGNOFF_COUNTS = 'No sign-off of %s counts: %s.'
-NO_SIGNOFF_DO = ('Restore the files as they were signed, or run purlin:sign '
-                 '--version <version>.')
+NO_SIGNOFF_COUNTS = 'No sign-off counts: %s.'
+NO_SIGNOFF_DO = 'Run purlin:sign --version %s.'
 # Why none counts where HEAD holds no sign-off file for the version at all.
 NONE_AT_HEAD = 'HEAD holds none'
 
@@ -191,8 +190,8 @@ def standing(project_root, version):
         return True, ''
     reason = signoffs[0]['count_reason'] if signoffs else NONE_AT_HEAD
     return False, notices.line('tag_no_signoff', tag,
-                               NO_SIGNOFF_COUNTS % (version, reason),
-                               NO_SIGNOFF_DO)
+                               NO_SIGNOFF_COUNTS % reason,
+                               NO_SIGNOFF_DO % version)
 
 
 # Why the sign-off files do not answer for a version.

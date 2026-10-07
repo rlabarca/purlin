@@ -113,9 +113,9 @@ line after the entry's own: `login: PROOF-3 will name RULE-3.`
 | Case | Line |
 |------|------|
 | One line is on the default branch | `sample_age PROOF-4: number written twice. The line on origin/main keeps it. Renumber the other to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
-| Neither line is on the default branch | `sample_age PROOF-7: number written twice. Neither line is on origin/main, and the one that reaches it first keeps the number. Renumber the other to PROOF-8 and move its test comments with it.` |
+| Neither line is on the default branch | `sample_age PROOF-7: number written twice. Neither line is on origin/main, and the first there keeps it. Renumber the other to PROOF-8 and move its test comments with it.` |
 | The default branch writes it twice too | `sample_age PROOF-4: number written twice. origin/main itself writes it twice. Renumber the second to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
-| No default branch | `sample_age PROOF-4: number written twice. This checkout has no copy of a default branch to say which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
+| No default branch | `sample_age PROOF-4: number written twice. No default branch here says which line keeps it. Renumber the one not yet merged to PROOF-7 and move its test comments with it.` |
 
 ### Test comments to correct
 
@@ -143,7 +143,7 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | The pin equals the source head | Nothing |
 | The pin is behind | `<name>: anchor pin behind. The pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
 | A `> Source:` with no `> Pinned:` | `<name>: anchor with no pin. It names a source and no pin. Run purlin:anchor sync <name>.` |
-| The source cannot be read | `<name>: anchor source not read. Its source could not be read (<error>). Check its > Source: line, then run purlin:anchor sync <name>.` |
+| The source cannot be read | `<name>: anchor source not read. Reading it gave "<the error's first sentence, cut at 80 characters>". Check its > Source: line, then run purlin:anchor sync <name>.` |
 | The source names no repository: words, or a file on disk | `<name>: anchor source not a spec. <source> is not a spec in Purlin's format kept in a git repository. Run purlin:spec <name> to take out its > Source: and > Pinned: lines.` |
 
 Drift never advances a pin on its own; only `purlin:anchor sync` pulls. A change that came from

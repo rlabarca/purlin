@@ -168,6 +168,16 @@ class TestARewordedProof:
             'Open the page and read nothing then stop') == (
             '"one two three four five six seven eight ..." became "nothing"')
 
+    # purlin: notices PROOF-16
+    def test_a_tools_message_is_its_first_sentence_cut_at_80(self):
+        assert notices.first_sentence(
+            'fatal: repository not found. Check the address.') == (
+            'fatal: repository not found')
+        long = 'fatal: ' + 'x' * 100
+        assert notices.first_sentence(long + '. More.') == (
+            'fatal: ' + 'x' * 73 + '...')
+        assert len(notices.first_sentence(long)) == 83
+
     # purlin: notices PROOF-10
     def test_wordings_that_share_too_little_read_was_reworded(self):
         assert notices.changed_words('A', 'B') == 'was reworded'

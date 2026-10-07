@@ -405,7 +405,7 @@ def test_check_names_the_source_that_could_not_be_read_and_the_fix(workspace):
     _rmtree(workspace.anchor_repo)
     # Git's message, from git itself and not from the code under test: what
     # `git ls-remote` writes of a repository that is gone, on one line. The
-    # printed line carries its first 200 characters.
+    # printed line carries its first sentence, cut at 80 characters.
     asked = subprocess.run(['git', 'ls-remote', workspace.anchor_repo, 'HEAD'],
                            capture_output=True, text=True, cwd=workspace.root)
     assert asked.returncode != 0
@@ -413,10 +413,12 @@ def test_check_names_the_source_that_could_not_be_read_and_the_fix(workspace):
     assert message.startswith('fatal: ') and workspace.anchor_repo in message
     code, out = _cli(workspace, ['sync', '--check'])
     assert code == 2
+    shown = message.split('. ')[0]
+    assert len(shown) > 80, shown
     assert out.splitlines() == [
-        'no_eval: anchor source not read. Its source could not be read (%s). '
-        'Check its > Source: '
-        'line, then run purlin:anchor sync no_eval.' % message[:200]]
+        'no_eval: anchor source not read. Reading it gave "%s...". Check its '
+        '> Source: line, then run purlin:anchor sync no_eval.'
+        % shown[:80].rstrip()]
 
 
 # purlin: upstream PROOF-33

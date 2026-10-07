@@ -11,7 +11,10 @@ no one spec. The kind is the same few words every time, and `KINDS` is the
 one list of them; where the status names that work under `Left to do`, the
 kind is that name. What is wrong is short, and left out where the kind says
 it; the line ends on the command to run, or, where nothing is to be run, on
-what to do. A line is one line.
+what to do. A line is one line, and none runs long because of its
+explanation: what is wrong is a few words, a list is its first entry and a
+count, and another tool's message is its first sentence (`first_sentence`).
+A path, a name and a command are never cut.
 
 `line` builds a line, as a `Notice`: the text, which every surface prints as
 it is, with what it is about, its kind and the spec, rule and proof it names
@@ -86,6 +89,8 @@ GROUP_MANY = '%s: %d specs, %s, %s and %d more. Run purlin:status for each.'
 # How many words of a wording `changed_words` shows on each side.
 WORDS_SHOWN = 8
 CUT = '...'
+# How many characters of another tool's own message a line quotes.
+CHARS_SHOWN = 80
 BECAME = '"%s" became "%s"'
 REWORDED = 'was reworded'
 # The sentence a change is said in: what changed, then what follows it in the
@@ -147,6 +152,20 @@ def shown(text, limit=WORDS_SHOWN):
     if len(words) <= limit:
         return ' '.join(words)
     return ' '.join(words[:limit]) + ' ' + CUT
+
+
+def first_sentence(text, limit=CHARS_SHOWN):
+    """Another tool's own message as a line quotes it: its first sentence,
+    without its full stop, cut at `limit` characters with `...` where it is
+    longer. Git's message for a source it cannot read is one."""
+    text = ' '.join((text or '').split())
+    end = text.find('. ')
+    if end >= 0:
+        text = text[:end]
+    text = text.rstrip('.')
+    if len(text) > limit:
+        return text[:limit].rstrip() + CUT
+    return text
 
 
 def changed_words(old, new):

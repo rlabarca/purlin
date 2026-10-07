@@ -501,8 +501,9 @@ class TestWhereItReadsSigned:
         assert word == 'not signed'
         assert len(warned) == 1, warned
         assert warned[0].startswith(
-            'signed/2.1.0: tag with no sign-off. No sign-off of 2.1.0 counts: '
-            'the commit that added it is not signed.'), warned
+            'signed/2.1.0: tag with no sign-off. No sign-off counts: the '
+            'commit that added it is not signed. Run purlin:sign --version '
+            '2.1.0.'), warned
 
 
     # purlin: signatures PROOF-274
@@ -515,9 +516,9 @@ class TestWhereItReadsSigned:
             word, warned = signoff_and_warnings(made)
             assert word == 'signed 0.1.0 at %s' % signed_at[:7]
             assert warned == [
-                'signed/0.1.0: tag not in this checkout. The sign-off of '
-                '0.1.0 at %s is read from its files. Run git fetch --tags, '
-                'or purlin:sign if no one wrote the tag.' % signed_at[:7]]
+                'signed/0.1.0: tag not in this checkout. The sign-off at %s '
+                'is read from its files. Run git fetch --tags, or '
+                'purlin:sign if no one wrote the tag.' % signed_at[:7]]
         finally:
             made.close()
 

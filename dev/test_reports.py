@@ -613,8 +613,8 @@ class TestThroughARun:
             '# purlin: login PROOF-2\ndef test_x():\n    pass\n'),
             _spec('login', 2))
         assert ('test_x: test name not unique. It matches 2 tests in '
-                'tests/test_login.py, so its result is not counted. Give the '
-                'tests different names, then run purlin:test.') in out.splitlines(), out
+                'tests/test_login.py. Give the tests different names, then '
+                'run purlin:test.') in out.splitlines(), out
         assert {key[0]: value for key, value in results.items()} == {
             'PROOF-1': 'missing', 'PROOF-2': 'missing'}, out
         assert code == 1, out
@@ -866,7 +866,7 @@ class TestThroughARun:
         code, out = self._report_written(
             tmp_path, "mkdir -p .purlin/runtime/reports && "
                       "printf 'not xml' > {report}")
-        assert ('pytest suite: evidence missing. Its report at '
+        assert ('pytest suite: evidence missing. '
                 '.purlin/runtime/reports/pytest.xml is not junit. Check the '
                 'suite in .purlin/config.json, then run purlin:test.'
                 ) in out.splitlines(), out
@@ -1111,8 +1111,7 @@ class TestAJavaScriptTitle:
             spec=_spec('login', 1))
         lines = out.splitlines()
         assert ('tests/login.test.ts:4: test title not read. It is not one '
-                'plain string, so its result cannot be matched. Write it as '
-                'one string.') in lines, out
+                'plain string. Write it as one string.') in lines, out
         assert 'Markers: 0 tied to a test, 1 not tied.' in lines, out
         assert code == 1, out
 

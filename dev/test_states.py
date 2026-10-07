@@ -1456,9 +1456,9 @@ class TestASpecAheadOfItsCode:
             made.close()
         found = [line for line in lines if 'not written yet' in line]
         assert found == [
-            'states: spec ahead of its code. 3 files are not written yet: '
-            'facts.py, project.py, wording.py. Run purlin:build states, or '
-            'purlin:spec states to correct the path.'], lines
+            'states: spec ahead of its code. 3 files are not written yet, '
+            'the first facts.py. Run purlin:build states, or purlin:spec '
+            'states to correct the path.'], lines
 
     # purlin: states PROOF-280
     def test_one_file_not_written_beside_one_in_git_is_information(self):

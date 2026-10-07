@@ -462,11 +462,11 @@ def _parse_spec(name, rel_path, content):
 
 
 def unknown_tag_warning(features):
-    """One line naming every spec that carries a tag this release ignores.
+    """One line for the tags this release ignores, about the tags.
 
     A warning per line would print hundreds on a project mid-migration. One
-    line names the files and says what was skipped, which is what a reader
-    acts on.
+    line names the tags, how many specs carry one and the first of those
+    files, which is what a reader acts on.
     """
     carriers = sorted(info['spec_path'] for info in features.values()
                       if info.get('unknown_tags'))
@@ -474,10 +474,9 @@ def unknown_tag_warning(features):
         return None
     tags = sorted({tag for info in features.values()
                    for tag in info.get('unknown_tags', ())})
-    shown = carriers[:5]
-    more = '' if len(carriers) <= 5 else ', and %d more' % (len(carriers) - 5)
-    return notices.line('tag_unread', ', '.join(shown) + more,
-                        UNKNOWN_TAGS % ', '.join(tags),
+    wrong = (UNKNOWN_TAGS_ONE % carriers[0] if len(carriers) == 1
+             else UNKNOWN_TAGS_MANY % (len(carriers), carriers[0]))
+    return notices.line('tag_unread', ', '.join(tags), wrong,
                         notices.run('purlin:init --update'))
 
 
@@ -503,32 +502,35 @@ def _mistake(kind, name, wrong, do=None, about=None, rule=None, proof=None):
 
 # What each spec mistake's line says is wrong, after `<name>: <kind>.`
 # (`notices.line`), and what to do where it is not `Run purlin:spec <name>.`
-SAME_NAME = 'Only %s is read, not %s.'
+SAME_NAME = 'Only %s is read.'
 SAME_NAME_DO = 'Run git mv %s %s/<new name>.md.'
 WRITTEN_TWICE = 'It is written twice, and the second is read.'
-CONFLICT_ONE = '1 line is left from a merge conflict, at line %d: %s.'
-CONFLICT_MANY = '%d lines are left from a merge conflict, the first at line %d: %s.'
-NAME_REFUSED = ('A name holds letters, digits, _ and -, so no test comment '
-                'can name this one.')
+CONFLICT_ONE = '1 line is left from a merge conflict, at line %d.'
+CONFLICT_MANY = '%d lines are left from a merge conflict, the first at line %d.'
+NAME_REFUSED = 'A name holds letters, digits, _ and -.'
 NAME_REFUSED_DO = 'Run git mv %s %s.'
 PROOF_LINE_UNREAD = '%s: "%s".'
-TAG_AT_END = 'A tag goes at the end of the line'
-NOT_A_PROOF_LINE = 'A proof line reads `- PROOF-N (RULE-N): <text>`'
-HEADING_NAMES_OTHER = 'It names %s, and the file is %s.md, so it is read as %s.'
-SLOW_AND_MANUAL = 'It is tagged @slow and @manual, and is read as @manual.'
+TAG_AT_END = 'A tag goes last'
+NOT_A_PROOF_LINE = 'It is not `- PROOF-N (RULE-N): <text>`'
+HEADING_NAMES_OTHER = 'It names %s.'
+SLOW_AND_MANUAL = 'It is read as @manual, not @slow.'
 UNREAD_FIELD = 'Every anchor covers the whole project, so %s is not read.'
-REMOTE_UNREAD = 'Its source, %s, carries %s, which Purlin does not read on an anchor.'
+REMOTE_UNREAD = 'Its source carries %s.'
 REMOTE_UNREAD_DO = 'Ask its owners to take %s out, then run purlin:anchor sync %s.'
-UNNUMBERED_ONE = '1 line under ## Rules is not numbered; a rule is `- RULE-N: <text>`.'
-UNNUMBERED_MANY = '%d lines under ## Rules are not numbered; a rule is `- RULE-N: <text>`.'
-UNKNOWN_TAGS = 'This release ignores %s.'
+UNNUMBERED_ONE = '1 line under ## Rules is not numbered.'
+UNNUMBERED_MANY = '%d lines under ## Rules are not numbered.'
+# The specs that carry a tag this release ignores: the one, or how many and
+# the first.
+UNKNOWN_TAGS_ONE = 'Found in %s.'
+UNKNOWN_TAGS_MANY = 'Found in %d specs, the first %s.'
 
 # Why every rule of a spec reads `failed`: `broken_reasons` gives them.
 DOUBLED_REASON = '%s is written twice in the spec'
 CONFLICT_REASON = 'the spec holds a line left from a merge conflict'
 
-# How much of a line left from a merge conflict its warning quotes.
-PROOF_LINE_SHOWN = 60
+# How many words of a line under `## Proof` that is not read its warning
+# quotes: enough to find the line, its id and what stands after it.
+PROOF_LINE_WORDS = 4
 
 
 def spec_mistakes(project_root, features):
@@ -541,7 +543,7 @@ def spec_mistakes(project_root, features):
     holding a character a name cannot (with the `git mv` that renames the
     file), a rule id written twice, a proof id written twice, the lines
     left from a merge conflict (one line per spec), a line under `## Proof`
-    that is not a proof line (its first 8 words quoted, with the reason), a first line
+    that is not a proof line (its first 4 words quoted, with the reason), a first line
     naming another feature, a proof tagged both `@slow` and `@manual`, then
     the fields Purlin does not read: every `> Requires:`, then every `> Global:`, then every
     anchor's `> Scope:`. A remote anchor carrying any of the three has one
@@ -563,7 +565,7 @@ def spec_mistakes(project_root, features):
             if dropped == kept:
                 continue
             lines.append(_mistake(
-                'same_name', name, SAME_NAME % (kept, dropped),
+                'same_name', name, SAME_NAME % kept,
                 SAME_NAME_DO % (dropped, dropped.rsplit('/', 1)[0])))
 
     for name in sorted(features):
@@ -590,24 +592,23 @@ def spec_mistakes(project_root, features):
         conflicts = features[name].get('conflict_lines') or ()
         if not conflicts:
             continue
-        number, shown = conflicts[0][0], conflicts[0][1][:PROOF_LINE_SHOWN]
+        number = conflicts[0][0]
         if len(conflicts) == 1:
-            lines.append(_mistake('to_repair', name,
-                                  CONFLICT_ONE % (number, shown)))
+            lines.append(_mistake('to_repair', name, CONFLICT_ONE % number))
         else:
             lines.append(_mistake('to_repair', name, CONFLICT_MANY % (
-                len(conflicts), number, shown)))
+                len(conflicts), number)))
     for name in sorted(features):
         for line in features[name].get('unread_proof_lines') or ():
             why = (TAG_AT_END if _TAG_BEFORE_RULES_RE.match(line)
                    else NOT_A_PROOF_LINE)
             lines.append(_mistake('proof_unread', name, PROOF_LINE_UNREAD % (
-                why, notices.shown(line))))
+                why, notices.shown(line, PROOF_LINE_WORDS))))
     for name in sorted(features):
         other = features[name].get('heading_name')
         if other and other != name:
             lines.append(_mistake('heading', name,
-                                  HEADING_NAMES_OTHER % (other, name, name)))
+                                  HEADING_NAMES_OTHER % other))
     for name in sorted(features):
         for proof_id in features[name].get('slow_and_manual') or ():
             lines.append(_proof_mistake('tags_conflict', features[name],
@@ -626,7 +627,7 @@ def spec_mistakes(project_root, features):
         if _remote(info):
             lines.append(_mistake(
                 'line_unread', name,
-                REMOTE_UNREAD % (info['source'], _join_fields(fields)),
+                REMOTE_UNREAD % _join_fields(fields),
                 REMOTE_UNREAD_DO % ('it' if len(fields) == 1 else 'them',
                                     name)))
         elif 'Scope' in fields:
