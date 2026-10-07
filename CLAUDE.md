@@ -85,6 +85,9 @@ The version string lives in one file: `VERSION` at the root. Never hand-edit any
 2. Commit `VERSION` and every file the script touched in the same commit.
 3. Run `purlin:test --all --commit` and `python3 dev/windows_run.py`, then `purlin:sign`. The first
    sign-off writes the signed tag `signed/<version>`.
+   A full run starts a real Claude Code session for each AI proof of `skill_build` and
+   `skill_audit` whose results are not carried, three times each on `claude-opus-5-5`, so it
+   needs the `claude` program signed in; `purlin:test --clean` starts them all again.
 4. The owner pushes the tag: `git push origin signed/<version>`.
 
 Derived locations, with the script's header comment as the authoritative list:
