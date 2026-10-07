@@ -73,7 +73,7 @@
         "verdict": "strong"
       },
       "RULE-12": {
-        "at": "2026-10-06T15:57:03Z",
+        "at": "2026-10-07T18:23:40Z",
         "bugs": {
           "PROOF-17": {
             "after": "        return ours + [(number, line) for number, line in theirs\n                       if line.strip() in held]",
@@ -88,10 +88,10 @@
           },
           "PROOF-18": {
             "after": "            if kind not in best or entry[0] < best[kind][0]:",
-            "aim": "past the test",
+            "aim": "plain",
             "before": "            if kind not in best or entry[0] > best[kind][0]:",
-            "bug_key": "bfeb316bd8a44d931022aad75bbcea3dc73b09dacc06618526f7f0ce1da9b753",
-            "case": "HEAD's side holds > Highest-Proof: 9 and the branch's > Highest-Proof: 10 in a conflict at line 6; the proof says the conflict takes 10 and one line stays; the changed code leaves the one line reading > Highest-Proof: 9",
+            "bug_key": "671d8d0b9ebefbce7f034f17be4eaa00cb655d21b74ba40a6591e32f7c5594e5",
+            "case": "`> Highest-Proof: 9` on HEAD's side and `> Highest-Proof: 10` on the branch's at line 6; the proof says the conflict takes 10 and the dry run prints `login: > Highest-Proof: 10 becomes 11.`; the changed code keeps 9, so the renumbering line starts from 9 and not 10",
             "file": "scripts/spec/renumber.py",
             "line": 305,
             "result": "caught",
@@ -110,15 +110,24 @@
           }
         },
         "code_hash": "cdd516f5b5e2126c4e72ef207bd5489e1a8a37b5011cbc211e2b42021a041615",
-        "commit": "851242656b545e651d06e28ec0a6abb06eed5ee4",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
-        "explanation": [],
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-17: the test checks the conflict opens at line 20, reads the dry run's exact line, and after `--yes` reads no conflict line and both `- RULE-9: A` and `- RULE-10: B` in the spec, which is what the proof names.",
+          "PROOF-18: the test checks the five conflict lines from line 6, compares every printed line holding `> Highest-Proof:` with the proof's two sentences in both the dry run and the `--yes` run, and reads the spec's one `> Highest-Proof: 11` line at line 6, so a resolution that kept 9 shows as a different `becomes` line.",
+          "PROOF-18: the test does not read whether a conflict line is left in the spec after the run, which the proof does not name either.",
+          "PROOF-19: the test reads the exit code, the exact last line, both proof lines, no conflict line, and git's `UU specs/auth/login.md`, which is what the proof names."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "9100356db7baeca281c13c958d194601979155c418b9e1df1cc66578d168a80c",
+        "notes": [
+          "PROOF-18 is longer than 60 words and holds two actions, a dry run and a run with `--yes`.",
+          "PROOF-17 holds two actions, a dry run and a run with `--yes`."
+        ],
+        "proof_hash": "226e7598ba007dda3edc658e9fc063021f439df46fa3063a7a3d3316cc8e5bee",
         "rule_hash": "0cfb2db455ac6a196ba4093aa0802f4682e39fb2cdcf5240924938d0e7fdbc39",
-        "test_hash": "8586de892a8c1f72a01e994097658fb87ac09754a6e8703b48565e9c3ad0598e",
+        "test_hash": "b2f1a18f0de28bbd84bcf1862919f6a9e44af79b3a88cb9858edba4a145024f7",
         "verdict": "strong"
       },
       "RULE-13": {
