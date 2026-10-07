@@ -2,16 +2,16 @@
   "audit": {
     "rules": {
       "RULE-18": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-16": {
-            "after": "pin is behind and 2 when a source could not be read. `purlin:diff` and `purlin:status` run the",
+            "after": "pin is behind and 2 when a source could not be read. `purlin:dift` and `purlin:status` run the",
             "aim": "plain",
             "before": "pin is behind and 2 when a source could not be read. `purlin:drift` and `purlin:status` run the",
-            "bug_key": "5558016e9bc5e6a5d134150b91f145f101ea08ce8b36ca2877d6306d525f7ba4",
-            "case": "the text of skills/anchor/SKILL.md is searched for `purlin:drift`; the proof says it is held and nothing is reported; the changed text holds `purlin:diff` instead, so the command is missing",
+            "bug_key": "59c58d4244542a1dcb209c700ec3ff231860c4cb9b9bfbbe0a3865731677fe71",
+            "case": "the text of skills/anchor/SKILL.md read for the five commands; the proof says it holds `purlin:drift`; the changed text holds `purlin:dift` and no longer the named command",
             "file": "skills/anchor/SKILL.md",
-            "line": 94,
+            "line": 95,
             "result": "caught",
             "why": ""
           },
@@ -19,25 +19,25 @@
             "after": "`references/commit_convention.md` holds the prefix.",
             "aim": "plain",
             "before": "`references/commit_conventions.md` holds the prefix.",
-            "bug_key": "d1d7df018a720b7ebcaa59b88099a286d059869228d1a5b1bd419ec764351dd1",
-            "case": "the text of skills/anchor/SKILL.md is searched for `references/commit_conventions.md`; the proof says it is held and nothing is reported; the changed text holds only `references/commit_convention.md`, so the name is missing",
+            "bug_key": "263a92875b9057cf1a369130861b0edcaf2037754e83e6e8e06acde5c2d3c222",
+            "case": "the text of skills/anchor/SKILL.md read for the six files; the proof says it holds `references/commit_conventions.md`; the changed text holds `references/commit_convention.md` and no longer the named file",
             "file": "skills/anchor/SKILL.md",
             "line": 56,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "fd3ea27d71b3631fe5438fd7a62258310f5d56408aa21fb348c22c156078ada1",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "0bb103fe9d5592a4c77bbf22f40bddd1fc8c8e049d434a0f31b9f99beda3a635",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-2: the test reads the skill's text and asserts that the list of names from FILES missing from it is empty, which is the proof's \"nothing is reported\" for every name FILES holds.",
-          "PROOF-2: FILES is defined outside the test's own lines, so the test source shown does not say whether it holds the six paths the proof names; a path left out of FILES would go unchecked.",
-          "PROOF-2: the second assertion goes through the helper must_name, whose body is not shown, so what it adds to the first assertion cannot be read here.",
-          "PROOF-16: the test reads the skill's text and asserts that the list of names from COMMANDS missing from it is empty, which is the proof's \"nothing is reported\" for every name COMMANDS holds.",
-          "PROOF-16: COMMANDS is defined outside the test's own lines, so the test source shown does not say whether it holds the five commands the proof names.",
-          "PROOF-16: the check is a substring search, so `purlin:spec` and `purlin:status` are found wherever those letters stand in the text, and `purlin:anchor create` and `purlin:anchor sync` each stand in several places; removing one mention of those leaves the proof's case as it was.",
-          "No spot test fired, and both tests compare against an empty list, a result that fails when a name is missing."
+          "PROOF-2: the test reads the skill's text and asserts that no name in FILES is missing from it, then asserts that must_name reports nothing for those paths, which is the proof's case and its result.",
+          "PROOF-2: the six names live in FILES, outside the test's own lines, so the test checks the proof's six files only if that list holds all six; the list is not shown here.",
+          "PROOF-16: the test reads the skill's text and asserts that no name in COMMANDS is missing from it, then asserts that must_name reports nothing for those commands, which is the proof's case and its result.",
+          "PROOF-16: the five commands live in COMMANDS, outside the test's own lines, so a command left out of that list would be checked by nothing; the list is not shown here.",
+          "PROOF-16: `purlin:anchor create`, `purlin:anchor sync`, `purlin:spec` and `purlin:status` each stand several times in the text, so only removing every occurrence of one would fail the test; `purlin:drift` stands once.",
+          "Findings: the spot tests found nothing, and both tests hold failable assertions against named lists.",
+          "Both proofs name the file `skills/anchor/SKILL.md` and \"the text holds\" as the observation, which a person who cannot read code can still check by reading the file."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -52,8 +52,8 @@
   "feature": "skill_anchor",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -71,14 +71,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_anchor",
-                "duration": 0.003,
+                "duration": 0.002,
                 "name": "test_the_anchor_skill_holds_each_of_its_six_files",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -93,14 +93,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_anchor",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_anchor_skill_holds_each_of_its_five_commands",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",

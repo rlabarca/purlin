@@ -2,14 +2,14 @@
   "audit": {
     "rules": {
       "RULE-35": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-63": {
             "after": "purlin:sign --overview               The overview and every stop, asking nothing\npurlin:sign --answers <file>         The walk, with the answers a file gives\npurlin:sign --check <file>           Check a package file against its fingerprint\n```\n\nThe version is read from the `VERSION` file at the project root, then from the version the\nproject's package description states; `--version <version>` names it instead.\n\n## Step 1: show the walk\n\nThe agent's shell has no terminal for the person to answer in, so the walk is two calls. First:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --overview [--version <version>] --project-root .",
             "aim": "plain",
             "before": "purlin:sign --show                   The overview and every stop, asking nothing\npurlin:sign --answers <file>         The walk, with the answers a file gives\npurlin:sign --check <file>           Check a package file against its fingerprint\n```\n\nThe version is read from the `VERSION` file at the project root, then from the version the\nproject's package description states; `--version <version>` names it instead.\n\n## Step 1: show the walk\n\nThe agent's shell has no terminal for the person to answer in, so the walk is two calls. First:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --show [--version <version>] --project-root .",
-            "bug_key": "8acbb485e74c1679c64aa19e5b1d44938b19d869d0d145f122d46d0993c66a7c",
-            "case": "the sign skill's text is searched for `--show`; the proof says it holds it and the check lists no problem; the changed text holds `--overview` in its place and no `--show`",
+            "bug_key": "e6d8c8c0e344c38868f6ce1d772c72e8ca1a36ecf4341077928450c9895d1f5c",
+            "case": "the sign skill's text read for `--show`; the proof says the text holds it; the changed text names `--overview` in both places and holds no `--show`",
             "file": "skills/sign/SKILL.md",
             "line": 28,
             "result": "caught",
@@ -19,30 +19,82 @@
             "after": "Write the answers to `.purlin/runtime/signoff.json`, each stop keyed `<feature> <RULE-N>`:\n\n```json\n{\"audit\": \"go on\",\n \"stops\": {\"accession_screen RULE-1\": {\"answer\": \"note\", \"note\": \"the tube is red\"},\n           \"sample_age RULE-6\": {\"answer\": \"note\", \"note\": \"\"}},\n \"sign\": \"quinn.qa@labconnect.example\"}\n```\n\n`audit` is `list` or `go on`. A hand check takes `note` with the line seen, empty for no note, or\n`stop`. `sign` is what the person typed at the last question. Then run:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --answers .purlin/runtime/signoff.json [--version <version>] --project-root .\n```\n\nIt walks with those answers, printing each after its question. A stop with no answer refuses with\nnothing written: `No sign-off: sample_age RULE-6 has no answer in .purlin/runtime/signoff.json. Answer every stop, then run purlin:sign --answers .purlin/runtime/signoff.json again.`\nWhere `sign` is not the signer's address it signs nothing and ends on\n`Nothing was signed: \"sign\" in .purlin/runtime/signoff.json must hold quinn.qa@labconnect.example, typed by the person signing.`",
             "aim": "plain",
             "before": "Write the answers to `.purlin/runtime/signoff-answers.json`, each stop keyed `<feature> <RULE-N>`:\n\n```json\n{\"audit\": \"go on\",\n \"stops\": {\"accession_screen RULE-1\": {\"answer\": \"note\", \"note\": \"the tube is red\"},\n           \"sample_age RULE-6\": {\"answer\": \"note\", \"note\": \"\"}},\n \"sign\": \"quinn.qa@labconnect.example\"}\n```\n\n`audit` is `list` or `go on`. A hand check takes `note` with the line seen, empty for no note, or\n`stop`. `sign` is what the person typed at the last question. Then run:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --answers .purlin/runtime/signoff-answers.json [--version <version>] --project-root .\n```\n\nIt walks with those answers, printing each after its question. A stop with no answer refuses with\nnothing written: `No sign-off: sample_age RULE-6 has no answer in .purlin/runtime/signoff-answers.json. Answer every stop, then run purlin:sign --answers .purlin/runtime/signoff-answers.json again.`\nWhere `sign` is not the signer's address it signs nothing and ends on\n`Nothing was signed: \"sign\" in .purlin/runtime/signoff-answers.json must hold quinn.qa@labconnect.example, typed by the person signing.`",
-            "bug_key": "9553eac1ca335fe551797d41608ba1b5317a0278b9d2a02371692117ee8538c9",
-            "case": "the sign skill's text is searched for `.purlin/runtime/signoff-answers.json`; the proof says it holds it and the check lists no problem; the changed text names `.purlin/runtime/signoff.json` and never that path",
+            "bug_key": "87813ebacc0aadb3d1faa272c719c411fc6f35ca92cf29c4132e4e35ab7c9b95",
+            "case": "the sign skill's text read for `.purlin/runtime/signoff-answers.json`; the proof says the text holds it; the changed text names `.purlin/runtime/signoff.json` everywhere and holds no such path",
             "file": "skills/sign/SKILL.md",
-            "line": 164,
+            "line": 205,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "a149110bb70eadf37aba0c08a8976a986acd8c319367a6aa4b266b999fc8844d",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "ce33647d32d05888db811a4fe0f6e2450c8f6d5205f2c0a7e43284f0534b0162",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-63: the test reads the skill's text, asserts that no name in COMMANDS is missing from it and that the check of the commands lists nothing, which is what the proof names.",
-          "PROOF-63: COMMANDS is defined outside the test shown, so the test's lines do not show that it holds the seven commands the proof lists.",
-          "PROOF-64: the test reads the skill's text, asserts that no name in PATHS is missing from it and that the check of the paths lists nothing, which is what the proof names.",
-          "PROOF-64: PATHS is defined outside the test shown, so the test's lines do not show that it holds the four paths the proof lists.",
-          "The spot tests found nothing, and both tests hold assertions that fail when a named command or path leaves the skill's text."
+          "PROOF-63: the test reads the skill's text and asserts that no name in COMMANDS is missing from it, then that the check of the commands lists no problem, which is what the proof names.",
+          "PROOF-63: COMMANDS is defined outside the test's own lines, so whether it holds all seven names the proof lists cannot be seen here; a name absent from that list would go unchecked.",
+          "PROOF-63: the test looks for each name as a substring, so a longer option that contains a name, such as `--shows`, would still satisfy it.",
+          "PROOF-64: the test reads the skill's text and asserts that no name in PATHS is missing from it, then that the check of the paths lists no problem, which is what the proof names.",
+          "PROOF-64: PATHS is defined outside the test's own lines, so whether it holds all four paths the proof lists cannot be seen here.",
+          "PROOF-64: `VERSION` is looked for as a substring with matching capitals, so the lowercase `<version>` does not satisfy it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-63 and PROOF-64 name what the text must hold and no case in which a name is missing, so the rule is shown in one direction only."
+        ],
         "proof_hash": "8d4e852fe136fa56c845a871a1a5ac8b63d68ff1f928cb54b32076985b75572f",
         "rule_hash": "80f3dcc55aa9d570d0c59778422b5734f699513d37292cb2bd113b6c7696c4fc",
         "test_hash": "d131318dcce95129d9e03964382bf8d8362033db97381e6217a9790b8907c986",
+        "verdict": "strong"
+      },
+      "RULE-36": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-66": {
+            "after": "  AI outputs kept with the package: 59 of 60.",
+            "aim": "plain",
+            "before": "  AI outputs kept with the package: 60 of 60.",
+            "bug_key": "834187ae95522f330641991abb11ddb9d106a252a3861551f914868fe77e05a8",
+            "case": "the sign skill's block of walk lines about AI proofs; the proof says its third line is `AI outputs kept with the package: 60 of 60.`; the changed skill shows `AI outputs kept with the package: 59 of 60.`",
+            "file": "skills/sign/SKILL.md",
+            "line": 72,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-67": {
+            "after": "AI outputs beside the package that match their sha256: 60 of 60.",
+            "aim": "plain",
+            "before": "AI outputs beside the package that match their sha256: 59 of 60.",
+            "bug_key": "128e385341b1c8ec2739b880f903f47bd3c831848df903abe6e19173dddc6214",
+            "case": "the sign skill's `--check` line on AI outputs; the proof says `AI outputs beside the package that match their sha256: 59 of 60.` is a whole line of a fenced block; the changed skill shows `60 of 60.` there",
+            "file": "skills/sign/SKILL.md",
+            "line": 268,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "ce33647d32d05888db811a4fe0f6e2450c8f6d5205f2c0a7e43284f0534b0162",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-66: the test finds the fenced blocks of the sign skill that hold the four lines in order, requires exactly one, and rejects the lines stripped of their indent or in reverse order, so a changed value, indent or order in the skill fails it.",
+          "PROOF-66: the test also compares the four lines with what `sign.py`'s own line formats give for these values, so the expected lines are tied to the script and not only to literals in the test file.",
+          "PROOF-67: the test collects every line of every fenced block and requires the check line and the graded-run line each exactly once as whole lines, so a changed value or indent in either fails it.",
+          "PROOF-67: the test compares both lines with what `sign.py`'s formats give for the named values, which is the proof's last clause.",
+          "The spot tests found nothing, and both tests assert the literal lines their proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-66 is longer than 60 words.",
+          "PROOF-67 is longer than 60 words and holds two lines, each a case of its own, and names the source file `sign.py`."
+        ],
+        "proof_hash": "71e1c9a74c1096aa674e814f50faf6e8aa79490b2a214fd57d201cf58a8f8d6e",
+        "rule_hash": "50476c16804c85ea98592a0a6c9da8dc0fd94ad12614328ad8e41a1826c746f8",
+        "test_hash": "8091e241d9e328c738a3398659d5ad06b8019e378ff8ec89d255bc858d190f4e",
         "verdict": "strong"
       }
     }
@@ -50,8 +102,8 @@
   "feature": "skill_sign",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -69,14 +121,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_sign",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_sign_skill_holds_each_of_its_seven_commands",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -98,7 +150,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -120,7 +172,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -142,7 +194,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",

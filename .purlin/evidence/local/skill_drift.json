@@ -2,14 +2,14 @@
   "audit": {
     "rules": {
       "RULE-15": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-43": {
             "after": "and which git facts it comes from live in `references/drift.md`; do not restate them",
             "aim": "plain",
             "before": "and which git facts it comes from live in `references/drift_criteria.md`; do not restate them",
-            "bug_key": "a1edd32ddbafe1ebe588988be64d2c0431d6b6c07f78947d5781ac6a6837435f",
-            "case": "a copy of the drift skill with every `purlin:spec` taken out; the proof says it is reported as `drift does not name purlin:spec`; the changed skill's copy is reported as that and also as not naming `references/drift_criteria.md`",
+            "bug_key": "3dfb1c4dd2ceb3511c43a5fad1b08df242adc12e68eaaa9b7f2a18d57e2041fd",
+            "case": "a copy of the drift skill with every `purlin:spec` taken out; the proof says the report is `drift does not name purlin:spec`; the changed skill is also reported as not naming `references/drift_criteria.md`",
             "file": "skills/drift/SKILL.md",
             "line": 51,
             "result": "caught",
@@ -19,22 +19,22 @@
             "after": "| An anchor behind its source | `\u2192 Run: purlin:anchor <name>` |",
             "aim": "plain",
             "before": "| An anchor behind its source | `\u2192 Run: purlin:anchor sync <name>` |",
-            "bug_key": "5b4ceaf6c1120bd52df17a88bc77e6de8c77ff057cb2f4c8d8f20b2c180dd2fc",
-            "case": "the drift skill as it stands; the proof says it names `purlin:anchor sync`; the changed skill names `purlin:anchor <name>` and never `purlin:anchor sync`",
+            "bug_key": "e4cc9de2590b4865f882f24773f0b8df9fa9ab6c1a65e5e46f41a28a9e26d18f",
+            "case": "the drift skill as shipped; the proof says it names `purlin:anchor sync`; the changed skill names `purlin:anchor <name>` and never `purlin:anchor sync`",
             "file": "skills/drift/SKILL.md",
             "line": 82,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "fb8d7afd4a809665237f97a3df3006bb987eae8572b63bf87447ef99adcb97cc",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "26bfd1f338d3f651b0792a671cb74481e9b2bc551719b27975808025a8808ba9",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-46: the test reads the skill's text and requires every name in COMMANDS and PATHS to be in it, then requires the name check to report nothing, so a name taken out of the skill fails it.",
-          "PROOF-46: the seven names the proof lists are held in COMMANDS and PATHS, which are defined outside the test's own lines, so the test covers the proof's names only as far as those lists hold them.",
-          "PROOF-43: the test takes `purlin:spec` out of a copy of the skill and compares the whole list of problems with the single sentence `drift does not name purlin:spec`, so a missing report, a different sentence or an extra one fails it.",
-          "The spot tests found nothing, and both tests assert on values the proofs name, with the expected sentence in PROOF-43 written as a literal."
+          "PROOF-46: the test reads the skill's text and asserts that no name in COMMANDS + PATHS is missing from it, and that must_name reports no problem, so a missing name fails it as long as those lists hold it.",
+          "PROOF-46: COMMANDS and PATHS are defined outside the test's own lines, so the test as shown does not say whether they hold all seven names the proof lists; a name left out of them would not be checked.",
+          "PROOF-43: the test takes every `purlin:spec` out of a copy of the skill and compares the whole list of problems with the single sentence `drift does not name purlin:spec`, so a missing, different or extra sentence fails it.",
+          "Findings: the spot tests found nothing, and both tests hold assertions that can fail, with expected values written as literals or lists and not taken from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -49,8 +49,8 @@
   "feature": "skill_drift",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -75,7 +75,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -97,7 +97,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",

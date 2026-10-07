@@ -2,30 +2,28 @@
   "audit": {
     "rules": {
       "RULE-32": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-62": {
-            "after": "step 7 says, commit it with the `spec(<name>):` prefix from `references/commit_convention.md`, then end with exactly",
+            "after": "Where the drift check, the status, `purlin:build` or this skill finds a number written twice, or a",
             "aim": "plain",
-            "before": "step 7 says, commit it with the `spec(<name>):` prefix from `references/commit_conventions.md`, then end with exactly",
-            "bug_key": "8047ce6f3f5457056b414bccd299488bc71237110d0859e6a370f8666fdae431",
-            "case": "the text of skills/spec/SKILL.md is searched for `references/commit_conventions.md`; the proof says none of the eight names is missing; the changed text names `references/commit_convention.md`, so that file name is missing",
+            "before": "Where `purlin:drift`, the status, `purlin:build` or this skill finds a number written twice, or a",
+            "bug_key": "43f299fad1f41db8d797938aa775749fecf24b4573fef56bb8e210b7bd2bf2e9",
+            "case": "the text of the spec skill is read for `purlin:drift`; the proof says none of the eight names is missing; the changed text no longer holds `purlin:drift`",
             "file": "skills/spec/SKILL.md",
-            "line": 237,
+            "line": 224,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "da0f65375f5ed9d8a44e3626716dc7616e09a1e26cceecb5ce5b5511abfb71b0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "04217cd94c8b9f05fde35decbc50be8063be64d0541a85a6e1612eeae2d3a16c",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-62: the test reads the skill's text, lists every name of COMMANDS and FILES that the text does not hold, and asserts the list is empty, which is the proof's \"none is missing\".",
-          "PROOF-62: COMMANDS and FILES are defined outside the test's own lines, so the test as shown does not show whether they hold all eight names the proof lists; a name absent from those lists could leave the skill unchecked.",
-          "PROOF-62: the second assertion goes through the helper must_name, whose body is not shown, so what it adds to the first assertion cannot be read here.",
-          "PROOF-62: the check is a substring match, so a name that survives only inside a longer word, such as `sync_status` inside `mcp__plugin_purlin_purlin__sync_status`, still counts as held.",
-          "PROOF-62: the proof names a file path of the plugin and observes its text with no action before it, and it names no failure case of its own; it does name each expected literal.",
-          "Findings: none were reported, and the test holds assertions that can fail when a listed name leaves the file."
+          "PROOF-62: the test reads the skill's text and asserts that no name in the `COMMANDS` and `FILES` lists is missing from it, then asserts that `must_name` reports nothing missing for the same lists.",
+          "PROOF-62: the two lists are defined outside the test's own lines, so the test as shown does not reveal whether they hold all eight names the proof gives; a name left out of them could vanish from the skill unnoticed.",
+          "PROOF-62: the proof names a failure direction only as \"none is missing\", and the test's empty-list comparison matches that for every name the lists hold.",
+          "PROOF-62: the proof names the skill's file path and reads a document's text, which a person who cannot read code can still judge by searching the file for each name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -36,27 +34,27 @@
         "verdict": "strong"
       },
       "RULE-33": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-63": {
             "after": "`> Highest-Proof:` first, then `> Highest-Rule:`. Where one is there, the other goes beside it.",
             "aim": "plain",
             "before": "`> Highest-Rule:` first, then `> Highest-Proof:`. Where one is there, the other goes beside it.",
-            "bug_key": "df864d1536a0624b2b50e426bcacd06138d7a1b0d38d630ebae4a85efaab57d8",
-            "case": "a reader of the spec skill's part headed `Ids` looks for the sentence on a spec that has neither line; the proof says it reads \"`> Highest-Rule:` first, then `> Highest-Proof:`\"; the changed file reads \"`> Highest-Proof:` first, then `> Highest-Rule:`\"",
+            "bug_key": "15a8ae59dc074f719814c8291540ffafe3f645ca4974f2b72d81ff08d1177106",
+            "case": "a reader of the spec skill's part headed `Ids`; the proof says the sentence reads `> Highest-Rule:` first, then `> Highest-Proof:`; the changed skill says `> Highest-Proof:` first, then `> Highest-Rule:`",
             "file": "skills/spec/SKILL.md",
-            "line": 172,
+            "line": 190,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "da0f65375f5ed9d8a44e3626716dc7616e09a1e26cceecb5ce5b5511abfb71b0",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "04217cd94c8b9f05fde35decbc50be8063be64d0541a85a6e1612eeae2d3a16c",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-63: the test reads the spec skill, cuts out the part from the heading `Ids` to the next heading, and asserts that a fixed sentence is in that part once its line breaks are flattened, so a reworded, reordered or moved sentence fails it.",
-          "PROOF-63: the expected sentence is a constant defined outside the test's own lines and not shown, so whether it matches the proof's sentence word for word cannot be seen from the test alone.",
-          "PROOF-63: the spot tests found nothing, and the test holds a failable assertion on text read from the skill file, not from the code under test."
+          "PROOF-63: the test cuts the skill's text down to the part headed `Ids`, flattens it and asserts that the constant WHERE_THE_LINES_GO is in it, so it reads the same part the proof names and fails when that sentence is reworded or moved out of it.",
+          "PROOF-63: the expected sentence is held in WHERE_THE_LINES_GO and the flattening is done by flat(), neither of which is in the test's own lines, so whether the constant matches the proof's sentence word for word, and whether flat() drops anything beyond line breaks, cannot be read here.",
+          "PROOF-63: the spot tests found nothing, and the test does hold a failable assertion on text read from the skill file rather than from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -65,14 +63,59 @@
         "rule_hash": "78c809b9b4bc412fb6abc5c7ef0519f17978b563b57e86ecc40a1d5d1e297866",
         "test_hash": "00be2996eb540aff86e6edd4e4cb458ddd68e98d0ca25526fe4943ece8452cd3",
         "verdict": "strong"
+      },
+      "RULE-34": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-64": {
+            "after": "- PROOF-10 (RULE-10): Asked for a refund over the limit, the reply refuses and blames nobody @ai(claude-opus-5-5)",
+            "aim": "plain",
+            "before": "- PROOF-10 (RULE-10): Asked for a refund over the limit, the reply refuses and blames nobody @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)",
+            "bug_key": "b05d49fea696858744774948c3dc8c3a9976d6e926aba7aff5577e5bcdcac816",
+            "case": "a reader of the part headed Proofs looks for the two example lines; the proof says the PROOF-10 line ends `@ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)`; the changed skill shows that line with the `@ai` tag alone and no grading model",
+            "file": "skills/spec/SKILL.md",
+            "line": 164,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-65": {
+            "after": "grades a graded one. Pick a model yourself where the person names none: the model is what is being validated.",
+            "aim": "plain",
+            "before": "grades a graded one. Never pick a model yourself: the model is what is being validated.",
+            "bug_key": "2714540913a065201221860a91f894916d0e631ea22270b234bc9da6870bb479",
+            "case": "a reader of the part headed Proofs looks for the two sentences; the proof says it holds `Never pick a model yourself: the model is what is being validated.`; the changed skill tells the agent to pick a model itself where the person names none",
+            "file": "skills/spec/SKILL.md",
+            "line": 173,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "04217cd94c8b9f05fde35decbc50be8063be64d0541a85a6e1612eeae2d3a16c",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-64: the test splits the part on proofs into lines and requires every line of AI_LINES to be among them, so it observes the two example lines whole, tags and models included, provided AI_LINES holds the two lines the proof names.",
+          "PROOF-64: the helper that cuts out the part and the list AI_LINES are defined outside the test's own lines and were not shown, so whether the part read is the one headed `Proofs` and whether the list matches the proof could not be read here.",
+          "PROOF-65: the test flattens the part on proofs and requires every sentence of ASKS to be in it, so it observes the two sentences as wording, provided ASKS holds the two sentences the proof names.",
+          "PROOF-65: what `flat` removes was not shown, so a change the flattening hides, such as line breaks or possibly markup, would not be seen by this test.",
+          "PROOF-65: the rule also says the agent asks which models each AI proof is shown on, and neither sentence the proof names carries that, so the sentence beginning `In the same question` could be removed with both tests passing.",
+          "Findings: the spot tests found nothing; each test holds one assertion that can fail, comparing a list of missing items with an empty list."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "efc38ed7fb89b0188fc0a9cd0379a712c372d8bffa8be99c8dc67e287765b433",
+        "rule_hash": "ad186f25f029a84d15f2a45ff6edf5ab6db44392e2f7f6a3a41f4952c7df3691",
+        "test_hash": "08172e3eb40717a9e61ad3ad5eefd2381e5662e20f42adc6ee42fa27e1154c76",
+        "verdict": "strong"
       }
     }
   },
   "feature": "skill_spec",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -90,14 +133,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_spec",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_spec_skill_holds_each_command_and_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -119,7 +162,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -141,7 +184,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -163,7 +206,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",

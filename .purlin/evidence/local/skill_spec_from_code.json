@@ -2,27 +2,28 @@
   "audit": {
     "rules": {
       "RULE-53": {
-        "at": "2026-10-05T18:42:48Z",
+        "at": "2026-10-07T18:46:10Z",
         "bugs": {
           "PROOF-167": {
-            "after": "When the project has no `.purlin/config.json`, set the project up first. Run",
-            "aim": "plain",
-            "before": "When the project has no `.purlin/config.json`, run `purlin:init` first. Run",
-            "bug_key": "2bb57cfeaaae3a3b31c2508eb0bdabd911c23237e4c6c692265174619137dc6d",
-            "case": "the text of skills/spec-from-code/SKILL.md is searched for `purlin:init`; the proof says it is held and none is missing; the changed file no longer holds `purlin:init`",
+            "after": "   anchor, with `purlin:anchor <name>`. A rule that several features share and that",
+            "aim": "past the test",
+            "before": "   anchor, with `purlin:anchor create <name>`. A rule that several features share and that",
+            "bug_key": "61863a53f4c1e2843b68e0f265080d7af37b200c11a51b8b4c9d1d8c4a8e11a1",
+            "case": "the text of skills/spec-from-code/SKILL.md; the proof says it holds `purlin:anchor create` and none is missing; the changed text holds only `purlin:anchor <name>`, so `purlin:anchor create` is missing",
             "file": "skills/spec-from-code/SKILL.md",
-            "line": 36,
+            "line": 53,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "271c2f50167b0bc056eab6fec2f0e4170a429de4fe608506ed4b39ed13ab4055",
-        "commit": "871cf769b689d0a4a0a48b673321ff1617f42366",
-        "criteria": "5c0b9e8671c41a9a4f23e199b3c93ab6363f1594f3544270f745ffa20bad3bc9",
+        "code_hash": "e3934fe68d70a640726212c4b7b772999b4da1e090d5f228d139e27c1348c1bb",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-167: the test reads the skill's text and asserts that no name in COMMANDS + FILES is missing from it, then asserts the same through must_name, so a name removed from the skill fails it if that name is in those lists.",
-          "PROOF-167: COMMANDS and FILES are defined outside the test's own lines, so the source shown does not confirm that they hold all nine names the proof lists; a name absent from them would go unchecked.",
-          "PROOF-167: the spot tests found nothing, and that fits the test as shown: it has two failable assertions, no mock, no swallowed error, and its expected value is the literal empty list."
+          "PROOF-167: the test reads the skill's text and asserts that no name in COMMANDS + FILES is missing from it, then asserts the same through must_name, so it observes what the proof names only as far as those two lists hold the proof's nine values.",
+          "PROOF-167: the lists COMMANDS and FILES are defined outside the test's own lines and are not shown, so a list holding `purlin:anchor` without `create`, or leaving a name out, would let a missing name pass.",
+          "PROOF-167: the spot tests found nothing, which fits a test with two failable assertions whose expected values are literals kept in its own file and not taken from the skill.",
+          "PROOF-167: the proof reads a file's text with no action before the observation, which fits a rule about what a skill's instructions name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -31,14 +32,46 @@
         "rule_hash": "d78d3a5adbc7e9f212c8c13f72f1532b54cb875e91c3b629d1552d4e505bdd1c",
         "test_hash": "ca06f336e0bccb5c0851a831fdd095b40e7999fc37f721a0e01b2ccd86f3725c",
         "verdict": "strong"
+      },
+      "RULE-54": {
+        "at": "2026-10-07T18:46:10Z",
+        "bugs": {
+          "PROOF-168": {
+            "after": "Write no test for one: `purlin:build` writes it. Each such rule then reads `no test`.",
+            "aim": "past the test",
+            "before": "Write no test for one: `purlin:build` does. Each such rule then reads `no test`.",
+            "bug_key": "70dcbebdda32c81f5c5b8bdf138dddef1f8e786d470f0ce01af5139f4ba142a5",
+            "case": "the text under the heading `Prompts, skills and agent definitions`; the proof says it holds ``Write no test for one: `purlin:build` does.``; the changed text reads ``Write no test for one: `purlin:build` writes it.``",
+            "file": "skills/spec-from-code/SKILL.md",
+            "line": 127,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "e3934fe68d70a640726212c4b7b772999b4da1e090d5f228d139e27c1348c1bb",
+        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-168: the test reads the text under the heading `Prompts, skills and agent definitions`, requires it to be non-empty, and requires that `not_named(section, INSTRUCTIONS)` return an empty list.",
+          "PROOF-168: the three strings the proof names appear nowhere in the test's own lines; they would have to come from the `INSTRUCTIONS` constant, which is not shown, so whether each is compared whole, shortened or after normalising is not visible from the test.",
+          "PROOF-168: if `INSTRUCTIONS` holds a shortened form of the second string, such as its words before the backticks, a change to the end of that sentence still passes.",
+          "PROOF-168: the spot tests found nothing, and the test does hold assertions that can fail, since an absent section or a non-empty list from `not_named` fails it."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "0a8243e3412ae9aa380083719ba7b9af1b349ccd0bbcb0bea4c5b87129e6a816",
+        "rule_hash": "56b011138eb7cd5f5551bf73fa2b7bb5a7052b17e6eec64532f6de5680daab72",
+        "test_hash": "3fd5e8aa2bb13f3e0488d0b80bd4a39f3d767bf6209f982a5eb0c760e4685890",
+        "verdict": "strong"
       }
     }
   },
   "feature": "skill_spec_from_code",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:15Z",
-      "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
+      "at": "2026-10-07T18:39:36Z",
+      "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -56,14 +89,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_spec_from_code",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_spec_from_code_skill_holds_each_command_and_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
@@ -85,7 +118,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "07e51be6be7ef3f0e1216abae81a72735cba0a6a43a55a2827fc89c9c8d471fa"
             }
           },
           "result": "pass",
