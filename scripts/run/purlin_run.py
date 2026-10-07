@@ -301,8 +301,8 @@ TIMED_OUT_ON = 'It timed out after %d s on %s.'
 TIMED_OUT_AFTER = 'It timed out after %d s.'
 TIMED_OUT_DO = 'Run purlin:%s --arm-timeout <seconds>.'
 NO_REPORT_DO = 'Check the suite in .purlin/config.json, then run purlin:test.'
-# A marker whose test has no passing or failing result: its file and line.
-NO_RESULT = 'The test at %s:%d has no result.'
+# What to do about a marker whose test has no passing or failing result,
+# which `evidence.NO_RESULT` names.
 NO_RESULT_DO = 'Check that it ran and was not skipped, then run purlin:test.'
 # A marker whose test ran and is named differently in the report: the file,
 # the marker's line and the report's name.
@@ -1271,7 +1271,8 @@ def ai_start(project_root, feature, proof, entry, model, run, test, timeout,
         made = {'result': reports_module.FAIL}
     else:
         made = {'result': reports_module.NOT_RUN,
-                'why': NO_RESULT % (entry['test_file'], entry['line'])}
+                'why': evidence_reader.NO_RESULT % (entry['test_file'],
+                                                    entry['line'])}
     if made['result'] != reports_module.NOT_RUN:
         sha = outputs_module.folder_sha256(folder)
         if sha:
@@ -2032,7 +2033,8 @@ def main(argv=None):
         for feature, marker_id, entry in unseen:
             missing.append(missing_line(
                 features, feature, marker_id,
-                NO_RESULT % (entry['test_file'], entry['line']),
+                evidence_reader.NO_RESULT % (entry['test_file'],
+                                             entry['line']),
                 NO_RESULT_DO))
     for (feature, marker_id), entries in sorted(index.items()):
         if feature not in selected or (feature, marker_id) in foreign_ids:
@@ -2059,7 +2061,8 @@ def main(argv=None):
                 continue
             missing.append(missing_line(
                 features, feature, marker_id,
-                NO_RESULT % (entry['test_file'], entry['line']),
+                evidence_reader.NO_RESULT % (entry['test_file'],
+                                             entry['line']),
                 NO_RESULT_DO))
     untied = 0
     tied = 0
@@ -2074,7 +2077,8 @@ def main(argv=None):
                     remote_proofs is None or marker.key() in remote_proofs):
                 missing.append(missing_line(
                     features, marker.feature, marker.id,
-                    NO_RESULT % (path, marker.line), NO_RESULT_DO))
+                    evidence_reader.NO_RESULT % (path, marker.line),
+                    NO_RESULT_DO))
     # A marker naming nothing a spec has fails the run, whatever the tests did.
     wrong = reports_module.marker_problems(scan, features)
     # A run over every feature says how many test files it left out for

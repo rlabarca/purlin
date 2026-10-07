@@ -25,6 +25,7 @@ in `warnings`, naming the run that writes it again.
 
 import json
 import os
+import re
 import sys
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,6 +42,15 @@ EVIDENCE_DIR = '.purlin/evidence'
 # The parts an audit entry is checked on, each with the key that stores it.
 AUDIT_PARTS = (('rule', 'rule_hash'), ('proof', 'proof_hash'),
                ('test', 'test_hash'), ('code', 'code_hash'))
+
+# What is said of a marker whose test left no passing or failing result:
+# its file and line. A test run names it in an `evidence missing` line and
+# writes it as the `why` of a model run that reads `not run`, as
+# `references/formats/evidence_format.md` gives it; any other `why` is the
+# reason a model gave no answer. `NO_RESULT_WHY` matches the whole sentence.
+NO_RESULT = 'The test at %s:%d has no result.'
+NO_RESULT_WHY = re.compile(re.escape(NO_RESULT).replace('%s', '.+')
+                           .replace('%d', r'\d+') + '$')
 
 # A proof whose every tied test skipped with a reason starting with these
 # words reads this result, its reason the text after them.

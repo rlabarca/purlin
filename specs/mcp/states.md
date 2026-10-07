@@ -9,7 +9,7 @@
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
 > Highest-Rule: 145
-> Highest-Proof: 350
+> Highest-Proof: 351
 
 ## Rules
 
@@ -220,3 +220,4 @@
 - PROOF-348 (RULE-145): `PROOF-2` ends `@ai(claude-opus-5-5)`, and its current section holds three passing runs on `claude-opus-5-5` and an entry for `claude-sonnet-5-5` whose one run reads `not run` with the `why` `The login expired.`; the payload's `warnings` is empty and the status prints no line holding `: model not reached.`
 - PROOF-349 (RULE-145): `PROOF-2` ends `@ai(claude-opus-5-5, claude-sonnet-5-5, example-model-3)` and holds three passing runs on `claude-opus-5-5`, one run on `claude-sonnet-5-5` reading `not run` with the `why` `The test at tests/test_login.py:6 has no result.`, and nothing for `example-model-3`; the payload's `warnings` is empty and the status prints no line holding `: model not reached.`, while the proof's `models` read `passed` with 3 runs, `not run` with 1 and `not run` with 0
 - PROOF-350 (RULE-145): `PROOF-2` ends `@ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)` and holds on `claude-opus-5-5` one run reading `not run` with the `why` `The grader was overloaded.` and a `grade` of the model `claude-haiku-4-5-20251001` whose `accepted` is null; the payload's `warnings` and the status's lines holding `: model not reached.` are each exactly `claude-haiku-4-5-20251001: model not reached. The grader was overloaded. Run purlin:test --all.`
+- PROOF-351 (RULE-145): The sentence a test run writes for a test that left no result, `NO_RESULT` of the evidence reader filled with `tests/test_login.py` and `6`, is `The test at tests/test_login.py:6 has no result.`; `PROOF-2` ends `@ai(claude-opus-5-5, claude-sonnet-5-5)` and holds three passing runs on `claude-opus-5-5` and one run on `claude-sonnet-5-5` reading `not run` with that sentence as its `why`, and the payload's `warnings` is empty; neither `states` nor the run script holds a `NO_RESULT` of its own

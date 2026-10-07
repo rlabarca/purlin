@@ -2375,6 +2375,21 @@ class TestAModelNotReached:
             (OPUS, 'passed', 3), (SONNET, 'not run', 1),
             ('example-model-3', 'not run', 0)], proof['models']
 
+    # purlin: states PROOF-351
+    def test_the_sentence_of_a_test_with_no_result_has_one_home(self):
+        import purlin_run
+        why = purlin_evidence.NO_RESULT % ('tests/test_login.py', 6)
+        assert why == 'The test at tests/test_login.py:6 has no result.'
+        made = _ai_project(TWO_MODELS, _model(OPUS, 'pass', 'pass', 'pass'),
+                           _silent(SONNET, why))
+        try:
+            found = _warned(made)
+        finally:
+            made.close()
+        assert found == ([], []), found
+        assert not hasattr(purlin_states, 'NO_RESULT')
+        assert not hasattr(purlin_run, 'NO_RESULT')
+
     # purlin: states PROOF-350
     def test_a_grader_that_gave_no_answer_is_the_model_named(self):
         made = _ai_project(
