@@ -280,19 +280,36 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-07T19:23:36Z",
-        "bugs": {},
+        "at": "2026-10-07T19:24:38Z",
+        "bugs": {
+          "PROOF-24": {
+            "after": "SESSION_TIMEOUT = 180",
+            "aim": "plain",
+            "before": "SESSION_TIMEOUT = 1800",
+            "bug_key": "0aaab9ac0453699a3c2f772a7e655df9c5b2df07027d3e1732b43d71a44689a0",
+            "case": "`run --skill skills/summarize --say \"Go.\"` starts its one session; the proof says a limit of exactly 1800 seconds; the changed code starts it with a limit of 180 seconds",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 151,
+            "result": "caught",
+            "why": ""
+          }
+        },
         "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
-        "commit": "390a49142da2ff9fd94c5eb3e510e92c25637ce9",
+        "commit": "82529b7bb118f042788f5ff17babf9ff07763685",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [],
+        "explanation": [
+          "PROOF-24: the test replaces the process call the helper makes, runs the proof's exact command, and compares the list of limits handed to every started process with `[1800]`, so both a different limit and a second session fail it.",
+          "PROOF-24: the expected value is the literal 1800 written in the test, not the helper's own constant, so a change to that constant cannot move the expected value with it.",
+          "PROOF-24: the test also requires the command to exit 0, so a session that is never started fails it as well.",
+          "Findings: the spot tests found nothing, and the test's comparison is one that can fail on the proof's own value."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "86b01940a40bbf9555d4c22b6f19fa82a283e00e24939ec0b64b5150a874188c",
         "rule_hash": "9167882062d8043ca685d5c86afebac5b72eadb597ec13f6f9c15e04d12b106c",
         "test_hash": "581e309a2686d2b19e0dcd3291b80acd76caacffeb126fc8a0db45a3bfa5dc53",
-        "verdict": "spot-checked"
+        "verdict": "strong"
       },
       "RULE-17": {
         "at": "2026-10-07T19:23:36Z",
