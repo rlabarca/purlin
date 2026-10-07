@@ -81,7 +81,7 @@ stands at the end of the proof line:
 | `@manual` | A judgment call a person must make, like "it looks good" or "it is easy to use". A test cannot decide these. | No test runs for it. `purlin:sign` stops there; a person checks it and writes what they saw. Until then the rule reads `checked at sign-off`. |
 | `@slow` | A proof whose tests take a long time, like integration tests and acceptance tests. | `purlin:test` skips it while you build. `purlin:test --all` runs it. When it is due, every status says so: `1 slow proof to run: purlin:test --all` |
 | `@env(windows)`, `@env(macos)`, `@env(linux)` | A proof that must be shown on one operating system. | Only a run on that system proves it. Anywhere else the rule reads `not run`, with the reason `Windows: no run yet`. |
-| `@ai(<model>)` | A proof about what an AI does with a prompt or a skill. The tag names each model it is shown on. | `purlin:test --all` runs its test 3 times on each model, and every run must pass. There is one result per model. |
+| `@ai(<model>)` | A proof about what an AI does with a prompt or a skill. The tag names each model it is shown on. | `purlin:test --all` runs its test 3 times on each model, and every model run must pass. There is one result per model. |
 | `@graded(<grader>)` | Beside `@ai`, a proof whose sentence needs judgment a test cannot hold. The tag names the model that grades. | The grader reads each output against the proof's sentence. The rule reads `graded`, never `passed`, and counts as passing. |
 
 One example of each:

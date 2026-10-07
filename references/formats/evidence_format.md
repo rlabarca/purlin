@@ -4,7 +4,7 @@
 
 The evidence is what a test run and an audit leave behind for one feature:
 each proof's result on each operating system, what the suite's report holds
-for each test, each run of an AI proof's test on each model it names, the
+for each test, each model run of an AI proof's test on each model it names, the
 machine the tests ran on, the commit and the time, and,
 once an audit has read the feature, what the audit found for each rule.
 There is one JSON file per feature per source, and a reader parses it to
@@ -184,7 +184,7 @@ entry reads:
   `machine` and `email` are this run's.
 - **`not run`**, with the test named, where the proof is an AI proof and one
   of its models holds no passing result: no run has started its test, a
-  model gave no answer, or a model holds fewer runs than are asked. See
+  model gave no answer, or a model holds fewer model runs than are asked. See
   "The models of an AI proof".
 
 A reader counts a carried result as the result it is: a carried `pass` is a
@@ -268,8 +268,8 @@ still names it by its sha256.
 ### The models of an AI proof
 
 An AI proof is one tagged `@ai(<model>, ...)`. Its test is started alone,
-once per run, on each model the tag names, and its entry holds what every
-run did:
+once per model run, on each model the tag names, and its entry holds what
+every model run did:
 
 ```json
 {"id": "PROOF-4", "rule": "RULE-2", "result": "pass", "env": null,
@@ -297,46 +297,47 @@ Each `models` entry:
 |---|---|---|
 | `model` | string | the model, as the proof's `@ai` tag names it |
 | `passed` | int | how many of `runs` read `pass` |
-| `of` | int | how many runs were asked for when the runs were taken: the proof's own `runs=`, else the `runs` setting, else 3 |
+| `of` | int | how many model runs were asked for when they were taken: the proof's own `runs=`, else the `runs` setting, else 3 |
 | `graded` | bool | whether the proof is tagged `@graded` |
-| `runs` | array | one entry per run that happened, in order, pass or fail. A failure stops none of the runs after it. A model no test was started on holds `[]` |
-| `carried` | object | optional: present only on a model whose runs the run that wrote the section's `commit` did not take, with the same four values an entry's `carried` holds |
+| `runs` | array | one entry per model run that happened, in order, pass or fail. A failure stops none of the model runs after it. A model no test was started on holds `[]` |
+| `carried` | object | optional: present only on a model whose model runs the run that wrote the section's `commit` did not take, with the same four values an entry's `carried` holds |
 
 Each `runs` entry:
 
 | Field | Type | What it holds |
 |---|---|---|
 | `result` | string | `pass`, `fail` or `not run` |
-| `output` | string | the sha256 of the folder the run wrote, taken over every file in it but `purlin.json`. Left out of a `not run` run, and of a run that wrote no file |
+| `output` | string | the sha256 of the folder the model run wrote, taken over every file in it but `purlin.json`. Left out of a `not run` model run, and of one that wrote no file |
 | `made` | string | `helper` where `purlin_ai.py run` made the output, `project` where the project's own test handed it over with `purlin_ai.py record`. Left out where the folder holds no record |
-| `why` | string | present only on a `not run` run: one sentence, the reason the helper's record gave, or `The test at <file>:<line> has no result.` where the test itself did not run |
-| `reported` | object | optional: what the suite's report holds for that start of the test, as "What the report held" gives it |
+| `why` | string | present only on a `not run` model run: one sentence, the reason the helper's record gave, or `The test at <file>:<line> has no result.` where the test itself did not run |
+| `reported` | object | optional: what the suite's report holds for that model run, as "What the report held" gives it |
 | `grade` | object | present only where the helper's record holds one: `model`, the grader, `accepted`, true, false, or null where the grader gave no answer, and `reason`, its one sentence |
 
-A run reads `not run`, whatever its test did, where the helper's record
+A model run reads `not run`, whatever its test did, where the helper's record
 reads `reached` false or holds a `grade` whose `accepted` is null: a model
 gave no answer. The run starts no further test on that model, or graded by
-that grader, so the models it would have asked hold fewer runs than `of`.
+that grader, so the models it would have asked hold fewer model runs than `of`.
 
-A reader works out three words from these fields, each against the runs
-asked for now, which a changed `runs` setting changes:
+A reader works out three words from these fields, each against the model
+runs asked for now, which a changed `runs` setting changes:
 
-- **A model** reads `failed` where one of its runs reads `fail`; else
-  `not run` where one reads `not run` or it holds fewer runs than are asked
+- **A model** reads `failed` where one of its model runs reads `fail`;
+  else `not run` where one reads `not run` or it holds fewer than are asked
   now; else `passed`.
 - **The entry** reads `fail` where a model reads `failed`, else `not run`
   where a model reads `not run`, else `pass`. The run writes that as the
-  entry's `result`, against the runs asked when it ran.
+  entry's `result`, against the model runs asked when it ran.
 - **The rule** reads from its proofs as any rule does.
 
 An entry of an AI proof whose test no run has started holds no `models` and
 reads `not run`.
 
-**The output folder.** Each run writes to
-`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`, `<n>` the run from 1,
+**The output folder.** Each model run writes to
+`.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`, `<n>` the model run
+from 1,
 and the second and each later test of one proof to `<n>.<t>`. A character
 of the model's name that is not a letter, a digit, `.`, `_` or `-` is
-written `_`. The run empties the folder before each start. The folder holds
+written `_`. The run empties the folder before each model run. The folder holds
 `reply.md`, `transcript.jsonl`, `files/`, `input/`, which is what the AI was
 given, and `purlin.json`, the helper's record, which is no part of the
 sha256. `input/` is part of it, so one sha256 names what the AI produced
@@ -350,8 +351,8 @@ run but `purlin:test --all`, `purlin:test --clean`, a settle of the proof's
 rule and a project's own run on another system, keeps the entry the section
 it replaces holds, `models` included, where both sections have the same
 fingerprint. The entry and each model hold `carried`. `purlin:test --all`
-and a settle keep, the same way, each model that passed every run asked for
-now, and start the test on the other models alone; each kept model holds
+and a settle keep, the same way, each model that passed every model run asked
+for now, and start the test on the other models alone; each kept model holds
 `carried` and the entry holds none unless every model was kept.
 `purlin:test --clean` and a project's own run on another system start every
 model.
@@ -495,8 +496,8 @@ missing, was taken over another fingerprint or with `dirty` true, or holds a
 result other than `pass` for a proof this system can run; where an untracked
 file sits under its scope or beside its tests; where its spec names no
 files; and where it is an anchor. An AI proof's result is read there against
-the runs asked for now, so a feature runs again once the `runs` setting asks
-for more runs than a model holds.
+the model runs asked for now, so a feature runs again once the `runs` setting
+asks for more than a model holds.
 
 ## The fingerprint
 
@@ -584,9 +585,10 @@ and that report stays kept. The cases' names, outcomes and texts are
 compared, so a test that fails with another text replaces the section.
 
 An AI proof's `models` are compared the same way. A model's `carried`, and
-the `duration` and `report` of a run's `reported`, are left out. Everything
-else is compared, each run's `result`, `output`, `made`, `why` and `grade`
-included, so a run that wrote another output replaces the section. A model
+the `duration` and `report` of a model run's `reported`, are left out.
+Everything else is compared, each model run's `result`, `output`, `made`,
+`why` and `grade` included, so a model run that wrote another output
+replaces the section. A model
 the run took itself replaces one the section on disk holds as `carried`.
 
 ## The two commits

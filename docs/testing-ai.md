@@ -75,10 +75,10 @@ The test reads the helper's path from the variable `PURLIN_AI`, and skips where 
 few lines `output` and `reply` stand for, and
 [purlin_commands.md](../references/purlin_commands.md#the-helper) the helper's command line.
 
-## It runs several times, and every run must pass
+## It runs several times, and every model run must pass
 
 An AI does not answer the same way twice. So the test runs 3 times on each model, and the
-proof passes on a model only when every run passed.
+proof passes on a model only when every model run passed.
 
 | To change how many | Write |
 |---|---|
@@ -94,7 +94,7 @@ two models:
 ```
 
 - The proof passes when it passes on every model it names.
-- A run that failed on any model makes the rule `failed`.
+- A model run that failed on any model makes the rule `failed`.
 - **A model that cannot be reached is `not run`, never failed.** The run says
   `claude-sonnet-5-5: model not reached. The login expired. Run purlin:test --all.`
 
@@ -118,7 +118,7 @@ A changed tag ends the results. Name a new model, and the test runs again on eve
 
 ## The output is kept, with what the AI was given
 
-Each run writes one folder under `.purlin/runtime/ai/`:
+Each model run writes one folder under `.purlin/runtime/ai/`:
 
 | In the folder | What it holds |
 |---|---|

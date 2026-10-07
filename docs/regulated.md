@@ -45,7 +45,7 @@ work.
 | The test case | each proof, with its expected result |
 | The test | its file and name |
 | The execution | pass or fail, the commit, the time, the machine, the operating system, who ran it, and what the test tool reported |
-| The model, for an AI proof | each model named, every run on it, and for a graded run the grader and its reason |
+| The model, for an AI proof | each model named, every model run on it, and for a graded one the grader and its reason |
 | The strength of the test | what the audit found, and the bug a test missed |
 | The authors | who wrote and last changed each rule, proof and test, and any co-author git names on those commits, such as an AI |
 | The sign-off | who signed, when, with which key, what they were shown, every note they typed |
@@ -66,7 +66,7 @@ shown on, and its test runs several times on each.
 - **Graded results are marked.** A proof [graded by an AI](graded-by-ai.md) reads `graded`,
   never `passed`, in the status, the package and the sign-off. A person may require a hand
   check on top: a second proof tagged `@manual`.
-- **The kept output is what was observed.** Each run keeps what the AI was given and what it
+- **The kept output is what was observed.** Each model run keeps what the AI was given and what it
   produced, in one folder named by its sha256. A sign-off is optional; the first one of a
   version commits the folders with the package.
 - **The audit tests the check.** It plants a wrong output and sees whether the test, or the

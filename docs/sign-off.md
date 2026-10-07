@@ -79,7 +79,7 @@ login RULE-2   what did you see, in one line, or Enter for no note, or stop:
 
 | The walk asks | You answer |
 |---|---|
-| `list / go on` | `list` prints each weak rule with what the audit found, then each graded run. The list adds no stop. |
+| `list / go on` | `list` prints each weak rule with what the audit found, then each graded model run. The list adds no stop. |
 | `what did you see` | One line: the hand check's note. Enter records `no note`. |
 | | `stop` ends the walk. Nothing is signed. |
 | `Sign the evidence package for 0.1.0 as <you>? [y/N]` | `y` signs. Any other answer prints `Nothing was signed.` |
@@ -114,7 +114,7 @@ To read before you sign: 1 weak, 1 proof graded by an AI. list / go on:
 | `  Graded by an AI: ...` | One line per grader. A graded proof was judged by a model against one sentence. It reads `graded`, never `passed`, and counts as passing. |
 | `  AI outputs kept with the package: ...` | How many of the folders holding what the AI produced are committed with the package. |
 
-`list` prints each graded run, with the grader and its reason:
+`list` prints each graded model run, with the grader and its reason:
 
 ```text
   refund_skill RULE-3: PROOF-6 on claude-opus-5-5, run 1 of 3, accepted by claude-haiku-4-5-20251001: The reply refuses, gives the 500.00 limit as the reason and blames nobody.
@@ -145,9 +145,9 @@ and the outputs this machine still holds:
 
 | File | What it holds |
 |---|---|
-| The evidence package, `.purlin/evidence/package/<version>.json` | Every rule, its proofs, its tests, the results, each AI proof's runs on each model, what the audit found, who ran the tests and who wrote what. It carries a fingerprint of itself. |
+| The evidence package, `.purlin/evidence/package/<version>.json` | Every rule, its proofs, its tests, the results, each AI proof's model runs on each model, what the audit found, who ran the tests and who wrote what. It carries a fingerprint of itself. |
 | Your sign-off, `.purlin/evidence/package/<version>.signoffs/<signer>.json` | The package's fingerprint, your name and email as git holds them, your key's fingerprint, the time, what the walk showed and every note you typed. |
-| The outputs, `.purlin/evidence/package/<version>.outputs/` | Each test report, and each folder holding what an AI produced in one run with what it was given. The package lists each with its sha256. |
+| The outputs, `.purlin/evidence/package/<version>.outputs/` | Each test report, and each folder holding what an AI produced in one model run with what it was given. The package lists each with its sha256. |
 
 The sign-off records no judgment and no answer word.
 [package_format.md](../references/formats/package_format.md) and

@@ -17,7 +17,7 @@ two facts:
 | [Getting started](getting-started.md) | a developer | Five steps from install to a first result |
 | [Specs and anchors](specs-and-anchors.md) | anyone who writes rules | Writing rules and proofs, and rules for the whole project |
 | [Running the tests](running-and-evidence.md) | a developer | `purlin:test` and the evidence a run leaves |
-| [Testing a prompt or a skill](testing-ai.md) | a team whose product is a prompt or a skill | An AI proof from rule to evidence: the models, the runs and what is kept |
+| [Testing a prompt or a skill](testing-ai.md) | a team whose product is a prompt or a skill | An AI proof from rule to evidence: the models, the model runs and what is kept |
 | [Graded by an AI](graded-by-ai.md) | anyone who writes or reads a graded proof | A second model grades an output against one sentence |
 | [Working together](working-together.md) | a team | What product, QA and developers each do |
 | [The sign-off](sign-off.md) | whoever signs | A person signs the evidence once, with `purlin:sign` |

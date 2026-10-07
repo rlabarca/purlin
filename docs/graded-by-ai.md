@@ -78,15 +78,15 @@ The helper prints one line:
 accept: The reply refuses, gives the 500.00 limit as the reason and blames nobody.
 ```
 
-A reject fails the test, so the run fails. A grader that gives no answer makes the run
-`not run`, never failed.
+A reject fails the test, so the model run fails. A grader that gives no answer makes the
+model run `not run`, never failed.
 
 | Where you read it | What it shows |
 |---|---|
 | `purlin:status <name>` | `    PROOF-6  graded  3 of 3 on claude-opus-5-5  tests/test_refund.py::test_the_refusal_blames_nobody` |
-| [The dashboard](dashboard.md#one-rule-shows-why-it-reads-what-it-reads), on the rule's page | the grader, each model, and each graded run with the grader's reason |
-| [The sign-off](sign-off.md#the-walk-names-each-model-and-each-graded-proof), in the list of findings | `  refund_skill RULE-3: PROOF-6 on claude-opus-5-5, run 1 of 3, accepted by claude-haiku-4-5-20251001: The reply refuses, gives the 500.00 limit as the reason and blames nobody.` |
-| The evidence and the package | each run's grader, whether it accepted, and its reason |
+| [The dashboard](dashboard.md#one-rule-shows-why-it-reads-what-it-reads), on the rule's page | the grader, each model, and each graded model run with the grader's reason |
+| [The sign-off](sign-off.md#the-walk-names-each-model-and-each-graded-proof), in the list to read before you sign | `  refund_skill RULE-3: PROOF-6 on claude-opus-5-5, run 1 of 3, accepted by claude-haiku-4-5-20251001: The reply refuses, gives the 500.00 limit as the reason and blames nobody.` |
+| The evidence and the package | each model run's grader, whether it accepted, and its reason |
 
 ## It reads `graded`, never `passed`
 

@@ -181,8 +181,8 @@ starts the test alone, 3 times on each model the tag names:
 Running triage_prompt PROOF-4 on claude-opus-5-5, 1 of 3
 ```
 
-- **Every run must pass.** The proof passes on a model when all its runs passed, and it passes
-  when it passes on every model it names.
+- **Every model run must pass.** The proof passes on a model when all its model runs passed,
+  and it passes when it passes on every model it names.
 - **There is one result per model.** A rule that passed on one model and has no result on
   another reads `not run`. `Left to do` names the model:
   `1 rule to test on claude-sonnet-5-5: purlin:test --all`
@@ -190,18 +190,18 @@ Running triage_prompt PROOF-4 on claude-opus-5-5, 1 of 3
   `claude-sonnet-5-5: model not reached. The login expired. Run purlin:test --all.`
 - **The `runs` setting says how many.** `.purlin/config.json` holds `version`, `tests` and
   `runs`. A proof's own `runs=<n>`, in its tag, wins. Where neither says, it is 3.
-- **A full run keeps a model that passed every run**, marked `carried`, and starts the rest.
+- **A full run keeps a model that passed every model run**, marked `carried`, and starts the rest.
   `purlin:test --clean` starts every model.
 
 | For each model, the evidence holds | |
 |---|---|
-| The count | how many runs passed, of how many were asked |
-| Each run | `pass`, `fail` or `not run`, and the sha256 of the folder holding its output |
+| The count | how many model runs passed, of how many were asked |
+| Each model run | `pass`, `fail` or `not run`, and the sha256 of the folder holding its output |
 | Who made the output | the helper, or your project's own test |
-| A graded run | the grader, whether it accepted the output, and its one reason |
-| A run that is `not run` | why, in one sentence |
+| A graded model run | the grader, whether it accepted the output, and its one reason |
+| A model run that is `not run` | why, in one sentence |
 
-**What is kept.** Each run writes one folder,
+**What is kept.** Each model run writes one folder,
 `.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`: the AI's reply, what the session did,
 the files it wrote, and what the AI was given. Git ignores it, so it stays on the machine
 that ran the test. A run removes a folder no evidence names. A sign-off is optional; the first

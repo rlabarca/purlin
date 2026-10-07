@@ -125,7 +125,7 @@ sees what was graded:
 | `instructions/` | Each `--instructions` file, under its own file name. A second file of one name is kept as `<name>-2<extension>`, a third as `<name>-3<extension>` |
 | `project/` | Each file of `--project` as it was before the session started, at its path in the sample. Not there where no `--project` is given |
 
-The skill or the plugin itself is not kept. A run the model did not answer keeps no `input/`.
+The skill or the plugin itself is not kept. A model run the model did not answer keeps no `input/`.
 
 A run sets the variables: `references/formats/marker_format.md`, "The test of an AI proof",
 gives `PURLIN_AI`, `PURLIN_AI_MODEL` and `PURLIN_AI_OUT`. The audit also sets

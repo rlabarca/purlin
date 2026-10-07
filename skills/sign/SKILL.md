@@ -73,7 +73,7 @@ Signing 0.1.0 at 1cf829e.
 To read before you sign: 1 weak, 6 proofs graded by an AI.
 ```
 
-In the list, after the weak rules, each graded run has a line with its grader and the
+In the list, after the weak rules, each graded model run has a line with its grader and the
 grader's reason:
 
 ```
@@ -84,7 +84,7 @@ Show each as printed. A graded proof was judged by a model against one sentence,
 `graded`, never `passed`; it counts as passing and adds no stop. With one graded proof and no
 weak rule the line reads `To read before you sign: 1 proof graded by an AI.` The model is part
 of what the person signs: results on one model say nothing of another. The line on the AI
-outputs counts the folders, each holding what an AI produced in one run, that are committed
+outputs counts the folders, each holding what an AI produced in one model run, that are committed
 with the package; it ends as the line on the test reports does where this machine does not hold
 one, and it is left out where the package lists none.
 

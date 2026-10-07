@@ -86,7 +86,7 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 | `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
 | `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test`. An AI proof, one tagged `@ai`, is a slow proof, and one no run has tried on any model is counted here | `<n> slow proofs to run` | `purlin:test --all` | yes |
-| `to_test_model` | an AI proof a run has tried holds no counting result on a model its tag names: no entry for the model, a run that is `not run`, or fewer runs than are asked now; one line per model, a rule counted on each model it waits for | `<n> rules to test on <model>` | `purlin:test --all` | yes |
+| `to_test_model` | an AI proof a run has tried holds no counting result on a model its tag names: no entry for the model, a model run that is `not run`, or fewer model runs than are asked now; one line per model, a rule counted on each model it waits for | `<n> rules to test on <model>` | `purlin:test --all` | yes |
 | `to_test_remote` | the passed cell reads `not run` for a system this machine is not | `<n> rules to test on <systems>` | `run purlin:test on <systems>` | yes |
 | `to_commit` | a feature's results are written and not committed, once no other work stops the tests being met; the line counts features | `<n> features whose results are not committed` | `purlin:test --commit` | yes |
 | `to_strengthen` | the strong cell reads `weak` | `<n> rules to strengthen` | `purlin:build` | no |
@@ -165,7 +165,7 @@ project's own run for any other system whose results changed, then the commit of
 that come back.
 
 **An AI proof counts per model.** A proof tagged `@ai(<model>, ...)` is run several times on
-each model it names, and passes when every run on every model passed
+each model it names, and passes when every model run on every model passed
 (`references/formats/evidence_format.md`, "The models of an AI proof"). The tests are not `met`
 while a model it names has no counting result. A model that gave no answer reads `not run`,
 never `failed`.
@@ -216,7 +216,7 @@ entitled.
 **The evidence package** is one data file, `.purlin/evidence/package/<version>.json`
 (`references/formats/package_format.md`), which `purlin:sign` builds from the committed evidence:
 every rule's words, proofs, tests and results, what the test tool reported for each test, what
-the audit found, who ran the tests and where, for each AI proof the models and every run on
+the audit found, who ran the tests and where, for each AI proof the models and every model run on
 each, who wrote and last changed each rule, proof and
 test, with the co-authors git names on those commits, the hand checks, and a fingerprint of its
 own bytes. `purlin:sign --check <file>` checks a package against its fingerprint.
@@ -231,9 +231,9 @@ report taken on another machine, or removed since, is not there to commit: the p
 names it, the sign-off's overview says how many are kept, and no sign-off is refused for one.
 To keep every report of a release, sign on the machine that ran `purlin:test --clean --commit`.
 
-**What an AI produced** is kept the same way. Each run of an AI proof's test leaves a folder on
+**What an AI produced** is kept the same way. Each model run of an AI proof's test leaves a folder on
 the machine that ran it, and the evidence names it by a sha256 over its files. The package gives,
-for each AI proof, the models, the runs asked, each run's result and, where a model graded the
+for each AI proof, the models, the model runs asked, each one's result and, where a model graded the
 output, the grader, whether it accepted and its one reason. The first sign-off commits each
 folder this machine still keeps under `.purlin/evidence/package/<version>.outputs/ai-outputs/`,
 and `purlin:sign --check <file>` works each sha256 out again from the files. A folder that is
@@ -305,7 +305,7 @@ the graded proofs per grader, as `Graded by an AI: 6 proofs, by claude-haiku-4-5
 and ends on
 how many rules, proofs and tests were last changed in a commit that names a co-author, as a
 commit made with an AI's help usually does, and on how many test reports and AI outputs are kept
-with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it asks once whether to open a list, as `To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: `: the weak rules' findings, the settled proofs, then each graded proof's runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
+with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it asks once whether to open a list, as `To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: `: the weak rules' findings, the settled proofs, then each graded proof's model runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
 may type what they saw; an empty answer is recorded as `no note`. What the audit found never
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.

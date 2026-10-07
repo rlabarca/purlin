@@ -229,7 +229,7 @@ Its result counts like any other.
 
 The test of an AI proof, one tagged `@ai`, is left out the same way by every run,
 `purlin:test --all` included. A run that starts AI proofs starts each one's test alone, after
-the suites, once per run on each model the proof names, with the other tests of its file left
+the suites, once per model run on each model the proof names, with the other tests of its file left
 out by the same option. Where the command gives no way to leave a test out, the suite's own
 pass starts the AI proof's test too, with no model named: what it does there is no result of
 the proof, and the suite's exit code still counts for the run.

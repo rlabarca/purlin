@@ -8,7 +8,7 @@ planted bugs set the rule's verdict; the model's reading explains the tests and 
 verbatim, so every sentence here is written to be read by a person and by a model.
 
 For a proof about what an AI produced, one tagged `@ai`, the bug is a wrong output: a change to
-an output a run kept, with the proof's test run on it. "A wrong output" under "The planted bug"
+an output a model run kept, with the proof's test run on it. "A wrong output" under "The planted bug"
 says how.
 
 ## Which rules the audit reads
@@ -296,11 +296,11 @@ and how a finding that still holds is cleared.
 ### A wrong output
 
 A proof tagged `@ai` says what an AI produced, and its test reads an output. For such a proof
-the audit plants a wrong output in place of a bug: a change to an output a run kept. No model
+the audit plants a wrong output in place of a bug: a change to an output a model run kept. No model
 is asked for an output again, and nothing is changed in the prompt or the skill that produced
 it.
 
-**Which output.** The output of the first passing run, on the first model the proof's tag
+**Which output.** The output of the first passing model run, on the first model the proof's tag
 names, whose folder this machine still keeps. The model is shown the proof and its test, then,
 under `Input of PROOF-N:`, what the AI was given, each file under `input/` where the folder
 holds one, then, under `Output of PROOF-N:`, what it produced: `reply.md`, then each file under

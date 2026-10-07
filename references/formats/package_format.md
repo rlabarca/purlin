@@ -35,7 +35,7 @@ The sign-offs sit beside the package, one file per signer:
 
 So do the outputs kept for the version, which the first sign-off commits
 with the package: the test reports its results were read from, and for each
-run of an AI proof's test the folder holding what the AI produced:
+model run of an AI proof's test the folder holding what the AI produced:
 
 ```
 .purlin/evidence/package/<version>.outputs/reports/<sha256><extension>
@@ -218,7 +218,7 @@ it at the package's `commit`:
 |---|---|---|
 | `ai` | array of strings | the models the `@ai` tag names, in its order; `[]` for any other proof |
 | `graded` | string or null | the model the `@graded` tag names, which grades each output; null where no model grades |
-| `runs` | int or null | how many runs the proof asks of each model: its own `runs=`, else the `runs` setting, else 3; null for a proof that is not an AI proof |
+| `runs` | int or null | how many model runs the proof asks of each model: its own `runs=`, else the `runs` setting, else 3; null for a proof that is not an AI proof |
 | `models` | array | one entry per model of `ai`, in its order; `[]` for a proof that is not an AI proof |
 
 Each `models` entry:
@@ -226,9 +226,9 @@ Each `models` entry:
 | Field | Type | What it holds |
 |---|---|---|
 | `model` | string | the model |
-| `word` | string | `passed`, `failed` or `not run` on that model; `graded` in place of `passed` for a graded proof. `not run` where the evidence holds no entry for the model, a run that is `not run`, or fewer runs than `runs` |
+| `word` | string | `passed`, `failed` or `not run` on that model; `graded` in place of `passed` for a graded proof. `not run` where the evidence holds no entry for the model, a model run that is `not run`, or fewer model runs than `runs` |
 | `passed`, `of` | int, int | how many runs passed, of how many were asked when they were taken |
-| `runs` | array | one entry per run, in order: `result`, `pass`, `fail` or `not run`; `output`, the sha256 of the folder holding what the AI produced, which `outputs` lists; `made`, `helper` or `project`; `why`, on a `not run` run; and `grade`, `{model, accepted, reason}`, the grader, whether it accepted the output and its one reason, on a graded run. Each as `evidence_format.md` gives it, a key left out where the evidence holds none |
+| `runs` | array | one entry per model run, in order: `result`, `pass`, `fail` or `not run`; `output`, the sha256 of the folder holding what the AI produced, which `outputs` lists; `made`, `helper` or `project`; `why`, on a `not run` model run; and `grade`, `{model, accepted, reason}`, the grader, whether it accepted the output and its one reason, on a graded model run. Each as `evidence_format.md` gives it, a key left out where the evidence holds none |
 
 These are read from the one section that decides the proof's word. Every
 section's own runs, with what the test tool reported for each, are under
@@ -282,7 +282,7 @@ and a commit an AI helped with that carries no such line reads `[]`.
 
 An output is what a result was read from. There are two kinds. A `report` is
 a test suite's report as the suite wrote it, one file. An `ai-output` is the
-folder holding what an AI produced in one run of an AI proof's test:
+folder holding what an AI produced in one model run of an AI proof's test:
 `reply.md`, `transcript.jsonl`, `files/`, `input/`, which holds what the AI
 was given, and the record `purlin.json`. Each
 `outputs` entry:
@@ -293,12 +293,12 @@ was given, and the record `purlin.json`. Each
 | `file` | string | where the output is committed beside the package, `/` separated. A report: `.purlin/evidence/package/<version>.outputs/reports/<sha256><extension>`, the extension that of the report the run read, `.txt` for a report read from the command's standard output. An AI output: the folder `.purlin/evidence/package/<version>.outputs/ai-outputs/<sha256>` |
 | `sha256` | string | as the evidence records it. A report: the sha256 of the file's bytes. An AI output: the sha256 of the folder, taken over one line per file in it but `purlin.json`, `<sha256 of the file's bytes>  <path>` and a line feed, the paths sorted and `/` separated |
 | `from` | string | a report alone: the path the run read the report from, relative to the project root, or `-` |
-| `tests` | int | a report alone: how many test results in the package name this report, a run of an AI proof's test counted with its test |
-| `runs` | int | an AI output alone: how many runs in the package name this folder |
+| `tests` | int | a report alone: how many test results in the package name this report, a model run of an AI proof's test counted with its test |
+| `runs` | int | an AI output alone: how many model runs in the package name this folder |
 
 The list is read from the evidence alone: it names every report a result's
-`reported.report` names, a run's `reported` included, and every folder a
-run's `output` names, whether or not it is kept. So the same commit lists
+`reported.report` names, a model run's `reported` included, and every folder
+a model run's `output` names, whether or not it is kept. So the same commit lists
 the same outputs on every machine.
 
 **Which are kept.** The first sign-off of a version commits, in the same
