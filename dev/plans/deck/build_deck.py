@@ -270,7 +270,7 @@ slide('manual', 'Judgment calls', 'Pass or fail. What about judgment calls?', [
  'show the last note with the version it was signed at and how many commits have come since, so '
  'a reader can judge whether it still holds. The next walk shows that note at the rule\'s stop. Where an AI\'s opinion is enough, a proof about a prompt or a skill can be graded by an AI '
  'instead; it then reads graded, never passed.',
- lead='A test can check a result. Only a person can make a judgment call.', width=560, pad=16, numbers=False)
+ lead='A test can check a result.', width=560, pad=16, numbers=False)
 slide('anchors', 'Shared rules', 'Anchors: rules the whole project must follow', [
     ('They can be in this project', 'Write a rule once, such as no secret in the code. Tests across the whole project prove it, and no feature names it.'),
     ('They can be owned elsewhere', 'Security, GRC / GxP, Design, etc. keep their rules in their own repository. Each project brings in the ones it must follow.', [
