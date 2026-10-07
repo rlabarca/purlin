@@ -76,6 +76,17 @@ def sentences_with(rel, names):
     return [s for s in sentences if all(name in s for name in names)]
 
 
+def under_heading(text, heading):
+    """The part of a Markdown text under the heading `heading`, up to the
+    next heading of the same or a higher level; empty where there is none."""
+    found = re.search(r'^(#+) %s\n' % re.escape(heading), text, re.M)
+    if not found:
+        return ''
+    rest = text[found.end():]
+    end = re.search(r'^#{1,%d} ' % len(found.group(1)), rest, re.M)
+    return rest[:end.start()] if end else rest
+
+
 @contextlib.contextmanager
 def copy_without(rel, name):
     """While open, `rel` reads as a copy with every `name` taken out. The file

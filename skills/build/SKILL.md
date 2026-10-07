@@ -86,6 +86,31 @@ a stub returns what the stub was told to return is worse than no test: it report
 proved when nothing was proved. When a rule genuinely cannot be proved as written, do not
 weaken the test. Stop and fix the rule.
 
+## The test of an AI proof
+
+A proof tagged `@ai(...)` is an AI proof: it says what an AI does with a prompt or a skill.
+Its test is an ordinary marked test. It starts the helper, at the path the run sets in
+`PURLIN_AI`, and asserts on the folder the helper prints. `references/purlin_commands.md`,
+"The helper", is the one home of the helper's commands, and `references/rule_examples.md`,
+"AI proofs", has a worked test for each.
+
+- Write the test, and the sample it runs on, under the project's own tests folder: the input
+  file, and for a skill or a plugin the sample project.
+- Start `run` for a prompt, a skill or a plugin, or `record` where the project makes the
+  output its own way. One test makes one output.
+- Assert what the proof names on the output: the exact value, line or absence, in `reply.md`
+  or a file under `files/`.
+- A graded proof's test then starts `grade` and asserts it exits 0.
+- The test passes or skips when `PURLIN_AI` is not set: a suite that cannot leave one test out
+  starts it with the others, and a developer running the suite by hand gets a skip, not a
+  call to a model.
+- Name no model in the test. The proof's tag names it, and the run hands it to the helper.
+
+`purlin:test` leaves the test out, as it does any slow proof's. `purlin:test --all` starts it
+on each model the tag names, several times on each. Run `purlin:test --all` once the test is
+written, and say first that it reaches a real model and takes minutes. `skills/test/SKILL.md`, Step 4 says how each line of that run reads. A model that was not
+reached is no failure: change nothing for it.
+
 ## When a rule is wrong
 
 A rule that contradicts another, or that no test could settle as written, is a spec problem
@@ -202,6 +227,14 @@ survives, else `strong` where any of its proofs has a caught bug, else `spot-che
 can read `strong` through another proof.
 
 A rule that still reads `weak` has a finding left: start again at step 1 with it.
+
+An AI proof is strengthened the same way. Its planted bug is a wrong output, so the finding
+names a file of the output, as in `PROOF-4: the test still passes when reply.md:12 reads
+"Refund approved."`: write the assertion the proof names, then settle. The settle starts the
+AI proof's test on each model again, so say first that it reaches a real model and takes
+minutes. For a graded proof the finding says the grader accepted a wrong output. Where the
+proof names an exact value the test does not assert, assert it; otherwise stop for that proof
+as step 3 says.
 
 `skills/audit/SKILL.md`, Step 2 says how each line the settle prints reads.
 `references/review_criteria.md`, "Settling a finding", is the one home of what it does.
