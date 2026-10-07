@@ -2,26 +2,27 @@
   "audit": {
     "rules": {
       "RULE-10": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-11": {
-            "after": "    if path_match and source_path:",
+            "after": "    if path_match and source_path:\n        source_path = path_match.group(1).strip()",
             "aim": "plain",
-            "before": "    if path_match and not source_path:",
-            "bug_key": "90dcd4e987670ea4d9843fe8ccaaeac0a3b1249df3d18e2075537cb43c489d6c",
+            "before": "    if path_match and not source_path:\n        source_path = path_match.group(1).strip()",
+            "bug_key": "4db1d9ebd1584bc42732bc483f58c872e74e485e8973afd77265804e3838bc60",
             "case": "an anchor with `> Source: https://github.com/acme/p.git` alone and `> Path: specs/no_eval.md`; the proof says the path is specs/no_eval.md; the changed code gives no path (None)",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 402,
+            "line": 495,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-11: the test writes an anchor with the bare URL and the `> Path:` line and compares both the source `https://github.com/acme/p.git` and the path `specs/no_eval.md` to the literals the proof names, so a wrong source or a missing path fails it.",
-          "PROOF-11: the spot tests found nothing, and both values the proof names are compared exactly, which leaves no way past the test for a change to the proof's case."
+          "PROOF-11: the test writes an anchor with the bare URL on `> Source:` and `specs/no_eval.md` on `> Path:`, then compares both the source and the path it reads back with the exact values the proof names, so a wrong source or a wrong path fails it.",
+          "PROOF-11: the anchor is built by the helper `_anchor`, whose lines are not shown, so the reading takes it that the helper writes the two lines given and returns what the reader read.",
+          "Findings: the spot tests found nothing, and both of the proof's backticked values stand in the test as literals it compares."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -32,16 +33,16 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-12": {
-            "after": "        return parts[0], None",
+            "after": "        'pinned': pinned_match.group(1).strip()[:7] if pinned_match else None,",
             "aim": "plain",
-            "before": "        return parts[0], parts[1].strip()",
-            "bug_key": "c03370cb1a9d48a183f976aab72d524defcb1e0717217d4ca63cd6c67e639235",
-            "case": "the spec `specs/_anchors/policy.md` with `> Source: https://github.com/acme/p.git specs/no_eval.md`; the proof says the path `specs/no_eval.md`; the changed code gives no path (None)",
+            "before": "        'pinned': pinned_match.group(1).strip() if pinned_match else None,",
+            "bug_key": "f3dc0bb9a3f7d27492fef8103c8fd1496f6dffbfcdaaf3d6027d738cddc98535",
+            "case": "specs/_anchors/policy.md carrying `> Pinned: abc1234def`; the proof says the pin is abc1234def; the changed code gives abc1234",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 253,
+            "line": 533,
             "result": "caught",
             "why": ""
           },
@@ -49,10 +50,10 @@
             "after": "    is_anchor = ('/_anchor/' in rel_path",
             "aim": "plain",
             "before": "    is_anchor = ('/_anchors/' in rel_path",
-            "bug_key": "c0e3c9045f06ecefd02a69edac78b847dd7cc900fb9a12440a900a00e08fafe6",
-            "case": "the spec `specs/_anchors/ruleset.md` opening `# Feature: ruleset`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
+            "bug_key": "d48e64a4f27e25f4ce78cfafa6364f3e6fffa9880b7197a05b36cd3206a3e2cc",
+            "case": "specs/_anchors/ruleset.md opening `# Feature: ruleset`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 327,
+            "line": 410,
             "result": "caught",
             "why": ""
           },
@@ -60,23 +61,24 @@
             "after": "                 or content.lstrip().startswith('# Anchors:'))",
             "aim": "plain",
             "before": "                 or content.lstrip().startswith('# Anchor:'))",
-            "bug_key": "e5a577aa78fc0920494f8f104e864fd428344559dc37844eed5545530b01d249",
-            "case": "the spec `specs/schema/shared.md` opening `# Anchor: shared`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
+            "bug_key": "2433b04b28990a24425f9803f35eca717ed5e3a7d933d4cabcb5534554e6ca6c",
+            "case": "specs/schema/shared.md opening `# Anchor: shared`; the proof says it is read as an anchor; the changed code reads it as not an anchor",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 328,
+            "line": 411,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-12: the test builds the anchor through a helper not shown here and compares the spec path, the anchor flag, the source `https://github.com/acme/p.git`, the path `specs/no_eval.md` and the pin `abc1234def` with literals, so every value the proof names is checked.",
-          "PROOF-33: the test writes a spec opening `# Feature: ruleset` in the `_anchors` folder and checks that it is read as an anchor, which is the proof's case and its one result.",
-          "PROOF-34: the test writes a spec opening `# Anchor: shared` in the `schema` folder and checks that it is read as an anchor, which is the proof's case and its one result.",
-          "The spot tests found nothing, and none of the three tests shows one of the patterns they flag: each asserts against a literal, mocks nothing and swallows no error.",
-          "No proof of the rule names the opposite case, a spec outside `_anchors/` opening `# Feature:` that is read as not an anchor, so a reader that called every spec an anchor would pass all three tests."
+          "PROOF-12: the test builds the anchor through a helper defined elsewhere in its file and compares the spec path, the anchor flag, the source, the source path and the pin with the literals the proof names, so each value the proof names is checked.",
+          "PROOF-12: the opening line `# Anchor: policy` is written by the helper, which is not shown, so the test's own lines do not show that heading being in place.",
+          "PROOF-33: the test writes a spec opening `# Feature: ruleset` in the `_anchors` folder and checks that it is read as an anchor, which is the proof's case and its result.",
+          "PROOF-34: the test writes a spec opening `# Anchor: shared` in the `schema` folder and checks that it is read as an anchor, which is the proof's case and its result.",
+          "No proof of the rule names a spec outside `_anchors/` that opens `# Feature:`, so code that read every spec as an anchor would pass all three tests.",
+          "The spot tests found nothing, and each test holds failable comparisons against literals taken from its proof."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -87,66 +89,75 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-02T15:32:28Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-17": {
-            "after": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text)[:13].encode('utf-8')).hexdigest()",
+            "after": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text)[:20].encode('utf-8')).hexdigest()",
             "aim": "plain",
             "before": "    reflowing a long rule line does not end the signatures that bind it.\n    \"\"\"\n    return hashlib.sha256(_normalise(text).encode('utf-8')).hexdigest()",
-            "bug_key": "045a1afe20670d70c797e7dd3b16d07c41d0bb4134587011968ed9395cb065b4",
-            "case": "the rule `Tokens expire after 12 hours` against `Tokens expire after 24 hours`; the proof says a different rule text hash; the changed code gives the same hash for both",
+            "bug_key": "ce5853079ff2e48810600f83b018315314077629de675294544959baa792a4f4",
+            "case": "`Tokens expire after 12 hours` against `Tokens expire after 24 hours`; the proof says a different rule text hash; the changed code gives the same hash for both",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 172,
+            "line": 251,
             "result": "caught",
             "why": ""
           },
           "PROOF-19": {
-            "after": "    return ' '.join(re.split(r'(?:[ \\t]|\\r?\\n)+', (text or '').strip()))",
+            "after": "    return ' '.join(re.split(r'[ \\r\\n]+', (text or '').strip()))",
             "aim": "past the test",
             "before": "    return ' '.join((text or '').split())",
-            "bug_key": "d816f25c33552127e23aa8d4f0073b39d77513ee6bd779abdccdb7ac3ec4274e",
-            "case": "the rule `Tokens expire after 24 hours` broken after `expire` by a bare carriage return, the line break old Mac files use; the proof says the same rule text hash; the changed code gives a different hash",
+            "bug_key": "5b69ad0c1fbb9e4eac5212ff9d4ec02270c8a091b97ac5325d172d0447f7fe20",
+            "case": "the rule `Tokens expire after 24 hours` broken after `expire` with the next line indented by a tab; the proof says the same rule text hash; the changed code gives a different hash",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 163,
-            "result": "caught",
+            "line": 242,
+            "result": "survived",
+            "test_key": "32d3c203634d7d010fb9af9d2ff1dc0aa7b0530b2bb789fedd6da37285926724",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "0f8f5e12959ffcf448d38356dbf2135180c55e47",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
-        "explanation": [],
-        "findings": [],
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-19: the test hashes the rule unbroken and compares it with eight versions broken after `expire`, using a line feed, a carriage return or both, with spaces before the break or a two-space indent after it, so the proof's case and its result are checked.",
+          "PROOF-19: every indented version in the test is indented with spaces, so a break followed by a tab-indented line is never compared, and code that stopped folding tabs would still pass.",
+          "PROOF-17: the test hashes the two rule texts the proof names and asserts the hashes differ, so the proof's case and its result are checked directly.",
+          "Findings: the spot tests found nothing, and both tests compare real hash values with an assertion that can fail."
+        ],
+        "findings": [
+          "PROOF-19: the test still passes when scripts/mcp/purlin/specs.py:242 reads \"return ' '.join(re.split(r'[ \\r\\n]+', (text or '').strip()))\"",
+          "PROOF-19: the AI says this breaks: the rule `Tokens expire after 24 hours` broken after `expire` with the next line indented by a tab; the proof says the same rule text hash; the changed code gives a different hash"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "4dec231f95af38874aacf09f0a807f4e0863be4faa39ab14249bf9de7c0e9f8d",
         "rule_hash": "f0515efad160d6aab691b0b2f8221ae20f5ab2eabf4aeed1b9c738fa8d39663a",
         "test_hash": "677b371b53a8c9332c6047837615b6f2b7a1a57a04faab74190c6d5e7f19a534",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-20": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-39": {
             "after": "            with open(spec_path, 'r', encoding='utf-8', errors='replace') as handle:",
             "aim": "plain",
             "before": "            with open(spec_path, 'r', encoding='utf-8') as handle:",
-            "bug_key": "4647bc137ec96d3e3c560a265831b33cd2913431434e9609559d666e32baff27",
-            "case": "a project holding specs/auth/login.md and specs/auth/broken.md whose bytes are not valid UTF-8; the proof says it reads as the one spec login, with no broken; the changed code reads two specs, broken and login",
+            "bug_key": "b8f8c5f92728819624ebdc0057cb97af9a193d2c75e833d60b00b2ee1427862a",
+            "case": "specs/auth/login.md beside specs/auth/broken.md whose bytes are not valid UTF-8; the proof says it reads as the one spec login, with no broken; the changed code reads two specs, broken and login",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 318,
+            "line": 401,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-39: the test writes `specs/auth/broken.md` with bytes that are not valid UTF-8, scans the project and compares the sorted spec names with `['login']`, so it observes both the one spec `login` and the absence of `broken` that the proof names.",
-          "PROOF-39: `login.md` comes from the `project` fixture, which is not shown, so the reading takes it that the fixture holds that one spec and no other.",
-          "PROOF-39: the spot tests found nothing, and the test compares the whole list of names with a literal, so a scan that keeps `broken` or stops on it would fail the test.",
-          "PROOF-39: the rule speaks of a file that cannot be read or decoded, and the proof and its test cover only the file that cannot be decoded."
+          "PROOF-39: the test writes broken.md with bytes that are not valid UTF-8 beside the project's login spec, scans, and compares the sorted names with the exact list ['login'], so it observes both that login is read and that broken is absent, as the proof names.",
+          "PROOF-39: the test compares only the names of the specs read, so it does not observe what the scan holds for login; the proof names nothing beyond the names either.",
+          "PROOF-39: the rule also speaks of a spec file that cannot be read, and no proof of the rule names that case; the test covers only the file that cannot be decoded.",
+          "The spot tests found nothing, and the test's one assertion can fail: a scan that kept broken, lost login or raised would not pass it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -157,72 +168,71 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-24": {
-            "after": "            manual = manual",
+            "after": "            manual = manual and name == 'manual'",
             "aim": "plain",
             "before": "            manual = manual or name == 'manual'",
-            "bug_key": "0a3f7759f33d1fb0579d07ef0b792cca415dd29ecd469a6d8f46745947c677f0",
-            "case": "a proof line reading `Look at it @manual(a@b.c, 2026-03-31, abc1234)`; the proof says the proof is manual; the changed code reads it as not manual",
+            "bug_key": "ce2aa3861380a48e4769b02a192ffd20e23e14078bf209759e28fb864381ee4b",
+            "case": "a proof line ending `@manual(a@b.c, 2026-03-31, abc1234)`; the proof says the proof is manual; the changed code reads it as not manual",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 147,
+            "line": 218,
             "result": "caught",
             "why": ""
           },
           "PROOF-25": {
-            "after": "                unknown_tags.append('> %s' % field)",
+            "after": "                unknown_tags.append('>%s:' % field)",
             "aim": "plain",
             "before": "                unknown_tags.append('> %s:' % field)",
-            "bug_key": "a5bb81f08619ab9454626d69918794f101a83421efe967fbe147f7da447d2642",
-            "case": "a spec carrying `> Visual-Reference: ./mock.png` and the rule `It renders`; the proof says its unknown tags are exactly `> Visual-Reference:`; the changed code gives `> Visual-Reference`",
+            "bug_key": "b88568b3c0093dade338e9691fbf9e8ced72d6db33a6d9e5f69c628ec8166e7a",
+            "case": "a spec carrying `> Visual-Reference: ./mock.png`; the proof says its unknown tags are exactly `> Visual-Reference:`; the changed code gives `>Visual-Reference:`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 396,
+            "line": 489,
             "result": "caught",
             "why": ""
           },
           "PROOF-9": {
-            "after": "             else '%d spec files hold' % len(carriers))",
+            "after": "             else UNKNOWN_TAGS_MANY % (len(carriers), carriers[-1]))",
             "aim": "plain",
-            "before": "             else '%d spec files carry' % len(carriers))",
-            "bug_key": "8b0ac1d8fc8ea89fd3c9e811a6fe895623d323fbf6013865d0a33959a025218d",
-            "case": "two specs, one with a bare `@windows` and one with a stamped `@manual(...)`; the proof says the warning opens `2 spec files carry tags`; the changed code gives `2 spec files hold tags`",
+            "before": "             else UNKNOWN_TAGS_MANY % (len(carriers), carriers[0]))",
+            "bug_key": "ac7daf45ffca1c6915c19325767309c380fa40e3e54c1f2cbee0138813186951",
+            "case": "login.md with a bare `@windows` and mockup.md with a stamped `@manual(...)`; the proof says the warning names the first as specs/auth/login.md; the changed code names specs/auth/mockup.md",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 478,
+            "line": 569,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-24: the test reads the stamped proof line and compares the proof's text with `Look at it`, its manual flag with true and the unknown tags with exactly `@manual(...)`, which is every value the proof names.",
-          "PROOF-25: the test reads a spec carrying `> Visual-Reference: ./mock.png` and compares its rules with exactly `It renders` and its unknown tags with exactly `> Visual-Reference:`, as the proof names.",
-          "PROOF-9: the test writes the two specs and compares the status report's whole warning list with the one sentence the proof names, so any change to the count, the tags, the paths or the closing instruction fails it.",
-          "The spot tests found nothing, and each test does compare the literal values its proof marks.",
-          "No proof of the rule names the boundary the rule sets, a warning for more than five carrying files that names five and counts the rest, so that limit is proved in neither direction.",
-          "No proof of the rule covers `> Visual-Hash:`, or a bare `@windows` read on its own spec, so those are seen only through the warning of PROOF-9 or not at all."
+          "PROOF-24: the test reads the stamped line through a helper not shown and compares the proof's text with `Look at it`, its manual flag with true and the unknown tags with `['@manual(...)']`, which is each result the proof names.",
+          "PROOF-25: the test writes the spec with `> Visual-Reference: ./mock.png`, scans it and compares the rules with the one rule `It renders` and the unknown tags with `['> Visual-Reference:']`, as the proof names.",
+          "PROOF-9: the test writes the two specs and compares the whole list of warnings in the status payload with the one sentence the proof names, so a second warning or a changed word fails it.",
+          "RULE-22: the rule also names `> Visual-Hash:`, and no proof of the rule reads a spec carrying it, so a change to that field alone would pass all three tests.",
+          "Findings: the spot tests found nothing, and each test holds its proof's backticked values as literals."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "60efbe3dd56c884f1eb35d803309fbc1ec56560f4aa756ad4a49e59e3bc4a3fe",
-        "rule_hash": "4683dda3439fbc286fa121226ed3ed2f4ff24374d8b5973e37de7d081316a0ac",
-        "test_hash": "ff1bcf9c34c3ade51df18b1a128a6ca948557526391a2da21c221fd4b61c4342",
+        "proof_hash": "e8bae36589c19f4e6adbd46ca6fabd355f93117131b78234bed3e06134492928",
+        "rule_hash": "794acb695a396ea58849a1ac627233f60699b82e87d827566ce481363e4d59e3",
+        "test_hash": "4cf55a37dd48aacf77834563803784dc878c80b44af88bd15ed1263b0a9c4b85",
         "verdict": "strong"
       },
       "RULE-9": {
-        "at": "2026-10-02T09:32:59Z",
+        "at": "2026-10-07T18:26:12Z",
         "bugs": {
           "PROOF-10": {
-            "after": "        return parts[0], None",
+            "after": "        return value, None",
             "aim": "plain",
             "before": "        return parts[0], parts[1].strip()",
-            "bug_key": "fc647662909c54ff54ff4c40770dd5ea5815cc1e576e06b04bec2722cdbfdb79",
-            "case": "an anchor carrying `> Source: https://github.com/acme/p.git specs/no_eval.md`; the proof says source `https://github.com/acme/p.git` and path `specs/no_eval.md`; the changed code gives the source `https://github.com/acme/p.git` and no path",
+            "bug_key": "152268c9d118f4165b433318cc39d88f134e5c4cdbf526c1c73194ea10c6affa",
+            "case": "an anchor carrying `> Source: https://github.com/acme/p.git specs/no_eval.md`; the proof says source `https://github.com/acme/p.git` and path `specs/no_eval.md`; the changed code gives the whole line as the source and no path",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 253,
+            "line": 332,
             "result": "caught",
             "why": ""
           },
@@ -230,21 +240,21 @@
             "after": "    if len(parts) > 1:",
             "aim": "plain",
             "before": "    if len(parts) > 1 and _looks_like_git_url(parts[0]):",
-            "bug_key": "8a9ba8770e76553557092600179c5284bf6a9d7f56e63cc83e4ae57b77b0afe4",
-            "case": "an anchor carrying `> Source: --upload-pack=touch x specs/a.md`; the proof says the source `--upload-pack=touch x specs/a.md` whole and no path; the changed code gives the source `--upload-pack=touch` and the path `x specs/a.md`",
+            "bug_key": "98a226f850ea2ca1157e9cdb888f1daf34916f2eec5b7a54a8738448a6662baa",
+            "case": "an anchor carrying `> Source: --upload-pack=touch x specs/a.md`; the proof says source `--upload-pack=touch x specs/a.md` whole and no path; the changed code gives source `--upload-pack=touch` and path `x specs/a.md`",
             "file": "scripts/mcp/purlin/specs.py",
-            "line": 252,
+            "line": 331,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "1fd2321e67953cb9a6fb1f5a81de8154bbf39fc89c36f02efd7937c7711e813c",
-        "commit": "455ffd5bb58f73e08e5a016c2b0bdf75410e30a5",
-        "criteria": "b620bd5e495ffecd8647f03a0e2ffcd5bbc5af3da025a89c3bb7a9d3cdf49166",
+        "code_hash": "041af389facbff6d67a24c02f1a92f41fed15e0e8767c08f20ae0046779a7d5b",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
         "explanation": [
-          "PROOF-10: the test reads an anchor carrying the proof's `> Source:` line and compares both the source and the path with the proof's two literals, so a wrong source or a wrong or missing path fails it.",
-          "PROOF-31: the test reads an anchor carrying the proof's option-shaped line and compares the source with the whole value and the path with none, so a split on any space fails it.",
-          "Findings: the spot tests found nothing, and each test names its proof's values as literals rather than taking them from the code."
+          "PROOF-10: the test writes an anchor with the proof's exact `> Source:` line and compares both the source and the path with the proof's two literals, so a wrong value in either fails it.",
+          "PROOF-31: the test writes an anchor with the proof's option-shaped line and compares the source with the whole string and the path with None, so a split on the first space fails it.",
+          "No spot test fired, and both tests take their expected values from literals that match the proofs, not from the code."
         ],
         "findings": [],
         "model": "claude-opus-5-5",

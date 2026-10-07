@@ -1,4 +1,405 @@
 {
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "    ('to_repair', 'spec to mend'),",
+            "aim": "plain",
+            "before": "    ('to_repair', 'spec to repair'),",
+            "bug_key": "0d3db361dd250bad1151ec57252108459b4c3d0aa388ed31e031f87a999763a8",
+            "case": "a spec `login` that writes `RULE-2` twice; the proof says the status prints `login RULE-2: spec to repair. It is written twice, and the second is read. Run purlin:spec login.`; the changed code prints `login RULE-2: spec to mend. It is written twice, and the second is read. Run purlin:spec login.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 40,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-17": {
+            "after": "    ('model_not_reached', 'model unreached'),",
+            "aim": "plain",
+            "before": "    ('model_not_reached', 'model not reached'),",
+            "bug_key": "175f086e7f9eccff57415b18f26343824663f054a75a4dcf6cba2ec563278ef2",
+            "case": "a `model_not_reached` line about `claude-opus-5-5`; the proof says `claude-opus-5-5: model not reached. The login expired. Run purlin:test --all.`; the changed code gives `claude-opus-5-5: model unreached. The login expired. Run purlin:test --all.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 70,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-2": {
+            "after": "    ('not_written', 'spec before its code'),",
+            "aim": "plain",
+            "before": "    ('not_written', 'spec ahead of its code'),",
+            "bug_key": "821fdaaf28801ba930d6a2c17ec35a70a9e1f3a07e2e5a4d63db916ca7a2cd6c",
+            "case": "a spec `login` whose scope names `src/gone.py`; the proof says the line reads `login: spec ahead of its code. src/gone.py is not written yet. ...`; the changed code gives `login: spec before its code. src/gone.py is not written yet. ...`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 79,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-1: the test builds a spec with `> Requires: api` and a second `RULE-2`, reads the status line by line, and requires each of the proof's two whole lines to appear exactly once, so a change to either line's name, kind, wording or command fails it.",
+          "PROOF-2: the test points the scope at `src/gone.py` and compares the whole list of information with the proof's one line, so a changed line or an extra line fails it.",
+          "PROOF-17: the test builds the line from the kind, the model's name, the sentence and the command, and compares it with the proof's whole line, so any change to the shape or the kind's words fails it.",
+          "PROOF-17: the test builds the line directly and never goes through a test run or the status, so it does not show that a person sees this line when a model gives no answer.",
+          "PROOF-17: the proof names the internal key `model_not_reached` where it could name the situation a person would see.",
+          "Findings: none, and each test compares literal lines taken from its proof and not from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-1 holds two mistakes in one spec, a rule written twice and a `> Requires:` line that is not read, each with its own printed line."
+        ],
+        "proof_hash": "d114baf61ecdc2a188f5047080fe7883794849d3758e5ff890a0f52d240bb946",
+        "rule_hash": "62f6c13785479c55cb14c45fe2bb2febc9d7358cba29522c2f5cb7c974c04044",
+        "test_hash": "afcde83c3a5d5909f52304b9ef6c4580702cb6a028b2c9c237e414a62ab8fd75",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-3": {
+            "after": "WORDS = dict(KINDS, fetch_age='fetched')",
+            "aim": "past the test",
+            "before": "WORDS = dict(KINDS)",
+            "bug_key": "c6f73dd29f3a343cd2fc486486d67288db1cc73cd81a8d0666862d76ddb4662c",
+            "case": "the kind `fetch_age`, one of the other kinds; the proof says its words hold 2 to 5 words; the changed code prints the one word `fetched` for it in every line of that kind",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 83,
+            "result": "survived",
+            "test_key": "e9a54d32c964e31928dee9f77c2669b764eb7089e3105a1711aacd1ce21e50ee",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-3: the test compares the four `Left to do` kinds through `notices.WORDS`, against both the status's own list and the four literal phrases, so a wrong word in any of those four fails it.",
+          "PROOF-3: the test checks that no two kinds share words, and that every other kind has 2 to 5 words, on the pairs in `notices.KINDS` only.",
+          "PROOF-3: a printed line takes its words from `notices.WORDS`, which the test reads for the four shared kinds alone, so words that differ between `WORDS` and `KINDS` for any other kind still pass.",
+          "PROOF-3: the test builds no line and reads no printed output, so it observes the tables and not what a line of a kind prints."
+        ],
+        "findings": [
+          "PROOF-3: the test still passes when scripts/mcp/purlin/notices.py:83 reads \"WORDS = dict(KINDS, fetch_age='fetched')\"",
+          "PROOF-3: the AI says this breaks: the kind `fetch_age`, one of the other kinds; the proof says its words hold 2 to 5 words; the changed code prints the one word `fetched` for it in every line of that kind"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-3 holds more than one case: that no two kinds share words, the four phrases shared with `Left to do`, and the 2 to 5 word limit on every other kind."
+        ],
+        "proof_hash": "37ae1a32f4eda56ce52ba7d42b2259882ec9e301d4e2a824a1037092db6e44d1",
+        "rule_hash": "42306185d4b13a4b991b2669a309f743306628224d2192ad1bdc33cc88e505ad",
+        "test_hash": "32de3762e3356e976abfb04f4549fb4c7f9cc047a7b2bd833a12879707d1ac47",
+        "verdict": "weak"
+      },
+      "RULE-3": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "    return proof_id, None",
+            "aim": "plain",
+            "before": "    return '%s %s' % (name, proof_id), None",
+            "bug_key": "e9d4a1ac3f8c8b50d75b6d359125fb151e3439e017e8dc1ce131f1ce07dbaa20",
+            "case": "a test comment at tests/test_login.py:1 naming login PROOF-9, which the spec login does not have; the proof says the line opens `login PROOF-9: test comment to correct.`; the changed code opens it `PROOF-9: test comment to correct.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 159,
+            "result": "survived",
+            "test_key": "af7dd700fdee9e484a78d076c1a39808ec3ab1c9aacd9997fa6964ada52be892",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-4: the test writes a comment naming `login PROOF-9` at line 1 of tests/test_login.py, asks for the comments that name nothing, and compares the whole list with the one exact line the proof names, so a wrong name, kind, sentence or command, or a second line, fails it.",
+          "PROOF-4: the spot tests found nothing, and the test's expected line is a literal written in the test, not taken from the code.",
+          "PROOF-4: the file that builds the list of comments naming nothing was not among the files shown, so the planted change assumes that list takes the proof's name from the shared naming function in notices.py."
+        ],
+        "findings": [
+          "PROOF-4: the test still passes when scripts/mcp/purlin/notices.py:159 reads \"return proof_id, None\"",
+          "PROOF-4: the AI says this breaks: a test comment at tests/test_login.py:1 naming login PROOF-9, which the spec login does not have; the proof says the line opens `login PROOF-9: test comment to correct.`; the changed code opens it `PROOF-9: test comment to correct.`"
+        ],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "369c7d8ac0fb8aa836644f73276c5dca341f5d3423cbb6f443fb0c2d0aa5083f",
+        "rule_hash": "a7de380add59fdb7f6d75ab0f83174ad0a0bf8c55cb207f0ffe26707a69e1ad6",
+        "test_hash": "67551f3851e1c668fe6223239f56af7cc740a29cc2453f07aec2b454f7661778",
+        "verdict": "weak"
+      },
+      "RULE-4": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-5": {
+            "after": "    ('to_correct', 'test comment to fix'),",
+            "aim": "past the test",
+            "before": "    ('to_correct', 'test comment to correct'),",
+            "bug_key": "aa4acbb73a92ed78ae87912d0a4f50a016123599921f1b94092b902ef6f5805d",
+            "case": "login's PROOF-1 reworded from sixteen to seventeen; the proof says the line reads `login PROOF-1 (RULE-1): test comment to correct. \"sixteen\" became ...`; the changed code prints `login PROOF-1 (RULE-1): test comment to fix. \"sixteen\" became ...`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 38,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-6": {
+            "after": "    was = before[head:]",
+            "aim": "plain",
+            "before": "    was = before[head:len(before) - tail]",
+            "bug_key": "9d4cdaed9c3896ae107c2e202d1cfd6b701a4394fc7820dd459ab5958d5f7619",
+            "case": "login's PROOF-1 reworded from sixteen to seventeen; the proof says the line does not hold `keys the rule names`; the changed code prints `\"sixteen keys the rule names\" became \"seventeen\"`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 209,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-5: the test runs the command on a reworded project, checks the exit code and compares the whole of standard output with two lines, the first built by the helper `_reworded_line`, whose source is not shown.",
+          "PROOF-5: if that helper builds its line from the product's own words for the kind, a change to those words would still pass; if it holds the line as a literal, the comparison catches any change to the line.",
+          "PROOF-6: the test reads the one entry the product's function returns, not the command's printed line, and checks its text equals the helper's line and holds neither `The package holds`, nor `keys the rule names`, nor a line break.",
+          "PROOF-6: the three absence checks are made on literals written in the test, so a line that prints more of either wording fails whatever the helper returns.",
+          "No spot test fired, and the tests give none of them cause to: each asserts on literals or on values the proofs name."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-5 is longer than 60 words."
+        ],
+        "proof_hash": "9e50b182afa1df2af092176540cfc2b84b72c0ea6a7c71431c4a8affa4383f87",
+        "rule_hash": "ef3c2051c49ca4ce912ad28ee84b2e87ef6c3ab51144172f22186797843acd6b",
+        "test_hash": "8bc13636db0204e6f88fc1df69ba6d29bd5881bd1edd6603b394466a85f00ef4",
+        "verdict": "strong"
+      },
+      "RULE-5": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-10": {
+            "after": "    if len(was) > WORDS_SHOWN + 1 and len(now) > WORDS_SHOWN + 1:",
+            "aim": "plain",
+            "before": "    if len(was) > WORDS_SHOWN and len(now) > WORDS_SHOWN:",
+            "bug_key": "9820a69b24d12a0473d7b35752add875651d50e41752b069be52e6114d9fa8b7",
+            "case": "9 middle words all change to 9 others between a first and a last word that stay; the proof says `was reworded`; the changed code gives `\"old0 old1 old2 old3 old4 old5 old6 old7 ...\" became \"new0 new1 new2 new3 new4 new5 new6 new7 ...\"`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 211,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-7": {
+            "after": "        head = max(0, head - 2)",
+            "aim": "plain",
+            "before": "        head = max(0, head - 1)",
+            "bug_key": "0145034c2db331199faac5054135b6532e6bd5dd5f1630407a56fd4e8f4f76c6",
+            "case": "`A sample taken 90 minutes ago reads 90` gains ` minutes` at its end; the proof says `\"90\" became \"90 minutes\"`; the changed code gives `\"reads 90\" became \"reads 90 minutes\"`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 207,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-8": {
+            "after": "        tail = max(0, tail)",
+            "aim": "plain",
+            "before": "        tail = max(0, tail - 1)",
+            "bug_key": "47c1e2b4d1ff379baa454bbedf8dbb6f26ca4ae2bf7a60fcacc11c980a5ffb63",
+            "case": "`The export holds a header line and then one line per row` loses `header`; the proof says `\"a header line\" became \"a line\"`; the changed code gives `\"a header\" became \"a\"`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 208,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-9": {
+            "after": "    return ' '.join(words[:limit]) + CUT",
+            "aim": "plain",
+            "before": "    return ' '.join(words[:limit]) + ' ' + CUT",
+            "bug_key": "58a11c3382649c809cf131b65688f7f7394de26f058de32835efeeea1f9dda29",
+            "case": "the eleven words `one two ... ten words` replaced by `nothing`; the proof says `\"one two three four five six seven eight ...\" became \"nothing\"`; the changed code gives `\"one two three four five six seven eight...\" became \"nothing\"`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 167,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-7: the test gives the proof's two wordings to changed_words and compares the whole answer with the literal `\"90\" became \"90 minutes\"`, so a wrong word on either side fails it.",
+          "PROOF-8: the test gives the proof's two wordings and compares the whole answer with the literal `\"a header line\" became \"a line\"`, so it observes the word on each side of the one taken out.",
+          "PROOF-9: the test gives the proof's two wordings and compares the whole answer with the proof's literal, so it observes the cut at eight words and the ` ...` after it.",
+          "PROOF-10: the test compares the answer with `was reworded` for `A` against `B` and for 9 changed words between `Start` and `end`, which are the two cases the proof names.",
+          "No test of the rule observes a side of exactly 8 words, or a change with more than 8 words on one side only, so the boundary of the limit is read from one side alone.",
+          "The spot tests found nothing, and each test compares a literal expected value taken from its proof."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-10 holds two cases: `A` reworded to `B`, and 9 middle words changed between a first and a last word that stay."
+        ],
+        "proof_hash": "9908fc42a7a3544660402080eee8009235a25e8ca1f24ad124ec1cc59c59adcb",
+        "rule_hash": "8729c9e03c28968db3320f994dca9f70c993e5cd688b02723ce45c6c1ee4f47e",
+        "test_hash": "126c5944002f3d5d7dccaf83494aaa3c3f30ee0f19b2023e9fedb64219353c78",
+        "verdict": "strong"
+      },
+      "RULE-6": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-11": {
+            "after": "                    'rule': getattr(item, 'proof', None),",
+            "aim": "plain",
+            "before": "                    'rule': getattr(item, 'rule', None),",
+            "bug_key": "e857d6a090a5f8cbd6c8d738f59e9036278e775ceb686a2ab53c04e5f5e1d755",
+            "case": "the reworded-comment project of PROOF-5; the proof says the entry's `rule` is `RULE-1`; the changed code gives `PROOF-1`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 241,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-12": {
+            "after": "        text = str(item)\n        rest = None\n        if kind:",
+            "aim": "plain",
+            "before": "        text = str(item)\n        rest = text\n        if kind:",
+            "bug_key": "d890797ffd76ca55a7ecd26bfce795f35dbb3d58abf9d8e3655d1a9d33cc3e6a",
+            "case": "a line that carries no kind; the proof says its `rest` is the line; the changed code gives a `rest` of None",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 235,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-11: the test builds the reworded project, reads the payload and compares `notices` with a one-entry list of literals for every part the proof names, so a wrong tone, kind, label, about, feature, rule or rest fails it.",
+          "PROOF-11: the expected `text` comes from the helper `_reworded_line`, which is not shown, so whether the line whole is compared against a value the code cannot influence cannot be read from the test's own lines.",
+          "PROOF-12: the test hands one plain line to the entries and compares the whole answer with literals, so `text` and `rest` as the line and the five null parts are each checked.",
+          "No spot test fired, and nothing in either test's own lines contradicts that."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "9f09bc169e6932246bb5110de8b8d61b4dec0daf43aab0cee651d432a62f22ae",
+        "rule_hash": "18f7a4f049c2717bc42299d30e6845ff9039f70d573531f0a77681397d629d9f",
+        "test_hash": "cfcdbe5f5400ec92d4dc61854d5189a4b2efb1fa96a91dcfc7c33fefa8b25724",
+        "verdict": "strong"
+      },
+      "RULE-7": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-13": {
+            "after": "                                 len(names) - 1)",
+            "aim": "plain",
+            "before": "                                 len(names) - 2)",
+            "bug_key": "e6811e4da1ec509d67a0f650e0c09b4e62996b655f1c00cf973b78fc58890240",
+            "case": "alpha, beta, delta and gamma each carry `> Requires: api`; the proof says `line not read: 4 specs, alpha, beta and 2 more. Run purlin:status for each.` once; the changed code gives `line not read: 4 specs, alpha, beta and 3 more. Run purlin:status for each.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 295,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-14": {
+            "after": "        if group is None or group['lines'] < 2:",
+            "aim": "plain",
+            "before": "        if group is None or group['lines'] < 3:",
+            "bug_key": "d86bed190bd15d81777dc66297dfb5df82bed2b0a0c64b1fd085121fa855c9aa",
+            "case": "only alpha and beta carry the line; the proof says the two whole lines, alpha's then beta's; the changed code gives the one line `line not read: 2 specs, alpha and beta. Run purlin:status for each.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 281,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-15": {
+            "after": "            text = GROUP_ONE % (label, names[0], len(names), names[0])",
+            "aim": "plain",
+            "before": "            text = GROUP_ONE % (label, names[0], group['lines'], names[0])",
+            "bug_key": "da8c129483cde54477203d63d5573efe38738d198dfa6a2e9da4fb319af2c042",
+            "case": "three `rule to fix` lines naming a RULE-1, a RULE-2 and a RULE-3; the proof says `rule to fix: a, in 3 places. Run purlin:status a.`; the changed code gives `rule to fix: a, in 1 places. Run purlin:status a.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 290,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-18": {
+            "after": "    return line('model_not_reached', model, why, run('purlin:test --all'),\n                feature=model)",
+            "aim": "plain",
+            "before": "    return line('model_not_reached', model, why, run('purlin:test --all'))",
+            "bug_key": "60f13c5c1b5853a120aa945c1d5c03cc664e36da0ddf0a8a8eb5839ba10b77eb",
+            "case": "three model-not-reached lines for model-a, model-b and model-c; the proof says they name no spec and stand as three whole lines; the changed code names each model as a spec and folds them to `model not reached: 3 specs, model-a, model-b and 1 more. Run purlin:status for each.`",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 148,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-13: the test counts the folded line as a literal, checks that no line holds `: line not read.`, and compares the first line for `alpha` with what a helper not shown gives, so the whole line's wording is checked only as far as that helper holds it.",
+          "PROOF-14: the test compares the lines holding `line not read` with the two lines the same helper gives, in order, so a folded line or a changed order fails it, and the whole lines' wording again rests on the helper.",
+          "PROOF-15: the test compares the fold's whole answer with three literal lines, so the place of the folded line, its count and the line of no kind are each checked.",
+          "PROOF-18: the test takes its expected first line from the code, and then compares the folded lines with three literals and the dashboard's texts with the fold, so the wording, the missing spec and both folds are checked."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-13 holds two cases, the status of the four specs and the status of `alpha` alone.",
+          "PROOF-18 is longer than 60 words and names functions where it could name what a reader of the status sees."
+        ],
+        "proof_hash": "844f46f602a8e54af5f67f87d9cfdc331f09f474102cb6e34ffcfad04925db72",
+        "rule_hash": "c5e8309328d6ae611e965ba78cf5893728cba48ac6dbd1aa5c3d06fc09904fa3",
+        "test_hash": "a1b779a8b16394d01ca3b770e361f6f89d618ba1e5b64775d3dad1f5fd7d5f3e",
+        "verdict": "strong"
+      },
+      "RULE-8": {
+        "at": "2026-10-07T18:26:12Z",
+        "bugs": {
+          "PROOF-16": {
+            "after": "        return text[:limit - len(CUT)].rstrip() + CUT",
+            "aim": "plain",
+            "before": "        return text[:limit].rstrip() + CUT",
+            "bug_key": "8f8c19de2ea2eb2b602bee97b511c150a9195377f2554cde19eed4acdfbb55a3",
+            "case": "`fatal: ` followed by 100 `x` and then `. More.`; the proof says its first 80 characters and `...`, 83 characters in all; the changed code gives its first 77 characters and `...`, 80 in all",
+            "file": "scripts/mcp/purlin/notices.py",
+            "line": 180,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "4c6ca92ab7c01513973dac5c29c8d25ce643e0aff1360fe1ce549a44cba071c7",
+        "commit": "2922e742276cb51897ee525023e9fb7f0fe66368",
+        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "explanation": [
+          "PROOF-16: the test calls first_sentence on the short git message and compares the whole result with the literal `fatal: repository not found`, which is the value the proof names.",
+          "PROOF-16: the test builds `fatal: ` plus 100 `x` plus `. More.` and compares the whole result with `fatal: ` plus 73 `x` plus `...`, which is the first 80 characters and `...` as the proof names.",
+          "PROOF-16: the length of 83 is checked on the long message without `. More.`, not on the proof's own input, though the exact comparison before it already fixes that length for the proof's input.",
+          "PROOF-16: the spot tests found nothing, and the test compares both of the proof's inputs with literal expected values that do not come from the code."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "notes": [
+          "PROOF-16 holds two cases, the short message quoted whole to its first sentence and the long message cut at 80 characters."
+        ],
+        "proof_hash": "0f2353ab8423582c456923f8fa529d71b28046112e03597537a530925fbe08ce",
+        "rule_hash": "0addf8fe0e49eddeea7eec3f0ac3f16804320aa5fb658b70a880cb6a3f73774f",
+        "test_hash": "ba865dd49611448a7d5f5333cafc94474e1ce2083144f0550bc56fb260826053",
+        "verdict": "strong"
+      }
+    }
+  },
   "feature": "notices",
   "platforms": {
     "macos": {
