@@ -107,6 +107,7 @@ def test_a_session_runs_the_audit_and_names_the_build_for_a_weak_rule(
     assert EVIDENCE in sample_lab.files_of(output)
     rules = sample_lab.entries(os.path.join(output, 'files'))
     assert rules['RULE-7']['verdict'] == 'weak'
-    # The command names the feature whole: `sample_intake_v2` is another.
-    assert re.search(r'purlin:build sample_intake(?![\w-])',
-                     sample_lab.reply_of(output))
+    # The command names the feature whole, and ends there: `sample_intake_v2`
+    # and `sample_intake.v2` are other features.
+    assert re.search(r'purlin:build sample_intake(?=`|\s|$|[.,;:)](?:\s|$))',
+                     sample_lab.reply_of(output), re.M)
