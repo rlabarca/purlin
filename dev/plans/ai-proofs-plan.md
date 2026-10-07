@@ -14,6 +14,22 @@ Today a spec can cover a Markdown file, and a test can read it. That proves what
 says. Nothing helps a project prove what a skill or a prompt makes an AI do, record which
 model it was shown on, or keep what the AI produced.
 
+## 0a. The owner's answers of 2026-10-07, at the start of the build
+
+These win over every line below that says otherwise. Section 5a holds the contracts as
+built from them.
+
+- **No model in the settings file.** "I don't want the model in the settings file at all.
+  Each proof needs to specify it." There is no `models` setting, and no run stops to ask
+  for one. The settings gain `runs` alone.
+- **`@ai(<model>, ...)` names the models**, one or several: `@ai(claude-opus-5-5,
+  claude-sonnet-5-5)`. One result per model under the proof, and the proof passes when it
+  passes on every model it names.
+- **A graded proof carries two tags side by side**: `@ai(<model>) @graded(<grader>)`. `@ai`
+  names the model tested, `@graded` the grader. `runs=<n>` goes in `@ai` alone.
+- **Purlin's own three proofs** are shown on `claude-opus-5-5`, graded by
+  `claude-haiku-4-5-20251001`.
+
 ## 1. The design: one helper, two tags, one setting
 
 A proof about an AI's behaviour is a proof like any other. Its check is an ordinary test, in
@@ -289,6 +305,146 @@ then `docs`, which describes what was built; then 3.11 by the coordinator.
 
 No test of Purlin's own sweep reaches a real model: the helper's tests use a fake. The three
 proofs of 3.11 are slow and reach a real model, as the install test does.
+
+## 5a. The contracts, fixed before any lane starts
+
+A lane builds to these word for word. A lane that finds one cannot be built as written
+builds the rest, leaves that thing and reports it.
+
+### The tags, as `specs.py` reads them
+
+```
+- PROOF-4 (RULE-2): With the sample report, the reply names the three findings by their ids @ai(claude-opus-5-5)
+- PROOF-5 (RULE-3): The summary states no fact the sample report does not hold @ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)
+- PROOF-6 (RULE-4): Asked for a refund over the limit, the reply refuses and names the limit @ai(claude-opus-5-5, claude-sonnet-5-5, runs=10)
+```
+
+Each proof of `scan_specs` gains three keys beside `manual`, `env` and `slow`:
+
+| Key | Value |
+|---|---|
+| `ai` | the models `@ai(...)` names, in order, as a list; `[]` for any other proof |
+| `graded` | the model `@graded(...)` names, or None |
+| `runs` | the `runs=<n>` of `@ai(...)`, an integer, or None |
+
+A proof whose `ai` is not empty is an **AI proof**, and reads `slow: True` with or without
+`@slow`. The mistakes, each in the one shape of a warning:
+
+| Mistake | Kind | Read as |
+|---|---|---|
+| `@ai` naming no model | `spec to repair` | |
+| `@graded` naming no model, or with no `@ai` beside it | `spec to repair` | |
+| `@ai` or `@graded` beside `@manual` | `tags that conflict` | `@manual` |
+| `runs=` that is not a whole number from 1 up | `tag not read` | no `runs=` |
+
+### The setting
+
+`.purlin/config.json` holds `version`, `tests` and `runs`: how many times an AI proof's test
+runs on each model, 3 (`outputs.RUNS`) where it is not set. A proof's own `runs=` wins. A
+change to `runs` ends no result; a model's result counts where it holds at least the runs
+now asked, and reads `not run` with fewer.
+
+### The helper and the run
+
+`scripts/mcp/purlin/outputs.py` holds the names both use: `AI_HELPER`, `AI_MODEL`, `AI_OUT`,
+`AI_REPLAY`, `AI_DIR`, `RECORD`, `REPLY`, `TRANSCRIPT`, `FILES`, `MADE_BY_HELPER`,
+`MADE_BY_PROJECT`, `RUNS`, `ai_run_dir`, `folder_sha256`, `read_record`, `write_record`.
+
+```
+purlin_ai.py run --skill <folder> | --plugin <folder> | --instructions <file>...
+                 [--project <sample folder>] --input <file> | --say "<text>"
+purlin_ai.py record --from <folder> [--model <name>]
+purlin_ai.py grade --feature <name> --proof PROOF-N
+```
+
+- **What the run sets** for each start of an AI proof's test: `PURLIN_AI`, the absolute
+  path of `purlin_ai.py`, which the test reads to start it; `PURLIN_AI_MODEL`, one model of
+  the proof's tag; `PURLIN_AI_OUT`, the absolute path of
+  `.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/`, emptied first. The audit also sets
+  `PURLIN_AI_REPLAY`.
+- **`run` and `record`** write the output into `PURLIN_AI_OUT`, print that folder's path
+  alone on standard output and exit 0. One test makes one output: a second `run` or
+  `record` into a folder that holds one exits 1 and says so on standard error.
+- **The folder** holds `reply.md`, `transcript.jsonl`, `files/` and `purlin.json`. `record
+  --from <folder>` copies that folder's `reply.md`, `transcript.jsonl` and `files/` in;
+  only `reply.md` is required.
+- **`purlin.json`**, the helper's record: `{"made": "helper" | "project", "model": "<the
+  model asked>", "reached": true | false, "why": "<one sentence>" | null}`, and after
+  `grade`, `"grade": {"model": "<grader>", "accepted": true | false | null, "reason":
+  "<one sentence>"}`, `accepted` null where the grader gave no answer.
+- **A model that gives no answer**: `run` writes `purlin.json` with `reached` false and
+  `why`, writes nothing else, says why on standard error and exits 2. `grade` does the
+  same under `grade` with `accepted` null, and exits 2.
+- **`grade`** reads the proof's sentence and the grader from the spec, and the output from
+  `PURLIN_AI_REPLAY` where set, else `PURLIN_AI_OUT`. It prints `accept: <one reason>` and
+  exits 0, or `reject: <one reason>` and exits 1.
+- **Under `PURLIN_AI_REPLAY`**, `run` and `record` ask no model and write nothing: they
+  print the replay folder's path and exit 0.
+- **By hand**, with no `PURLIN_AI_OUT`: the folder is `.purlin/runtime/ai/by-hand/`,
+  emptied first. With no `PURLIN_AI_MODEL`, `run` exits 2 and says to set it.
+- **The fingerprint of an output** is `outputs.folder_sha256`: every file of the folder but
+  `purlin.json`.
+- **One proof's tests, started alone**: `purlin_run.proof_result(project_root, feature,
+  proof_id, tests, timeout=None, environment=None)` answers `pass`, `fail`, `error` or `not
+  run`. It is `planted_bug._run_tests` moved, with the variables to add; `planted_bug.py`
+  calls it. The `run` lane makes that one edit under `scripts/review/`.
+- **What a run reads back** after each start: the folder's `purlin.json`. `reached` false,
+  or a `grade` whose `accepted` is null, makes that run `not run` whatever the test did, and
+  the run stops asking that model for the rest of the run. Otherwise the test's own result
+  is the run's.
+
+### The evidence
+
+Each proof entry of a section, for an AI proof alone, gains `models`, one entry per model
+of the tag, in its order:
+
+```json
+"models": [{"model": "claude-opus-5-5", "passed": 3, "of": 3, "graded": false,
+            "runs": [{"result": "pass", "output": "<sha256>", "made": "helper"}]}]
+```
+
+- A run's `result` is `pass`, `fail` or `not run`. A `not run` run holds `why` and no
+  `output`. A run may hold `reported`, as an entry does. A graded run holds `grade`:
+  `{"model", "accepted", "reason"}`.
+- A model reads `failed` where any run failed; else `not run` where any run is `not run`
+  or it holds fewer runs than asked; else `passed`.
+- The entry's own `result` is `fail` where any model failed, else `not run` where any model
+  reads `not run`, else `pass`. The section's word for the rule is as for any proof.
+- The cell word `graded` is worked out where a rule passes and one of its proofs is
+  graded; the evidence's word for the rule stays `passed`.
+
+### The lines a person reads
+
+Section 3.5 holds, with these changes: a proof under `purlin:status <name>` prints one line
+per model; there is no line about a missing `models` setting. `Left to do` counts an AI
+proof no run has tried under `slow proofs to run`, and a rule whose AI proof was tried and
+has no result on one model under `<n> rules to test on <model>: purlin:test --all`. The
+warning's kind is `model not reached`, key `model_not_reached`.
+
+### The audit
+
+- A wrong output is asked for in the reply shape a bug has (`aim:`, `case:`, `file:`,
+  `before:`, `after:`), `file:` being a path inside the output folder.
+- It is planted in a copy of the first kept passing output this machine holds for the first
+  model of the tag. The proof's test runs through `purlin_run.proof_result` with
+  `PURLIN_AI_REPLAY` naming the copy, once on the output as kept, where it must pass, and
+  once with the change.
+- The kept `bugs` entry is as for any bug, and gains `output`, the sha256 of the kept folder
+  it was planted in. Its finding reads `PROOF-4: the test still passes when reply.md:12
+  reads "..."`.
+- With no kept output on this machine the rule reads `spot-checked`, with the reason.
+
+### The package
+
+The output folders of the runs the package counts are committed under
+`.purlin/evidence/package/<version>.outputs/ai-outputs/<sha256>/`, the kind
+`outputs.AI_OUTPUT`, `purlin.json` included, and the package's `outputs` lists each with its
+`sha256`. `purlin:sign --check` works the sha256 out again from the files.
+
+### Who owns what, by stage
+
+`payload.py` and `report_data.py` are the `run` lane's in stage 1, and the `dashboard`
+lane's in stage 2, where it adds fields and changes none stage 1 made.
 
 ## 6. Then, on `main`
 

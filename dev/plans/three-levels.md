@@ -1855,6 +1855,11 @@ is spec, build, test, audit, sign, tag; whatever is not core to it was up for qu
     - **The output is kept for a signed version**, committed with the package.
     - **`purlin:spec-from-code` drafts behaviour rules and sample cases** for a prompt or a
       skill.
+    - *Amended 2026-10-07, at the start of the build:* no model is named in the settings. In
+      the owner's words: "I don't want the model in the settings file at all. Each proof
+      needs to specify it." `@ai(<model>, ...)` names one or several models, with one result
+      per model; a graded proof reads `@ai(<model>) @graded(<grader>)`. The settings gain
+      `runs` alone. Purlin's own three proofs are shown on `claude-opus-5-5`.
 44. **A clean release.** 0.10.0 carries nothing that represents earlier functionality: no
     code, spec, test, fixture, committed evidence, workflow, plan or table of retired words.
     `RELEASE_NOTES.md` is the one place history is kept, and what an upgrade from 0.9.5

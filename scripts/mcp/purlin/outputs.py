@@ -18,6 +18,20 @@ A file is found by its sha256 alone, and its bytes are hashed again before
 they are copied or counted, so a file changed after it was kept is not kept
 as the one the evidence names.
 
+A second kind of output is what an AI produced for one run of an AI proof's
+test, a folder:
+
+    .purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>/
+        reply.md           the last thing the AI said
+        transcript.jsonl   what the session did, one JSON object per line
+        files/             every file it wrote or changed in the sample
+        purlin.json        the helper's own record of the run (`RECORD`)
+
+The evidence names the folder by `folder_sha256`, which every file in it
+but `purlin.json` goes into. `scripts/ai/purlin_ai.py` writes the folder
+and the record; the run names the folder through `AI_OUT` and reads the
+record back.
+
 `references/formats/evidence_format.md` and `package_format.md` hold the
 fields that name an output.
 """
@@ -33,7 +47,7 @@ from . import signatures as signatures_module
 # Where a run keeps the outputs its results were read from.
 KEPT_DIR = '.purlin/runtime/kept'
 
-# The one kind of output there is: a test suite's report.
+# A test suite's report, the kind of output that is one file.
 REPORT = 'report'
 
 # The file that keeps git from rewriting a line end in a kept output, and
@@ -44,6 +58,37 @@ ATTRIBUTES_TEXT = '* -text\n'
 # What a kept copy of a command's standard output is named with beside the
 # package.
 STDOUT_EXTENSION = '.txt'
+
+# What an AI produced, kept per run of an AI proof's test on one model.
+AI_DIR = '.purlin/runtime/ai'
+AI_OUTPUT = 'ai-output'
+REPLY = 'reply.md'
+TRANSCRIPT = 'transcript.jsonl'
+FILES = 'files'
+
+# The helper's own record of one run, beside the output and left out of its
+# sha256. `made` is `helper` where `purlin_ai.py run` made the output and
+# `project` where the project's own test handed it over with `record`;
+# `model` is the model asked; `reached` is false where the model gave no
+# answer, `why` then saying so in one sentence. `grade`, written by
+# `purlin_ai.py grade`, holds the grader's `model`, `accepted` (true, false,
+# or None where the grader gave no answer) and its one `reason`.
+RECORD = 'purlin.json'
+MADE_BY_HELPER = 'helper'
+MADE_BY_PROJECT = 'project'
+
+# What the run sets for an AI proof's test. A test reads `AI_HELPER`, the
+# path of `scripts/ai/purlin_ai.py`, to start it; the helper reads the other
+# three: the model to ask, the folder to write, and a folder holding an
+# earlier output to hand back in place of asking any model.
+AI_HELPER = 'PURLIN_AI'
+AI_MODEL = 'PURLIN_AI_MODEL'
+AI_OUT = 'PURLIN_AI_OUT'
+AI_REPLAY = 'PURLIN_AI_REPLAY'
+
+# How many times an AI proof's test runs on each model where neither the
+# settings' `runs` nor the proof's own `runs=` says.
+RUNS = 3
 
 _SHA = re.compile(r'[0-9a-f]{64}')
 _SHA_NAME = re.compile(r'^([0-9a-f]{64})(\.[A-Za-z0-9]+)?$')
@@ -142,6 +187,79 @@ def prune(project_root, keep_too=()):
             continue
         removed.append(name)
     return removed
+
+
+# ---------------------------------------------------------------------------
+# What an AI produced
+# ---------------------------------------------------------------------------
+
+def model_slug(model):
+    """A model's name as a folder is named: every character but a letter, a
+    digit, `.`, `_` and `-` reads `_`."""
+    return re.sub(r'[^A-Za-z0-9._-]', '_', str(model or '')) or '_'
+
+
+def ai_run_dir(feature, proof_id, model, run, test=1):
+    """Where one run of an AI proof's test writes, `/` separated:
+    `.purlin/runtime/ai/<feature>/<PROOF-N>/<model>/<n>`, `n` from 1. A
+    proof's second and later tests, in the order the evidence lists them,
+    write to `<n>.<t>`, `t` from 2."""
+    last = '%d' % run if test <= 1 else '%d.%d' % (run, test)
+    return '%s/%s/%s/%s/%s' % (AI_DIR, feature, proof_id, model_slug(model),
+                               last)
+
+
+def folder_files(folder):
+    """The `/` separated paths, sorted, of every file under `folder` but
+    the helper's record."""
+    found = []
+    for dirpath, dirnames, filenames in os.walk(folder):
+        dirnames.sort()
+        for name in filenames:
+            rel = os.path.relpath(os.path.join(dirpath, name),
+                                  folder).replace(os.sep, '/')
+            if rel != RECORD:
+                found.append(rel)
+    return sorted(found)
+
+
+def folder_sha256(folder):
+    """The sha256 an output folder is named by, or None where it holds no
+    file but the record.
+
+    One line per file, sorted by path, `<sha256 of its bytes>  <path>` and a
+    line feed, as `sha256sum` prints them; the sha256 of those lines.
+    """
+    lines = []
+    for rel in folder_files(folder):
+        data = _read(os.path.join(folder, *rel.split('/')))
+        if data is None:
+            continue
+        lines.append('%s  %s\n' % (sha256_of(data), rel))
+    if not lines:
+        return None
+    return sha256_of(''.join(lines).encode('utf-8'))
+
+
+def read_record(folder):
+    """The helper's record of the run that wrote `folder`, `{}` where it
+    left none that can be read."""
+    import json
+    data = _read(os.path.join(folder, RECORD))
+    try:
+        found = json.loads(data.decode('utf-8')) if data else {}
+    except ValueError:
+        found = {}
+    return found if isinstance(found, dict) else {}
+
+
+def write_record(folder, record):
+    """Write the helper's record of a run into `folder`."""
+    import json
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, RECORD), 'w', encoding='utf-8',
+              newline='\n') as handle:
+        handle.write(json.dumps(record, indent=2, sort_keys=True) + '\n')
 
 
 # ---------------------------------------------------------------------------
