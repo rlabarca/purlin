@@ -19,6 +19,20 @@ a test is any test in your own suite with one comment above it.
 - **purlin:sign builds the evidence package and signs it**, at any time, in any project; it stops only at hand checks, whose note is optional, and refuses results not recorded on this code.
 - **An anchor rule with nothing to check passes, and says so.**
 - **Slow proofs.** Tag a proof `@slow` and `purlin:test` never starts its test; `purlin:test --all` runs it when it is due. Until it has passed, the status lists it: `1 slow proof to run: purlin:test --all`.
+- **A prompt or a skill is tested like anything else.** Tag a proof `@ai(<model>)` and its
+  test, an ordinary marked test, is run several times on each model the tag names by
+  `purlin:test --all`. Every run must pass, there is one result per model, and a model that
+  cannot be reached reads `not run`, never failed. `docs/testing-ai.md` walks one.
+- **A proof can be graded by an AI.** Add `@graded(<grader>)` beside `@ai` and a second model
+  judges each output against the proof's own sentence. Such a proof, and its rule, read
+  `graded`, never `passed`, and count as passing. `docs/graded-by-ai.md` is the page on it.
+- **What an AI produced is kept, with what it was given**, one folder per run, named in the
+  evidence by its sha256. The first sign-off of a version commits the folders with the package.
+- **The audit plants a wrong output for an AI proof**, in a copy of a kept output, and for a
+  graded proof sees whether the grader rejects it. A seventh spot test flags the test of a
+  graded proof that never asks for the grade.
+- **The sign-off names each model the AI proofs ran on and each proof an AI graded**, and
+  refuses while a model a proof names has no result.
 - **A test comment whose proof was reworded is caught** until the test changes.
 - **The audit runs heuristic spot tests, then plants one bug per changed proof** in a copy of the project and sees whether the proof's own test catches it; it reports the share of rules it found strong. Run it by hand; nothing blocks on it. The audit aims each planted bug past its proof's test, and shows the case the AI says a surviving bug breaks.
 - **The audit says how far it got.** `strong`: the spot tests found nothing and a planted bug
@@ -48,8 +62,8 @@ a test is any test in your own suite with one comment above it.
 - **Four questions are asked by the scripts themselves**: before setup commits its files, before
   renumbering, before the `tests` setting is written, and before signing.
 - **Cut:** drift's role views, setup's questions but one, and most settings.
-- **The formats** stand at spec 24, anchor 12, evidence 17, signature 17, package 17 and marker 6,
-  the drift criteria at 14, and the dashboard's data at schema 19.
+- **The formats** stand at spec 25, anchor 12, evidence 18, signature 18, package 18 and marker 6,
+  the drift criteria at 14, and the dashboard's data at schema 20.
 
 In more words:
 
@@ -79,7 +93,7 @@ In more words:
   features that are out of date or have no run on this operating system, and prints what it
   selected and why, `Selected 2 of 34 features: login (code changed since a1b2c3d), invoice (no
   run on macOS yet).` `purlin:test --all` covers every feature, and `purlin:test --clean` runs every test.
-- **The audit.** `purlin:audit` runs the tests, then for each rule that passes: six heuristic
+- **The audit.** `purlin:audit` runs the tests, then for each rule that passes: seven heuristic
   spot tests that read each test as text, with no model; the model asked for a small bug for
   each proof whose test or covered code changed and for its reading; and each bug
   planted in a copy of the project, never in the project, with that proof's own test run. A spot
@@ -90,6 +104,20 @@ In more words:
   `The audit found 4 of 5 rules strong (80%): 4 strong, 1 weak.`
   `purlin:build` settles a weak rule with a test run: it strengthens the test, replays the bug
   the test missed, and the rule reads `strong` once the test catches it.
+- **AI proofs.** A proof tagged `@ai(claude-opus-5-5)` says what an AI does with a prompt, a
+  skill, an agent definition or a Claude project's instructions. Its test starts one helper,
+  `scripts/ai/purlin_ai.py`, which starts a real Claude Code session with one skill or plugin
+  in a copy of a sample project, sends instructions as a system prompt, or takes over an
+  output the project made its own way. A plain `purlin:test` leaves the test out and
+  `purlin:test --all` runs it 3 times on each model named; the `runs` setting, or `runs=<n>`
+  in the tag, says otherwise. The status prints one line per model,
+  `PROOF-4  passed  3 of 3 on claude-opus-5-5`, and lists a model with no result as
+  `1 rule to test on claude-sonnet-5-5: purlin:test --all`. With `@graded(<grader>)` beside
+  the tag, the grader is shown the proof's sentence, what the AI was given and what it
+  produced, and answers accept or reject with one reason; the line reads
+  `PROOF-5  graded  3 of 3 on claude-opus-5-5` and the summary
+  `40 rules. 40 pass their tests, 6 of them graded by an AI.` A grade is an AI's opinion
+  against one sentence, and passes on the models named say nothing about any other.
 - **The sign-off.** `purlin:sign` reads the committed evidence, names who ran the tests, where
   and when, builds `.purlin/evidence/package/<version>.json`, and walks it: an overview, the
   audit's findings as a list you may open, and one stop per hand check, where you may type what
@@ -184,7 +212,7 @@ In more words:
   `purlin:status` finishes, page and data together, and at no other time. Its header names the
   branch, the commit and the time its data was written, in your own timezone, as `main at a1b2c3d, written 06:42 EDT`.
   Neither file is committed. It opens from disk.
-- **One settings file**, `.purlin/config.json`, committed, holding `version` and `tests`.
+- **One settings file**, `.purlin/config.json`, committed, holding `version`, `tests` and `runs`.
   `purlin:init` asks one question, whether to commit what it wrote. A settings file that cannot
   be read stops every command with
   `.purlin/config.json cannot be read: <cause>. Fix the file by hand; nothing ran and nothing was saved.`
@@ -217,7 +245,7 @@ setup to a sign-off, is not walked for 0.10.0.
 - The committed project digest and the Claude Code hook that refreshed it.
 - The per-person settings file, `.purlin/config.local.json`. A copy left in a project is not
   read.
-- Every setting but `version` and `tests`: `pre_push`, `test_framework`, `spec_dir`, `report`,
+- Every setting but `version`, `tests` and `runs`: `pre_push`, `test_framework`, `spec_dir`, `report`,
   `digest` and the rest.
 - The design tie: `> Visual-Reference:`, `> Visual-Hash:` and a Figma `> Source:`.
 - The `tools/` skills for Claude Desktop. Product and QA work in Claude Code on a checkout.
