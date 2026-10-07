@@ -107,6 +107,12 @@ def test_every_flag_handed_is_one_the_usage_lists():
             if flag not in usage] == []
     assert sorted(set(flag for flag, _span in in_sentences)) == [
         '--apply', '--project-root', '--test-command', '--update', '--yes']
+    # A flag written with one dash is a flag handed too: every word of such
+    # a span that opens with a dash is a flag of the usage, whole.
+    dashed = [(word, span) for span in runs if span not in others
+              for word in span.split() if word.startswith('-')]
+    assert [(word, span) for word, span in dashed
+            if word.rstrip('.,') not in usage] == []
 
 
 # purlin: skill_init PROOF-42
@@ -157,6 +163,11 @@ def test_the_upgrade_part_lists_then_asks_then_passes_each_answer():
     step = flat(' '.join(lines[asked:asked + 3]))
     assert re.search(r'\*\*Stop and ask\*\* [^.:]*\beach migration\b[^.:]*'
                      r'\beach proposed test command\b', step), step
+    # The step's opening line whole: both are things to ask about, joined
+    # by `and`, with no word between that takes one of them back.
+    assert lines[asked].strip() == (
+        '2. **Stop and ask** the person about each migration listed and '
+        'each proposed test command:'), lines[asked]
     applied = _line_with(lines, [RUN_PATH, '--update', '--apply',
                                  '--test-command'])
     assert listed < asked < applied
