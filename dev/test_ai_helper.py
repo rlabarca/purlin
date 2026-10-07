@@ -302,8 +302,11 @@ class TestASession:
         assert done.returncode == 0, done.stderr
         calls = made.calls()
         assert len(calls) == 1
-        assert calls[0]['argv'] == SESSION + ['--model', MODEL,
-                                              '--plugin-dir', plugin]
+        assert calls[0]['argv'] == [
+            '-p', '--output-format', 'stream-json', '--verbose',
+            '--setting-sources', '', '--no-session-persistence',
+            '--dangerously-skip-permissions', '--model', MODEL,
+            '--plugin-dir', plugin]
 
     # purlin: ai_helper PROOF-15
     def test_a_skill_is_loaded_as_a_plugin_of_its_own(self, made):
