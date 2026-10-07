@@ -27,8 +27,16 @@ its path and how many rules it has and gives one line per rule:
         PROOF-2  no test
 
 A rule's line holds its two cells' words; under it come the reasons of each
-cell whose word is neither `passed` nor `strong`, then one line per proof
-with its result and its tests, each further test set under the first. Under
+cell whose word is none of `passed`, `graded` and `strong`, then one line
+per proof with its result and its tests, each further test set under the
+first. An AI proof has one line per model of its tag, its word there, then
+how many of its runs passed, of how many, and the model:
+
+        PROOF-4  passed  3 of 3 on claude-opus-5-5  tests/test_report.py::test_names_findings
+        PROOF-5  graded  3 of 3 on claude-opus-5-5  tests/test_report.py::test_states_no_fact
+        PROOF-6  not run  0 of 3 on claude-sonnet-5-5  tests/test_report.py::test_refuses
+
+Under
 a proof whose results a run carried forward, one line per system names the
 commit they were taken at:
 
@@ -128,6 +136,10 @@ VIEW_OPENING = '%s: %s'                     # specs/auth/login.md, '2 rules'
 RULE_LINE = '  %s  %s  %s'                  # RULE-1, passed, not audited
 REASON_LINE = '    %s: %s'                  # not audited, no audit has ...
 PROOF_LINE = '    %s  %s'                   # PROOF-1, passed
+# What stands for an AI proof's result on the line of one model: its word
+# there, how many runs passed, of how many, the model. The second count is
+# the runs asked now where the model holds fewer.
+MODEL_RESULT = '%s  %d of %d on %s'         # passed, 3, 3, claude-opus-5-5
 CARRIED_LINE = '      carried forward from %s on %s'      # 4f1c2ab, macOS
 # Under a failing test, the first line of the text its tool reported, a line
 # over FAILURE_SHOWN characters cut there and ended `...`.
@@ -135,7 +147,7 @@ FAILURE_LINE = '      failed with: %s'
 FAILURE_SHOWN = 200
 MET = {'passed': 'passed', 'strong': 'strong'}
 # Cell words that name no work to do, so the view gives no reason under them.
-QUIET = ('passed', 'strong', 'not audited', 'waiting')
+QUIET = states_module.PASSING + ('strong', 'not audited', 'waiting')
 
 
 def view_lines(feature):
@@ -154,8 +166,10 @@ def view_lines(feature):
                          for reason in (cells.get(name) or {}).get('reasons')
                          or ())
         for proof in rule.get('proofs') or ():
-            lines.extend(_proof_lines(proof['id'], proof.get('result') or '',
-                                      proof.get('tests')))
+            for result in _model_results(proof) or [proof.get('result')
+                                                    or '']:
+                lines.extend(_proof_lines(proof['id'], result,
+                                          proof.get('tests')))
             lines.extend(_failure_lines(proof.get('tests')))
             lines.extend(_carried_lines(proof.get('carried')))
         for test in rule.get('tests') or ():
@@ -163,6 +177,15 @@ def view_lines(feature):
             lines.extend(_failure_lines([test]))
         lines.extend(_carried_lines(rule.get('carried')))
     return lines
+
+
+def _model_results(proof):
+    """`MODEL_RESULT` for each model of an AI proof, in its tag's order,
+    the payload's `models`; `[]` for any other proof."""
+    return [MODEL_RESULT % (entry.get('word'), entry.get('passed') or 0,
+                            max(entry.get('of') or 0, proof.get('runs') or 0),
+                            entry.get('model'))
+            for entry in proof.get('models') or ()]
 
 
 def _carried_lines(carried):

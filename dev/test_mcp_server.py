@@ -13,9 +13,10 @@ import sys
 
 import pytest
 
-from mcp_project import (NO_PROOF_SPEC, PROJECT_ROOT, SERVER_PY, SPEC, Project,
-                         _commit_tests, _entry, _git, _report_held, _rpc,
-                         _write, project)
+from mcp_project import (GRADER, NO_PROOF_SPEC, OPUS, PROJECT_ROOT, SERVER_PY,
+                         SONNET, SPEC, Project, _ai_entry, _commit_tests,
+                         _entry, _git, _model, _report_held, _rpc, _write,
+                         ai_spec, project)
 # `mcp_project` puts `scripts/mcp` on the path.
 from purlin import evidence as purlin_evidence
 from purlin import server as purlin_srv
@@ -535,6 +536,77 @@ class TestOneSpecsView:
         assert lines[-1] == '    RULE-1  tests/test_login.py::test_rule_1', lines
 
 
+def _ai_view(tags, *models, **kwargs):
+    """The view of `login` with `PROOF-2` ending `tags`, both proofs
+    marked, `PROOF-1` passed and `models` held for `PROOF-2` in a committed
+    section. `runs` is the `runs` setting."""
+    made = Project(spec=ai_spec(tags),
+                   extra_config=({'runs': kwargs['runs']}
+                                 if kwargs.get('runs') else None))
+    try:
+        _commit_tests(made, 'PROOF-1', 'PROOF-2')
+        made.evidence([_entry('PROOF-1', 'RULE-1'),
+                       _ai_entry('PROOF-2', 'RULE-2', *models,
+                                 status=kwargs.get('status'))])
+        return _view(made)
+    finally:
+        made.close()
+
+
+AI_TEST = 'tests/test_login.py::test_proof_2'
+
+
+class TestAnAIProofInTheView:
+
+    # purlin: server PROOF-193
+    def test_a_model_that_passed_reads_its_runs_and_its_name(self):
+        lines = _ai_view('@ai(%s)' % OPUS,
+                         _model(OPUS, 'pass', 'pass', 'pass'))
+        assert _under(lines, '  RULE-2  passed  not audited') == [
+            '    PROOF-2  passed  3 of 3 on claude-opus-5-5  ' + AI_TEST], \
+            lines
+
+    # purlin: server PROOF-194
+    def test_a_model_one_run_failed_on_reads_failed_two_of_three(self):
+        lines = _ai_view('@ai(%s)' % OPUS,
+                         _model(OPUS, 'pass', 'fail', 'pass'))
+        assert _under(lines, '  RULE-2  failed  waiting') == [
+            '    failed: failing: %s, local' % purlin_evidence.os_word(
+                purlin_evidence.host_os()),
+            '    failed: claude-opus-5-5: 2 of 3 passed',
+            '    PROOF-2  failed  2 of 3 on claude-opus-5-5  ' + AI_TEST], \
+            lines
+
+    # purlin: server PROOF-195
+    def test_a_graded_proof_reads_graded_on_its_model(self):
+        lines = _ai_view('@ai(%s) @graded(%s)' % (OPUS, GRADER),
+                         _model(OPUS, 'pass', 'pass', 'pass', grader=GRADER))
+        assert _under(lines, '  RULE-2  graded  not audited') == [
+            '    PROOF-2  graded  3 of 3 on claude-opus-5-5  ' + AI_TEST], \
+            lines
+
+    # purlin: server PROOF-196
+    def test_two_models_are_two_lines_the_one_with_no_run_not_run(self):
+        lines = _ai_view('@ai(%s, %s)' % (OPUS, SONNET),
+                         _model(OPUS, 'pass', 'pass', 'pass'),
+                         status='not run')
+        assert _under(lines, '  RULE-2  not run  waiting') == [
+            '    not run: slow: runs with purlin:test --all',
+            '    not run: claude-sonnet-5-5: no run yet',
+            '    PROOF-2  passed  3 of 3 on claude-opus-5-5  ' + AI_TEST,
+            '    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  ' + AI_TEST], \
+            lines
+
+    # purlin: server PROOF-197
+    def test_fewer_runs_than_asked_now_read_not_run_of_the_runs_asked(self):
+        lines = _ai_view('@ai(%s)' % OPUS,
+                         _model(OPUS, 'pass', 'pass', 'pass'), runs=5,
+                         status='not run')
+        assert lines[-1] == (
+            '    PROOF-2  not run  3 of 5 on claude-opus-5-5  ' + AI_TEST), \
+            lines
+
+
 def _carry(project, taken_at, ids=None, feature='login'):
     """Mark the results of `feature`'s local section as carried forward
     from the commit `taken_at`, those of `ids` or all, and commit it."""
@@ -781,6 +853,17 @@ class TestTheConfigurationTool:
         assert on_disk == {'version': _version(),
                            'tests': [{'name': 'pytest'}]}, on_disk
 
+    # purlin: server PROOF-198
+    def test_a_write_of_runs_sets_it_and_keeps_every_other_key(self, project):
+        _settings(project.root, {'version': _version(), 'tests': []})
+        text = _configure(project, {'action': 'write', 'key': 'runs',
+                                    'value': 5})
+        assert text == 'runs is now 5; saved to .purlin/config.json.', text
+        with open(_config_file(project.root), encoding='utf-8') as handle:
+            on_disk = json.load(handle)
+        assert on_disk == {'version': _version(), 'tests': [],
+                           'runs': 5}, on_disk
+
     # purlin: server PROOF-142
     def test_a_read_of_an_absent_tests_answers_it_as_null(self, project):
         _settings(project.root, {'version': _version()})
@@ -813,8 +896,18 @@ class TestAWriteTheToolRefuses:
     # purlin: server PROOF-164
     def test_a_write_of_gate_is_refused(self, project):
         assert _refused(project, {'key': 'gate', 'value': 'signed'}) == (
-            'gate is not a setting; .purlin/config.json holds version and '
-            'tests. Nothing was saved.')
+            'gate is not a setting; .purlin/config.json holds version, '
+            'tests and runs. Nothing was saved.')
+
+    # purlin: server PROOF-199
+    def test_runs_that_is_no_whole_number_from_one_up_is_refused(
+            self, project):
+        answers = [_refused(project, {'key': 'runs', 'value': value})
+                   for value in (0, 'five', True)]
+        assert answers == [
+            '"%s" is not accepted for runs; it takes a whole number from 1 '
+            'up. Nothing was saved.' % shown
+            for shown in ('0', 'five', 'true')], answers
 
 
 # ---------------------------------------------------------------------------

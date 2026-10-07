@@ -31,7 +31,7 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from config_engine import (KNOWN_KEYS, PROJECT_ROOT_SOURCES, resolve_config,
-                           resolve_project_root, update_config)
+                           resolve_project_root, runs, update_config)
 from purlin import PURLIN_VERSION
 from purlin import console as console_module
 from purlin import drift as drift_module
@@ -67,8 +67,8 @@ TOOLS = [
     {
         "name": "purlin_config",
         "description": (
-            "Read .purlin/config.json, or write its tests setting. The file "
-            "holds version and tests."),
+            "Read .purlin/config.json, or write its tests or runs setting. "
+            "The file holds version, tests and runs."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -124,8 +124,10 @@ NO_VALUE = 'A change needs a value; nothing was saved.'
 NOT_ACCEPTED = '"%s" is not accepted for %s; it takes %s. Nothing was saved.'
 VERSION_NOT_WRITTEN = ("version is written by purlin:init from Purlin's own "
                        "version; nothing was saved.")
-NOT_A_SETTING = ('%s is not a setting; .purlin/config.json holds version and '
-                 'tests. Nothing was saved.')
+NOT_A_SETTING = ('%s is not a setting; .purlin/config.json holds version, '
+                 'tests and runs. Nothing was saved.')
+# What each setting a write may name takes, as `NOT_ACCEPTED` says it.
+TAKES = {'tests': 'a list', 'runs': 'a whole number from 1 up'}
 UNKNOWN_ACTION = "Unknown action: %s. Use 'read' or 'write'."
 
 
@@ -138,18 +140,20 @@ def _write_refusal(key, arguments):
     if 'value' not in arguments:
         return NO_VALUE
     value = arguments['value']
-    if isinstance(value, list):
+    if (runs({key: value}) is not None if key == 'runs'
+            else isinstance(value, list)):
         return None
     shown = value if isinstance(value, str) else json.dumps(value)
-    return NOT_ACCEPTED % (shown, key, 'a list')
+    return NOT_ACCEPTED % (shown, key, TAKES[key])
 
 
 def handle_purlin_config(project_root, arguments):
     """Read or write one key of `.purlin/config.json`, or dump the whole file.
 
     A key that is absent or stored as null reads as `{"<key>": null}`, the
-    shape of a found key, so a reader handles one shape. A write sets `tests`
-    alone; every other write is refused and the file left as it was.
+    shape of a found key, so a reader handles one shape. A write sets `tests`,
+    a list, or `runs`, a whole number from 1 up; every other write is
+    refused and the file left as it was.
     """
     action = arguments.get('action', 'read')
     key = arguments.get('key')
