@@ -2,69 +2,49 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-07T21:54:54Z",
+        "at": "2026-10-07T22:04:46Z",
         "bugs": {
           "PROOF-1": {
             "after": "            manual = [proof['id'] for proof in rule['proofs'] if not proof['manual']]",
             "aim": "past the test",
             "before": "            manual = [proof['id'] for proof in rule['proofs'] if proof['manual']]",
-            "bug_key": "b045c0f764dfa0e45597a5f0f56311067a6be2b194187ce31a5bd679b1401986",
+            "bug_key": "1fde0aed6716d60e7c12e755d844e4b21279281f97fbf0c7145c05141b1afb3b",
             "case": "three people reach signed/0.1.0 with sample_age RULE-3 checked by hand; the proof says the package describes the code under the tag; the changed package's hand_checks names the six tested rules and leaves out sample_age RULE-3",
             "file": "scripts/export/package.py",
             "line": 763,
-            "result": "survived",
-            "test_key": "493077c53a814d0071d769187abdb1eaf23c5656ee21c16147c02c3efb5cfa46",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "b9e26407aac8c92c5fb2b9030d5fcb5fadf19605394dfd5515d5b8e919ad5775",
-        "commit": "71a638ac0221d9c97b5dd5a1d4c7cd8c6f85ef87",
+        "commit": "af99dbff488cd8211b2d11946f322c2bea9a8e84",
         "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-1: the test walks the whole flow in three clones and a fresh one, and compares the tag's commit, the fingerprint check's output, the package's `tag`, `version`, `met` and `rules`, each rule's text, proof ids and tests, both sign-offs with their notes, the status's opening lines, the warnings and work left, the specs' numbers and highest-number lines, the test comments and every command's exit code.",
-          "PROOF-1: of the package it never reads `hand_checks`, `steps`, `audit`, `runs`, `outputs`, `authors`, each rule's `results` and `statuses`, or each proof's text and tags, so a package that misdescribes any of those still passes while its fingerprint matches.",
-          "PROOF-1: the fingerprint is computed over whatever the package holds, so the line `The package matches its fingerprint.` says nothing about whether a field describes the code.",
-          "PROOF-1: the test is skipped where `ssh-keygen` is not on the machine, and a skipped test neither catches nor misses a planted bug.",
-          "Findings: the spot tests found nothing, and the test's file holds the proof's one backticked value, `0.1.0`, only if the constant `VERSION` defined outside the lines shown holds it."
-        ],
-        "findings": [
-          "PROOF-1: the test still passes when scripts/export/package.py:763 reads \"manual = [proof['id'] for proof in rule['proofs'] if not proof['manual']]\"",
-          "PROOF-1: the AI says this breaks: three people reach signed/0.1.0 with sample_age RULE-3 checked by hand; the proof says the package describes the code under the tag; the changed package's hand_checks names the six tested rules and leaves out sample_age RULE-3"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-1 holds several cases in one line: two collisions merged in different orders, a test comment left on a moved proof, a hand-off run and two sign-offs.",
-          "PROOF-1 ends on \"every check of RULE-1 holds\", which names no value to observe and restates the rule."
-        ],
         "proof_hash": "bdc5d16c1962fa9806e4cfaba1688bacb39e9f08367be9edf610077111eb04ea",
         "rule_hash": "4cbafafd9d9f5ac89eae5cf8052d1950979452e8574ef3317f2591da2a75a797",
-        "test_hash": "721f04663b305ce21c83dd2e1f70ad66df6bc64788f687debab97ad57741f0ab",
-        "verdict": "weak"
+        "test_hash": "3b57186967ef6139da0bed56454f0ac1ecd87cb634ce3e746fb23a43dda8d4ed",
+        "verdict": "strong"
       }
     }
   },
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T17:50:13Z",
-      "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+      "at": "2026-10-07T22:03:56Z",
+      "commit": "af99dbff488cd8211b2d11946f322c2bea9a8e84",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "b9e26407aac8c92c5fb2b9030d5fcb5fadf19605394dfd5515d5b8e919ad5775",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
-        "tests": "ea71a2298956e8965fc775fefc069bc4b581b669653e840c1c6c174b1b838093"
+        "tests": "eb9e151b276a03b8f3a24e5ef0b4c2fe2d0f324033536c4d3d97b8474041f5b8"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T17:50:13Z",
-            "commit": "d14e063f779dc189ffb61c208c76caf791ae5d02",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -72,14 +52,14 @@
             "cases": [
               {
                 "class": "dev.test_collaboration",
-                "duration": 20.537,
+                "duration": 18.401,
                 "name": "test_three_people_reach_a_signed_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "77c9d266a737eaa33dead6a7d93c9ae0c4c42fc39596a18a602332540d57cabb"
+              "sha256": "9435b86affc7f80f43cdfdf6dac5f03035812f3531b0085e8c6c2cc016932856"
             }
           },
           "result": "pass",
