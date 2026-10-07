@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import tokenize
 import uuid
@@ -374,6 +375,31 @@ class TestPython39:
         if hasattr(tokenize, 'FSTRING_START'):
             assert f_strings_later_than_39(str(tmp_path), ['quoted.py']) == [
                 'quoted.py:2']
+        # Where the machine has a Python 3.9, its own compiler reads each
+        # file: it refuses what a later Python's parser lets through under
+        # a 3.9 setting, such as an assignment expression written without
+        # parentheses as an index.
+        python = python_39()
+        if python is not None:
+            (tmp_path / 'index.py').write_text(
+                'row = [1]\nfirst = row[at := 0]\n', encoding='utf-8')
+            reader = (
+                'import sys\n'
+                'for path in sys.argv[1:]:\n'
+                '    with open(path, encoding="utf-8") as handle:\n'
+                '        source = handle.read()\n'
+                '    try:\n'
+                '        compile(source, path, "exec")\n'
+                '    except SyntaxError:\n'
+                '        print(path)\n')
+            scripts = [rel for rel in rels if rel.endswith('.py')]
+            refused = subprocess.run(
+                python + ['-c', reader, *scripts,
+                          str(tmp_path / 'index.py')],
+                cwd=ROOT, capture_output=True, text=True, timeout=300)
+            assert refused.returncode == 0, refused.stderr
+            assert refused.stdout.splitlines() == [
+                str(tmp_path / 'index.py')], refused.stdout
 
     # purlin: purlin_output PROOF-4
     def test_a_test_run_runs_on_39(self, tmp_path):
@@ -395,7 +421,8 @@ class TestPython39:
         done = status(python, root)
         assert done.returncode == 0, done.stdout + done.stderr
         text = status_text(done)
-        assert re.search(r'^app +1 +1 ', text, re.M), text
+        # The whole row: one rule, one proof, and no rule passing yet.
+        assert 'app   1      1       0 of 1' in text.splitlines(), text
 
 
 # --- No process left behind -------------------------------------------------
@@ -474,6 +501,39 @@ def processes_carrying(mark):
     return rows
 
 
+def started_times():
+    """`(pid, the time it started)` for every process running. Not Windows."""
+    return {(pid, started) for pid, _, started in _parents()}
+
+
+def _parents():
+    """`(pid, parent pid, the time it started)` for every process."""
+    listed = subprocess.run(['ps', '-A', '-o', 'pid=,ppid=,lstart='],
+                            capture_output=True, text=True)
+    rows = []
+    for line in listed.stdout.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) == 3 and parts[0].isdigit() and parts[1].isdigit():
+            rows.append((int(parts[0]), int(parts[1]), parts[2].strip()))
+    return rows
+
+
+def descendants(of):
+    """`(pid, the time it started)` for every process running now that
+    descends from the process `of`. Not Windows."""
+    rows = _parents()
+    children = {}
+    for pid, parent, _ in rows:
+        children.setdefault(parent, []).append(pid)
+    below, waiting = set(), [of]
+    while waiting:
+        for child in children.get(waiting.pop(), ()):
+            if child not in below:
+                below.add(child)
+                waiting.append(child)
+    return {(pid, started) for pid, _, started in rows if pid in below}
+
+
 def stop(rows):
     for pid, _, _ in rows:
         try:
@@ -496,12 +556,44 @@ class TestNoProcessLeft:
         # Each command starts a process group of its own, so a process it
         # leaves behind is found by its group even when its command line
         # names nothing of the project.
-        ran = [set_up(python, root, new_session=True)]
-        give_it_a_spec(root)
-        ran.append(a_test_run(python, root, '--commit', new_session=True))
-        ran.append(status(python, root, new_session=True))
+        # While the three run, every process that descends from this one is
+        # written down with the time it started: a process a command starts
+        # is its child for as long as the command runs, whatever session,
+        # environment and command line it is given. Windows has no `ps`.
+        seen, watching = set(), threading.Event()
+
+        def watch():
+            while not watching.is_set():
+                seen.update(descendants(os.getpid()))
+                time.sleep(0.01)
+
+        watcher = threading.Thread(target=watch, daemon=True)
+        if os.name != 'nt':
+            watcher.start()
+        try:
+            ran = [set_up(python, root, new_session=True)]
+            give_it_a_spec(root)
+            ran.append(a_test_run(python, root, '--commit', new_session=True))
+            ran.append(status(python, root, new_session=True))
+        finally:
+            watching.set()
+            if watcher.is_alive():
+                watcher.join(timeout=60)
         for done in ran:
             assert done.returncode == 0, done.stdout + done.stderr
+        if os.name != 'nt':
+            # Each of the three was seen, so the watcher did look.
+            assert {done.pid for done in ran} <= {pid for pid, _ in seen}
+            still = []
+            for _ in range(3):
+                still = sorted(seen & started_times())
+                if not still:
+                    break
+                time.sleep(0.5)
+            try:
+                assert still == [], 'a process a command started still runs'
+            finally:
+                stop([(pid, None, '') for pid, _ in still])
         leftover = left_running(root, {done.pid for done in ran})
         try:
             assert leftover == []
