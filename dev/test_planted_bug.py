@@ -1224,7 +1224,6 @@ def test_what_the_ai_was_given_is_never_changed(note, monkeypatch):
     result = wrong(note, 'PROOF-1', answer)
     assert (result['result'], result['why']) == (
         'not made', 'input/message.md is not in the output'), result
-    assert planted_bug.OUTPUT_INPUT == 'input'
     assert started == []
 
 

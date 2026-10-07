@@ -214,7 +214,7 @@ def input_files(project_root, folder):
     model is shown them and no wrong output changes one."""
     return _shown_files(
         project_root, folder,
-        lambda rel: rel.startswith(planted_bug.OUTPUT_INPUT + '/'))
+        lambda rel: rel.startswith(outputs_module.INPUT + '/'))
 
 
 def _shown_files(project_root, folder, wanted):

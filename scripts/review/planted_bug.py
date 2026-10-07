@@ -112,9 +112,6 @@ ERRORED = 'the test ended in an error, not a failure'
 # folder, and the reasons of its own. Every other reason is a bug's, worded
 # through `of_output`.
 OUTPUT_COPY = 'output'
-# The folder of an output that holds what the AI was given, which the model is
-# shown and no wrong output changes. It mirrors `outputs.INPUT`.
-OUTPUT_INPUT = 'input'
 OUTPUT_SPARE = 'out'
 NOT_IN_OUTPUT = '%s is not in the output'
 BASELINE_OUTPUT = 'the test does not pass on the kept output'

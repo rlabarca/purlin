@@ -114,7 +114,7 @@ other page points here rather than defining it again.
   takes three steps: the heuristic spot tests, the model asked for a small bug for each proof
   and for its reading, and each planted bug's test run. It writes what it found into each feature's evidence and ends on the share of
   rules it found strong. `references/review_criteria.md` is its one home.
-- **heuristic spot test**: one of six checks that read a test as text, with no model, and flag
+- **heuristic spot test**: one of seven checks that read a test as text, with no model, and flag
   a test that cannot fail.
 - **planted bug**: the one small change to the code that breaks the case a proof names and that
   the proof's test is most likely to miss, written by an AI and made in a copy of the project to
