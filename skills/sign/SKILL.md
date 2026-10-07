@@ -42,7 +42,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scrip
 ```
 
 It asks nothing, writes nothing and needs no key. It prints a refusal, or who ran the tests, the
-overview, the audit's findings and every stop, and last `Answer each stop, then run purlin:sign
+overview, the list to read before signing and every stop, and last `Answer each stop, then run purlin:sign
 --answers <file>.` It opens:
 
 ```
@@ -52,13 +52,13 @@ Signing 0.1.0 at 1cf829e.
   The audit: 17 strong, 1 weak.
   A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
   Test reports kept with the package: 1 of 1.
-The audit's findings: 1 weak.
+To read before you sign: 1 weak.
 ```
 
 Where the package holds AI proofs, the opening also names each model they ran on, one line per
 model, after the `Tests run by` lines. The overview counts the proofs an AI graded, one line per
-grader, after the rules, and ends on the AI outputs kept with the package. The findings count
-the graded proofs:
+grader, after the rules, and ends on the AI outputs kept with the package. The list to
+read before signing counts the graded proofs:
 
 ```
 Tests run by dana.dev@labconnect.example on dana-laptop at 2026-10-01 12:17 UTC on 1cf829e: 19 rules on Linux/Unix.
@@ -70,10 +70,10 @@ Signing 0.1.0 at 1cf829e.
   A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
   Test reports kept with the package: 1 of 1.
   AI outputs kept with the package: 60 of 60.
-The audit's findings: 1 weak, 6 proofs graded by an AI.
+To read before you sign: 1 weak, 6 proofs graded by an AI.
 ```
 
-Under the findings, after the weak rules, each graded run has a line with its grader and the
+In the list, after the weak rules, each graded run has a line with its grader and the
 grader's reason:
 
 ```
@@ -82,7 +82,7 @@ grader's reason:
 
 Show each as printed. A graded proof was judged by a model against one sentence, and it reads
 `graded`, never `passed`; it counts as passing and adds no stop. With one graded proof and no
-weak rule the findings read `The audit's findings: 1 proof graded by an AI.` The model is part
+weak rule the line reads `To read before you sign: 1 proof graded by an AI.` The model is part
 of what the person signs: results on one model say nothing of another. The line on the AI
 outputs counts the folders, each holding what an AI produced in one run, that are committed
 with the package; it ends as the line on the test reports does where this machine does not hold
@@ -164,15 +164,15 @@ the walk.
 
 ## Step 4: the stops and their answers
 
-Show the person the opening lines as printed. Where a rule reads weak the walk asks `The audit's
-findings: 1 weak. list / go on:`; ask the person which. `list` shows each weak rule with its
+Show the person the opening lines as printed. Where a rule reads weak the walk asks `To read
+before you sign: 1 weak. list / go on:`; ask the person which. `list` shows each weak rule with its
 findings, one line each, and records that they opened it; `go on` leaves it closed. What the
 audit found never blocks the sign-off and is no stop.
 
 The list also names each proof settled with its test unchanged, whatever its rule reads, after
 the weak rules' findings:
 `sample_age RULE-2: PROOF-6 was settled with its test unchanged: it was judged to assert what the proof names.`
-The question then counts them, as `The audit's findings: 1 weak, 1 proof settled with its test
+The question then counts them, as `To read before you sign: 1 weak, 1 proof settled with its test
 unchanged. list / go on:`, and is asked where no rule is weak too. A planted bug once got past
 that proof's test, and `purlin:build` judged the test sound and left it as it was: the finding
 was cleared by that judgment, not by a stronger test. Show the line as printed.

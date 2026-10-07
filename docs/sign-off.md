@@ -66,7 +66,7 @@ Signing 0.1.0 at 1cf829e.
   The audit: 17 strong, 1 weak.
   A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
   Test reports kept with the package: 1 of 1.
-The audit's findings: 1 weak. list / go on: 
+To read before you sign: 1 weak. list / go on: 
 login RULE-2   hand check
 Rule
   The error messages follow the brand voice guide
@@ -79,7 +79,7 @@ login RULE-2   what did you see, in one line, or Enter for no note, or stop:
 
 | The walk asks | You answer |
 |---|---|
-| `list / go on` | `list` prints each weak rule with what the audit found, then each graded run. The findings add no stop. |
+| `list / go on` | `list` prints each weak rule with what the audit found, then each graded run. The list adds no stop. |
 | `what did you see` | One line: the hand check's note. Enter records `no note`. |
 | | `stop` ends the walk. Nothing is signed. |
 | `Sign the evidence package for 0.1.0 as <you>? [y/N]` | `y` signs. Any other answer prints `Nothing was signed.` |
@@ -105,7 +105,7 @@ Signing 0.1.0 at 1cf829e.
   A co-author is named on the last change of 2 rules, 5 proofs and 14 tests.
   Test reports kept with the package: 1 of 1.
   AI outputs kept with the package: 6 of 6.
-The audit's findings: 1 weak, 1 proof graded by an AI. list / go on: 
+To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: 
 ```
 
 | The line | What it tells you |

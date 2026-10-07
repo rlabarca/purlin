@@ -87,7 +87,7 @@ Every field is REQUIRED, in this order.
 | `runs` | array | the package's `runs`, as the walk's opening lines named them |
 | `models` | array | one `{model, proofs, runs}` per model the package's AI proofs name, in the order it first names them: how many proofs ran on it, and `runs`, the least and the most runs one of them holds on it. The walk prints each after the run lines, as `AI proofs run on claude-opus-5-5: 12 proofs, 3 runs each.`, or `3 to 10 runs each` where the two differ. `[]` where the package holds no AI proof |
 | `hand_checks` | array | every hand check walked, in the order walked: `{feature, rule}` |
-| `audit_list_opened` | bool | whether the signer asked to see the audit's findings, the list that also holds each proof settled with its test unchanged and each graded proof's runs, with the grader and its reason |
+| `audit_list_opened` | bool | whether the signer opened the list to read before signing: the audit's findings, each proof settled with its test unchanged and each graded proof's runs, with the grader and its reason |
 
 The file records what was shown and what was typed, and no answer word: it
 holds no judgment.

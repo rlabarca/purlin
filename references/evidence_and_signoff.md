@@ -305,7 +305,7 @@ the graded proofs per grader, as `Graded by an AI: 6 proofs, by claude-haiku-4-5
 and ends on
 how many rules, proofs and tests were last changed in a commit that names a co-author, as a
 commit made with an AI's help usually does, and on how many test reports and AI outputs are kept
-with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it offers the audit's findings as a list: the weak rules' findings, the settled proofs, then each graded proof's runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
+with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it asks once whether to open a list, as `To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: `: the weak rules' findings, the settled proofs, then each graded proof's runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
 may type what they saw; an empty answer is recorded as `no note`. What the audit found never
 blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.

@@ -14,10 +14,10 @@ with how many proofs and how many runs each; an overview counting per system
 the rules that pass their tests and the hand checks, the proofs a model
 graded, per grader, what the audit found, how many last changes name a
 co-author and how many test reports and AI outputs are kept with the
-package; the
-audit's findings as a list the signer may open, each proof settled with its
-test unchanged listed after them, then each graded proof's runs with the
-grader and its reason; then one stop per hand check,
+package; a
+list to read before signing, which the signer may open: the audit's
+findings, each proof settled with its test unchanged after them, then each
+graded proof's runs with the grader and its reason; then one stop per hand check,
 which shows the rule's last note where a sign-off holds one, and where the
 person types what they saw or presses Enter for no note. On yes to
 the last question it writes one file in one signed commit:
@@ -181,8 +181,8 @@ OVERVIEW_AI_OUTPUTS = '  AI outputs kept with the package: %d of %d.'
 MODEL_LINE = 'AI proofs run on %s: %s, %s each.'
 # The proofs a model grades: `<n> proofs`, the grader.
 OVERVIEW_GRADED = '  Graded by an AI: %s, by %s.'
-AUDIT_ASK = "The audit's findings: %s. list / go on: "
-AUDIT_SHOWN = "The audit's findings: %s."
+AUDIT_ASK = "To read before you sign: %s. list / go on: "
+AUDIT_SHOWN = "To read before you sign: %s."
 AUDIT_LIST = '  %s %s   %s'
 # A proof settled with its test unchanged: the feature, RULE-N, and the
 # sentence its rule's `no_bug` holds, `audit_run.UNCHANGED`.

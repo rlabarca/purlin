@@ -16,7 +16,7 @@ What each group holds:
 *signed*         where the status reads `signed`, and a tag passed over
 *the refusals*   what stops a sign-off
 *the 0.9.5 markers*  no sign-off while a test still carries one
-*the walk*       the run lines, the overview, the audit's findings, the stops
+*the walk*       the run lines, the overview, the list to read, the stops
 *settled by judgment*  a proof settled with its test unchanged, in the list
 *the sign-off*   the file, its commit, the tag, a second signer, a tag git
                  could not write
@@ -1063,7 +1063,7 @@ class TestTheWalk:
         try:
             code, lines, asked = walked(made, ['go on', ''])
             assert asked == [
-                "The audit's findings: 1 weak. list / go on: ",
+                "To read before you sign: 1 weak. list / go on: ",
                 'Sign the evidence package for 2.1.0 as jane@acme.com? [y/N] ']
             assert (code, lines[-1]) == (0, 'Nothing was signed.')
         finally:
@@ -1086,7 +1086,7 @@ class TestTheWalk:
 
             sign_module.walk(made.root, None, ask=ask, out=out)
             assert asked[:2] == [
-                ("The audit's findings: 1 weak. list / go on: ", False),
+                ("To read before you sign: 1 weak. list / go on: ", False),
                 ('go on: ', True)], asked
             # Between the two questions `list` prints that line, once, and
             # nothing else.
@@ -1284,7 +1284,7 @@ class TestTheWalk:
 # `--sound`, its test left as it was.
 JUDGED = ('%s was settled with its test unchanged: it was judged to assert '
           'what the proof names.')
-JUDGED_ASK = "The audit's findings: %s. list / go on: "
+JUDGED_ASK = "To read before you sign: %s. list / go on: "
 SIGN_QUESTION = 'Sign the evidence package for 2.1.0 as jane@acme.com? [y/N] '
 
 
@@ -1332,7 +1332,8 @@ class TestSettledByJudgment:
         try:
             asked = walked(made, ['go on', ''])[2]
             assert asked == [
-                JUDGED_ASK % '1 proof settled with its test unchanged',
+                'To read before you sign: 1 proof settled with its test '
+                'unchanged. list / go on: ',
                 SIGN_QUESTION]
         finally:
             made.close()
@@ -1342,8 +1343,9 @@ class TestSettledByJudgment:
         made = judged(settled=('RULE-1', 'RULE-2'))
         try:
             asked = walked(made, ['go on', ''])[2]
-            assert asked[0] == JUDGED_ASK % (
-                '2 proofs settled with their tests unchanged')
+            assert asked[0] == (
+                'To read before you sign: 2 proofs settled with their tests '
+                'unchanged. list / go on: ')
         finally:
             made.close()
 
@@ -1352,8 +1354,9 @@ class TestSettledByJudgment:
         made = judged(settled=('RULE-2',), weak=('RULE-1',))
         try:
             asked = walked(made, ['go on', ''])[2]
-            assert asked[0] == JUDGED_ASK % (
-                '1 weak, 1 proof settled with its test unchanged')
+            assert asked[0] == (
+                'To read before you sign: 1 weak, 1 proof settled with its '
+                'test unchanged. list / go on: ')
         finally:
             made.close()
 
@@ -1415,7 +1418,7 @@ class TestSettledByJudgment:
         made = judged()
         try:
             code, lines = run_main(made, capsys, ['--show'])
-            at = lines.index("The audit's findings: 1 proof settled with its "
+            at = lines.index("To read before you sign: 1 proof settled with its "
                              "test unchanged.")
             assert lines[at + 1] == '  login RULE-1: %s' % (JUDGED % 'PROOF-1')
             assert code == 0
@@ -2140,7 +2143,6 @@ AI_RUNS = ([('PROOF-3', OPUS, run) for run in (1, 2, 3)]
               for run in (1, 2)])
 # The four files of one kept run folder, with what each holds.
 AI_FILES = ('files/notes.txt', 'purlin.json', 'reply.md', 'transcript.jsonl')
-FINDINGS_ASK = "The audit's findings: %s. list / go on: "
 GRADED_LINE = ('  login RULE-4: PROOF-4 on %s, run %d of 2, %s by %s: %s')
 NOT_RECORDED = ('No sign-off: these results are not recorded on this version '
                 'of the code, %s: login on %s. Run purlin:test --all '
@@ -2289,8 +2291,10 @@ class TestTheGradedProofs:
             code, asked, shown, _lines = between_questions(
                 made, ['list', 'go on', 'n'])
             assert code == 0
-            assert asked == [FINDINGS_ASK % '1 proof graded by an AI',
-                             'go on: ', SIGN_QUESTION]
+            assert asked == [
+                'To read before you sign: 1 proof graded by an AI. '
+                'list / go on: ',
+                'go on: ', SIGN_QUESTION]
             assert shown == self.FOUR
         finally:
             made.close()
@@ -2300,9 +2304,9 @@ class TestTheGradedProofs:
         made = ai_ready(weak=('RULE-1',), settled=('RULE-2',))
         try:
             code, asked, shown, _lines = between_questions(made, ['list'])
-            assert asked[0] == FINDINGS_ASK % (
-                '1 weak, 1 proof settled with its test unchanged, 1 proof '
-                'graded by an AI')
+            assert asked[0] == (
+                'To read before you sign: 1 weak, 1 proof settled with its '
+                'test unchanged, 1 proof graded by an AI. list / go on: ')
             assert shown == [
                 '  login RULE-1   %s' % FINDING,
                 '  login RULE-2: %s' % (JUDGED % 'PROOF-2')] + self.FOUR
@@ -2315,7 +2319,7 @@ class TestTheGradedProofs:
         try:
             code, lines = shown_by(made, capsys)
             assert code == 0, lines
-            at = lines.index("The audit's findings: 1 proof graded by an AI.")
+            at = lines.index("To read before you sign: 1 proof graded by an AI.")
             assert lines[at + 1:at + 5] == self.FOUR
         finally:
             made.close()

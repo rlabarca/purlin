@@ -66,7 +66,7 @@ def in_order(block, lines):
 WALK_LINES = ['AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.',
               '  Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.',
               '  AI outputs kept with the package: 60 of 60.',
-              "The audit's findings: 1 weak, 6 proofs graded by an AI."]
+              "To read before you sign: 1 weak, 6 proofs graded by an AI."]
 
 
 # purlin: skill_sign PROOF-66
@@ -74,6 +74,8 @@ def test_the_sign_skill_shows_the_walks_four_lines_about_ai_proofs():
     found = [block for block in blocks(read(SKILL))
              if in_order(block, WALK_LINES)]
     assert len(found) == 1, found
+    assert found[0].count(
+        'To read before you sign: 1 weak, 6 proofs graded by an AI.') == 1
     # A line with another indent, or the lines in another order, is not it.
     assert not in_order([line.strip() for line in found[0]], WALK_LINES)
     assert not in_order(found[0], WALK_LINES[::-1])
