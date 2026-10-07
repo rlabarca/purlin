@@ -20,7 +20,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import tokenize
 import uuid
@@ -501,37 +500,60 @@ def processes_carrying(mark):
     return rows
 
 
-def started_times():
-    """`(pid, the time it started)` for every process running. Not Windows."""
-    return {(pid, started) for pid, _, started in _parents()}
+# Loaded by every Python a command starts, through `PYTHONPATH`: it writes the
+# process id of each process that Python starts into the file the variable
+# `PURLIN_TEST_STARTED_LOG` names, then loads the `sitecustomize` it stands in
+# front of, where there is one. The process that starts another writes the
+# line, so a process started with an empty environment, in a session of its
+# own, is written down all the same.
+STARTED_RECORD = '''import os
+import subprocess
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_LOG = os.environ.get('PURLIN_TEST_STARTED_LOG')
 
 
-def _parents():
-    """`(pid, parent pid, the time it started)` for every process."""
-    listed = subprocess.run(['ps', '-A', '-o', 'pid=,ppid=,lstart='],
-                            capture_output=True, text=True)
-    rows = []
-    for line in listed.stdout.splitlines():
-        parts = line.split(None, 2)
-        if len(parts) == 3 and parts[0].isdigit() and parts[1].isdigit():
-            rows.append((int(parts[0]), int(parts[1]), parts[2].strip()))
-    return rows
+def _note(pid):
+    try:
+        with open(_LOG, 'a') as handle:
+            handle.write('%d\\n' % pid)
+    except OSError:
+        pass
 
 
-def descendants(of):
-    """`(pid, the time it started)` for every process running now that
-    descends from the process `of`. Not Windows."""
-    rows = _parents()
-    children = {}
-    for pid, parent, _ in rows:
-        children.setdefault(parent, []).append(pid)
-    below, waiting = set(), [of]
-    while waiting:
-        for child in children.get(waiting.pop(), ()):
-            if child not in below:
-                below.add(child)
-                waiting.append(child)
-    return {(pid, started) for pid, _, started in rows if pid in below}
+if _LOG:
+    _init = subprocess.Popen.__init__
+
+    def _noted_init(self, *args, **kwargs):
+        _init(self, *args, **kwargs)
+        _note(self.pid)
+
+    subprocess.Popen.__init__ = _noted_init
+
+    def _noting(call):
+        def noted(*args, **kwargs):
+            made = call(*args, **kwargs)
+            pid = made[0] if isinstance(made, tuple) else made
+            if pid:
+                _note(pid)
+            return made
+        return noted
+
+    for _name in ('fork', 'forkpty', 'posix_spawn', 'posix_spawnp'):
+        if hasattr(os, _name):
+            setattr(os, _name, _noting(getattr(os, _name)))
+
+for _entry in sys.path:
+    _next = os.path.join(_entry or os.curdir, 'sitecustomize.py')
+    if os.path.abspath(_entry or os.curdir) != _HERE and os.path.isfile(_next):
+        import importlib.util
+        _spec = importlib.util.spec_from_file_location(
+            '_sitecustomize_behind', _next)
+        _module = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_module)
+        break
+'''
 
 
 def stop(rows):
@@ -556,45 +578,39 @@ class TestNoProcessLeft:
         # Each command starts a process group of its own, so a process it
         # leaves behind is found by its group even when its command line
         # names nothing of the project.
-        # While the three run, every process that descends from this one is
-        # written down with the time it started: a process a command starts
-        # is its child for as long as the command runs, whatever session,
-        # environment and command line it is given. Windows has no `ps`.
-        seen, watching = set(), threading.Event()
-
-        def watch():
-            while not watching.is_set():
-                seen.update(descendants(os.getpid()))
-                time.sleep(0.01)
-
-        watcher = threading.Thread(target=watch, daemon=True)
-        if os.name != 'nt':
-            watcher.start()
-        try:
-            ran = [set_up(python, root, new_session=True)]
-            give_it_a_spec(root)
-            ran.append(a_test_run(python, root, '--commit', new_session=True))
-            ran.append(status(python, root, new_session=True))
-        finally:
-            watching.set()
-            if watcher.is_alive():
-                watcher.join(timeout=60)
+        # Every Python a command starts writes down each process it starts,
+        # by its process id: whatever session, environment and command line
+        # that process is given, it is on the list.
+        record = tmp_path / 'record'
+        record.mkdir()
+        (record / 'sitecustomize.py').write_text(STARTED_RECORD,
+                                                 encoding='utf-8')
+        monkeypatch.setenv('PURLIN_TEST_STARTED_LOG',
+                           str(record / 'started.txt'))
+        monkeypatch.setenv('PYTHONPATH', os.pathsep.join(
+            [str(record)] + [entry for entry in os.environ.get(
+                'PYTHONPATH', '').split(os.pathsep) if entry]))
+        ran = [set_up(python, root, new_session=True)]
+        give_it_a_spec(root)
+        ran.append(a_test_run(python, root, '--commit', new_session=True))
+        ran.append(status(python, root, new_session=True))
         for done in ran:
             assert done.returncode == 0, done.stdout + done.stderr
-        if os.name != 'nt':
-            # The test run, the longest of the three, was seen, so the
-            # watcher did look.
-            assert ran[1].pid in {pid for pid, _ in seen}
-            still = []
-            for _ in range(3):
-                still = sorted(seen & started_times())
-                if not still:
-                    break
-                time.sleep(0.5)
-            try:
-                assert still == [], 'a process a command started still runs'
-            finally:
-                stop([(pid, None, '') for pid, _ in still])
+        # The test run starts the project's tests and git, so the list is
+        # not empty; none of the processes on it is still running.
+        listed = {int(line) for line in (record / 'started.txt').read_text(
+            encoding='utf-8').split()}
+        assert len(listed) >= 3, listed
+        still = []
+        for _ in range(3):
+            still = [row for row in processes() if row[0] in listed]
+            if not still:
+                break
+            time.sleep(0.5)
+        try:
+            assert still == [], 'a process a command started still runs'
+        finally:
+            stop(still)
         leftover = left_running(root, {done.pid for done in ran})
         try:
             assert leftover == []
