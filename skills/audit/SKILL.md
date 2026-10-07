@@ -108,9 +108,9 @@ The audit found 4 of 6 rules strong (66%): 4 strong, 1 weak, 1 spot-checked.
   no model asked for a new one. For a graded proof it says the grader accepted a wrong
   output. `references/review_criteria.md`, "The planted bug", is its one home.
 - For an AI proof each line above says `wrong output` where it says `bug`. `No wrong output was
-  planted: this machine keeps no passing output of PROOF-N.` means the outputs were made on
-  another machine or removed: run `purlin:test --all` here, which keeps one, then
-  `purlin:audit <feature>`.
+  planted: this machine keeps no passing output of PROOF-N. Run purlin:test --clean to take one
+  here.` means the outputs were made on another machine or removed. A clean run starts every
+  test and every model again, so it keeps one; then run `purlin:audit <feature>`.
 - A line `PROOF-N: the AI says this breaks: ...` is the model's claim about which case the bug
   breaks. A test run settles whether it holds.
 - A line `PROOF-N: its test is as it was and still passes with the bug it missed. Strengthen it

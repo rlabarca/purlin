@@ -92,7 +92,9 @@ PROOF-4: the AI says this breaks: the sample report; the proof says the reply na
   session wrote.
 - **A grader that accepts the wrong output leaves the test passing.** The rule reads `weak`.
 - **The kept output must be on this machine.** A fresh clone holds the results and not the
-  folders. Nothing is planted there, and the audit says why.
+  folders. Nothing is planted there, and the audit says why:
+  `No wrong output was planted: this machine keeps no passing output of PROOF-1. Run purlin:test --clean to take one here.`
+  A clean run starts every test and every model again, so it keeps an output here.
 - **A seventh spot test reads the tag.** It flags the test of a graded proof that never asks
   for the grade.
 

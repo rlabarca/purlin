@@ -70,7 +70,7 @@ says `wrong output` (`planted_bug.of_output`). A bug that survived is
 planted again in the folder its entry names where this machine still keeps
 it, else in the output kept now. Where this machine keeps no passing output
 of the proof, nothing is planted and nothing is recorded for it: `no_bug`
-holds `NO_OUTPUT`, and the proof is left out of `ai_audit.plants_for`, so
+holds `NO_OUTPUT` and then `TAKE_OUTPUT`, and the proof is left out of `ai_audit.plants_for`, so
 the rule is not read again for it until an output is kept.
 """
 
@@ -122,6 +122,10 @@ ERRORED = 'A bug was planted for %s and its test ended in an error, not a failur
 # For an AI proof alone: PROOF-N in each.
 NO_GRADE = 'A wrong output was planted for %s and its grader gave no answer.'
 NO_OUTPUT = 'this machine keeps no passing output of %s'
+# What follows the sentence `NO_OUTPUT` makes: the run that keeps one. A
+# clean run starts every model again; another full run carries a model that
+# passed and keeps nothing for it.
+TAKE_OUTPUT = ' Run purlin:test --clean to take one here.'
 NO_PART = planted_bug.NO_PART
 
 # Settling a rule. The first three are printed under the rule and not stored:
@@ -631,7 +635,8 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
     `no_bug` one sentence for each proof no bug was caught for. A proof the
     model could not be reached for, or that is tagged for another system, has
     no entry under `bugs`, so the first is asked for again. A `no output`
-    proof of the plan has none either, and `no_bug` holds `NO_OUTPUT` for it.
+    proof of the plan has none either, and `no_bug` holds `NO_OUTPUT` for it,
+    with `TAKE_OUTPUT` after it.
 
     A `held` proof of the plan is one whose kept bug was planted again and
     still survives: its entry and its two findings are kept.
@@ -675,7 +680,8 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             findings.extend(survived_findings(proof_id, value[0], last,
                                               value[1]))
         elif what == 'no output':
-            note(planted_bug.of_output(NO_BUG) % (NO_OUTPUT % proof_id))
+            note(planted_bug.of_output(NO_BUG) % (NO_OUTPUT % proof_id)
+                 + TAKE_OUTPUT)
         elif answer.get('why'):
             if what == 'second':
                 said[proof_id] = value[1]

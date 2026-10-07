@@ -360,9 +360,10 @@ does not ignore stops the audit, as any change to the project does.
 - **No kept output on this machine.** A fresh clone holds the results and not the folders, and
   so does a machine the runs were not made on. Nothing is planted and nothing is recorded for
   the proof, and `no_bug` holds
-  `No wrong output was planted: this machine keeps no passing output of PROOF-4.`
-  Where nothing else sets the verdict the rule reads `spot-checked`. A test run that starts
-  the proof on this machine keeps an output.
+  `No wrong output was planted: this machine keeps no passing output of PROOF-4. Run purlin:test --clean to take one here.`
+  Where nothing else sets the verdict the rule reads `spot-checked`. A clean run starts every
+  test and every model again, so it keeps an output on this machine; a full run that is not
+  clean carries a model that passed and keeps nothing for it.
 
 Every sentence the audit prints or keeps about a wrong output says `wrong output` where it
 says `bug` of another proof, such as

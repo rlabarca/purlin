@@ -2939,12 +2939,13 @@ class TestAWrongOutput:
         assert 'refusal_note RULE-1   spot-checked' in run['lines']
         assert sample_lab.note_under(run, 'RULE-1') == [
             '  The spot tests found nothing. No wrong output was planted: '
-            'this machine keeps no passing output of PROOF-1.']
+            'this machine keeps no passing output of PROOF-1. Run '
+            'purlin:test --clean to take one here.']
         entry = run['entries']['RULE-1']
         assert (entry['verdict'], entry['bugs']) == ('spot-checked', {})
         assert entry['no_bug'] == [
             'No wrong output was planted: this machine keeps no passing '
-            'output of PROOF-1.']
+            'output of PROOF-1. Run purlin:test --clean to take one here.']
         assert len(run['calls']) == 2
         assert not [call for call in run['calls']
                     if 'Plant one' in call['prompt'].split('\n---\n', 1)[1]]
