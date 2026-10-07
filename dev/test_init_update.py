@@ -261,10 +261,17 @@ def test_yes_asks_nothing_and_leaves_nothing_pending(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
     asked = _answers(monkeypatch)
+    # The sample has nine pending, and the run says it applies those nine:
+    # a migration that was never listed is not one the run left none of.
+    assert _ids(root) == list(NINE)
     assert _apply(root) == 0
-    capsys.readouterr()
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == 'Applying 9 migrations: %s.' % ', '.join(NINE)
     assert asked == []
     assert update.pending(root) == []
+    assert _ids(root) == []
+    # What the settings migration was pending for is gone from the file.
+    assert sorted(_config(root)) == ['tests', 'version']
 
 
 def _twice(tmp_path, capsys):
@@ -1099,6 +1106,15 @@ def test_a_reporter_the_plugin_never_shipped_is_left_alone(tmp_path):
     assert _read(root, '.purlin/plugins/house_purlin.rb') == (
         '# our own reporter\n')
     assert sorted(os.listdir(folder)) == ['house_purlin.rb']
+    # Gone from git as from the disk: the commit the update made holds no
+    # file of the plugin folder, and nothing is left for a later commit.
+    assert [rel for rel in _tracked(root)
+            if rel.startswith('.purlin/plugins/')] == []
+    assert [rel for rel in _git(root, 'ls-tree', '-r', '--name-only',
+                                'HEAD').stdout.splitlines()
+            if rel.startswith('.purlin/plugins/')] == []
+    assert _git(root, 'status', '--porcelain').stdout.splitlines() == [
+        '?? .purlin/plugins/']
 
 
 # purlin: update PROOF-34
@@ -1124,6 +1140,12 @@ def test_the_evidence_folder_gets_its_readme(tmp_path):
                   ROOT, 'templates', 'evidence-readme.md'), 'rb') as want:
         assert got.read() == want.read()
     assert '.purlin/evidence/README.md' in _tracked(root)
+    # Committed: the latest commit holds the file, and git has nothing of
+    # it left to commit.
+    assert '.purlin/evidence/README.md' in _git(
+        root, 'ls-tree', '-r', '--name-only', 'HEAD').stdout.splitlines()
+    assert _git(root, 'status', '--porcelain', '--',
+                '.purlin/evidence').stdout == ''
     assert 'evidence' not in _ids(root)
 
 
@@ -1658,6 +1680,20 @@ def test_at_most_20_files_are_listed_and_the_rest_counted(tmp_path, capsys):
         for number in range(1, 21)]
     more = re.match(r'^  and (\d+) more files$', printed[heading + 21])
     assert more and int(more.group(1)) >= 2, printed[heading + 21]
+    # `<n>` is the files not listed: every tracked file a line of which
+    # still holds one of the five, counted here from the files themselves,
+    # less the 20 listed. The sample leaves 6 of its own beside the 22.
+    holding = []
+    for rel in _tracked(root):
+        with open(os.path.join(root, rel), encoding='utf-8',
+                  errors='replace') as handle:
+            text = handle.read()
+        if any(name in text for name in (
+                '[proof:', 'pytest.mark.proof', '.purlin/plugins',
+                'purlin:verify', 'proofs-')):
+            holding.append(rel)
+    assert len(holding) == 28, holding
+    assert printed[heading + 21] == '  and 8 more files'
     assert not [line for line in printed if 'notes/n21.md' in line]
 
 
@@ -2188,6 +2224,22 @@ def test_a_run_with_yes_prints_one_line_in_place_of_the_pending_list(
     assert len(committed) == 1, printed
     assert [line for line in printed[1:committed[0]]
             if 'specs/' in line] == [], printed[:committed[0]]
+    # Under a migration stands nothing but what the settings migration
+    # says of the test tools and the keys: each other line is one line of
+    # totals, one for each migration that has one, in order.
+    block = printed[2:committed[0]]
+    totals = [line for line in block if re.match(r'  [a-z-]+: ', line)]
+    assert [line.split(':')[0].strip() for line in totals] == [
+        'design-refs', 'anchor-lines', 'os-tags', 'kind-tags',
+        'untracked-files', 'config', 'evidence', 'plugins'], totals
+    under = [line for line in block if line not in totals]
+    assert under[0].startswith('    pytest: '), under
+    assert under[1:] == [
+        '    dropped jest from the tests: nothing in the tree runs it',
+        '    dropped shell from the tests: nothing in the tree runs it',
+        '    dropped vitest from the tests: nothing in the tree runs it',
+        '    removed from .purlin/config.json: test_framework, spec_dir, '
+        'pre_push, report, digest'], under
 
 
 # purlin: update PROOF-214
