@@ -1323,24 +1323,18 @@
   "feature": "reports",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T00:25:59Z",
-      "commit": "1608f9470ef3cc68fbf07e6cbfff123267bb5fa0",
+      "at": "2026-10-08T13:52:06Z",
+      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "0f32e250cd5ff3c5c9246f2ee65086e448364d5e09b41227f3f7bd041f84c86b",
+        "code": "706c5263d83c432db75fb7341644edbeeefc30a31d34d6f09ffa5e73e4186e41",
         "spec": "738a37fed09847512cdca18c592c1dfc66d2a51564a23690b40cafbbe9017ab0",
         "tests": "2a4de4bc154c643bd0cd9efcc8844ddfa848c3785f00d2e6cd0ad8b50b837cad"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -1355,7 +1349,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1363,12 +1357,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_every_comment_syntax_is_read"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -1383,7 +1371,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1391,12 +1379,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_a_marker_after_code_in_a_text_file_is_not_read"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-124",
           "manual": false,
@@ -1404,14 +1386,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.558,
+                "duration": 0.555,
                 "name": "test_a_marker_naming_a_feature_with_a_hyphen_is_tied",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1419,12 +1401,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_marker_naming_a_feature_with_a_hyphen_is_tied"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-119",
           "manual": false,
@@ -1432,14 +1408,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.541,
+                "duration": 0.447,
                 "name": "test_a_marker_inside_a_string_is_not_a_marker",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1447,12 +1423,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_marker_inside_a_string_is_not_a_marker"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-123",
           "manual": false,
@@ -1460,14 +1430,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.448,
+                "duration": 0.373,
                 "name": "test_a_marker_inside_a_here_document_is_not_a_marker",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1475,12 +1445,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_marker_inside_a_here_document_is_not_a_marker"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -1495,7 +1459,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1503,12 +1467,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_a_star_does_not_cross_a_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -1523,7 +1481,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1531,12 +1489,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_a_glob_with_no_slash_matches_the_name_in_any_folder"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -1544,14 +1496,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheMarker",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_file_two_suites_match_belongs_to_the_first",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1559,12 +1511,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_a_file_two_suites_match_belongs_to_the_first"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -1572,14 +1518,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.576,
+                "duration": 0.543,
                 "name": "test_a_blank_line_and_a_comment_after_a_marker_still_tie",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1587,12 +1533,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_blank_line_and_a_comment_after_a_marker_still_tie"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -1600,14 +1540,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.567,
+                "duration": 0.517,
                 "name": "test_two_markers_over_one_passing_test_both_pass",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1615,12 +1555,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_two_markers_over_one_passing_test_both_pass"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -1635,7 +1569,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1643,12 +1577,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_python_declares_test_functions_and_methods_only"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -1663,7 +1591,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1671,12 +1599,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_typescript_declares_its_it_and_test_calls"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -1691,7 +1613,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1699,12 +1621,6 @@
           "test": "dev/test_reports.py::TestTheMarker::test_csharp_declares_its_fact_and_theory_methods"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-126",
           "manual": false,
@@ -1712,14 +1628,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestAJavaScriptTitle",
-                "duration": 0.414,
+                "duration": 0.4,
                 "name": "test_an_escaped_apostrophe_is_read_as_the_apostrophe",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1727,12 +1643,6 @@
           "test": "dev/test_reports.py::TestAJavaScriptTitle::test_an_escaped_apostrophe_is_read_as_the_apostrophe"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-127",
           "manual": false,
@@ -1740,14 +1650,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestAJavaScriptTitle",
-                "duration": 0.401,
+                "duration": 0.398,
                 "name": "test_pieces_joined_with_a_plus_are_one_title",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1755,12 +1665,6 @@
           "test": "dev/test_reports.py::TestAJavaScriptTitle::test_pieces_joined_with_a_plus_are_one_title"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-128",
           "manual": false,
@@ -1768,14 +1672,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestAJavaScriptTitle",
-                "duration": 0.379,
+                "duration": 0.371,
                 "name": "test_a_filled_template_title_is_named_and_not_tied",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1783,12 +1687,6 @@
           "test": "dev/test_reports.py::TestAJavaScriptTitle::test_a_filled_template_title_is_named_and_not_tied"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-129",
           "manual": false,
@@ -1796,14 +1694,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestAJavaScriptTitle",
-                "duration": 0.422,
+                "duration": 0.389,
                 "name": "test_a_variable_title_takes_no_marker_of_a_later_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1811,12 +1709,6 @@
           "test": "dev/test_reports.py::TestAJavaScriptTitle::test_a_variable_title_takes_no_marker_of_a_later_test"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -1824,14 +1716,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.567,
+                "duration": 0.556,
                 "name": "test_a_marker_above_nothing_is_tied_to_no_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1839,12 +1731,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_marker_above_nothing_is_tied_to_no_test"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -1852,14 +1738,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.56,
+                "duration": 0.489,
                 "name": "test_a_marker_naming_a_feature_no_spec_has_is_printed_and_exits_1",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1867,12 +1753,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_marker_naming_a_feature_no_spec_has_is_printed_and_exits_1"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-13",
           "manual": false,
@@ -1880,14 +1760,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.559,
+                "duration": 0.493,
                 "name": "test_a_case_that_is_two_tests_is_counted_for_neither",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1895,12 +1775,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_case_that_is_two_tests_is_counted_for_neither"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-120",
           "manual": false,
@@ -1908,14 +1782,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.551,
+                "duration": 0.487,
                 "name": "test_a_comment_naming_a_rule_that_has_proofs_exits_1",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1923,12 +1797,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_comment_naming_a_rule_that_has_proofs_exits_1"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -1936,14 +1804,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.543,
+                "duration": 0.483,
                 "name": "test_a_suite_with_no_run_is_left_out",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1951,12 +1819,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_run_is_left_out"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
@@ -1964,14 +1826,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.57,
+                "duration": 0.501,
                 "name": "test_a_suite_of_an_unknown_format_is_left_out",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -1979,12 +1841,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_suite_of_an_unknown_format_is_left_out"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-108",
           "manual": false,
@@ -1992,14 +1848,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_tests_setting_that_is_not_a_list_is_no_suite",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2007,12 +1863,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_tests_setting_that_is_not_a_list_is_no_suite"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-84",
           "manual": false,
@@ -2020,14 +1870,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.605,
+                "duration": 0.467,
                 "name": "test_the_command_runs_in_the_project_root",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2035,12 +1885,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_the_command_runs_in_the_project_root"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-86",
           "manual": false,
@@ -2048,14 +1892,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.439,
+                "duration": 0.396,
                 "name": "test_a_report_folder_is_read_file_by_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2063,12 +1907,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_report_folder_is_read_file_by_file"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-87",
           "manual": false,
@@ -2076,14 +1914,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.515,
+                "duration": 0.48,
                 "name": "test_a_report_of_a_dash_is_read_from_the_output",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2091,12 +1929,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_report_of_a_dash_is_read_from_the_output"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-82",
           "manual": false,
@@ -2104,14 +1936,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.546,
+                "duration": 0.442,
                 "name": "test_a_path_holding_a_space_is_one_argument_then_the_report_path",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2119,12 +1951,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_path_holding_a_space_is_one_argument_then_the_report_path"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -2132,14 +1958,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.436,
+                "duration": 0.359,
                 "name": "test_an_old_report_is_deleted_before_the_suite_runs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2147,12 +1973,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_an_old_report_is_deleted_before_the_suite_runs"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -2160,14 +1980,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.456,
+                "duration": 0.469,
                 "name": "test_a_suite_with_no_report_is_missing_evidence",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2175,12 +1995,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_suite_with_no_report_is_missing_evidence"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-114",
           "manual": false,
@@ -2188,14 +2002,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.416,
+                "duration": 0.365,
                 "name": "test_a_report_not_in_its_format_is_missing_evidence",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2203,12 +2017,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_report_not_in_its_format_is_missing_evidence"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -2216,14 +2024,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheReports",
-                "duration": 0.15,
+                "duration": 0.139,
                 "name": "test_four_python_tests_read_pass_fail_skip_fail_in_their_order",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2231,12 +2039,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_four_python_tests_read_pass_fail_skip_fail_in_their_order"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -2251,7 +2053,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2259,12 +2061,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_the_trx_dotnet_writes"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -2279,7 +2075,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2287,12 +2083,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_the_trx_outcomes_the_capture_does_not_hold"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-121",
           "manual": false,
@@ -2300,14 +2090,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheReports",
-                "duration": 0.143,
+                "duration": 0.139,
                 "name": "test_a_fixture_that_raises_is_marked_an_error_and_a_failure_is_not",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2315,12 +2105,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_a_fixture_that_raises_is_marked_an_error_and_a_failure_is_not"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-122",
           "manual": false,
@@ -2335,7 +2119,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2343,12 +2127,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_a_trx_error_timeout_or_abort_is_marked_an_error"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -2356,14 +2134,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheReports",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_the_stream_go_test_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2371,12 +2149,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_the_stream_go_test_prints"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -2384,14 +2156,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.995,
+                "duration": 0.395,
                 "name": "test_an_exit_suite_gives_each_file_its_exit_code",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2399,12 +2171,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_gives_each_file_its_exit_code"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-80",
           "manual": false,
@@ -2419,7 +2185,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2427,12 +2193,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_an_exit_suite_runs_its_command_once_per_file"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -2440,14 +2200,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.133,
+                "duration": 0.138,
                 "name": "test_a_python_class_names_its_module_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2455,12 +2215,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_python_class_names_its_module_file"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -2475,7 +2229,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2483,12 +2237,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_jest_case_names_its_file"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -2496,14 +2244,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.004,
+                "duration": 0.003,
                 "name": "test_a_trx_class_is_narrowed_by_its_namespace",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2511,12 +2259,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_trx_class_is_narrowed_by_its_namespace"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -2524,14 +2266,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_vitest_title_is_narrowed_by_its_outer_parts",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2539,12 +2281,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_vitest_title_is_narrowed_by_its_outer_parts"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-73",
           "manual": false,
@@ -2552,14 +2288,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.142,
+                "duration": 0.143,
                 "name": "test_a_python_test_is_narrowed_by_its_class",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2567,12 +2303,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_python_test_is_narrowed_by_its_class"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -2580,14 +2310,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.146,
+                "duration": 0.141,
                 "name": "test_a_parametrised_test_fails_when_one_value_fails",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2595,12 +2325,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_parametrised_test_fails_when_one_value_fails"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-70",
           "manual": false,
@@ -2608,14 +2332,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestTheTie",
-                "duration": 0.004,
+                "duration": 0.003,
                 "name": "test_a_go_test_with_a_failing_subtest_fails",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2623,12 +2347,6 @@
           "test": "dev/test_reports.py::TestTheTie::test_a_go_test_with_a_failing_subtest_fails"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-77",
           "manual": false,
@@ -2636,14 +2354,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.608,
+                "duration": 0.487,
                 "name": "test_a_test_whose_setup_errors_is_fail",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2651,12 +2369,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_test_whose_setup_errors_is_fail"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-78",
           "manual": false,
@@ -2671,7 +2383,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2679,12 +2391,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_test_partly_skipped_and_otherwise_passing_is_missing"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-79",
           "manual": false,
@@ -2692,14 +2398,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestThroughARun",
-                "duration": 0.517,
+                "duration": 0.358,
                 "name": "test_a_test_the_report_holds_no_case_of_is_missing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2707,12 +2413,6 @@
           "test": "dev/test_reports.py::TestThroughARun::test_a_test_the_report_holds_no_case_of_is_missing"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-115",
           "manual": false,
@@ -2727,7 +2427,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2735,12 +2435,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_a_junit_skip_carries_its_message_as_the_reason"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-117",
           "manual": false,
@@ -2755,7 +2449,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2763,12 +2457,6 @@
           "test": "dev/test_reports.py::TestTheReports::test_a_go_skip_carries_its_last_output_as_the_reason"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-28",
           "manual": false,
@@ -2776,14 +2464,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestNearMisses",
-                "duration": 0.041,
+                "duration": 0.034,
                 "name": "test_a_near_miss_is_listed_as_json",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2791,12 +2479,6 @@
           "test": "dev/test_reports.py::TestNearMisses::test_a_near_miss_is_listed_as_json"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-35",
           "manual": false,
@@ -2804,14 +2486,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestNearMisses",
-                "duration": 0.041,
+                "duration": 0.034,
                 "name": "test_a_feature_one_character_off",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2819,12 +2501,6 @@
           "test": "dev/test_reports.py::TestNearMisses::test_a_feature_one_character_off"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-37",
           "manual": false,
@@ -2832,14 +2508,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestNearMisses",
-                "duration": 0.04,
+                "duration": 0.037,
                 "name": "test_an_id_one_character_from_several_is_not_a_near_miss",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2847,12 +2523,6 @@
           "test": "dev/test_reports.py::TestNearMisses::test_an_id_one_character_from_several_is_not_a_near_miss"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-125",
           "manual": false,
@@ -2860,14 +2530,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestNearMisses",
-                "duration": 0.04,
+                "duration": 0.039,
                 "name": "test_a_feature_holding_a_character_no_name_may_has_no_fix",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2875,12 +2545,6 @@
           "test": "dev/test_reports.py::TestNearMisses::test_a_feature_holding_a_character_no_name_may_has_no_fix"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-130",
           "manual": false,
@@ -2895,7 +2559,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2903,12 +2567,6 @@
           "test": "dev/test_reports.py::TestTheDuration::test_a_junit_case_carries_its_time_in_seconds"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-131",
           "manual": false,
@@ -2923,7 +2581,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2931,12 +2589,6 @@
           "test": "dev/test_reports.py::TestTheDuration::test_a_trx_result_carries_its_duration_in_seconds"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-132",
           "manual": false,
@@ -2951,7 +2603,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2959,12 +2611,6 @@
           "test": "dev/test_reports.py::TestTheDuration::test_a_go_event_carries_its_elapsed_seconds"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-133",
           "manual": false,
@@ -2979,7 +2625,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -2987,12 +2633,6 @@
           "test": "dev/test_reports.py::TestTheFailureText::test_a_junit_failure_carries_its_message_and_its_text"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-134",
           "manual": false,
@@ -3007,7 +2647,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -3015,12 +2655,6 @@
           "test": "dev/test_reports.py::TestTheFailureText::test_a_trx_failure_carries_its_message_and_its_stack_trace"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-135",
           "manual": false,
@@ -3035,7 +2669,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -3043,12 +2677,6 @@
           "test": "dev/test_reports.py::TestTheFailureText::test_a_go_failure_carries_what_the_test_printed"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-136",
           "manual": false,
@@ -3056,14 +2684,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestWhatIsKeptForATest",
-                "duration": 0.0,
+                "duration": 0.003,
                 "name": "test_each_case_is_kept_with_its_name_outcome_time_and_text",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -3071,12 +2699,6 @@
           "test": "dev/test_reports.py::TestWhatIsKeptForATest::test_each_case_is_kept_with_its_name_outcome_time_and_text"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-137",
           "manual": false,
@@ -3091,7 +2713,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -3099,12 +2721,6 @@
           "test": "dev/test_reports.py::TestWhatIsKeptForATest::test_a_text_over_the_limit_is_cut_in_its_middle_and_says_so"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-138",
           "manual": false,
@@ -3112,14 +2728,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestWhatIsKeptForATest",
-                "duration": 0.57,
+                "duration": 0.691,
                 "name": "test_a_run_keeps_what_pytest_reported_for_each_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
@@ -3127,12 +2743,6 @@
           "test": "dev/test_reports.py::TestWhatIsKeptForATest::test_a_run_keeps_what_pytest_reported_for_each_test"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-139",
           "manual": false,
@@ -3140,14 +2750,14 @@
             "cases": [
               {
                 "class": "dev.test_reports.TestWhatIsKeptForATest",
-                "duration": 1.073,
+                "duration": 0.911,
                 "name": "test_a_file_of_an_exit_suite_keeps_nothing_from_a_report",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
             }
           },
           "result": "pass",
