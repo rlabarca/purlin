@@ -44,6 +44,9 @@ A project can test, and keep evidence for, the prompts and skills it produces.
   before you sign:`, holds each graded model run with the grader's reason.
 - **The docs**: `docs/testing-ai.md` and `docs/graded-by-ai.md`, and a part in each page a
   reader is on. The deck has the slides `ai` and `graded`, published at version 142.
+- **Who it is for**, added 2026-10-08: the README's part of that name, slide 3 rewritten
+  (deck version 144; the owner edited its closing by hand) and the audit pages saying the
+  audit is not a mutation testing package.
 - **Purlin on itself**: three AI proofs on `claude-opus-5-5`, `skill_build` PROOF-55 and
   PROOF-56 (graded by `claude-haiku-4-5-20251001`) and `skill_audit` PROOF-64. A full run
   starts real sessions for them when a skill's file changed; `--clean` starts them all.
@@ -112,6 +115,13 @@ their specs audited again. What remains:
   not pass in a copy of the project.
 - **`_run` in `purlin_run.py` starts every command with `Popen`** since the process-group
   fix. It has passed two Windows runs.
+- `specs/instructions/purlin_docs.md` PROOF-22 says every link before `Sources` appears again
+  "in the list". The research page gives `audit.md` again in the paragraph under the heading,
+  not in a list item; the test holds papers to a list item and the project's own pages to
+  anywhere under the heading.
+- A change to `README.md` or a page under `docs/` puts the audit of `install` and
+  `purlin_docs` (14 rules) out of date. The audit after the 2026-10-08 change found 9 of
+  them weak with new bugs; each was settled with a stronger test.
 
 ## How to work, as the owner settled it
 
