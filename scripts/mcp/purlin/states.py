@@ -68,7 +68,6 @@ and `manual` beside the buckets. `out_of_date` is the passed cell's;
 """
 
 import os
-import re
 import sys
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -175,11 +174,6 @@ MODEL_RUN = '%s: %d of %d run'                     # claude-opus-5-5, 3, 5
 # The fields of one run of an AI proof's test that a model's result carries,
 # as the evidence holds them.
 RUN_FIELDS = ('result', 'output', 'made', 'why', 'grade')
-
-# The `why` of a run that reads `not run` because its test left no result,
-# as `references/formats/evidence_format.md` gives it. Any other `why` is
-# the reason a model gave no answer.
-NO_RESULT = re.compile(r'The test at .+:\d+ has no result\.$')
 
 # The buckets a rollup counts, one per rule.
 BUCKETS = ('untested', 'failing', 'partial', 'by_hand', 'passed')
@@ -375,7 +369,7 @@ def not_reached(features):
 
     `features` is the payload's `features`. A model is listed where one of
     its runs under a proof, as `model_results` gives them, reads `not run`
-    for want of an answer: the run holds a `why` that is not `NO_RESULT`'s,
+    for want of an answer: the run holds a `why` that is not `evidence.NO_RESULT`'s,
     which says the test itself left no result. Where the run holds a
     `grade` with no verdict, the grader gave no answer and is the model
     listed. The reason is that of the first such run, in the order of the
@@ -391,7 +385,7 @@ def not_reached(features):
                     for run in model.get('runs') or ():
                         why = run.get('why')
                         if (run.get('result') != 'not run' or not why
-                                or NO_RESULT.match(why)):
+                                or evidence_module.NO_RESULT_WHY.match(why)):
                             continue
                         grade = run.get('grade')
                         name = model['model']

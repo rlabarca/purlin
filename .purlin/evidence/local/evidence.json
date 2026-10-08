@@ -37,27 +37,27 @@
         "verdict": "strong"
       },
       "RULE-11": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-17": {
-            "after": "        files[source] = None",
+            "after": "        if not os.path.isfile(full):\n            warnings.append(_ignored(path, feature, NOT_JSON,\n                                     rewrite_fix(source, feature)))\n            continue",
             "aim": "plain",
-            "before": "        files[source] = data",
-            "bug_key": "09224e0761e1e31cee92a7bb2f89b4fd518a9750ebda9ccd58ab3316493fc985",
-            "case": "only the ci file of login is written; the proof says loading reads the ci file; the changed code gives no ci file, as if none were there",
+            "before": "        if not os.path.isfile(full):\n            continue",
+            "bug_key": "a826781607d812defd5e915fac1cbfb496b8b97808b8eb0b5b0a00222beb7ebe",
+            "case": "only the ci file of login is written and its evidence is loaded; the proof says no warning is given; the changed code gives one warning for the missing local file",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 155,
+            "line": 146,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-17: the test writes only a ci file, loads the evidence of login and compares the ci file read with the file written, so a ci file that is not read or is altered fails it.",
-          "PROOF-17: the test checks that the local file reads as none, that both paths equal the two the proof names, and that the warnings are an empty list, so each result the proof names is compared.",
-          "PROOF-17: the spot tests found nothing, and the test leaves no result of the proof unchecked for a bug to get past."
+          "PROOF-17: the test writes only the ci file, loads the evidence of login, and compares the ci file read with the file written, the local file with None, both paths with the literals the proof names, and the warnings with an empty list.",
+          "PROOF-17: every result the proof names is compared with a value the code does not supply, so the test leaves no way past it and the bug planted is the plain one.",
+          "Findings: the spot tests found nothing, and the test holds assertions that can fail on each value the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -68,27 +68,27 @@
         "verdict": "strong"
       },
       "RULE-14": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-20": {
             "after": "PLATFORMS = ('windows', 'linux', 'macos')",
             "aim": "plain",
             "before": "PLATFORMS = ('windows', 'macos', 'linux')",
-            "bug_key": "d65f6aed2303ef5dcfb14bb646a6774a4e7291730c93b231b3588f6eda0f5f61",
-            "case": "the local file of login holds linux, macos and solaris and the ci file holds windows; the proof says the sections are local macos, local linux, ci windows in that order; the changed code gives local linux, local macos, ci windows",
+            "bug_key": "25fb9cedeefd135befcfd61a102e5242d5372f2dc1131f73f70b3c94ead776c4",
+            "case": "the `local` file of `login` holds `linux`, `macos` and `solaris` and the `ci` file holds `windows`; the proof says `local` `macos`, `local` `linux`, `ci` `windows` in that order; the changed code gives `local` `linux`, `local` `macos`, `ci` `windows`",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 38,
+            "line": 39,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-20: the test writes a local file with sections under linux, macos and solaris and a ci file with one under windows, then compares the listed source and operating system pairs with the exact ordered list the proof names, so a wrong order, a missing section or an extra one fails it.",
-          "PROOF-20: the test also checks that no listed section is for solaris, which the exact list comparison already covers.",
-          "PROOF-20: the test reads only the source and operating system of each entry, so the path and the section object an entry carries are not observed, and the proof names neither."
+          "PROOF-20: the test writes the `local` file with `linux`, `macos` and `solaris` and the `ci` file with `windows`, then compares the whole list of source and operating system pairs with the three the proof names in order, so a changed order, a missing section or a listed `solaris` fails it.",
+          "PROOF-20: the second assertion, that `solaris` is not listed, repeats what the exact list comparison already settles.",
+          "PROOF-20: the test reads only each entry's source and operating system, which is all the proof names, so the path and the section object each entry carries are not observed."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -99,51 +99,51 @@
         "verdict": "strong"
       },
       "RULE-15": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-21": {
             "after": "    return [part for part in PARTS if stored.get(part) == (now or {}).get(part)]",
             "aim": "plain",
             "before": "    return [part for part in PARTS if stored.get(part) != (now or {}).get(part)]",
-            "bug_key": "23c903c535f5e0a3ff43ab22984cf32418eb4a123deeed099d589089472b8f32",
-            "case": "a local macos section of login storing the fingerprint taken now, checked against a fingerprint taken again; the proof says current with no part out of date; the changed code gives out of date on spec, code and tests",
+            "bug_key": "f8593458547131020fbf3045e356174f4b1c2e1032b46c917cea47501ab8daa8",
+            "case": "a `local` `macos` section of `login` storing the fingerprint taken now; the proof says current with no part out of date; the changed code gives out of date on `spec`, `code` and `tests`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 446,
             "result": "caught",
             "why": ""
           },
           "PROOF-55": {
-            "after": "    return _hash_lines(files)",
+            "after": "    files, _ = expand_scope(project_root, scope)\n    return _hash_lines(files)",
             "aim": "plain",
-            "before": "    return _files_part(project_root, files)",
-            "bug_key": "ff3076d4f242be66af10bdbd1bffdc56e61a1a1c8029dfdbdbe729b4f1e0e7ae",
-            "case": "a local macos section of login storing the fingerprint taken now, then src/login.py edited; the proof says out of date on exactly code; the changed code gives current with no part out of date",
+            "before": "    files, _ = expand_scope(project_root, scope)\n    return _files_part(project_root, files)",
+            "bug_key": "76ceee30e57b7835d0d748945dfba6e0d5da1b214b331492c797b30ba8bc744c",
+            "case": "a section storing the fingerprint taken now, then `src/login.py` edited; the proof says out of date on exactly `code`; the changed code gives current with no part out of date",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 175,
             "result": "caught",
             "why": ""
           },
           "PROOF-57": {
-            "after": "        return list(PARTS[:2])",
+            "after": "        return list(PARTS[1:])",
             "aim": "plain",
             "before": "        return list(PARTS)",
-            "bug_key": "62d6d53b14e52b7d0066d72cdd0a8139abf115debc608b69e46b8e467e097ddd",
-            "case": "a local macos section of login storing no fingerprint, checked against a fingerprint taken now; the proof says out of date on spec, code and tests; the changed code gives out of date on spec and code only",
+            "bug_key": "d052dcdb45d90e49aad4bdda7a3f1286638f0564ab00855d8514d59e61525d40",
+            "case": "a `local` `macos` section of `login` storing no fingerprint; the proof says out of date on `spec`, `code` and `tests`; the changed code gives out of date on `code` and `tests` only",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 445,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-21: the test stores the fingerprint taken now and compares the section's state with exactly current and an empty list, which is the result the proof names.",
-          "PROOF-55: the test stores the fingerprint, rewrites src/login.py and compares the state with exactly not current and the one part code, so a missed edit or an extra part fails it.",
-          "PROOF-57: the test deletes the section's fingerprint and compares the state with exactly not current and spec, code and tests in that order, so a missing part fails it.",
-          "All three tests read the state through a helper in the same file whose source is not shown, so what it reads from the section is taken from its name and the compared values.",
-          "The spot tests found nothing, and each test compares the whole result its proof names, which leaves no value unchecked for a bug to pass through."
+          "PROOF-21: the test stores the fingerprint taken now and compares the state with exactly `(True, [])`, so both the current flag and the empty list of parts the proof names are observed.",
+          "PROOF-55: the test stores the fingerprint, rewrites `src/login.py` and compares the state with exactly `(False, ['code'])`, so a missed edit or an extra part out of date would fail it.",
+          "PROOF-57: the test deletes the section's fingerprint and compares the state with exactly `(False, ['spec', 'code', 'tests'])`, so a missing part or a changed order would fail it.",
+          "The helpers `_stored_now`, `_state`, `_section`, `_put` and `_file` are not shown, so whether `_state` reads the `local` `macos` section of `login` against a fingerprint taken again cannot be seen from the tests' own lines.",
+          "The spot tests found nothing, and each test holds an assertion against literal values that the code under test does not supply."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -154,27 +154,27 @@
         "verdict": "strong"
       },
       "RULE-16": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-22": {
-            "after": "            best = dict(entry, source='ci', path=loaded['paths'][source],",
+            "after": "                 if entry.get(key) == given[key]]",
             "aim": "plain",
-            "before": "            best = dict(entry, source=source, path=loaded['paths'][source],",
-            "bug_key": "39c7fc95b60fbfc714d3cf9e781bf8fb8747d415cbbe6e92b6a37556f64f580e",
-            "case": "a local entry for RULE-1 with hashes r, p, t, c and a commit that is not HEAD, asked for with r, p, t, c; the proof says it is returned naming the source local; the changed code names the source ci",
+            "before": "                 if entry.get(key) != given[key]]",
+            "bug_key": "f86590acd048331b279dc3c880edcd6b71842059ba6ccad39b7a1e4056c9115e",
+            "case": "a local entry for RULE-1 with hashes r, p, t, c and a commit that is not HEAD, asked for with r, p, t, c; the proof says the reader returns it as the answering entry from `local` with that commit; the changed code returns it as out of date on rule, proof, test and code",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 238,
+            "line": 244,
             "result": "caught",
             "why": ""
           },
           "PROOF-58": {
-            "after": "               ('tests', 'test_hash'), ('code', 'code_hash'))",
+            "after": "               ('test', 'proof_hash'), ('code', 'code_hash'))",
             "aim": "plain",
             "before": "               ('test', 'test_hash'), ('code', 'code_hash'))",
-            "bug_key": "4324f5ca4f7e42831fa8c7ffde519d1fa3d468478b8adffc68f355c572acf5dc",
-            "case": "a local entry for RULE-1 with hashes r, p, t, c, asked for with r, p, t2, c; the proof says it is out of date on exactly test; the changed code names the part tests",
+            "bug_key": "11c6fb56060ad1ad525d8ab3850d5f1e3f7f00bdd9754edc2adea11d9b82a055",
+            "case": "a local entry with hashes r, p, t, c asked for with r, p, t2, c; the proof says it is out of date on exactly `test`; the changed code returns it with nothing out of date",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 43,
+            "line": 44,
             "result": "caught",
             "why": ""
           },
@@ -182,41 +182,41 @@
             "after": "        if best is None or rank < best_rank:",
             "aim": "plain",
             "before": "        if best is None or rank > best_rank:",
-            "bug_key": "2fe110418807988b965a8f1a78a71d6ce7c324484e6de79dc7aeebe4edccb0a6",
-            "case": "local strong at 2026-09-01 and ci weak at 2026-09-02, both current; the proof says the weak entry from ci is returned; the changed code returns the strong entry from local, the earlier one",
+            "bug_key": "eb655955a5171fcb8f8c5f08491dcab229d1ca2e7756acac26a9aafb05930fa3",
+            "case": "local `strong` at 2026-09-01 and ci `weak` at 2026-09-02, both current; the proof says the `weak` entry from `ci` is returned; the changed code returns the `strong` entry from `local`, the earlier one",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 236,
+            "line": 246,
             "result": "caught",
             "why": ""
           },
           "PROOF-87": {
-            "after": "               ('test', 'test_hash'))",
+            "after": "               ('test', 'test_hash'), ('code', 'test_hash'))",
             "aim": "plain",
             "before": "               ('test', 'test_hash'), ('code', 'code_hash'))",
-            "bug_key": "142d6f82141c67b211b8311db8c305169a13344b074e093cff15235d35f17950",
-            "case": "a local entry for RULE-1 with hashes r, p, t, c, asked for with r, p, t, c2; the proof says it is out of date on exactly code; the changed code returns it as current, with no part out of date",
+            "bug_key": "c757e70e1db52faba5116a34cf8ce7584d703c2466c082f05815036e9f7d8f40",
+            "case": "a local entry with hashes r, p, t, c asked for with r, p, t, c2; the proof says it is out of date on exactly `code`; the changed code returns it with nothing out of date",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 43,
+            "line": 44,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
           "PROOF-22: the test asks with the four matching hashes and compares the source `local`, the verdict, an empty out-of-date list and the stored commit, which it also checks is not HEAD, so it observes everything the proof names.",
-          "PROOF-58: the test asks with `t2` and compares the out-of-date list with exactly `['test']`, as well as the verdict and source, so a wrong or extra part fails it.",
-          "PROOF-86: the test writes both files in both orders of the two times and compares the verdict, source and time of each answer, so neither a first-read nor a last-read answer passes.",
-          "PROOF-87: the test asks with `c2` and compares the out-of-date list with exactly `['code']`, as well as the verdict and source, so a wrong or missing part fails it.",
-          "The setup behind `_audited`, `_audit`, `_put` and `_file` is not shown, so the stored hashes and commit the tests rely on are read from the tests' expected values alone.",
-          "No test of the rule covers a current entry competing with an out-of-date one that has a later `at`, so that half of the rule's ordering has no proof."
+          "PROOF-58: the test asks with `t2` and compares the whole out-of-date list with `['test']`, so a missing or extra part fails it.",
+          "PROOF-86: the test writes both files in each order of the two times and compares verdict, source and time for both answers, so neither the first file read nor the last can answer for both.",
+          "PROOF-87: the test asks with `c2` and compares the whole out-of-date list with `['code']`, so a missing or extra part fails it.",
+          "No spot test fired, and the tests' own lines show nothing the spot tests missed.",
+          "No proof of the rule covers a current entry set against one out of date, so the rule's \"a current one before one out of date\" is not observed by these tests."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-86 holds two cases: the later time in `ci`, and then the two times exchanged."
+          "PROOF-86 holds two cases, the later entry in `ci` and then the two times exchanged, and is longer than 60 words."
         ],
         "proof_hash": "4197ff61f42c6f833fdebe2322cb4d7a6268e0872032de1f64686059ddfb88e7",
         "rule_hash": "a2ee9636c117dd107847785a40b13df789ab7b991abb06cd725343b81d1891e9",
@@ -224,16 +224,16 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-23": {
             "after": "            best = entry\n    return best or {}",
             "aim": "plain",
             "before": "            best = entry\n    return best",
-            "bug_key": "88251bfc650faaf8892cbe9b86fe490bb84eb017b7105d5d8884c464f8cb1c9f",
-            "case": "neither evidence file of `login` exists; the proof says the reader gives no newest section; the changed code gives an empty object in place of none",
+            "bug_key": "486879c30d5609e1e58f06bead17baae3277b168fd4df0b5b677c45837edc48d",
+            "case": "neither evidence file of login exists; the proof says the reader gives no newest section; the changed code gives an empty object as the newest section",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 215,
+            "line": 225,
             "result": "caught",
             "why": ""
           },
@@ -241,23 +241,23 @@
             "after": "        if best is None or at < _text(best['section'].get('at')):",
             "aim": "plain",
             "before": "        if best is None or at > _text(best['section'].get('at')):",
-            "bug_key": "85307984e693ea3b698d9177912f42a7bfd474b53cc88f88d6636767bc680522",
-            "case": "local `macos` dated 2026-09-01T00:00:00Z and ci `linux` dated 2026-09-03T00:00:00Z; the proof says the newest section is `ci` `linux`; the changed code gives `local` `macos`",
+            "bug_key": "282258ceb97ee6e1062031768044e6f656ecbb7de92f41ed2e92ee38d99ad591",
+            "case": "local macos dated 2026-09-01T00:00:00Z and ci linux dated 2026-09-03T00:00:00Z; the proof says the newest section is ci linux; the changed code gives local macos",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 213,
+            "line": 223,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-63: the test passes the proof's two dates to a helper, `_newest`, and compares the answer with `('ci', 'linux')`, so both the source and the system the proof names are checked.",
-          "PROOF-63: the helper's body is not shown, so the `local` `macos` and `ci` `linux` placement of the two dates is taken to be set there and is not visible in the test's own lines.",
-          "PROOF-23: the test loads `login` from a root and checks that the newest section is exactly `None`, which is the result the proof names.",
-          "PROOF-23: the test's own lines do not show that the root holds neither evidence file; that rests on the `root` fixture.",
-          "The spot tests found nothing, and both tests compare the result their proof names."
+          "PROOF-63: the test passes the proof's two dates to a helper, `_newest`, and compares its answer with the pair `ci`, `linux`, so a reader that picks the earlier section fails it.",
+          "PROOF-63: the helper's source is not shown, so that it writes a `macos` section in the `local` file and a `linux` section in the `ci` file is taken from the proof and the call, not read.",
+          "PROOF-23: the test loads the evidence of `login` from the fixture's project and checks that the newest section is None, so any other answer fails it.",
+          "PROOF-23: the test writes no evidence file itself and relies on the `root` fixture, whose source is not shown, to hold none for `login`.",
+          "The spot tests found nothing, and each test holds a failable comparison with a literal the proof names."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -268,29 +268,28 @@
         "verdict": "strong"
       },
       "RULE-18": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-24": {
-            "after": "        except (IOError, OSError, UnicodeDecodeError, ValueError):\n            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            os.remove(full)",
+            "after": "            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            os.remove(full)\n            continue",
             "aim": "plain",
-            "before": "        except (IOError, OSError, UnicodeDecodeError, ValueError):\n            warnings.append(_ignored(path, feature, NOT_JSON, fix))",
-            "bug_key": "b21eb8a142974ae4a0277d48c5194ee12d300d1fd793aa6e2c56c9c86696b81d",
-            "case": "the `ci` file of `login` holds `{not json` and the evidence is loaded; the proof says `.purlin/evidence/` holds the same files afterwards, none removed; the changed code deletes the `ci` file during the load",
+            "before": "            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            continue",
+            "bug_key": "5ead4d93540b3453935fa65e32fbb20d443036a45e4770869935e5f6d4653b4f",
+            "case": "local file of login holds a section and an audit entry and the ci file holds `{not json`, then the evidence is loaded; the proof says .purlin/evidence/ holds the same files with the same bytes; the changed code removes the ci file, so one file is gone",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 143,
+            "line": 153,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-24: the test writes a `local` file with a section and an audit entry and a `ci` file holding `{not json`, as the proof names.",
-          "PROOF-24: it takes a snapshot, then loads, checks the sections against a fingerprint taken now, and asks for an audit entry and the newest section, which is every action the proof lists.",
-          "PROOF-24: it asserts that the snapshot taken afterwards equals the one taken before, so a file added, removed or changed in what the snapshot reads fails the test.",
-          "PROOF-24: the snapshot helper's source is not shown, so the comparison covers every file and byte under `.purlin/evidence/` only if that helper reads them all.",
-          "PROOF-24: the spot tests found nothing, and the test does hold an assertion comparing two separately taken values, with the proof's named values `local`, `login`, `ci` and `{not json` all present."
+          "PROOF-24: the test writes the `local` file with a section and an audit entry and the `ci` file as `{not json`, takes a snapshot of the folder, loads, checks the sections against a fingerprint taken now, asks for an audit entry and the newest section, and compares a second snapshot with the first, which is the proof's case and its result.",
+          "PROOF-24: the snapshot comes from a helper whose source is not shown, so whether it reads every file under `.purlin/evidence/` and each file's bytes, as the proof names, cannot be read from the test's own lines.",
+          "PROOF-24: the test compares nothing the calls return, which the proof does not name either, so a wrong answer from a call passes while any file added, removed or changed in the snapshot fails it.",
+          "Findings: none, and the test's one assertion compares two snapshots taken at different times, so it can fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -301,14 +300,14 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-2": {
             "after": "    return '%s %s' % (spec_path, rule_id)",
             "aim": "plain",
             "before": "    return '%s %s %s' % (spec_path, rule_id, _normalise(text))",
-            "bug_key": "369371742069c4bb9138edefc7f336bd00ca26271fa76d6d9dbc92758de15910",
-            "case": "the rule of login reworded from `Valid credentials return 200` to `Valid credentials return 201`; the proof says the fingerprint differs in spec alone; the changed code gives a fingerprint that differs in no part",
+            "bug_key": "7e07bdcd9363913f9a10341b18002ceaf0c8d7c7c78a1a7cdb753cee014ca499",
+            "case": "the rule of login reworded from `Valid credentials return 200` to `Valid credentials return 201`; the proof says the fingerprint differs in `spec` alone; the changed code gives a fingerprint that differs in no part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 262,
             "result": "caught",
@@ -318,23 +317,23 @@
             "after": "        'spec': spec_hash(feature, features) + blob_id(project_root, info['spec_path']),",
             "aim": "plain",
             "before": "        'spec': spec_hash(feature, features),",
-            "bug_key": "7b81f43d446dc09ed220c5ec8584123e795e8c180d22faa620cbaac9c62430a1",
-            "case": "the Description of login rewritten from `What it does.` to `Something else entirely.`; the proof says all three parts equal the ones taken before; the changed code gives a different spec part",
+            "bug_key": "9434b90bac73004d9ca815e5b7bc714b68415d8cabef07fabc7e405372fa5e71",
+            "case": "the `> Description:` of login rewritten from `What it does.` to `Something else entirely.`; the proof says all three parts equal the ones taken before; the changed code gives a different `spec` part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 432,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-2: the test takes the fingerprint of login, rewords the rule to the proof's `Valid credentials return 201`, and compares the list of changed parts with exactly `['spec']`, so a spec part that stays the same or a second part that changes fails it.",
-          "PROOF-2: the starting text `Valid credentials return 200` and the workings of `_changed` live in a fixture and a helper not shown, so the test's own lines do not show that the rule started as the proof says.",
-          "PROOF-33: the test takes the fingerprint of login, rewrites the description to the proof's `Something else entirely.`, and compares the whole fingerprint with the one taken before, so a change in any of the three parts fails it.",
-          "PROOF-33: the starting description `What it does.` comes from the fixture and is not named in the test's own lines.",
-          "The spot tests found nothing, and both tests assert a value the code cannot set for itself in the proof's case."
+          "PROOF-2: the test rewords the rule to `Valid credentials return 201`, takes the fingerprint of `login` again and compares the list of changed parts with `['spec']`, so a rewording that changes no part or a second part fails it.",
+          "PROOF-2: the starting text `Valid credentials return 200` and the comparison of parts come from the `project` fixture and the `_changed` helper, whose source is not shown, so the reading rests on them doing what their names say.",
+          "PROOF-33: the test rewrites the description to `Something else entirely.` and compares the whole fingerprint with the one taken before, which covers all three parts the proof names.",
+          "PROOF-33: the starting description `What it does.` is not in the test's own lines and comes from the `project` fixture, which is not shown.",
+          "Findings: the spot tests found nothing, and each test holds a failable comparison against a fingerprint taken before the edit."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -345,16 +344,16 @@
         "verdict": "strong"
       },
       "RULE-20": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-28": {
             "after": "_READ_AS = {'pass': 'pass', 'fail': 'fail', 'missing': 'pass',",
             "aim": "plain",
             "before": "_READ_AS = {'pass': 'pass', 'fail': 'fail', 'missing': 'not run',",
-            "bug_key": "30f88fee6c5f1ea7e45f0bb7f277cdcd25de4d76bbce6df9f151f9c1ec2638c1",
-            "case": "a section lists PROOF-1 twice, pass with one test and missing with another; the proof says not run; the changed code gives pass",
+            "bug_key": "5d43b34dfed7281672279d77e94a39c6bb15efe01e1814587369255e182f3c7a",
+            "case": "a section lists PROOF-1 as pass with one test and missing with another; the proof says not run; the changed code gives pass",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 245,
+            "line": 255,
             "result": "caught",
             "why": ""
           },
@@ -362,23 +361,23 @@
             "after": "_WORST = {'fail': 1, 'not run': 2, NOTHING_TO_CHECK: 1, 'pass': 0}",
             "aim": "plain",
             "before": "_WORST = {'fail': 3, 'not run': 2, NOTHING_TO_CHECK: 1, 'pass': 0}",
-            "bug_key": "45a3fd9a24772b4a27dc09d9b78f5dfba2647ee36a5151eb84c528b8d86bb162",
-            "case": "a section lists PROOF-1 twice, missing with one test and fail with another; the proof says fail; the changed code gives not run",
+            "bug_key": "7ddab0fee20df834a5e2589c3fedfb0cbcd087dd2213f152c7ea0a8bddde3c8c",
+            "case": "a section lists PROOF-1 as missing with one test and fail with another; the proof says fail; the changed code gives not run",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 244,
+            "line": 254,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-28: the test builds a section listing PROOF-1 with `pass` and then `missing`, and compares the reader's whole answer with `{'PROOF-1': {'result': 'not run'}}`, which is the case and the value the proof names.",
-          "PROOF-29: the test builds a section listing PROOF-1 with `missing` and then `fail`, and compares the reader's whole answer with `{'PROOF-1': {'result': 'fail'}}`, which is the case and the value the proof names.",
-          "Both tests compare the whole answer with a literal, so a wrong result, a second proof id or a stray `reason` key would each fail them.",
-          "Each test lists its entries in one order only, the worse entry second, so a reader that kept the last entry listed and not the worst would pass both.",
-          "The spot tests found nothing, and nothing in either test contradicts that: each asserts a literal the proof names and does not take its expected value from the reader."
+          "PROOF-28: the test builds a section listing one proof as `pass` and then `missing`, and compares the reader's whole answer with `{'PROOF-1': {'result': 'not run'}}`, so it observes the case and the value the proof names.",
+          "PROOF-29: the test builds a section listing one proof as `missing` and then `fail`, and compares the reader's whole answer with `{'PROOF-1': {'result': 'fail'}}`, so it observes the case and the value the proof names.",
+          "PROOF-28 and PROOF-29: both tests build the section through `_listed`, whose source is not shown, so the proof id `PROOF-1` in the section is taken from that helper and from the expected value.",
+          "PROOF-28 and PROOF-29: each test lists the worse entry second, so a reader that kept the worst only when it came later would pass both.",
+          "The spot tests found nothing, and each test holds a failable comparison with the value its proof names in backticks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -422,63 +421,64 @@
         "verdict": "strong"
       },
       "RULE-30": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-78": {
-            "after": "        if (len(fields) == 3 and fields[0] in ('100644', '100755')\n                and fields[2] == '0'):",
+            "after": "                and fields[2] == '0'):",
             "aim": "plain",
-            "before": "        if (len(fields) == 3 and fields[0] in ('100644', '100755')\n                and fields[2] == '0' and path not in changed):",
-            "bug_key": "a09dedd4d796392cec3991c712ced95f1c4255f341fcd3a1c001acf334da0f67",
-            "case": "docs/guide.md, tracked and named by no scope, is edited and not committed; the proof says the fingerprint of security differs in code alone; the changed code reads the file's blob from the index, so no part differs",
+            "before": "                and fields[2] == '0' and path not in changed):",
+            "bug_key": "3c6322b8b0061afd9ecb9c9577df22984eb452b0022582e50f36f92871b0d717",
+            "case": "`docs/guide.md`, tracked and named by no scope, is edited and not committed; the proof says the fingerprint of `security` differs in `code` alone; the changed code reads the file's blob from the index, so no part differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 206,
             "result": "caught",
             "why": ""
           },
           "PROOF-79": {
-            "after": "    loose = _git_lines(project_root, ['ls-files', '-o', '-z',\n                                      '--exclude-standard']) or []\n    ids.update(blob_ids(project_root,\n                        sorted((set(slow) | set(loose)) - set(ids))))",
+            "after": "    slow = _git_lines(project_root, ['ls-files', '-z', '--others', '--exclude-standard']) or []",
             "aim": "plain",
-            "before": "    ids.update(blob_ids(project_root, sorted(set(slow) - set(ids))))",
-            "bug_key": "408ac7a8ad779860f396ddcc8f5a2ed7c45ef95dc0ad65bee377bf51b71eab11",
-            "case": "docs/draft.md is written and not added to git; the proof says all three parts of the fingerprint of security are as they were; the changed code hashes untracked files into the anchor's code part, so code differs",
+            "before": "    slow = []",
+            "bug_key": "ae1a81c07b8377b87a312a0c4b8557c6d799b3bf47db1d26207d5a9aa281c017",
+            "case": "`docs/draft.md` is written and not added to git; the proof says all three parts of the fingerprint of `security` are as they were; the changed code hashes untracked files into the anchor's `code` part, so `code` differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 210,
+            "line": 201,
             "result": "caught",
             "why": ""
           },
           "PROOF-90": {
-            "after": "    text = json.dumps(config, sort_keys=True, separators=(',', ':'))",
+            "after": "RECORDS = (':(exclude).purlin/evidence',)",
             "aim": "plain",
-            "before": "    text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))",
-            "bug_key": "8ecf1969b37eadd95f2b19c596e891c2a2b362f8b04ed080e9aa37ccaba2b512",
-            "case": "the version in .purlin/config.json goes from 0.10.0 to 0.10.1 and nothing else; the proof says all three parts of the fingerprint of security are as they were; the changed code hashes the whole settings file into the tests part, so tests differs",
+            "before": "RECORDS = (':(exclude).purlin/evidence', ':(exclude).purlin/config.json')",
+            "bug_key": "ce428ddd8b5912451267435fdd0f0bd9cc3620616fc7eb9828acdc6ab5c7de9f",
+            "case": "the `version` in `.purlin/config.json` goes from `0.10.0` to `0.10.1` and nothing else; the proof says all three parts of the fingerprint of `security` are as they were; the changed code reads the settings file into the anchor's `code` part, so `code` differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 340,
+            "line": 48,
             "result": "caught",
             "why": ""
           },
           "PROOF-91": {
-            "after": "    if setting is not None:\n        lines.append('tests-setting')",
+            "after": "    text = json.dumps(len(config['tests']), sort_keys=True, separators=(',', ':'))",
             "aim": "plain",
-            "before": "    if setting is not None:\n        lines.append(setting)",
-            "bug_key": "0b511b81f58e4a938025c6dcc5e32447b93ca1f27c347063da32f5af12950135",
-            "case": "the run command of the tests setting in .purlin/config.json is changed; the proof says the fingerprint of security differs in tests alone; the changed code adds a fixed line for the setting, so no part differs",
+            "before": "    text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))",
+            "bug_key": "7e783eee717d19d7f1be27f592a18751d327f677c4bbbf6facdc3ace3ca94e59",
+            "case": "the `run` command of the `tests` setting in `.purlin/config.json` is changed; the proof says the fingerprint of `security` differs in `tests` alone; the changed code hashes only the number of suites, so no part differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 413,
+            "line": 340,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-78: the test takes the fingerprint of `security`, edits `docs/guide.md` without committing and compares the list of changed parts with `['code']`, which is the case and the result the proof names.",
-          "PROOF-79: the test writes `docs/draft.md` without adding it and compares the whole fingerprint with the one taken before, so a change to any of the three parts fails it.",
-          "PROOF-90: the test writes the settings with version `0.10.0`, commits, then writes `0.10.1` and compares the whole fingerprint with the one taken before, so a version that reaches any part fails it.",
-          "PROOF-90: the test trusts the settings helper to change the version and nothing else, and does not itself read the file back.",
-          "PROOF-91: the test changes the `run` command of the first suite and compares the list of changed parts with `['tests']`, so a setting that moves no part, or that also moves `code`, fails it.",
-          "The spot tests found nothing, and each of the four tests compares the result its proof names, so no bug could be aimed past any of them."
+          "PROOF-78: the test edits `docs/guide.md` without committing and compares the list of changed parts with exactly `['code']`, so it observes both that `code` moved and that `spec` and `tests` did not, as the proof names.",
+          "PROOF-79: the test writes `docs/draft.md` without adding it and compares the whole fingerprint with the one taken before, so a change in any of the three parts fails it.",
+          "PROOF-90: the test commits the settings with `version` `0.10.0`, rewrites them with `0.10.1` and compares the whole fingerprint with the one taken before, so a change in any of the three parts fails it.",
+          "PROOF-91: the test replaces the `run` command of the first suite and compares the list of changed parts with exactly `['tests']`, so it observes both that `tests` moved and that `code` and `spec` did not.",
+          "PROOF-78 and PROOF-91: the changed parts come from `_changed`, a helper not shown, so the reading takes it to list every differing part.",
+          "PROOF-90 and PROOF-91: the settings are written by `_settings`, a helper not shown, so the reading takes it to change only the keys the test passes.",
+          "Findings: the spot tests found nothing, and each test holds an assertion that compares against a fingerprint taken before the action."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -489,14 +489,14 @@
         "verdict": "strong"
       },
       "RULE-31": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-80": {
             "after": "RECORDS = (':(exclude).purlin/evidence/package', ':(exclude).purlin/config.json')",
             "aim": "plain",
             "before": "RECORDS = (':(exclude).purlin/evidence', ':(exclude).purlin/config.json')",
-            "bug_key": "ff82671df3630de23ad3b4c9e149539fc2bca1c312fffbc38c11bb9bc912c655",
-            "case": "`.purlin/evidence/local/login.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code reads the new file into the anchor's `code` part, so the fingerprint differs",
+            "bug_key": "dc0ed5799fb75845426ad7f5b0075f4d968fbdc32f13f9085ed5e4b8dec2f972",
+            "case": "`.purlin/evidence/local/login.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code counts the new file in the anchor's code part, so the fingerprint differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 48,
             "result": "caught",
@@ -506,8 +506,8 @@
             "after": "RECORDS = (':(exclude,glob).purlin/evidence/*/*.json', ':(exclude).purlin/config.json')",
             "aim": "plain",
             "before": "RECORDS = (':(exclude).purlin/evidence', ':(exclude).purlin/config.json')",
-            "bug_key": "abb71543f4b28e6afc16cd053c2152775c69d5126d45179edcfb96bb2952dc9b",
-            "case": "`.purlin/evidence/package/1.0.0.signoffs/jane.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code leaves out only files one folder below the evidence folder, so the sign-off file is read and the fingerprint differs",
+            "bug_key": "bf7f5a39d08044b5da5192801ecb2eff6cfe6feaff8d0b7e1ba0a010b79ca676",
+            "case": "`.purlin/evidence/package/1.0.0.signoffs/jane.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code leaves out only files one folder below the evidence folder, so the sign-off is counted and the fingerprint differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 48,
             "result": "caught",
@@ -517,24 +517,23 @@
             "after": "RECORDS = (':(exclude).purlin/evidence/local', ':(exclude).purlin/config.json')",
             "aim": "plain",
             "before": "RECORDS = (':(exclude).purlin/evidence', ':(exclude).purlin/config.json')",
-            "bug_key": "d1f0510521802ce5464696dcc4e163ee3a374e343fca86a069781e252c99dd3c",
-            "case": "`.purlin/evidence/package/1.0.0.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code leaves out only the `local` folder, so the package file is read and the fingerprint differs",
+            "bug_key": "facfc58e972eacee3db847be9967e51039d9d10dff3a2b513ad59972eec13349",
+            "case": "`.purlin/evidence/package/1.0.0.json` is written and committed; the proof says the fingerprint of the anchor `security` is the same as before; the changed code counts the package file in the anchor's code part, so the fingerprint differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 48,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-80: the test hands the path `.purlin/evidence/local/login.json` and a one-line file to a helper whose source is not shown, so what it compares before and after the commit cannot be read from the test's own lines.",
-          "PROOF-82: the test hands the path `.purlin/evidence/package/1.0.0.signoffs/jane.json` to the same helper, and whether the anchor's fingerprint is taken twice and compared rests on that helper alone.",
-          "PROOF-83: the test hands the path `.purlin/evidence/package/1.0.0.json` to the same helper, and its own lines hold no comparison.",
-          "All three proofs name the anchor `security` and a fingerprint that stays the same, and the tests' own lines name neither, so the anchor and the comparison are the helper's to supply.",
-          "No proof of the rule shows the fingerprint changing when a file that is not a record is written, so a fingerprint that never changes at all would satisfy all three as written.",
-          "The spot tests found nothing, and nothing in the three tests' own lines contradicts that."
+          "PROOF-80: the test hands the path `.purlin/evidence/local/login.json` and a file body to the helper `_record_leaves_the_anchor`, whose source was not shown, so the write, the commit and the comparison of the anchor's fingerprint all rest on that helper.",
+          "PROOF-82: the test hands the path `.purlin/evidence/package/1.0.0.signoffs/jane.json` to the same helper and asserts nothing in its own lines, so whether the fingerprint is compared before and after depends on the helper alone.",
+          "PROOF-83: the test hands the path `.purlin/evidence/package/1.0.0.json` to the same helper and asserts nothing in its own lines, so whether the fingerprint is compared before and after depends on the helper alone.",
+          "The three tests name the anchor `security` nowhere in their own lines; which anchor is fingerprinted comes from the `anchored` fixture or the helper, neither of which was shown.",
+          "The spot tests found nothing, and the test bodies give no ground to add to that, since a helper in the same file may hold the assertion."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -569,27 +568,27 @@
         "verdict": "spot-checked"
       },
       "RULE-34": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-32": {
             "after": "    ids = blob_ids(project_root, sorted(set(paths)))\n    return _hash_lines('%s' % path for path in ids)",
             "aim": "plain",
             "before": "    ids = blob_ids(project_root, sorted(set(paths)))\n    return _hash_lines('%s %s' % (path, ids[path]) for path in ids)",
-            "bug_key": "42bd7d584bc5b665b406d7e7f2439a88eb6113bb92ea0c53e536c723aa03c424",
-            "case": "`login` covers committed `src/login.py`, edited and not committed; the proof says the fingerprint differs in `code` and no other part; the changed code hashes paths only, so no part differs",
+            "bug_key": "6ad1856f31f27f90156af568e4fb98f85bd700dcc42f6e932a92a6208dc689a8",
+            "case": "`login` covers the committed file `src/login.py`, edited and not committed; the proof says the fingerprint differs in `code` and no other part; the changed code gives the same `code` as before, so no part differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 125,
             "result": "caught",
             "why": ""
           },
           "PROOF-7": {
-            "after": "    return ':(glob)' + entry + '/*'",
+            "after": "        files.update(path for path in found\n                     if path.count('/') <= entry.count('/') + 1)",
             "aim": "plain",
-            "before": "    return ':(literal)' + entry",
-            "bug_key": "4f49b528162475e18a8f9cb514947479b0ce038e6c3a5a7a45076fca49034463",
-            "case": "`login` covers the folder `src` and `src/deep/token.py` is edited; the proof says `code` alone changes; the changed code reaches only files directly in `src`, so no part changes",
+            "before": "        files.update(found)",
+            "bug_key": "105077050474beb4b1b7e74faef5c7a6bb53e3c5c78c6376146b91ebb5aab34a",
+            "case": "`login` covers the folder `src` and the tracked file `src/deep/token.py` is edited; the proof says the fingerprint changes in `code` alone; the changed code leaves the file one folder down out of `code`, so no part changes",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 143,
+            "line": 164,
             "result": "caught",
             "why": ""
           },
@@ -597,23 +596,23 @@
             "after": "        return ':(glob)' + entry.replace('**/', '')",
             "aim": "plain",
             "before": "        return ':(glob)' + entry",
-            "bug_key": "a7f045e567cd592696f13770086bd97384038f8dbee4afc5cdfc253d965ae30b",
-            "case": "`login` covers the glob `src/**/*.py` and `src/deep/token.py` is edited; the proof says `code` alone changes; the changed code reads the glob as `src/*.py`, which stops at `src`, so no part changes",
+            "bug_key": "08ea89670adcc63c84b615ff5ac013ec2d708712f3f3c19a8b9923f91b869ad5",
+            "case": "`login` covers the glob `src/**/*.py` and the tracked file `src/deep/token.py` is edited; the proof says the fingerprint differs in `code` alone; the changed code reads the glob as `src/*.py`, which does not reach the file, so no part differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 142,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-32: the test takes the fingerprint of `login`, writes `src/login.py` without committing, and compares the list of changed parts with exactly `['code']`, so it observes both that `code` changed and that no other part did.",
-          "PROOF-7: the test scopes `login` to `src`, commits `src/deep/token.py`, edits it and compares the changed parts with exactly `['code']`, which is the proof's case and result.",
-          "PROOF-8: the test builds a project scoped to `src/**/*.py` through a helper not shown, edits `src/deep/token.py` and compares the changed parts with exactly `['code']`; whether the file is tracked and committed before the edit rests on that helper.",
-          "The spot tests found nothing, and each test compares the full list of changed parts, so a change that leaves `code` as it was or moves another part would fail it.",
-          "No proof of the rule names a file the scope does not reach, such as a glob `src/*.py` with an edit one folder down, so the rule's limit is proved in one direction only."
+          "PROOF-32: the test takes the fingerprint of `login`, writes `src/login.py` without committing and compares the list of changed parts with exactly `['code']`, which is the result the proof names; that the fixture's `login` covers `src/login.py` as a committed file is set in a fixture not shown.",
+          "PROOF-7: the test sets the scope to `src`, commits `src/deep/token.py`, edits it and compares the changed parts with exactly `['code']`, so both a folder that fails to reach the file and a change in any other part would fail it.",
+          "PROOF-8: the test builds a project scoped to `src/**/*.py` and compares the parts changed after editing `src/deep/token.py` with exactly `['code']`; that the file is tracked and that the fingerprint is taken before and after the edit rest on the helpers `_globbed` and `_after_edit`, whose source is not shown.",
+          "No finding of the spot tests is listed, and each test holds an assertion against a literal that the code under test does not supply.",
+          "The rule also says an entry naming a file reaches that file, a glob such as `src/*.py` stops at its folder, and a committed edit changes `code`; no proof names a file outside the scope whose edit must leave `code` as it was, so the rule's reach is proved in one direction only."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -624,53 +623,51 @@
         "verdict": "strong"
       },
       "RULE-35": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-18": {
-            "after": "            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            continue",
+            "after": "            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            files[source] = {}\n            continue",
             "aim": "past the test",
             "before": "            warnings.append(_ignored(path, feature, NOT_JSON, fix))\n            continue",
-            "bug_key": "c23120fb71ac8c139f9cb6f7b3e210c2baa250b31fc641d34a6947056cd54362",
-            "case": "`.purlin/evidence/local/login.json` holds `{not json`; the proof says exactly one warning; the changed code gives the same warning twice",
+            "bug_key": "e12bbd249bad45cfd3e809121a5ccd3e1d8c1282561fc07d8473004261e34fac",
+            "case": "local/login.json holds `{not json`; the proof says loading reads no `local` file and gives one warning; the changed code gives the warning and an empty object as the `local` file",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 143,
+            "line": 153,
             "result": "caught",
             "why": ""
           },
           "PROOF-19": {
-            "after": "OTHER_SOURCE = 'It has the source %s.'",
+            "after": "OTHER_SOURCE = 'It gives the source %s.'",
             "aim": "plain",
             "before": "OTHER_SOURCE = 'It names the source %s.'",
-            "bug_key": "cd0b32feed49aaf36b692d49eee9866298bc3d349631c9d91f3b7b2fc0995dfc",
-            "case": "`.purlin/evidence/ci/login.json` with its source reading `local`; the proof says the warning reads `It names the source \"local\".`; the changed code gives `It has the source \"local\".`",
+            "bug_key": "a852caa21a1697e9224cac2c21860fa9dd98329c51720aa90701215f9ebdb755",
+            "case": "ci/login.json written with source `local`; the proof says the warning reads `It names the source \"local\".`; the changed code gives `It gives the source \"local\".`",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 107,
+            "line": 117,
             "result": "caught",
             "why": ""
           },
           "PROOF-52": {
-            "after": "                _shown(data.get('schema')), SCHEMA), fix))",
+            "after": "                _shown(data.get('schema')), SCHEMA), fix))\n            files[source] = data\n            continue",
             "aim": "past the test",
             "before": "                _shown(data.get('schema')), SCHEMA), fix))\n            continue",
-            "bug_key": "ee45c28fc2234c18b02a4f533ea33d51e1231e32c2c56a6eb91d08923ad2c6ea",
-            "case": "`.purlin/evidence/local/login.json` with schema `purlin-evidence/1`; the proof says no `local` file is read; the changed code gives the warning and still reads the file as the `local` file",
+            "bug_key": "f942f07f580fe36cff0b6f9f9d14ad1859f31c4514f3250d1ee47db15cb5bccd",
+            "case": "local/login.json is well formed with schema `purlin-evidence/1`; the proof says loading reads no `local` file and gives one warning; the changed code gives the warning and the parsed file as the `local` file",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 149,
+            "line": 160,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-18: the test compares what the helper `_ignored_local` returns with the full warning sentence the proof names, so the wording, the path and the closing step are checked.",
-          "PROOF-18: the helper's source is not shown, so whether it checks that there is exactly one warning and that no `local` file is read cannot be told from the test's own lines.",
-          "PROOF-52: the test writes a well-formed file with the schema `purlin-evidence/1` and compares the helper's return with the full warning sentence the proof names.",
-          "PROOF-52: as with PROOF-18, the count of warnings and the absence of a `local` file are checked only if the unseen helper checks them.",
-          "PROOF-19: the test writes a `ci` file whose source reads `local`, checks that no `ci` file is read and compares the whole list of warnings with the one sentence the proof names, so the file, the count and the wording are all checked.",
-          "The rule also names a file that is not a JSON object, and no proof of the rule covers that case.",
-          "The spot tests found nothing, and each test does hold the sentence its proof names."
+          "PROOF-18: the test's own lines compare the whole warning sentence with the proof's literal, and whether no `local` file is read and whether there is exactly one warning are left to the helper `_ignored_local`, whose source is not shown.",
+          "PROOF-52: the test writes a well-formed file with schema `purlin-evidence/1` and compares the whole warning with the proof's literal, and the `local` file being unread and the count of warnings again rest on `_ignored_local`, which is not shown.",
+          "PROOF-19: the test writes a `ci` file whose source reads `local`, asserts the `ci` file is None and compares the full list of warnings with the one sentence the proof names, so the proof's case and each of its results are checked.",
+          "The spot tests found nothing, and the values each proof names in backticks appear in the test file as literals not taken from the code.",
+          "No proof of the rule covers the rule's \"is not a JSON object\" case, so that branch and its sentence are checked by none of these three tests."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -681,13 +678,13 @@
         "verdict": "strong"
       },
       "RULE-36": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-92": {
             "after": "        named = list(proof['ai'])[:1]",
             "aim": "plain",
             "before": "        named = list(proof['ai'])",
-            "bug_key": "b0dfe5cefbf8148815bf96ac1a6a89b8840fe2461ff32893a7c538dc1173e69e",
+            "bug_key": "d4198247a0c9b9e04a75ea5354c4d22b9ebf712a650f374d60d247280274ed9a",
             "case": "the proof of login changed from `@ai(model-a)` to `@ai(model-a, model-b)`; the proof says the fingerprint differs in `spec` alone; the changed code reads only the first model, so the fingerprint differs in no part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 279,
@@ -695,11 +692,11 @@
             "why": ""
           },
           "PROOF-93": {
-            "after": "        if proof.get('runs') and proof.get('graded'):\n            named.append('runs=%d' % proof['runs'])",
+            "after": "        if proof.get('runs') and len(named) > 1:",
             "aim": "plain",
-            "before": "        if proof.get('runs'):\n            named.append('runs=%d' % proof['runs'])",
-            "bug_key": "a9eb4fc0a778fa893f33f6786cae0e2568ffdb66d71af78dced9322602f40e36",
-            "case": "the proof of login changed from `@ai(model-a)` to `@ai(model-a, runs=5)`; the proof says the fingerprint differs in `spec` alone; the changed code leaves `runs=` out where no grader is named, so the fingerprint differs in no part",
+            "before": "        if proof.get('runs'):",
+            "bug_key": "c519d32b9e6028bc969ee51ccd992289d4b5a98723c55e67e58c0120e104f93c",
+            "case": "the proof of login changed from `@ai(model-a)` to `@ai(model-a, runs=5)`; the proof says the fingerprint differs in `spec` alone; the changed code leaves `runs=` out where one model is named, so the fingerprint differs in no part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 280,
             "result": "caught",
@@ -709,7 +706,7 @@
             "after": "            parts.append('@graded')",
             "aim": "plain",
             "before": "            parts.append('@graded(%s)' % proof['graded'])",
-            "bug_key": "7ceb18fb26522c764230f5d9af5b659ee43e07d4efbcd7b1a9c611a5d15cacd2",
+            "bug_key": "1b5a88aef12433844ed9be01a64126b4158cfb663af3c6ac7c8e0e78f4b7a245",
             "case": "the proof of login changed from `@ai(model-a) @graded(grader-a)` to `@ai(model-a) @graded(grader-b)`; the proof says the fingerprint differs in `spec` alone; the changed code writes `@graded` without the grader's name, so the fingerprint differs in no part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 284,
@@ -720,7 +717,7 @@
             "after": "        parts.append('@ai(%s)' % ', '.join(named))",
             "aim": "plain",
             "before": "        parts.append('@ai(%s)' % ','.join(named))",
-            "bug_key": "e45d9bf7be380126a1a9df618b113aaa86c4881314b8a32c5a532377475095b7",
+            "bug_key": "9cca8b69c99ee955e310bcd9ddf58cdc072061d7fd3c0f16908fc56fb8fbe9a7",
             "case": "the proof `POST /login; verify 200 @ai(model-a, model-b, runs=5) @graded(grader-a)`; the proof says the line ends `@ai(model-a,model-b,runs=5) @graded(grader-a)`; the changed code gives `@ai(model-a, model-b, runs=5) @graded(grader-a)`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 282,
@@ -728,23 +725,21 @@
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-92: the test takes a fingerprint with `@ai(model-a)`, rewrites the proof to end `@ai(model-a, model-b)` and compares the changed parts with exactly `['spec']`, which is the proof's case and result, so a `spec` that stays the same or another part that moves fails it.",
-          "PROOF-93: the test does the same with `@ai(model-a, runs=5)` and compares the changed parts with exactly `['spec']`, so a `runs=` that is left out of the line fails it.",
-          "PROOF-94: the test starts from `@ai(model-a) @graded(grader-a)`, changes the grader to `grader-b` and compares the changed parts with exactly `['spec']`, so a line that leaves out the grader's name fails it.",
-          "PROOF-92, PROOF-93 and PROOF-94: the first fingerprint and the list of changed parts come from the helpers `_tagged` and `_changed`, whose source is not shown, so what they compare is read from their names.",
-          "PROOF-95: the test compares the line for the tagged proof and the line for the untagged proof each with the full literal the proof names, so any change to the joining, the order or the tags of either line fails it.",
-          "No finding of the spot tests is listed, and each test holds an equality against a literal the code does not supply."
+          "PROOF-92: the test takes a fingerprint of login with `@ai(model-a)`, rewrites the proof to end `@ai(model-a, model-b)` and compares the list of changed parts with `['spec']`, which is the case and the result the proof names.",
+          "PROOF-93: the test takes a fingerprint with `@ai(model-a)`, rewrites the proof to end `@ai(model-a, runs=5)` and compares the changed parts with `['spec']`, as the proof says.",
+          "PROOF-94: the test takes a fingerprint with `@ai(model-a) @graded(grader-a)`, rewrites the grader to `grader-b` and compares the changed parts with `['spec']`, as the proof says.",
+          "PROOF-95: the test compares the whole line for the tagged proof and the whole line for the untagged proof with the two literals the proof names, so any change to either line fails it.",
+          "PROOF-92, PROOF-93 and PROOF-94 rest on the helpers `_tagged` and `_changed`, whose source was not shown, so the reading takes it that `_changed` lists every part on which the two fingerprints differ."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-95 holds two cases, the line for a proof with `@ai` and `@graded` tags and the line for a proof with none.",
-          "PROOF-95 names the file path `specs/auth/login.md` as part of the line the software itself builds, which is output a caller sees."
+          "PROOF-95 holds two cases, the line of a proof with `@ai` and `@graded` tags and the line of a proof with none."
         ],
         "proof_hash": "8751d7ed6a3268a394123ff6bdf624eabb217f299d6f46b54857f14b97ce3af2",
         "rule_hash": "cb443403584b64eceaa7fb30134c836087feeba5743635e4913ac4445774af9c",
@@ -752,14 +747,14 @@
         "verdict": "strong"
       },
       "RULE-37": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-96": {
-            "after": "    text = json.dumps([config['tests'], config.get('runs')], sort_keys=True,\n                      separators=(',', ':'))",
+            "after": "    text = json.dumps([config['tests'], config.get('runs')], sort_keys=True, separators=(',', ':'))",
             "aim": "plain",
             "before": "    text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))",
-            "bug_key": "010b07d3352932a235b349ab1aeab3f4f326ce377aaa6cd2fa66baad149469e7",
-            "case": "`runs` changed from 3 to 5 after a commit; the proof says all three parts of the fingerprint of `login` equal the ones taken before; the changed code gives a different `tests` part",
+            "bug_key": "a59e7e4e121639b57b24b4fd87f567b055690e98bd20543bad03266b958fee81",
+            "case": "settings committed with runs 3, then runs changed to 5; the proof says all three parts of the fingerprint of login equal the ones taken before; the changed code gives a different tests part",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 340,
             "result": "caught",
@@ -769,23 +764,23 @@
             "after": "        if was is None:",
             "aim": "plain",
             "before": "        if was is None or was == now:",
-            "bug_key": "b4cd3892e5afe8b9294e00f2f2ade86d591bb0bb8e391b207cbb2b062aa779a9",
-            "case": "a `local` section of `login` names the commit whose settings hold `runs` 3 and stores that fingerprint, then `runs` is changed to 5; the proof says the `tests` setting does not read as changed; the changed code reads it as changed",
+            "bug_key": "9f376464ca326548ac38ccef9a5fd98efdc920eddba0a5baf742d7a9fbf13a59",
+            "case": "a local section of login names the commit whose settings hold runs 3 and stores the fingerprint taken there, then runs is changed to 5; the proof says the tests setting does not read as changed; the changed code reads it as changed",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 391,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-96: the test commits settings with `runs` 3, takes the fingerprint of `login`, sets `runs` to 5 and compares the whole fingerprint with the first, so a change to any of the three parts fails it.",
-          "PROOF-96: both fingerprints come from the code under test, which suits a proof that names equality and no fixed value.",
-          "PROOF-97: the test writes a `local` section for this system with the commit and the fingerprint taken at `runs` 3, sets `runs` to 5 and asserts the `tests` setting reads as not changed, which is the proof's case and result.",
-          "PROOF-97: the test then changes the `tests` setting itself and asserts it reads as changed, so an answer that is always \"not changed\" would also fail.",
-          "The spot tests found nothing, and each test asserts the result its proof names on the case its proof names."
+          "PROOF-96: the test commits settings with runs 3, takes the fingerprint of login, sets runs to 5 and compares the whole fingerprint with the first, so a change to any of the three parts fails it.",
+          "PROOF-96: the expected value is the fingerprint taken before the change, which is the comparison the proof names; the test does not check that the helper wrote runs 5 to the settings file.",
+          "PROOF-97: the test writes a local section for this system naming the commit with runs 3 and the fingerprint taken there, sets runs to 5 and asserts the tests setting reads as not changed, which is the proof's case and result.",
+          "PROOF-97: the test then changes the tests setting itself and asserts it reads as changed, so an answer that is always false would also fail it.",
+          "No spot test fired, and neither test leaves a value of its proof's case uncompared."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -796,45 +791,46 @@
         "verdict": "strong"
       },
       "RULE-38": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-98": {
-            "after": "    if 'fail' in runs[:1]:\n        return 'failed'",
+            "after": "    if runs and runs[-1] == 'fail':",
             "aim": "plain",
-            "before": "    if 'fail' in runs:\n        return 'failed'",
-            "bug_key": "478094d179d6ca84fcd4bb8eb5b5e91e5179589602618c2cb782da983ace4cbc",
-            "case": "asked for 3 runs, a model holding the runs pass, fail, pass; the proof says it reads failed; the changed code gives not run",
+            "before": "    if 'fail' in runs:",
+            "bug_key": "45b4d2c654c454ddb6335272d55961e1275b052e5c22703012a667a23c701c34",
+            "case": "asked for 3 runs, a model holding the runs pass, fail, pass; the proof says failed; the changed code gives not run",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 261,
+            "line": 271,
             "result": "caught",
             "why": ""
           },
           "PROOF-99": {
-            "after": "    if any(result != 'pass' for result in runs) or len(runs) < min(asked, 1):",
+            "after": "    if any(result != 'pass' for result in runs) or len(runs) < 1:",
             "aim": "plain",
             "before": "    if any(result != 'pass' for result in runs) or len(runs) < max(asked, 1):",
-            "bug_key": "759414716d15a3d7899d4b8abf8ddb56118570eeeefbfb9ca8756f2d6b44616e",
-            "case": "a model holding the runs pass, pass, pass asked for 5 runs; the proof says it reads not run; the changed code gives passed",
+            "bug_key": "ddf138756d6568936dc357e5b4831e03136d0f4525adba8e0f206350263414b3",
+            "case": "a model holding the runs pass, pass, pass asked for 5 runs; the proof says not run; the changed code gives passed",
             "file": "scripts/mcp/purlin/evidence.py",
-            "line": 263,
+            "line": 273,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-98: the test asks for the word of each of the four sets of runs the proof names, with 3 runs asked, and compares the four words with the literals `failed`, `not run`, `not run`, `passed`, so a wrong word for any of the four fails it.",
-          "PROOF-99: the test builds one model holding three passing runs and compares its word with the literal `passed` when 3 runs are asked and `not run` when 5 are asked, which is both results the proof names.",
-          "Both tests take their expected words from literals, not from the code, and the spot tests found nothing in either.",
-          "PROOF-98 puts the failing run in the middle of the runs only, so a run that fails first or last is observed by neither test."
+          "PROOF-98: the test asks for the word of four models with 3 runs asked and compares the list with the literals `failed`, `not run`, `not run`, `passed`, so each of the proof's four cases and its named result is checked.",
+          "PROOF-98: the expected words are literals in the test and not taken from the code, so a change to any of the four results fails the comparison.",
+          "PROOF-99: the test reads the word of one model holding three passes, asked for 3 and then for 5, and compares with the literals `passed` and `not run`, which are the proof's two results.",
+          "PROOF-99: both the asked-for counts and both expected words the proof names appear in the test, so no value of the proof is left uncompared.",
+          "No spot test fired, and the reading finds nothing in either test that would let a wrong word through for the cases the proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-98 holds four cases, one for each set of runs it names.",
+          "PROOF-98 holds four cases, one for each model's runs, in one proof.",
           "PROOF-99 holds two cases, the same model asked for 3 runs and asked for 5."
         ],
         "proof_hash": "78490f01ff4f8a4b34dee3fa21db89a946192b571ba24cd68d49ad92b0aa841a",
@@ -843,48 +839,47 @@
         "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-100": {
             "after": "    if any(result != 'pass' for result in runs) or len(runs) < 1:",
             "aim": "plain",
             "before": "    if any(result != 'pass' for result in runs) or len(runs) < max(asked, 1):",
-            "bug_key": "7da5d94cbcf491bfadc3508a5190e6b3be16216f4a7ba3dbce9d499ba13a450a",
+            "bug_key": "3a4dc3ad061417b675c1ba33776f2da9741ef3db15cf8ad21fe8c4585dbc6693",
             "case": "PROOF-1 stored as pass with one model holding three passing runs, read with 5 runs asked; the proof says not run; the changed code gives pass",
-            "file": "scripts/mcp/purlin/evidence.py",
-            "line": 263,
-            "result": "caught",
-            "why": ""
-          },
-          "PROOF-101": {
-            "after": "    if words[:1] == ['failed']:",
-            "aim": "plain",
-            "before": "    if 'failed' in words:",
-            "bug_key": "8999d985460d474fc26a1cafe2b527108c403f7e97dd9e935bb36a2ccf2dd473",
-            "case": "PROOF-1 stored as pass with two models, the first three passes and the second pass, fail, pass, read with 3 runs asked; the proof says fail; the changed code gives pass",
             "file": "scripts/mcp/purlin/evidence.py",
             "line": 273,
             "result": "caught",
             "why": ""
+          },
+          "PROOF-101": {
+            "after": "    if 'fail' in runs[:1]:",
+            "aim": "plain",
+            "before": "    if 'fail' in runs:",
+            "bug_key": "d6a8428a4a9ad884fb7f163e091b4fbe31408c952613ccc20c9a4c9931e83d59",
+            "case": "PROOF-1 stored as pass with two models, the second holding the runs pass, fail, pass, read with 3 runs asked; the proof says fail; the changed code gives not run",
+            "file": "scripts/mcp/purlin/evidence.py",
+            "line": 271,
+            "result": "caught",
+            "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-100: the test reads the section with 3 and then 5 runs asked and compares the whole answer with `pass` and then `not run`, so both results the proof names are checked exactly.",
-          "PROOF-100: the section comes from the helpers `_ai_section` and `_model`, whose source is not shown, so whether the entry stores `result` `pass` as the proof says cannot be read from the test's own lines.",
-          "PROOF-101: the test builds two models, the second holding `pass`, `fail`, `pass`, reads with 3 runs asked and compares the whole answer with `fail`, which is the proof's case and its result.",
-          "PROOF-101: the failing model is the second of two, so a reader that looked only at the first model would be caught.",
-          "Neither proof names an entry with no model, which the rule says reads `not run`, so that branch of the rule is checked by no test shown here.",
-          "Neither proof names a stored `result` other than `pass`, so the rule's \"whatever `result` it stores\" is observed for one stored value only.",
-          "The spot tests found nothing, and nothing in the two tests contradicts that: each holds a failable comparison against literal values the proof names."
+          "PROOF-100: the test builds a section with one model of three passing runs and compares the reader's whole answer with `pass` at 3 runs asked and `not run` at 5, which are the two results the proof names.",
+          "PROOF-101: the test builds a section with two models, the second holding pass, fail, pass, and compares the reader's whole answer at 3 runs asked with `fail`, the result the proof names.",
+          "Both tests compare the full returned mapping with a literal, so a wrong result for the proof's case, or an extra key, fails them.",
+          "Both tests build their section through a helper defined outside the test's own lines, so the stored `result` of `pass` the proofs name is not visible in the test source shown.",
+          "No proof of the rule names the case where the entry names no model, and none reads an entry whose stored `result` differs from what its models give, so \"whatever `result` it stores\" is observed only for a stored `pass`.",
+          "No finding of the spot tests is listed, and nothing in the two tests shown matches one of the seven checks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-100 holds two cases, the read with 3 runs asked and the read with 5."
+          "PROOF-100 holds two cases: the read with 3 runs asked and the read with 5."
         ],
         "proof_hash": "2c56627743cb1aa23c88061afbb0d2e41a9d69620c1cb6bb753a364d9244bfb5",
         "rule_hash": "61e2b758172bb90d1afa9c2f59e0fa3e79ba9bac580fb8a0da6cced36606f7b7",
@@ -892,75 +887,66 @@
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-07T19:25:40Z",
+        "at": "2026-10-08T00:39:43Z",
         "bugs": {
           "PROOF-41": {
-            "after": null,
-            "aim": "plain",
-            "before": null,
-            "bug_key": "e032398b878f0fa0c48eb8cfb6e98974caee87061d9d20ecc577c22a8cdbfc00",
-            "case": "",
-            "file": null,
-            "line": null,
-            "result": "not made",
-            "test_unchanged": true,
-            "why": "two planted bugs left the proof's check passing"
+            "after": "        if incomplete_reason(project_root, name, features):\n            reasons.append(NAMES_NO_FILES)\n        elif expand_scope(project_root, features[name].get('scope') or ())[1]:\n            reasons.append(SCOPE_NAMES_NOTHING)",
+            "aim": "past the test",
+            "before": "        if incomplete_reason(project_root, name, features):\n            reasons.append(NAMES_NO_FILES)",
+            "bug_key": "c4058d89f81d969b5c5cb0ea1a39b1269b17e78d7189b664403d0027f62e809f",
+            "case": "`login` whose scope names `src/login.py`, the missing `src/gone.py` and the unmatched `lib/*.rs`; the proof says `login` is not reported incomplete; the changed code selects `login` with the reason `> Scope: names nothing that exists`",
+            "file": "scripts/mcp/purlin/fingerprint.py",
+            "line": 572,
+            "result": "caught",
+            "why": ""
           },
           "PROOF-9": {
-            "after": "        if not found and not any(char in entry for char in _GLOB_CHARS):\n            unmatched.append(entry)",
+            "after": "            unmatched.insert(0, entry)",
             "aim": "plain",
-            "before": "        if not found:\n            unmatched.append(entry)",
-            "bug_key": "697030d8f35474d503b80a6d6cf973d36ffe1e18d2c50ffb19e16a2ba0f9811d",
-            "case": "scope entries src/login.py, src/gone.py and lib/*.rs with no .rs file tracked; the proof says the unmatched entries are exactly src/gone.py then lib/*.rs; the changed code lists src/gone.py alone",
+            "before": "            unmatched.append(entry)",
+            "bug_key": "817ffb3038dd5737ebd22a2efd7d57542bc9569db8a2f052908f528fda05e4d7",
+            "case": "scope entries `src/login.py`, `src/gone.py` and `lib/*.rs` where neither of the last two reaches a tracked file; the proof says the unmatched entries are exactly `src/gone.py` then `lib/*.rs`; the changed code lists `lib/*.rs` then `src/gone.py`",
             "file": "scripts/mcp/purlin/fingerprint.py",
-            "line": 162,
+            "line": 163,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "7d9726eaba6bcf393255c2eb86add0fe07489649",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [
-          "PROOF-9: the test compares the reached files and the unmatched entries with the exact lists the proof names, in order, so a wrong file, a missing entry or a changed order fails it.",
-          "PROOF-41: the test takes the fingerprint of `login` with the scope of `src/login.py` alone and again with the unmatched entries, and compares the two `code` parts, so a `code` part that the unmatched entries change fails it, and an error while the fingerprint is taken fails it too.",
-          "PROOF-41: the test reads \"not reported incomplete\" as the incomplete reason being none and no selection reason holding the words `names no files`, so the same report made in any other words still passes.",
-          "PROOF-41: the test does not read what a run over every feature decides for `login`, so that path treating `login` as naming no files would not be seen."
-        ],
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "explanation": [],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "No bug was caught for PROOF-41: two planted bugs left the proof's check passing.",
-          "PROOF-41 was settled with its test unchanged: it was judged to assert what the proof names."
-        ],
+        "no_bug": [],
         "proof_hash": "221b83ef375c686a3f4ea9caf57d9c9e4c0af74499320efa342210475232e80e",
         "rule_hash": "39f7b7020e5c1b8d7ef91e6f864c945a5aecdc452cfeb0cb9bb15d2246bbcb63",
-        "test_hash": "87456ff6c6e790ed38085722b8758e4e53904209bff49365f4143a91e389d38b",
+        "test_hash": "df732367de42e91af91669d342619cb9e5089a0211c3b2737241546e6d15b0a0",
         "verdict": "strong"
       },
       "RULE-6": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-10": {
-            "after": "    if not scope:\n        return SCOPE_NAMES_NOTHING",
+            "after": "        return SCOPE_NAMES_NOTHING",
             "aim": "plain",
-            "before": "    if not scope:\n        return NO_SCOPE_LINE",
-            "bug_key": "133543d5460bc172cb5ed67b942763662de9d48ef0362347d5e87bf59129a8e6",
-            "case": "`login` with no `> Scope:` line; the proof says it is reported incomplete with the reason `no > Scope: line`; the changed code gives the reason `> Scope: names nothing that exists`",
+            "before": "        return NO_SCOPE_LINE",
+            "bug_key": "b5946e97d8eb4089eb6b003555c1d076e660155bfd0cdd6a100b84256c08f876",
+            "case": "`login` has no `> Scope:` line; the proof says it is reported incomplete with the reason `no > Scope: line`; the changed code gives the reason `> Scope: names nothing that exists`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 248,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
           "PROOF-10: the test builds `login` with no scope and compares the incomplete reason with the literal `no > Scope: line`, so a different reason fails it.",
-          "PROOF-10: the test compares the fingerprint's `code` with the literal `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` as well as with its `EMPTY` constant, so the expected value does not come from the code under test.",
-          "PROOF-10: the test checks that `spec` and `tests` are 64 characters each, which is all the proof names for them, and taking the fingerprint with no error is observed by the call returning.",
-          "PROOF-10: the spot tests found nothing, and the test checks every value the proof names, so the bug is the plainest change to the proof's case."
+          "PROOF-10: the test compares the fingerprint's `code` with the literal sha256 of the empty string, which the proof names, so a `code` part taken over anything else fails it.",
+          "PROOF-10: the test checks that `spec` and `tests` are 64 characters each, as the proof says, and taking the fingerprint with an error would fail the test before those checks.",
+          "PROOF-10: the spot tests found nothing, and the test observes every value the proof names, so the planted change is the plain one."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -971,13 +957,13 @@
         "verdict": "strong"
       },
       "RULE-7": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-11": {
             "after": "    lines = ['%s' % path for path in ids]\n    setting = tests_setting_line(project_root)",
             "aim": "plain",
             "before": "    lines = ['%s %s' % (path, ids[path]) for path in ids]\n    setting = tests_setting_line(project_root)",
-            "bug_key": "f9541a92dd7d27da687d1eaef805e0defd2ab4d89cc2f723aadc4c58ae2e7ecc",
+            "bug_key": "3e97eebcdf7ae2c89ca0c5161c6b3b36d3d69fe19a9803d8c9984a6cb386b8ab",
             "case": "`tests/test_login.py`, marked for `login`, is edited; the proof says the fingerprint of `login` changes in `tests` alone; the changed code leaves `tests` as it was, so no part changes",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 410,
@@ -988,8 +974,8 @@
             "after": "    return sorted({path for paths in index.values() for path in paths})",
             "aim": "plain",
             "before": "    return list(index.get(feature, []))",
-            "bug_key": "91ae6ee3e7ac4a57ab82b78c85984c8d0b50123c8c85d7513d4554916e7486a0",
-            "case": "`tests/test_other.py`, marked for `billing` and not for `login`, is rewritten; the proof says the fingerprint of `login` stays as it was; the changed code counts the file for `login`, so its `tests` part changes",
+            "bug_key": "3de7d3e25dd6e079fa6525d19fc0c756e6ddf31535688c42191c60d27e5ed50c",
+            "case": "`tests/test_other.py`, marked for `billing` and not `login`, is rewritten; the proof says the fingerprint of `login` stays as it was; the changed code counts every marked file for `login`, so its `tests` part changes",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 322,
             "result": "caught",
@@ -999,18 +985,18 @@
             "after": "    return 'tests-setting %s' % hashlib.sha256(\n        str(len(text)).encode('utf-8')).hexdigest()",
             "aim": "plain",
             "before": "    return 'tests-setting %s' % hashlib.sha256(\n        text.encode('utf-8')).hexdigest()",
-            "bug_key": "73c1eada1f42174320e87823992042bab03a6a7231288d4106cc752da848d9d9",
-            "case": "the `run` command of the `tests` setting is changed to another of the same length; the proof says the section reads out of date on exactly `tests`; the changed code reads it current",
+            "bug_key": "dcdfc18fdbbaaeaecce257b3a94b7d986c9970b54b2fb4c0704c9ca579766791",
+            "case": "the `run` command of the `tests` setting is changed to another of the same length; the proof says the section reads out of date on exactly `tests`; the changed code reads the section as current",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 342,
             "result": "caught",
             "why": ""
           },
           "PROOF-89": {
-            "after": "    text = json.dumps([config['tests'], config.get('version')], sort_keys=True, separators=(',', ':'))",
+            "after": "    text = json.dumps([config['tests'], config.get('version')],\n                      sort_keys=True, separators=(',', ':'))",
             "aim": "plain",
             "before": "    text = json.dumps(config['tests'], sort_keys=True, separators=(',', ':'))",
-            "bug_key": "0d9facb5d2a34962bf47eecec061f0f47fa7e53e916ae2661edcb144e28a3d7e",
+            "bug_key": "720389db553cc815dc2ed3acbe90e7df3a6d90d32e3e079bb134324c635f5df5",
             "case": "the `version` in `.purlin/config.json` is changed from `0.10.0` to `0.10.1`; the proof says the section reads current; the changed code reads it out of date on `tests`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 340,
@@ -1018,18 +1004,18 @@
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-11: the test appends a line to `tests/test_login.py` and compares the list of changed parts with `['tests']`, so it observes both that `tests` changed and that no other part did.",
-          "PROOF-11: the test relies on its fixture for the file being committed, marked `# purlin: login PROOF-1` and named by a suite, none of which its own lines show.",
-          "PROOF-43: the test commits a file marked for `billing`, rewrites it and compares the whole fingerprint of `login` with the one taken before, so any part changing fails it.",
-          "PROOF-43: the rewrite also removes the `billing` marker, so the test does not observe a rewrite that keeps the marker in place.",
-          "PROOF-88: the test stores a fingerprint, changes the `run` command to one it asserts is of the same length, and compares the state with `(False, ['tests'])`, which is the proof's case and result.",
-          "PROOF-88: the same test also checks a command of another length and one differing only in the case of one letter, which the proof does not name.",
-          "PROOF-89: the test stores a fingerprint at version `0.10.0`, sets `0.10.1` and compares the state with `(True, [])`, which is the proof's case and result.",
-          "No spot test fired, and nothing in the four tests' own lines contradicts that."
+          "PROOF-11: the test appends a line to `tests/test_login.py` and compares the list of changed parts with exactly `['tests']`, so it observes both that `tests` changed and that no other part did.",
+          "PROOF-11: the test relies on a fixture for the file being committed, named by a suite and carrying the `login` marker, so those parts of the proof's setup are not visible in the test's own lines.",
+          "PROOF-43: the test commits a file marked for `billing`, rewrites it and compares the whole fingerprint of `login` with the one taken before, which is the result the proof names.",
+          "PROOF-43: the rewrite also removes the `billing` marker, so the test does not show a rewritten file that still carries a marker for another feature.",
+          "PROOF-88: the test changes the `run` command to one it asserts is the same length as the stored one and compares the state with `(False, ['tests'])`, the proof's case and result.",
+          "PROOF-88: the test also checks a longer command and a command differing only in the case of one letter, which the proof does not name.",
+          "PROOF-89: the test stores a fingerprint at version `0.10.0`, changes the version to `0.10.1` and compares the state with `(True, [])`, the proof's case and result.",
+          "The spot tests found nothing, and each test holds a failable comparison against a literal the code does not supply."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -1040,13 +1026,13 @@
         "verdict": "strong"
       },
       "RULE-8": {
-        "at": "2026-10-07T18:49:12Z",
+        "at": "2026-10-08T00:38:35Z",
         "bugs": {
           "PROOF-13": {
-            "after": "                           ['ls-files', '-z', '--cached', '--others', '--', pathspec(entry)]) or []",
+            "after": "                           ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', pathspec(entry)]) or []",
             "aim": "plain",
             "before": "                           ['ls-files', '-z', '--', pathspec(entry)]) or []",
-            "bug_key": "c3dcbbace7e45c333d6cc4a1734dd552326d2b84f1fb07f2672b735669e5a50a",
+            "bug_key": "ca57c89055ab5a964b7d82703892729967bd224f94066a7696a51bb8120a8c46",
             "case": "`src/new_token.py` and `tests/helper.py` written and not added to git; the proof says the fingerprint of `login` equals the one taken before; the changed code reads the untracked `src/new_token.py` into the code part, so the fingerprint differs",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 161,
@@ -1057,7 +1043,7 @@
             "after": "    return sorted(set(parts['scope']))",
             "aim": "plain",
             "before": "    return sorted(set(parts['scope']) | set(parts['tests']))",
-            "bug_key": "77bd33306540a1481b0cb7b34b67261aa166326fb895ea3289bc8308d313889e",
+            "bug_key": "7ce850777aca032982533ffd0e33aac38f0d349eb7050c86b1f257fea33a5d73",
             "case": "`src/new_token.py`, `tests/helper.py` and `docs/notes.md` written and not added to git; the proof says the files listed are exactly `src/new_token.py` and `tests/helper.py`; the changed code lists only `src/new_token.py`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 457,
@@ -1068,7 +1054,7 @@
             "after": "            ['ls-files', '-z', '--others', '--']\n            + specs) or [])",
             "aim": "plain",
             "before": "            ['ls-files', '-z', '--others', '--exclude-standard', '--']\n            + specs) or [])",
-            "bug_key": "4b5cf32630345c1c7909c31da4b74d732fd2477f1e2e3aadd6ee687becbefe52",
+            "bug_key": "fdc604b092bc4e35bbf3c273a48843f85c92f83d6636e1148347d8f3a3fd776f",
             "case": "`.gitignore` lists `src/*.log`, and `src/debug.log` and `src/new_token.py` are written and not added to git; the proof says the one file listed is `src/new_token.py`; the changed code lists `src/debug.log` and `src/new_token.py`",
             "file": "scripts/mcp/purlin/fingerprint.py",
             "line": 475,
@@ -1076,16 +1062,14 @@
             "why": ""
           }
         },
-        "code_hash": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
-        "commit": "37e0c8994f97eb3adee15a6b2c9522d81c01944a",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
+        "commit": "f6334dcca93ffd5b1ded52cd102adef384d14db1",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-13: the test takes the fingerprint of `login`, writes both untracked files and compares the whole fingerprint with the first, so a change to any of the three parts fails it.",
-          "PROOF-13: the expected value is the earlier fingerprint from the same code, which fits a proof that names equality and not a value.",
-          "PROOF-46: the test writes the three files and compares the untracked list with the exact two paths the proof names, so a missing `tests/helper.py` or a listed `docs/notes.md` fails it.",
-          "PROOF-47: the test commits a `.gitignore` holding `src/*.log`, writes both files and compares the list with exactly `src/new_token.py`, so a listed `src/debug.log` fails it.",
-          "All three tests rely on the `folder_scoped` fixture, which is not shown, for `login` covering `src` and its marker file being `tests/test_login.py`.",
-          "Findings: none, and each test asserts the result its proof names."
+          "PROOF-13: the test takes the fingerprint of `login`, writes the two untracked files the proof names and compares the whole fingerprint with the first, so a change to any of its three parts fails it.",
+          "PROOF-46: the test writes the three files the proof names and compares the untracked list with exactly `src/new_token.py` and `tests/helper.py`, so a missing file, an extra file or `docs/notes.md` in the list fails it.",
+          "PROOF-47: the test commits a `.gitignore` listing `src/*.log`, writes `src/debug.log` and `src/new_token.py` and compares the untracked list with exactly `src/new_token.py`, so an ignored file in the list fails it.",
+          "The spot tests found nothing, and each test compares the full result its proof names against literals."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -1100,21 +1084,21 @@
   "feature": "evidence",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T21:05:20Z",
-      "commit": "ccbd1bee4c976e79fc3f799c5d20145d01ca7dea",
+      "at": "2026-10-08T00:39:33Z",
+      "commit": "41d847485c7b187b0b478916fabdfc6b7410ea48",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "5726c8cbff1ebfb4ca5daa4af698cda9e6d0317ca6bedd5ed91b1aefa5e3c6ad",
+        "code": "ec7bbf0d16dff7421d625d80437120ef0274fae01dfc48d41c36779a11672846",
         "spec": "6283a756f163c1505d4a460f9506047ac9edd6983bd02fb1e994430b6eb960a0",
-        "tests": "4b89d6cfaccbb15a1a9d4727a79cf56fa2f172f13cc27ffdc029d54b41190207"
+        "tests": "5645bc8a6c5e15e200889a72b75ab90c57c4648f865395e12fe56cb361ae0948"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1125,14 +1109,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.121,
+                "duration": 0.118,
                 "name": "test_a_fingerprint_is_three_parts_of_64_hex_characters",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1141,8 +1125,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1155,8 +1139,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1167,14 +1151,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.158,
+                "duration": 0.157,
                 "name": "test_a_reworded_rule_changes_spec_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1183,8 +1167,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1195,14 +1179,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.177,
+                "duration": 0.16,
                 "name": "test_a_rewritten_description_changes_no_part",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1211,8 +1195,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1223,14 +1207,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.16,
+                "duration": 0.164,
                 "name": "test_an_edit_not_committed_changes_the_fingerprint",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1239,8 +1223,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1251,14 +1235,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.208,
+                "duration": 0.195,
                 "name": "test_a_scoped_folder_reaches_a_tracked_file_one_folder_down",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1267,8 +1251,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1279,14 +1263,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.133,
+                "duration": 0.14,
                 "name": "test_a_glob_reaches_a_matching_file_one_folder_down",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1295,8 +1279,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1307,14 +1291,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.109,
+                "duration": 0.106,
                 "name": "test_entries_that_reach_nothing_are_listed_as_unmatched",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1323,8 +1307,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1335,14 +1319,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.256,
+                "duration": 0.293,
                 "name": "test_the_fingerprint_is_taken_over_what_the_other_entries_reach",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1351,8 +1335,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1363,14 +1347,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.099,
+                "duration": 0.098,
                 "name": "test_a_spec_with_no_scope_is_incomplete_and_its_code_part_is_empty",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1379,8 +1363,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1391,14 +1375,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.158,
+                "duration": 0.162,
                 "name": "test_an_edit_to_a_marked_test_file_changes_tests_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1407,8 +1391,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1419,14 +1403,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.19,
+                "duration": 0.212,
                 "name": "test_a_test_file_marked_for_another_feature_is_not_counted",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1435,8 +1419,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1447,14 +1431,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.334,
+                "duration": 0.327,
                 "name": "test_a_test_command_changed_to_one_as_long_is_out_of_date_on_tests",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1463,8 +1447,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1475,14 +1459,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.136,
+                "duration": 0.147,
                 "name": "test_a_changed_version_leaves_the_section_current",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1491,8 +1475,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1503,14 +1487,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.187,
+                "duration": 0.241,
                 "name": "test_an_untracked_file_changes_no_part",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1519,8 +1503,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1531,14 +1515,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.164,
+                "duration": 0.21,
                 "name": "test_untracked_files_in_the_scope_or_beside_a_marker_file_are_listed",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1547,8 +1531,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1559,14 +1543,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.276,
+                "duration": 0.607,
                 "name": "test_a_file_git_ignores_is_not_listed",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1575,8 +1559,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1587,14 +1571,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.732,
+                "duration": 0.513,
                 "name": "test_an_edit_to_a_file_no_scope_names_changes_an_anchors_code",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1603,8 +1587,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1615,14 +1599,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.267,
+                "duration": 0.286,
                 "name": "test_an_untracked_file_leaves_an_anchor_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1631,8 +1615,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1643,14 +1627,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.373,
+                "duration": 0.355,
                 "name": "test_a_changed_version_leaves_an_anchor_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1659,8 +1643,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1671,14 +1655,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.242,
+                "duration": 0.225,
                 "name": "test_a_changed_test_command_changes_an_anchors_tests_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1687,8 +1671,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1699,14 +1683,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.246,
+                "duration": 0.212,
                 "name": "test_a_new_evidence_file_leaves_an_anchor_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1715,8 +1699,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1727,14 +1711,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.222,
+                "duration": 0.216,
                 "name": "test_a_signoff_file_leaves_an_anchor_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1743,8 +1727,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1755,14 +1739,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.255,
+                "duration": 0.297,
                 "name": "test_an_evidence_package_leaves_an_anchor_as_it_was",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1771,8 +1755,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1785,8 +1769,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1797,14 +1781,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.074,
+                "duration": 0.096,
                 "name": "test_only_a_ci_file_reads_the_ci_file_no_local_file_and_no_warning",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1813,8 +1797,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1825,14 +1809,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.074,
+                "duration": 0.077,
                 "name": "test_a_file_that_is_not_json_is_ignored_with_one_warning",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1841,8 +1825,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1853,14 +1837,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.075,
+                "duration": 0.078,
                 "name": "test_a_file_of_another_schema_is_ignored_with_one_warning",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1869,8 +1853,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1881,14 +1865,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.076,
+                "duration": 0.084,
                 "name": "test_a_source_that_disagrees_with_its_folder_is_ignored",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1897,8 +1881,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1909,14 +1893,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.077,
+                "duration": 0.093,
                 "name": "test_sections_list_local_macos_local_linux_then_ci_windows_and_no_solaris",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1925,8 +1909,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1937,14 +1921,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.136,
+                "duration": 0.142,
                 "name": "test_a_section_storing_the_fingerprint_taken_now_is_current",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1953,8 +1937,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1965,14 +1949,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.134,
+                "duration": 0.148,
                 "name": "test_a_code_edit_puts_the_section_out_of_date_on_code",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -1981,8 +1965,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -1993,14 +1977,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.105,
+                "duration": 0.112,
                 "name": "test_a_section_with_no_fingerprint_is_out_of_date_on_all_three",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2009,8 +1993,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2021,14 +2005,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.088,
+                "duration": 0.102,
                 "name": "test_an_audit_entry_answers_while_its_four_hashes_match",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2037,8 +2021,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2049,14 +2033,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.074,
+                "duration": 0.083,
                 "name": "test_an_audit_entry_for_another_test_hash_is_out_of_date_on_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2065,8 +2049,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2077,14 +2061,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.074,
+                "duration": 0.085,
                 "name": "test_of_two_current_audit_entries_the_later_one_answers",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2093,8 +2077,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2105,14 +2089,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.075,
+                "duration": 0.086,
                 "name": "test_an_audit_entry_for_another_code_hash_is_out_of_date_on_code",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2121,8 +2105,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2133,14 +2117,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.076,
+                "duration": 0.079,
                 "name": "test_the_newest_section_is_the_latest_across_both_sources",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2149,8 +2133,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2161,14 +2145,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.075,
+                "duration": 0.078,
                 "name": "test_with_no_evidence_there_is_no_newest_section",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2177,8 +2161,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2189,14 +2173,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.114,
+                "duration": 0.11,
                 "name": "test_loading_checking_and_asking_leaves_the_same_files_and_bytes",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2205,8 +2189,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2224,7 +2208,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2233,8 +2217,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2252,7 +2236,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2261,8 +2245,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2280,7 +2264,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2289,8 +2273,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2303,8 +2287,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2315,14 +2299,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.234,
+                "duration": 0.23,
                 "name": "test_another_model_in_the_ai_tag_changes_spec_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2331,8 +2315,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2343,14 +2327,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.227,
+                "duration": 0.237,
                 "name": "test_a_runs_count_in_the_ai_tag_changes_spec_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2359,8 +2343,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2371,14 +2355,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.23,
+                "duration": 0.231,
                 "name": "test_another_grader_changes_spec_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2387,8 +2371,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2399,14 +2383,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.08,
+                "duration": 0.09,
                 "name": "test_a_proof_line_ends_on_its_ai_tags",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2415,8 +2399,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2427,14 +2411,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.241,
+                "duration": 0.228,
                 "name": "test_a_changed_runs_setting_changes_no_part",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2443,8 +2427,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2455,14 +2439,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.234,
+                "duration": 0.21,
                 "name": "test_a_changed_runs_setting_is_no_change_to_the_tests_setting",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2471,8 +2455,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2490,7 +2474,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2499,8 +2483,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2518,7 +2502,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2527,8 +2511,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2546,7 +2530,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",
@@ -2555,8 +2539,8 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T21:05:20Z",
-            "commit": "e671ac347532c1d84e1110a41b1071b2260ea950",
+            "at": "2026-10-08T00:39:33Z",
+            "commit": "26399bb47f03634ea3ded72f0f3daf9e33d69008",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -2574,7 +2558,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8e324274b2ac3da3a5bce8fe4ad6d20966b4c11a68ab7f006624ddf688c7fcba"
+              "sha256": "f33be04705eea53a4d34cba54408cd3fdbcc5b06e47ee6483de623609ac48bae"
             }
           },
           "result": "pass",

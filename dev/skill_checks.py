@@ -8,11 +8,14 @@ prints what is missing. `dev/test_skill_<name>.py` and
 test and no marker, and pytest does not collect it.
 
 Prose wraps, so a command a skill writes over a line break is still named:
-`flat()` collapses runs of whitespace before a name is searched for. A name
-that must sit on one line of the source goes through `same_line()` instead.
+`not_named()` reads a line break, with the white space around it, as one
+space before a name is searched for, and holds every other space as written.
+A name is held whole: `purlin:specs` does not name `purlin:spec`. A name that
+must sit on one line of the source goes through `same_line()` instead.
 """
 
 import contextlib
+import os
 import re
 import subprocess
 import sys
@@ -47,10 +50,25 @@ def flat(text):
     return re.sub(r'\s+', ' ', text)
 
 
+# What may not follow a name that ends in a letter, a digit or `_`: a
+# character that carries the word on, or a `.`, `/` or `:` that joins it to
+# one more. `purlin:spec` is not named by `purlin:specs`, `purlin:spec-from-code`
+# or `purlin:spec:x`, and is named by `purlin:spec.` ending a sentence.
+_GOES_ON = r'(?![\w-]|[./:]\w)'
+
+
+def holds(text, name):
+    """True where `text` holds `name` whole, each space of it as written: the
+    name is not followed by a character that could carry it on."""
+    ends = _GOES_ON if re.search(r'\w$', name) else ''
+    return re.search(re.escape(name) + ends, text) is not None
+
+
 def not_named(text, names):
-    """Each of `names` the text does not hold, line wrapping ignored."""
-    text = flat(text)
-    return [name for name in names if name not in text]
+    """Each of `names` the text does not hold whole, line wrapping ignored:
+    a line break and the white space around it read as one space."""
+    text = re.sub(r'\s*\n\s*', ' ', text)
+    return [name for name in names if not holds(text, name)]
 
 
 def must_name(skill, commands=(), paths=()):
@@ -129,9 +147,23 @@ def named_paths(text):
     return found
 
 
+def _is_here(path):
+    """True where the repository holds `path` under that very name, letter
+    for letter. A file system that ignores case finds `references/Glossary.md`
+    where the repository holds `glossary.md`, so each part is looked for in
+    its folder's own listing."""
+    folder = ROOT
+    for part in path.split('/'):
+        if not folder.is_dir() or part not in os.listdir(folder):
+            return False
+        folder = folder / part
+    return True
+
+
 def absent_paths(text):
-    """Each path `named_paths` reads that is no file or folder here."""
-    return [path for path in named_paths(text) if not (ROOT / path).exists()]
+    """Each path `named_paths` reads that is no file or folder here, under
+    the very name the text gives it."""
+    return [path for path in named_paths(text) if not _is_here(path)]
 
 
 _SCRIPT_RE = re.compile(r'scripts/[\w/]+\.py')

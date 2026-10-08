@@ -3,13 +3,27 @@
 A throwaway project needs its own test command in `.purlin/config.json`
 before a run can run anything. These are the entries `purlin:init` would
 write, with the interpreter the test session runs under, so a temporary
-project's tests run on the same Python and the same pytest.
+project's tests run on the same Python and the same pytest. `ignored()` is
+the ignore file `purlin:init` would write.
 """
 
+import os
 import shlex
 import sys
 
 PYTHON = shlex.quote(sys.executable)
+
+_TEMPLATE = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'templates', 'gitignore.purlin')
+
+
+def ignored():
+    """What `purlin:init` has git ignore, as setup writes it: the text of
+    `templates/gitignore.purlin`. A project a test builds takes its ignore
+    file from here, so a run leaves in it what it leaves in a real one: the
+    dashboard's data and page are ignored, never untracked or changed."""
+    with open(_TEMPLATE, encoding='utf-8') as handle:
+        return handle.read()
 
 
 def pytest_suite(files=('tests/test_*.py',), name='pytest', extra=''):

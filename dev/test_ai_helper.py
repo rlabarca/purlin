@@ -1204,6 +1204,13 @@ class TestTheInput:
         assert tree(os.path.join(made.out, 'input', 'project')) == {
             'report.md': b'F-1\n'}
 
+    # purlin: ai_helper PROOF-79
+    def test_an_output_folder_inside_the_sample_is_not_kept(self, made):
+        out = os.path.join(made.root, 'sample', 'out')
+        assert made.session(PURLIN_AI_OUT=out).returncode == 0
+        assert tree(os.path.join(out, 'input', 'project')) == {
+            'keep.md': b'kept\n', 'report.md': b'F-1\n'}
+
     # purlin: ai_helper PROOF-72
     def test_a_session_no_model_answered_keeps_no_input(self, made):
         made.answers(fake.answer('Half done.', exit_code=3,

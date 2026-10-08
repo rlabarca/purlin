@@ -13,10 +13,12 @@ import io
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 
 import pytest
 
@@ -315,6 +317,81 @@ def test_the_copy_is_removed_when_the_test_runs_past_its_limit(tmp_path):
                                    SLOW, timeout=2)
     assert result['result'] == 'not run'
     assert copies(tmp_path) == []
+
+
+# A bug that starts a process, writes its id to the file `PURLIN_TEST_STARTED`
+# names and leaves it running. `-3` is `subprocess.DEVNULL`: the process holds
+# none of the run's own streams.
+STARTS = ('    started = __import__("subprocess").Popen(\n'
+          '        [__import__("sys").executable, "-c",\n'
+          '         "import time; time.sleep(600)"],\n'
+          '        stdin=-3, stdout=-3, stderr=-3)\n'
+          '    with open(__import__("os").environ["PURLIN_TEST_STARTED"],\n'
+          '              "a") as handle:\n'
+          '        handle.write("%d\\n" % started.pid)\n')
+LEFT_RUNNING = part('    return days', STARTS + '    return days')
+LEFT_RUNNING_SLOW = part(
+    '    return days', STARTS + '    __import__("time").sleep(20)\n    return days')
+
+
+def planted_and_left(tmp_path, monkeypatch, answer, timeout=None):
+    """`(result, ids, running)`: one bug that starts a process is planted for
+    `PROOF-1`, whose test does not catch it. `ids` is the process ids the bug
+    wrote down and `running` those still running once the result is back,
+    each given 5 seconds to end and then stopped. Windows gives no way to ask
+    after a process without a handle on it, so `running` is `[]` there."""
+    listed = tmp_path / 'started.txt'
+    monkeypatch.setenv('PURLIN_TEST_STARTED', str(listed))
+    root = project(tmp_path, {'PROOF-1': WEAK})
+    result = planted_bug.plant_bug(root, 'age', PROOF, own_test(), SCOPE,
+                                   answer, timeout=timeout)
+    ids = [int(line) for line in listed.read_text(encoding='utf-8').split()]
+    if os.name == 'nt':
+        for pid in ids:
+            subprocess.run(['taskkill', '/F', '/PID', str(pid)],
+                           capture_output=True)
+        return result, ids, []
+    running = list(ids)
+    for _ in range(50):
+        running = [pid for pid in running if is_running(pid)]
+        if not running:
+            break
+        time.sleep(0.1)
+    for pid in running:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+    return result, ids, running
+
+
+def is_running(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+# purlin: planted_bug PROOF-78
+def test_a_process_a_planted_bug_started_is_ended(tmp_path, monkeypatch):
+    result, ids, running = planted_and_left(tmp_path, monkeypatch,
+                                            LEFT_RUNNING)
+    assert result['result'] == 'survived', result
+    assert len(ids) == 1, ids
+    assert running == []
+
+
+# purlin: planted_bug PROOF-79
+def test_a_process_is_ended_when_the_tests_run_past_their_limit(
+        tmp_path, monkeypatch):
+    result, ids, running = planted_and_left(tmp_path, monkeypatch,
+                                            LEFT_RUNNING_SLOW, timeout=2)
+    assert result['result'] == 'not run', result
+    assert len(ids) == 1, ids
+    assert running == []
 
 
 # purlin: planted_bug PROOF-9

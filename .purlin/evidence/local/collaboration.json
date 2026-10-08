@@ -33,12 +33,12 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T22:03:56Z",
-      "commit": "ccbd1bee4c976e79fc3f799c5d20145d01ca7dea",
+      "at": "2026-10-08T00:25:59Z",
+      "commit": "41d847485c7b187b0b478916fabdfc6b7410ea48",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
-        "code": "b9e26407aac8c92c5fb2b9030d5fcb5fadf19605394dfd5515d5b8e919ad5775",
+        "code": "5a40fe14522bc7625254199846c50e0955c5c07ad438665ad87b1aa716466895",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
         "tests": "eb9e151b276a03b8f3a24e5ef0b4c2fe2d0f324033536c4d3d97b8474041f5b8"
       },
@@ -46,8 +46,8 @@
       "proofs": [
         {
           "carried": {
-            "at": "2026-10-07T22:03:56Z",
-            "commit": "af99dbff488cd8211b2d11946f322c2bea9a8e84",
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
             "email": "rich.labarca@gmail.com",
             "machine": "Richs-MacBook-Pro.local"
           },
@@ -58,14 +58,14 @@
             "cases": [
               {
                 "class": "dev.test_collaboration",
-                "duration": 18.401,
+                "duration": 21.769,
                 "name": "test_three_people_reach_a_signed_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "9435b86affc7f80f43cdfdf6dac5f03035812f3531b0085e8c6c2cc016932856"
+              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
             }
           },
           "result": "pass",

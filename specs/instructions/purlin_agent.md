@@ -8,7 +8,7 @@
 > Scope: agents/purlin.md, skills/, references/
 > Stack: markdown, Claude Code agent definition
 > Highest-Rule: 27
-> Highest-Proof: 59
+> Highest-Proof: 61
 
 ## Rules
 
@@ -26,8 +26,10 @@
 ## Proof
 
 - PROOF-49 (RULE-18): The text of `agents/purlin.md` holds each command and each file RULE-18 names, from `sync_status` to `purlin:sign` and from `references/glossary.md` to `.purlin/evidence/<source>/<name>.json`; none is missing
+- PROOF-60 (RULE-18): A name is held whole, each space as written: the same check on a copy of `agents/purlin.md` in which every `purlin:spec` reads `purlin:specs` lists exactly `purlin:spec`, and on a copy in which every `purlin:test --all --commit` reads `purlin:test  --all --commit`, with two spaces after `purlin:test`, lists exactly `purlin:test --all --commit`
 - PROOF-50 (RULE-19): The text of `agents/purlin.md` holds one sentence that names a worktree, merging, `purlin:status` and the main checkout
 - PROOF-51 (RULE-20): Each such path read out of the ten `SKILL.md` files and `agents/purlin.md` exists; the same check on a copy of the sign skill naming `scripts/review/signoff.py` lists that path
+- PROOF-61 (RULE-20): A path is looked for letter for letter: the same check on a copy of `agents/purlin.md` in which every `references/glossary.md` reads `references/Glossary.md` lists exactly `references/Glossary.md`
 - PROOF-52 (RULE-21): Each `--flag` on a line of a `SKILL.md` naming a `scripts/**/*.py` is in that script's `--help`; the same check on a copy of the test skill passing `--nonesuch` to `purlin_run.py` lists `--nonesuch`
 - PROOF-53 (RULE-22): The JSON block under `Step 5` of `skills/sign/SKILL.md`, written to `.purlin/runtime/signoff-answers.json` in a project whose hand checks are `accession_screen RULE-1` and `sample_age RULE-6`, is walked with `--answers`; it exits 0 and the sign-off holds the note `the tube is red`
 - PROOF-54 (RULE-23): No line of `skills/*/SKILL.md`, `agents/purlin.md` or `references/**/*.md` holds `dev/` once every `/dev/null` is set aside; the same check on a copy of the build skill naming `dev/test_x.py` lists that line

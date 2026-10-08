@@ -1533,10 +1533,25 @@ class TestAiOutputs:
             str(tmp_path), '.purlin', 'runtime', 'ai')) == []
 
     # purlin: package PROOF-106
-    def test_the_proofs_own_runs_win_over_the_setting(self):
+    def test_the_proofs_own_runs_win_over_the_setting(self, tmp_path):
         assert purlin_outputs.runs_asked({'runs': 10}, 5) == 10
         assert purlin_outputs.runs_asked({'runs': None}, 5) == 5
         assert purlin_outputs.runs_asked({'runs': None}, None) == 3
+        # The setting as a project's settings file holds it: `5` where the
+        # file says 5, and none where the file names no `runs`.
+        set_to_5, not_set = str(tmp_path / 'five'), str(tmp_path / 'none')
+        write(os.path.join(set_to_5, '.purlin', 'config.json'),
+              json.dumps({'version': '0.10.0', 'tests': [], 'runs': 5}))
+        write(os.path.join(not_set, '.purlin', 'config.json'),
+              json.dumps({'version': '0.10.0', 'tests': []}))
+        assert purlin_outputs.runs_setting(set_to_5) == 5
+        assert purlin_outputs.runs_setting(not_set) is None
+        assert purlin_outputs.runs_asked(
+            {'runs': 10}, purlin_outputs.runs_setting(set_to_5)) == 10
+        assert purlin_outputs.runs_asked(
+            {'runs': None}, purlin_outputs.runs_setting(set_to_5)) == 5
+        assert purlin_outputs.runs_asked(
+            {'runs': None}, purlin_outputs.runs_setting(not_set)) == 3
         # The same three answers where a spec's AI proofs are asked together.
         spec = {'proofs': {'PROOF-1': {'ai': ['model-a'], 'runs': 10},
                            'PROOF-2': {'ai': ['model-a'], 'runs': None}}}

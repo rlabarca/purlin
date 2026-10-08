@@ -1039,6 +1039,11 @@ class TestPayload:
         assert data['summary']['steps'] == {'passed': 1, 'graded': 0,
                                             'by_hand': 0}
         assert data['summary']['sentence'] == sentence, data['summary']
+        # The feature's own count in the dashboard data, the one its row of
+        # the board reads: 2 rules, 1 passing, 1 with no test.
+        [counts] = [feature['rollup'] for feature in data['features']]
+        assert (counts['rules'], counts['passed'], counts['untested']) == (
+            2, 1, 1), counts
         assert [(item['text'], item['command'], item['count'])
                 for item in data['left']] == [
             ('1 rule to write a test for', 'purlin:build', 1)]
@@ -1239,12 +1244,18 @@ class TestTheTestHash:
                 '    aged = age(1520)\n\n    assert aged == "rejected"\n')
             longer = made.rule('RULE-1', 'sample_age')
             second = made.rule('RULE-2', 'sample_age')
+            # An edit that gives the second test, and so the file, one line
+            # more: a file of an odd count of lines where it was even.
+            _edit_age_test(made, '    aged = age(1520)\n',
+                           '    aged = age(1520)\n    assert aged\n')
+            one_more = made.rule('RULE-1', 'sample_age')
             # An edit that ends one line of the second test `\r\n`.
             path = os.path.join(made.root, 'tests', 'test_age.py')
             with open(path, 'rb') as handle:
                 raw = handle.read()
             assert raw.count(b'    aged = age(1520)\n') == 1 and (
                 b'\r' not in raw), raw
+            assert raw.count(b'\n') % 2 != AGE_TESTS.count('\n') % 2, raw
             with open(path, 'wb') as handle:
                 handle.write(raw.replace(b'    aged = age(1520)\n',
                                          b'    aged = age(1520)\r\n'))
@@ -1257,6 +1268,7 @@ class TestTheTestHash:
         assert len(first['test_hash']) == 64, first['test_hash']
         assert longer['test_hash_kind'] == 'test', longer['test_hash_kind']
         assert longer['test_hash'] == first['test_hash']
+        assert one_more['test_hash'] == first['test_hash']
         # The edits were read: the hash of the rule they belong to moved.
         assert second['test_hash'] != first['test_hash']
 
@@ -1279,12 +1291,18 @@ class TestTheTestHash:
             _edit_age_test(made, '        assert age(91) == \\\n',
                            '        assert Age(91) == \\\n')
             cased = made.rule('RULE-1', 'sample_age')['test_hash']
+            # An edit to the body that adds an empty line between two of
+            # its lines and nothing else.
+            _edit_age_test(made, 'def test_proof_1():\n',
+                           'def test_proof_1():\n\n')
+            spaced = made.rule('RULE-1', 'sample_age')['test_hash']
         finally:
             made.close()
         assert after != first
         assert cased != broken
-        assert len({first, after, indented, broken, cased}) == 5, (
-            first, after, indented, broken, cased)
+        assert spaced != cased
+        assert len({first, after, indented, broken, cased, spaced}) == 6, (
+            first, after, indented, broken, cased, spaced)
 
 
 # ---------------------------------------------------------------------------
@@ -1476,6 +1494,23 @@ class TestAnAIProof:
         model = proof['models'][0]
         assert (model['word'], model['passed'], model['of']) == (
             'not run', 3, 3), model
+
+    # purlin: states PROOF-352
+    def test_the_runs_setting_has_one_reader(self):
+        from purlin import outputs as purlin_outputs
+        made = _ai_project('@ai(%s)' % OPUS,
+                           _model(OPUS, 'pass', 'pass', 'pass'), runs=5)
+        try:
+            with open(os.path.join(made.root, '.purlin', 'config.json'),
+                      encoding='utf-8') as handle:
+                handed = dict(json.load(handle), runs=2)
+            assert purlin_outputs.runs_setting(made.root) == 5
+            assert purlin_outputs.runs_setting(made.root, handed) == 2
+            data = purlin_payload.build_payload(made.root, config=handed)
+        finally:
+            made.close()
+        proof = _listed(data, 'RULE-2')['proofs'][0]
+        assert (proof['runs'], proof['result']) == (2, 'passed'), proof
 
     # purlin: states PROOF-344
     def test_a_test_reads_not_run_where_more_runs_are_asked_now(self):
@@ -2374,6 +2409,21 @@ class TestAModelNotReached:
                 for model in proof['models']] == [
             (OPUS, 'passed', 3), (SONNET, 'not run', 1),
             ('example-model-3', 'not run', 0)], proof['models']
+
+    # purlin: states PROOF-351
+    def test_the_sentence_of_a_test_with_no_result_has_one_home(self):
+        import purlin_run
+        why = purlin_evidence.NO_RESULT % ('tests/test_login.py', 6)
+        assert why == 'The test at tests/test_login.py:6 has no result.'
+        made = _ai_project(TWO_MODELS, _model(OPUS, 'pass', 'pass', 'pass'),
+                           _silent(SONNET, why))
+        try:
+            found = _warned(made)
+        finally:
+            made.close()
+        assert found == ([], []), found
+        assert not hasattr(purlin_states, 'NO_RESULT')
+        assert not hasattr(purlin_run, 'NO_RESULT')
 
     # purlin: states PROOF-350
     def test_a_grader_that_gave_no_answer_is_the_model_named(self):

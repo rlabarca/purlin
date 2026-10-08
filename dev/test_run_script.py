@@ -919,8 +919,8 @@ def _touched_project(tmp_path, names=('login', 'export')):
     (root / 'tests' / 'test_feat.py').unlink()
     # What `purlin:init` has git ignore, so a run leaves nothing uncommitted
     # and its results are ones a sign-off counts.
-    (root / '.gitignore').write_text('.purlin/runtime/\n__pycache__/\n'
-                                     '.pytest_cache/\n', encoding='utf-8')
+    (root / '.gitignore').write_text(suites.ignored() + '.pytest_cache/\n',
+                                     encoding='utf-8')
     (root / 'src').mkdir()
     for name in names:
         (root / 'src' / ('%s.py' % name)).write_text(
@@ -2878,6 +2878,21 @@ class TestARunOverEveryFeatureCarriesForward:
         assert _ran(root) == ['test_export'], output
         assert _started(output) == ['pytest'], output
 
+    # purlin: run_script PROOF-369
+    def test_a_spec_that_names_no_files_runs_with_nothing_changed(
+            self, tmp_path):
+        root, _sha = _touched_project(tmp_path)
+        _spec(root, 'login', scope=None)
+        _git(root, 'commit', '-q', '-am', 'login names no files')
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        # The first run's report is taken away, so the report read below is
+        # the second run's own.
+        (root / REPORTS_REL / 'pytest.xml').unlink()
+        code, output = _run(root, '--all', '--test', '--commit')
+        assert code == 0, output
+        assert _ran(root) == ['test_login'], output
+
     # purlin: run_script PROOF-310
     def test_an_anchor_runs_with_nothing_changed(self, tmp_path):
         root, _sha = _touched_project(tmp_path, names=('export',))
@@ -3047,6 +3062,13 @@ class TestARunOverEveryFeatureCarriesForward:
         assert lines[1].startswith('Usage: purlin_run.py'), output
         assert [index for index, line in enumerate(lines)
                 if line.startswith(('purlin:', 'Usage:'))] == [0, 1], output
+        # The usage whole: every form of the command under its first, the
+        # form `--clean` goes in among them, and nothing after it.
+        assert len(lines) > 2 and all(
+            line.startswith('       purlin_run.py ')
+            for line in lines[2:]), output
+        assert [line for line in lines[2:] if line.startswith(
+            '       purlin_run.py --clean --test ')] == [lines[2]], output
 
     # purlin: run_script PROOF-321
     def test_clean_beside_ci_is_refused(self, tmp_path):
@@ -3376,6 +3398,18 @@ class TestAiProofs:
         assert seen['helper'] == os.path.join(REPO, 'scripts', 'ai',
                                               'purlin_ai.py')
 
+    # purlin: run_script PROOF-368
+    def test_the_variables_of_an_ai_proofs_test_are_built_in_one_place(self):
+        run_script = _load_run_script()
+        helper = os.path.join(REPO, 'scripts', 'ai', 'purlin_ai.py')
+        assert run_script.ai_variables('model-b', '/work/out') == {
+            'PURLIN_AI': helper, 'PURLIN_AI_MODEL': 'model-b',
+            'PURLIN_AI_OUT': '/work/out'}
+        assert run_script.ai_variables('model-b', '/work/out',
+                                       '/work/copy') == {
+            'PURLIN_AI': helper, 'PURLIN_AI_MODEL': 'model-b',
+            'PURLIN_AI_OUT': '/work/out', 'PURLIN_AI_REPLAY': '/work/copy'}
+
     # purlin: run_script PROOF-351
     def test_the_proofs_own_runs_win_over_the_setting(self, tmp_path):
         root = _ai_project(tmp_path, '@ai(model-a, runs=2)')
@@ -3624,9 +3658,10 @@ class TestAiProofs:
                                     for run in (1, 2, 3, 4)]
         assert _models(_ai_entry(root)) == [_passed_model('model-a', runs=4)]
 
-    # purlin: run_script PROOF-366
-    def test_what_the_suites_own_pass_saw_is_no_result_of_the_ai_proof(
-            self, tmp_path):
+    @staticmethod
+    def _runner_project(tmp_path):
+        """The AI project whose one suite, `runner`, starts pytest through
+        `run.py`: a command that gives no way to leave one test out."""
         runner = suites.pytest_suite(name='runner')
         runner['run'] = '%s run.py {files} --junitxml={report}' % suites.PYTHON
         root = _ai_project(tmp_path, '@ai(model-a)', tests=[runner])
@@ -3634,6 +3669,12 @@ class TestAiProofs:
             'import sys\nimport pytest\n'
             "sys.exit(pytest.main(['-q', '-p', 'no:cacheprovider']"
             ' + sys.argv[1:]))\n', encoding='utf-8')
+        return root
+
+    # purlin: run_script PROOF-366
+    def test_what_the_suites_own_pass_saw_is_no_result_of_the_ai_proof(
+            self, tmp_path):
+        root = self._runner_project(tmp_path)
         code, output = _run(root, '--feature', 'feat', '--test')
         assert code == 0, output
         assert _ai_starts(root) == ['bare']
@@ -3643,6 +3684,21 @@ class TestAiProofs:
         assert entry == {'id': 'PROOF-2', 'rule': 'RULE-2', 'env': None,
                          'manual': False, 'result': 'not run',
                          'test': 'tests/test_feat.py::test_reply'}
+
+    # purlin: run_script PROOF-370
+    def test_a_clean_run_keeps_an_output_where_no_test_can_be_left_out(
+            self, tmp_path):
+        root = self._runner_project(tmp_path)
+        code, output = _run(root, '--clean', '--test')
+        assert code == 0, output
+        assert _ai_starts(root) == ['bare', 'model-a 1', 'model-a 2',
+                                    'model-a 3']
+        entry = _ai_entry(root)
+        assert entry['result'] == 'pass', entry
+        assert _models(entry) == [_passed_model('model-a')]
+        kept = (root / '.purlin' / 'runtime' / 'ai' / 'feat' / 'PROOF-2'
+                / 'model-a' / '1' / 'reply.md')
+        assert kept.read_bytes() == b'reply of model-a\n'
 
     # purlin: run_script PROOF-367
     def test_a_graded_proofs_runs_hold_the_grade(self, tmp_path):

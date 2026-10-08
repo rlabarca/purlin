@@ -41,6 +41,19 @@ def test_the_agent_definition_holds_each_command_and_file():
     assert not_named(read(AGENT), COMMANDS + FILES) == []
 
 
+# purlin: purlin_agent PROOF-60
+def test_a_name_is_held_whole_with_each_space_as_written():
+    agent = read(AGENT)
+    plural, changed = re.subn(r'purlin:spec(?![\w-])', 'purlin:specs', agent)
+    assert changed
+    assert not_named(plural, COMMANDS + FILES) == ['purlin:spec']
+    assert 'purlin:test --all --commit' in agent
+    spaced = agent.replace('purlin:test --all --commit',
+                           'purlin:test  --all --commit')
+    assert not_named(spaced, COMMANDS + FILES) == [
+        'purlin:test --all --commit']
+
+
 # purlin: purlin_agent PROOF-50
 def test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout():
     # The command is held whole: `purlin:statusline` is not `purlin:status`.
@@ -66,23 +79,18 @@ def test_every_path_a_skill_or_the_agent_definition_names_exists():
     for rel in files:
         assert named_paths(read(rel)), '%s names no path' % rel
     assert _found(files, absent_paths) == {}
-    # Each path is in the repository under the very name the file gives it,
-    # letter for letter: a file system that ignores case finds
-    # `references/Glossary.md` where the repository holds `glossary.md`.
-    misspelt = []
-    for rel in files:
-        for path in named_paths(read(rel)):
-            folder = str(ROOT)
-            for part in path.split('/'):
-                if part not in os.listdir(folder):
-                    misspelt.append((rel, path))
-                    break
-                folder = os.path.join(folder, part)
-    assert misspelt == []
     sign = read(skill_path('sign'))
     assert 'scripts/review/sign.py' in sign
     copy = sign.replace('scripts/review/sign.py', 'scripts/review/signoff.py')
     assert absent_paths(copy) == ['scripts/review/signoff.py']
+
+
+# purlin: purlin_agent PROOF-61
+def test_a_path_is_looked_for_letter_for_letter():
+    agent = read(AGENT)
+    assert 'references/glossary.md' in agent
+    copy = agent.replace('references/glossary.md', 'references/Glossary.md')
+    assert absent_paths(copy) == ['references/Glossary.md']
 
 
 # purlin: purlin_agent PROOF-52

@@ -198,7 +198,9 @@ class TestTheMarker:
 
     # purlin: reports PROOF-3
     def test_a_star_does_not_cross_a_folder(self):
-        assert _matched(PATHS, 'dev/test_*.py') == ['dev/test_a.py']
+        # `dev/test_sub/x.py` is the one a `*` that crossed a `/` would take.
+        paths = PATHS + ['dev/test_sub/x.py']
+        assert _matched(paths, 'dev/test_*.py') == ['dev/test_a.py']
 
     # purlin: reports PROOF-43
     def test_a_glob_with_no_slash_matches_the_name_in_any_folder(self):

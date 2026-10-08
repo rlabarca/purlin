@@ -275,12 +275,14 @@ def runs_asked(proof, setting=None):
     return (proof or {}).get('runs') or setting or RUNS
 
 
-def runs_setting(project_root):
-    """The `runs` of the project's settings file, or None where it sets
-    none (`config_engine.runs`)."""
+def runs_setting(project_root, config=None):
+    """The `runs` setting, or None where none is set (`config_engine.runs`):
+    that of `config`, the settings a caller already holds, else of the
+    project's settings file."""
     import config_engine
     from . import markers as markers_module
-    return config_engine.runs(markers_module.load_config(project_root))
+    return config_engine.runs(markers_module.load_config(project_root)
+                              if config is None else config)
 
 
 def asked_runs(info, setting=None):

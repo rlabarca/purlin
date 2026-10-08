@@ -1152,6 +1152,10 @@ class TestMarkersFrom095StillInATest:
             'sync_status', {'project_root': project.root}))
         assert _text(responses[0]).splitlines() == printed.splitlines()
         assert _holds(_text(responses[0]).splitlines(), block) == 1
+        # Those lines and no other of the kind: the tool's answer names the
+        # old markers in one warning, as the command's text does.
+        assert _text(responses[0]).count('marker from Purlin 0.9.5') == 1, \
+            _text(responses[0])
 
     # purlin: states PROOF-310
     def test_two_are_both_named(self, project):
@@ -1183,8 +1187,9 @@ class TestMarkersFrom095StillInATest:
         assert 'not numbered' in lines[at - 1], lines
         assert lines[at:at + 4] == block, lines
         assert lines[at + 4] == '', lines
-        assert all(later.strip() for later in lines[at + 5:]), lines
-        assert '2 rules. 0 pass their tests.' in lines[at + 5:], lines
+        # The last blank line above the count: every line between holds text.
+        count = lines.index('2 rules. 0 pass their tests.', at + 5)
+        assert all(between.strip() for between in lines[at + 5:count]), lines
 
     # purlin: states PROOF-313
     def test_the_dashboard_data_carries_one_line_last(self, three_old_markers):

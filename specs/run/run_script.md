@@ -16,7 +16,7 @@
 > Scope: scripts/run/purlin_run.py, scripts/mcp/purlin/frameworks.py, references/supported_frameworks.md
 > Stack: python/stdlib (subprocess, re, hashlib), bash, pytest, sqlite3
 > Highest-Rule: 133
-> Highest-Proof: 367
+> Highest-Proof: 370
 
 ## Rules
 
@@ -186,6 +186,7 @@
 - PROOF-309 (RULE-114): In that checkout `export`'s test is changed to fail and `--all --test --commit` exits 1; run again with nothing changed, it exits 1 and the suite's report holds `test_export` alone
 - PROOF-310 (RULE-114): In a git checkout of the feature `export` and the anchor `shared`, each with one passing test, `--all --test --commit` runs twice with nothing changed between; the second run's report holds `test_shared` alone
 - PROOF-311 (RULE-114): `--feature export --test` runs while `notes.txt` is written and not committed, and the note and the evidence are then committed; `--all --test --commit` then runs `test_export` alone, and `export`'s section reads `dirty` `false`
+- PROOF-369 (RULE-114): In the checkout of `login` and `export`, `login`'s spec is committed with no `> Scope:` line and `--all --test --commit` runs twice with nothing changed between; each run exits 0, and the second run's report holds `test_login` alone
 - PROOF-312 (RULE-115): In a checkout of `login` and `export` whose evidence was committed at `<c>`, `README.md`, which no scope names, is changed and committed; `--all --test --commit` starts no suite; `export`'s section names the new commit, its one result holds `carried` with `<c>` and the first run's `at`, `machine` and `email`, and the section's `at`, `machine`, `email`, `runner`, `dirty`, `fingerprint` and `rules` are as they were
 - PROOF-313 (RULE-115): After that run `README.md` is changed and committed again and `--all --test --commit` runs again; `export`'s section names the newest commit, and its result's `carried` still names `<c>`
 - PROOF-314 (RULE-115): In a checkout of `login` and `export` with nothing committed since their evidence, `--all --test --commit` prints `Evidence unchanged.` and no line beginning `Evidence written`, and leaves both evidence files byte for byte as they were
@@ -219,6 +220,7 @@
 - PROOF-348 (RULE-126): `feat`'s PROOF-2 is tagged `@ai(model-a, model-b)`; `--feature feat --test` exits 0, prints `Left out 1 slow proof: feat PROOF-2. purlin:test --all runs it when it is due.` and no line starting `Running feat`, starts its test 0 times, and the evidence lists PROOF-2 as `not run` under `tests/test_feat.py::test_reply` with no `models`
 - PROOF-349 (RULE-127): `feat`'s PROOF-2 is tagged `@ai(model-a, model-b)`; `--all --test` exits 0 and prints, after the line `Running pytest: ...` and in this order, `Running feat PROOF-2 on model-a, 1 of 3`, `2 of 3` and `3 of 3`, then the same three lines for `model-b`, no `Left out` line, and the test was started six times: `model-a 1`, `model-a 2`, `model-a 3`, `model-b 1`, `model-b 2`, `model-b 3`
 - PROOF-350 (RULE-127): In that run the last start of the test read `PURLIN_AI_OUT` as the full path of `.purlin/runtime/ai/feat/PROOF-2/model-b/3` under the project and `PURLIN_AI` as the full path of `scripts/ai/purlin_ai.py` in this plugin
+- PROOF-368 (RULE-127): The variables an AI proof's test is given are built in one place: for the model `model-b` and the folder `/work/out` they are exactly `PURLIN_AI`, the full path of `scripts/ai/purlin_ai.py` in this plugin, `PURLIN_AI_MODEL` `model-b` and `PURLIN_AI_OUT` `/work/out`; with the output to replay `/work/copy` they are those three and `PURLIN_AI_REPLAY` `/work/copy`
 - PROOF-351 (RULE-127): PROOF-2 is tagged `@ai(model-a, runs=2)` and the settings hold `runs` `5`; `--all --test` starts the test twice, `model-a 1` and `model-a 2`, and prints `Running feat PROOF-2 on model-a, 2 of 2`
 - PROOF-352 (RULE-127): PROOF-2 is tagged `@ai(model-a)` and the settings hold `runs` `2`; `--all --test` starts the test twice, `model-a 1` and `model-a 2`
 - PROOF-353 (RULE-127): PROOF-2 is tagged `@ai(model-a, runs=1)`, and `.purlin/runtime/ai/feat/PROOF-2/model-a/1` holds the file `stale.txt` before `--all --test` runs; when the test starts the folder holds no file, and after the run it holds exactly `purlin.json` and `reply.md`
@@ -235,4 +237,5 @@
 - PROOF-364 (RULE-131): After `--all --test` passes PROOF-2 on both models, `--clean --test` starts the test six more times, and no model holds `carried`
 - PROOF-365 (RULE-131): In a git checkout, after `--all --test --commit` passes PROOF-2, tagged `@ai(model-a)`, on three runs, the settings' `runs` is set to `4` and `--all --test` runs; it starts the test four more times, and `model-a` reads `passed` `4`, `of` `4` and no `carried`
 - PROOF-366 (RULE-132): The suite `runner` runs `python3 run.py {files} --junitxml={report}`, whose command cannot leave a test out, and `feat`'s PROOF-2 is tagged `@ai(model-a)`; `--feature feat --test` starts the test once with no folder named, prints `Started 1 slow test in the runner suite: its command gives Purlin no way to leave one test out.`, and lists PROOF-2 as `not run` with no `models` and no `reported`
+- PROOF-370 (RULE-132): In that project of the suite `runner`, `--clean --test` exits 0 and starts the test once with no folder named and then three times on `model-a`, runs `1`, `2` and `3`; PROOF-2 reads `pass`, its one model `model-a` `passed` `3` of `3` with three passing runs, and `.purlin/runtime/ai/feat/PROOF-2/model-a/1/reply.md`, the output the run keeps, reads `reply of model-a`
 - PROOF-367 (RULE-133): PROOF-2 is tagged `@ai(model-a) @graded(grader-a)` and each record holds the `grade` `{"model": "grader-a", "accepted": true, "reason": "It names the three findings."}`; after `--all --test`, `model-a` reads `graded` `true` and each of its three runs holds that `grade`

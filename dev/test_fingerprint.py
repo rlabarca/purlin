@@ -215,14 +215,19 @@ def test_entries_that_reach_nothing_are_listed_as_unmatched(project):
 # purlin: evidence PROOF-41
 def test_the_fingerprint_is_taken_over_what_the_other_entries_reach(project):
     alone = project.fp('login')
+    [before] = [entry for entry in fingerprint.selection(project.root)
+                if entry['feature'] == 'login']
     project.login(scope=UNMATCHED_SCOPE)
     with_unmatched = project.fp('login')
     assert with_unmatched['code'] == alone['code']
     assert fingerprint.incomplete_reason(project.root, 'login') is None
     [selected] = [entry for entry in fingerprint.selection(project.root)
                   if entry['feature'] == 'login']
+    # Not reported incomplete in any words: a run is given no reason about
+    # its scope, and no reason the scope of `src/login.py` alone did not give.
     assert not [reason for reason in selected['reasons']
-                if 'names no files' in reason], selected
+                if 'names no' in reason or 'Scope' in reason], selected
+    assert selected['reasons'] == before['reasons'], selected
 
 
 # --- RULE-6 -----------------------------------------------------------------
