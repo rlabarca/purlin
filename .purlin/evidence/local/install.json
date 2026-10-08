@@ -2,30 +2,28 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-08T13:12:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-1": {
-            "after": "claude plugin marketplace add https://github.com/rlabarca/purlin --scope project",
-            "aim": "plain",
-            "before": "claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project",
-            "bug_key": "8a445033bd880d503216d2217f775884f212026ce84bb48509c89c4dd6dcfdd2",
-            "case": "the install lines under \"Install\" in README.md and under step 1 of docs/getting-started.md; the proof says they are the same lines and the address reads https://github.com/rlabarca/purlin.git; the changed README gives https://github.com/rlabarca/purlin, so the lines differ and the address is not the",
-            "file": "README.md",
-            "line": 48,
+            "after": "cd your-project",
+            "aim": "past the test",
+            "before": "cd my-project",
+            "bug_key": "6af3040321c9c092cbf986941f8abc9bba88ca7c52cb88cdd3d1578a7c5cad82",
+            "case": "the install block under step 1 of docs/getting-started.md against the one under \"Install\" in README.md; the proof says they are the same lines; the changed guide opens with `cd your-project` where the README has `cd my-project`",
+            "file": "docs/getting-started.md",
+            "line": 33,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "817fd793e6448273d3c2a20a307ed540dd805d834c3cc8c7d0d8cb7887f3fe64",
-        "commit": "4da9ec89a3718b9ee75b99d6fce0d156eda8c462",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-1: the test reads the install lines of both pages, asserts the two lists are equal and asserts that the marketplace address of each is exactly the one in ADDRESS, which is what the proof names.",
-          "PROOF-1: the expected address is the constant ADDRESS, whose value is not in the test's own lines, so the test checks the proof's address only if that constant holds `https://github.com/rlabarca/purlin.git`.",
-          "PROOF-1: the three helpers that pick out the lines and the address are not shown, so a helper that trims or normalises what it reads could make two different lines compare equal.",
-          "PROOF-1: the test also asserts that a block under another heading gives no install lines and that a one-word difference makes the lists unequal, which guards the helper and the comparison and is outside the proof's own case.",
-          "PROOF-1: the proof does nothing before it observes, since it reads two pages as they stand, which fits a rule about what the pages say.",
-          "Findings: none, and the test shows no pattern a spot test would flag: it asserts, each assertion can fail, and its expected address comes from a constant and not from the pages."
+          "PROOF-1: the test reads the install lines of both pages through helpers, asserts the two lists are equal and that the only marketplace address in each is the ADDRESS constant, which is what the proof names.",
+          "PROOF-1: the helpers' source is not shown, so whether they keep every fenced line or only the `claude` lines is not visible; `assert len(readme) >= 2` would hold either way, and a difference in a line the helpers drop would still pass.",
+          "PROOF-1: the address is compared with a constant defined outside the test's own lines, so the test body does not itself show that it reads `https://github.com/rlabarca/purlin.git`.",
+          "PROOF-1: the last two assertions check the helper on a made-up page and a one-word difference built inside the test, and observe nothing further about the two real pages."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -36,28 +34,28 @@
         "verdict": "strong"
       },
       "RULE-2": {
-        "at": "2026-10-08T13:12:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-2": {
-            "after": "claude plugin install purlin@purlin-dev --scope project",
+            "after": "claude plugin install purlin@rlabarca --scope project",
             "aim": "past the test",
             "before": "claude plugin install purlin@purlin --scope project",
-            "bug_key": "7180234362d53414e4eef2ff9376a210acaf83a8c73c00e01570c380566fa6e8",
-            "case": "an empty project where the getting-started page's install commands run against this checkout; the proof says `claude plugin list` shows `purlin@purlin` installed and enabled for that project; the changed page's install command names a marketplace that does not exist, so nothing is installed",
+            "bug_key": "29e99647290eb673b227040fc1e131a340450d023757b258c719a5021f1af739",
+            "case": "the install commands of docs/getting-started.md run in an empty project with the address swapped for this checkout; the proof says `purlin@purlin` is installed and enabled for that project; the changed page's install command names a marketplace `rlabarca` that was never added, so the install fails a",
             "file": "docs/getting-started.md",
             "line": 35,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "817fd793e6448273d3c2a20a307ed540dd805d834c3cc8c7d0d8cb7887f3fe64",
-        "commit": "4da9ec89a3718b9ee75b99d6fce0d156eda8c462",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-2: the test asks for the install inside its own body, then reads the plugin's row as enabled, at project scope and at the test project's path, which is what the proof names as installed and enabled for that project.",
-          "PROOF-2: the test also runs `claude plugin list` and looks for `purlin@purlin` and `enabled` anywhere in the output, so those two words need not stand on the same line or belong to the same project.",
-          "PROOF-2: the source of the fixture that runs the commands is not shown, so the test's own lines do not say which page's commands are run or whether both pages are read; a wrong command on a page the fixture does not read would still pass.",
-          "PROOF-2: the spot tests found nothing, and the test holds failable assertions on the values the proof names."
+          "PROOF-2: the test reads the plugin's row from the `installed` fixture and asserts it is enabled, has scope `project` and names the test's project folder, then asserts `claude plugin list` prints `purlin@purlin` and `enabled`, which is what the proof names.",
+          "PROOF-2: the `installed` fixture and `purlin_entry` are not shown, so it cannot be seen from the test whether the commands it runs are taken from every page or from one; a wrong command on a page the fixture does not read would still pass.",
+          "PROOF-2: the check `'enabled' in shown.stdout` reads the whole output and not the `purlin@purlin` row, so on its own another plugin's row could satisfy it; the row assertions above it cover the plugin's own state.",
+          "PROOF-2: the spot tests found nothing, and the test's assertions can each fail."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -68,29 +66,30 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-08T13:12:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-3": {
-            "after": "  \"license\": \"MIT\",\n  \"skills\": \"./skills/audit\",",
+            "after": "  \"license\": \"MIT\",\n  \"skills\": \"./docs\",",
             "aim": "plain",
             "before": "  \"license\": \"MIT\",",
-            "bug_key": "9212b3e0cc2e8fb4ae29ad8c89d6ebecf33c5a70281121882c16e450787e7e8e",
-            "case": "the install of PROOF-2 from this checkout; the proof says the folder the installed plugin reads its skills from holds a `SKILL.md` for each folder under `skills/`; the changed manifest names `skills/audit` as that folder, which holds a `SKILL.md` for none of them",
+            "bug_key": "8c40b69d71dfb046bfc6980ed1815d2efa06c10205766631b3cbd8d25d1a0d98",
+            "case": "the install of PROOF-2; the proof says the folder the installed plugin reads its skills from holds a SKILL.md for each folder under skills/ of the checkout, byte for byte; the changed manifest makes that folder docs/, which holds no SKILL.md for any skill",
             "file": ".claude-plugin/plugin.json",
             "line": 11,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "817fd793e6448273d3c2a20a307ed540dd805d834c3cc8c7d0d8cb7887f3fe64",
-        "commit": "4da9ec89a3718b9ee75b99d6fce0d156eda8c462",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-3: the test reads the installed plugin's manifest to find the one folder it reads skills from, and requires that folder to be a real folder inside the installed plugin.",
-          "PROOF-3: it requires the folders there that hold a `SKILL.md` to be exactly the checkout's skill folders, then compares each installed `SKILL.md` with the checkout's as bytes, which is what the proof names.",
-          "PROOF-3: both sides of the byte comparison come from the same checkout, so a change to a skill's text travels to both and cannot break the proof; only a change to where the skills land or are read from can.",
-          "PROOF-3: the count check of at least 9 skills and the \"no other skill\" comparison go beyond what the proof names and keep an empty or partial listing from passing.",
-          "PROOF-3: the spot tests found nothing, and the test as written leaves no way past it for a change to the covered files."
+          "PROOF-3: the test finds the skills folder from the installed plugin's own manifest, checks it lies inside the installed plugin and exists, and compares the set of folders holding a `SKILL.md` there with the checkout's skill folders, so a missing or extra skill fails it.",
+          "PROOF-3: the test reads each installed `SKILL.md` and the checkout's as bytes and compares them for equality, which is the \"same bytes\" the proof names, with the expected bytes taken from the checkout's files and not from the installer.",
+          "PROOF-3: the test also asserts at least 9 skill folders, so an empty or short list of names in the checkout cannot pass it.",
+          "PROOF-3: the test checks what the proof names for the proof's own case, so the bug is the plainest one: the manifest names another folder as the one skills are read from.",
+          "PROOF-3: the rule says every skill is present word for word and the proof and test read only each skill's `SKILL.md`, so any other file inside a skill's folder is not compared.",
+          "Findings: the spot tests made none, and the test's assertions are each failable and compare against values the code under test does not produce."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -101,67 +100,71 @@
         "verdict": "strong"
       },
       "RULE-4": {
-        "at": "2026-10-08T13:12:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-4": {
-            "after": "description: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took\ndisable-model-invocation: true",
+            "after": "name: drift\ndescription: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took\ndisable-model-invocation: true",
             "aim": "plain",
-            "before": "description: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took",
-            "bug_key": "e4c682308d0350da9b55b97a53bc1a4886a27e1ca1740d71624bdcc809bcd953",
-            "case": "after the install, the one prompt asks the smallest model to list the slash commands that start purlin:; the proof says the answer names every skill folder under skills/; with the change the drift skill is not offered to the model, so the answer leaves out drift",
+            "before": "name: drift\ndescription: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took",
+            "bug_key": "5dcecbd93cf026c3b3723e151263be462e550a910f768ae5b2bf059f6a57f85d",
+            "case": "after the install, the smallest model is asked to list the purlin: slash commands; the proof says its answer names every skill folder under skills/; the changed code keeps drift out of what the model is offered, so the answer does not name drift",
             "file": "skills/drift/SKILL.md",
             "line": 4,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "817fd793e6448273d3c2a20a307ed540dd805d834c3cc8c7d0d8cb7887f3fe64",
-        "commit": "4da9ec89a3718b9ee75b99d6fce0d156eda8c462",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-4: the test runs the one prompt in the installed project, requires a zero exit and an answer that is not an error, reads each `purlin:` name whole from the answer and asserts that no folder under `skills/` is missing from those names, which is what the proof names.",
-          "PROOF-4: the expected names come from the folders on disk and not from the answer, so a skill the model is no longer offered fails the test unless the model names it anyway.",
-          "PROOF-4: the test asserts at least 9 skill folders where the files shown hold 10, so that count would not notice one folder being removed, though the proof speaks only of the folders that are there.",
-          "PROOF-4: the test shown does not itself check that the smallest model is the one asked; that lies in the helper that builds the prompt."
+          "PROOF-4: the test runs the one prompt in the installed project, requires exit 0 and an answer that is not an error, and then requires every folder name under skills/ to appear in the answer as a whole `purlin:` command name, which is the result the proof names.",
+          "PROOF-4: the expected names are read from the skill folders on disk and not from the model's answer, and a command is matched whole, so `purlin:spec-from-code` does not stand in for `spec` and a renamed skill does not stand in for its folder.",
+          "PROOF-4: the check that at least 9 folders are found stops an empty or short folder list from passing the comparison with nothing to compare.",
+          "PROOF-4: the test reads only the text of the answer, so a model that named a command it was not offered would still pass; nothing in the files shown gives the model that name by another route in the test's project.",
+          "PROOF-4: the spot tests made no finding, and the test leaves no way past it for a change that drops a skill from the answer, so the bug is the plain one."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-4 rests on a single answer from a live model and carries no `@ai` tag, so one run decides it."
+        ],
         "proof_hash": "c5210072ccf51b2c4fbf5e1922c3eda8c5fe6c910c03a0b24234f874b32626f5",
         "rule_hash": "40aeefcfa1960a4d2aed06f6b8c3a4379b750c5ac30bfbcc6f559c8c224aa27a",
         "test_hash": "f8654f0ded3c40631074bbfa94c2424bacfe2ec310e48fa256827650f02c2af0",
         "verdict": "strong"
       },
       "RULE-5": {
-        "at": "2026-10-08T13:12:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-5": {
             "after": "claude plugin install purlin@purlin --scope user",
             "aim": "plain",
             "before": "claude plugin install purlin@purlin --scope project",
-            "bug_key": "986b749e0fbfe76c3463c9de810c5dab41d2304123c97767f23ad7c1353be529",
-            "case": "the install as the README gives it, in a fresh project; the proof says the person's own list of installed plugins reads the same before and after; the changed install puts purlin in the person's own list, so it differs",
+            "bug_key": "19a7ad53404c99f7c471cd46589273ba7f992b121374102ee6707634f625355b",
+            "case": "the install made as the pages give it; the proof says the person's own installed plugins read the same before and after; the changed page installs purlin at user scope, so the person's own plugin list gains purlin",
             "file": "README.md",
             "line": 49,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "817fd793e6448273d3c2a20a307ed540dd805d834c3cc8c7d0d8cb7887f3fe64",
-        "commit": "4da9ec89a3718b9ee75b99d6fce0d156eda8c462",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-5: the test reads the person's own plugins and marketplaces after the install and compares each with the reading taken before, which is the comparison the proof names.",
-          "PROOF-5: the test compares only those two lists, so a change the install made to the person's other settings, which the rule also names, would still pass.",
-          "PROOF-5: the test deletes the base folder itself and then asserts the project folder is gone, so that assertion observes the test's own clean-up and not anything the install did.",
-          "PROOF-5: the before reading and the install come from a fixture not shown, so whether the install follows the README, the getting-started page or both cannot be read from the test's own lines.",
-          "PROOF-5: the spot tests found nothing, and nothing in the test's own lines contradicts that: both comparisons can fail and the expected values come from a reading taken before the install."
+          "PROOF-5: the test reads the person's own plugins and marketplaces after the install and compares each with the reading taken before it, so a change to either list fails the test.",
+          "PROOF-5: the install itself is made in a fixture that is not shown, so whether it follows the README, docs/getting-started.md or both cannot be read from the test's own lines.",
+          "PROOF-5: the last assertion checks that the folder is gone straight after the test's own call deletes it, so it observes the test's cleanup and nothing the install did.",
+          "PROOF-5: the rule also names the person's own Claude Code settings, and the test compares only the plugin and marketplace lists, so a changed setting outside those two lists would pass.",
+          "Findings: none were made by the spot tests, and the test holds failable comparisons against values read before the install."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-5 names \"the test's project folder is deleted afterwards\", which describes the test's own mechanics and not something a person installing would see."
+          "PROOF-5 names the deletion of the test's project folder, which is the test's own mechanics and not something a user of the install would see."
         ],
         "proof_hash": "d2364744199fa7e2b8edd053f9d17e8380e3d8de5f83060f0ff8fd01edf7c113",
         "rule_hash": "27cea34e37f3b83147d38850d3c570dad136449fdf79fd4f16bad01dabfb23f1",

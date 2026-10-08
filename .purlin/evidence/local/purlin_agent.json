@@ -2,124 +2,133 @@
   "audit": {
     "rules": {
       "RULE-18": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-49": {
-            "after": "Purlin shows **two facts**, defined in `references/evidence_and_signoff/md`:",
+            "after": "Get the status, with the tool `mcp__plugin_purlin_purlin__async_status` or the script",
             "aim": "past the test",
-            "before": "Purlin shows **two facts**, defined in `references/evidence_and_signoff.md`:",
-            "bug_key": "8f02af68c7dfcfb2831dd41fe67aeb77fcfa8ea5a05c48a70b830c9bbb7754d3",
-            "case": "the text of agents/purlin.md read for each name of RULE-18; the proof says none is missing; the changed text no longer holds `references/evidence_and_signoff.md`, so that file is missing",
+            "before": "Get the status, with the tool `mcp__plugin_purlin_purlin__sync_status` or the script",
+            "bug_key": "8e9b8e16d9af5fdbcb87bb38468c3479a17d1c87d9a0cbb267f263136fc77259",
+            "case": "the text of agents/purlin.md; the proof says the command `sync_status` is held and none is missing; the changed file names only `async_status`, so `sync_status` is missing",
             "file": "agents/purlin.md",
-            "line": 28,
-            "result": "caught",
+            "line": 60,
+            "result": "survived",
+            "test_key": "d3b0e4b05a747184593e4249e2e57ace90c4394dbd0927b0b0f308768047d5a3",
             "why": ""
           },
           "PROOF-60": {
-            "after": "Get the status, with the tool `mcp__plugin_purlin_purlin__status` or the script",
+            "after": "`references/formats/markers_format.md` spells it, matched whole so `login` leaves `login_oauth`",
             "aim": "plain",
-            "before": "Get the status, with the tool `mcp__plugin_purlin_purlin__sync_status` or the script",
-            "bug_key": "d7c5223d8121deb6d20df340d3263ed2da418fb31c19f4d5405402c2db9176e1",
-            "case": "the copy in which every `purlin:spec` reads `purlin:specs`; the proof says the check lists exactly `purlin:spec`; the changed text gives `sync_status` and `purlin:spec`",
+            "before": "`references/formats/marker_format.md` spells it, matched whole so `login` leaves `login_oauth`",
+            "bug_key": "17b9eacdcc1d91317fe35faedf0721be1130b7e6e2a32389b0711fc35f9de5fb",
+            "case": "the copy in which every `purlin:spec` reads `purlin:specs`; the proof says the check lists exactly `purlin:spec`; the changed file gives `purlin:spec` and `references/formats/marker_format.md`",
             "file": "agents/purlin.md",
-            "line": 76,
+            "line": 141,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-49: the test reads the agent definition and asserts that `not_named` returns an empty list for `COMMANDS + FILES`, so it observes what the proof names only as far as those two lists hold every name of RULE-18 and `not_named` matches each name literally.",
-          "PROOF-49: `not_named`, `COMMANDS` and `FILES` are defined outside the test's own lines and are not shown, so the reading cannot say whether a name left out of the lists, or a dot matched as any character, would pass.",
-          "PROOF-60: the test builds both copies from the real agent definition, checks that each replacement happened, and compares the returned list for exact equality with `['purlin:spec']` and with `['purlin:test --all --commit']`, which is the result the proof names for each copy.",
-          "PROOF-60: the exact equality means any other name missing from the agent definition also fails this test, so no change to the text that alters the proof's result gets past it."
+          "PROOF-49: the test reads the agent definition and asserts that the list of names not held, out of the commands and the files, is empty, so a name taken out of the text fails it.",
+          "PROOF-49: the file holds `sync_status` only inside `mcp__plugin_purlin_purlin__sync_status`, so the check does not require a boundary before a name, and a name lengthened at its front may still read as held.",
+          "PROOF-49: the lists of commands and files are constants of the test file and were not shown, so whether they hold every name the rule gives could not be read here.",
+          "PROOF-60: the test builds both copies the proof names, asserts the substitution changed something and the spaced name was present, and compares each result with the exact one-name list the proof gives.",
+          "PROOF-60: the test checks the proof's cases and their results, so the planted change is the plainest one: a second name goes missing and the first copy's list holds two names.",
+          "PROOF-60: both copies lengthen or break a name after its start, so neither exercises a name lengthened before its start."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-49: the test still passes when agents/purlin.md:60 reads \"Get the status, with the tool `mcp__plugin_purlin_purlin__async_status` or the script\"",
+          "PROOF-49: the AI says this breaks: the text of agents/purlin.md; the proof says the command `sync_status` is held and none is missing; the changed file names only `async_status`, so `sync_status` is missing"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-60 holds two cases, the copy that reads `purlin:specs` and the copy with two spaces after `purlin:test`."
+          "PROOF-60 holds two cases, the copy reading `purlin:specs` and the copy with two spaces after `purlin:test`."
         ],
         "proof_hash": "4466bc3fab9e5a05472b1781f46de2e7814971dce568b81a17796dce4d496d80",
         "rule_hash": "918783548978fb3a350991d76096a58e3ec7d1baccb77391b0e15265dac754a7",
         "test_hash": "3411b10c3d0bdb9f199333e6775406336220a7f4957376b17be724f4b944573c",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-19": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-50": {
-            "after": "worktree, run `purlin:drift` in the main checkout, so its status and dashboard describe the",
-            "aim": "plain",
-            "before": "worktree, run `purlin:status` in the main checkout, so its status and dashboard describe the",
-            "bug_key": "66450f6625208732fcad6eebfa37c91dd2a7d3eda14d8cd39970fad00f0eced2",
-            "case": "the text of agents/purlin.md; the proof says one sentence names a worktree, merging, `purlin:status` and the main checkout; the changed text has no such sentence, because the sentence names `purlin:drift` instead",
+            "after": "worktree, is the main checkout current? Run `purlin:status` there, so its status and dashboard describe the\nmerged work.",
+            "aim": "past the test",
+            "before": "worktree, run `purlin:status` in the main checkout, so its status and dashboard describe the\nmerged work.",
+            "bug_key": "b5b08e7f678160dd60746e84463e22e9cf6027e2017c9b08b62907788711cd4d",
+            "case": "the Worktrees paragraph of agents/purlin.md; the proof says one sentence names a worktree, merging, `purlin:status` and the main checkout; the changed text ends the sentence at a question mark before the command, so no single sentence names all four",
             "file": "agents/purlin.md",
-            "line": 95,
-            "result": "caught",
+            "line": 79,
+            "result": "survived",
+            "test_key": "43e0b73d9b59644be05d650ab7fd450e417ad82b583bf5ff7a71ca31fedfabf5",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-50: the test gathers the sentences of the agent definition that hold a worktree, a merge and the main checkout, keeps those naming `purlin:status` as a whole command, and asserts there is exactly one and that it carries the command in backticks, which is each of the four things the proof names.",
-          "PROOF-50: the proof and its test look for the four names in one sentence and not for what the sentence tells the agent to do, so a sentence saying never to run `purlin:status` in the main checkout after a merge would satisfy both while the rule was broken.",
-          "PROOF-50: the test leaves no way past it for a change that removes one of the four names, so the planted bug is a plain one that swaps the command.",
-          "The spot tests found nothing, and the test holds the proof's backticked value `purlin:status` and asserts on it."
+          "PROOF-50: the test gathers the sentences of the agent definition that hold `worktree`, `merge` and `main checkout`, keeps those where `purlin:status` stands as a whole command, and asserts there is exactly one and that it holds the command in backticks, which is what the proof names.",
+          "PROOF-50: the sentences come from a helper outside the test's own lines, so whether a sentence ending in a question mark is split from the next is not visible here, and a split the helper does not make would leave the four names reading as one sentence.",
+          "PROOF-50: the test compares only the presence of the four names in one sentence, as the proof does, and not what the sentence tells the agent to do with them."
         ],
-        "findings": [],
+        "findings": [
+          "PROOF-50: the test still passes when agents/purlin.md:79 reads \"worktree, is the main checkout current? Run `purlin:status` there, so its status and dashboard describe the\"",
+          "PROOF-50: the AI says this breaks: the Worktrees paragraph of agents/purlin.md; the proof says one sentence names a worktree, merging, `purlin:status` and the main checkout; the changed text ends the sentence at a question mark before the command, so no single sentence names all four"
+        ],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "1a82b9ff1468047dcd14423cdbadf89b6257cde8524d6a1ae01a701fca68b8be",
         "rule_hash": "509a26e09d1741e49f69c78c94492a7b3cc391d4436e08ccb03cb20acb8b766c",
         "test_hash": "dc048af1899cdfb7ff4504fb1c10ac9750f7fe0663f08e14b1d284b7009ee88e",
-        "verdict": "strong"
+        "verdict": "weak"
       },
       "RULE-20": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-51": {
-            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffolding.py\" --project-root .",
-            "aim": "past the test",
-            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\" --project-root .",
-            "bug_key": "9e60161c9fc748589ea5c2aa6c1bb05e36a2794c78c8a95480b02b65f6b3186c",
-            "case": "the paths read out of the ten SKILL.md files and agents/purlin.md; the proof says each exists; the changed init skill names scripts/init/scaffolding.py, which is no file in the repository",
-            "file": "skills/init/SKILL.md",
-            "line": 26,
+            "after": "and which git facts it comes from live in `references/drift_criterion.md`; do not restate them",
+            "aim": "plain",
+            "before": "and which git facts it comes from live in `references/drift_criteria.md`; do not restate them",
+            "bug_key": "ca47212ce4e157ca681d17a60959012e5eaf8e6d9997ab3b1ffeeb5c94449aaf",
+            "case": "the paths read out of the ten SKILL.md files and agents/purlin.md; the proof says each exists; the changed drift skill names references/drift_criterion.md, which is no file in the repository",
+            "file": "skills/drift/SKILL.md",
+            "line": 51,
             "result": "caught",
             "why": ""
           },
           "PROOF-61": {
-            "after": "`references/formats/markers_format.md` spells it, matched whole so `login` leaves `login_oauth`",
+            "after": "As `references/writing_styles.md` says: plain and declarative, exact numbers, sentence case,",
             "aim": "plain",
-            "before": "`references/formats/marker_format.md` spells it, matched whole so `login` leaves `login_oauth`",
-            "bug_key": "4a04086ee1feb68fc00eb252317e27ab28db583052dc55ebe239d8346c0a0728",
-            "case": "a copy of agents/purlin.md with every references/glossary.md reading references/Glossary.md; the proof says the check lists exactly references/Glossary.md; the changed agent definition also names references/formats/markers_format.md, so the check lists two paths",
+            "before": "As `references/writing_style.md` says: plain and declarative, exact numbers, sentence case,",
+            "bug_key": "e6e7b94c542cee7340574a4335ba0ce77bd9bc5f951230b8ca258b5ce3c1e5e8",
+            "case": "a copy of agents/purlin.md with every references/glossary.md written references/Glossary.md; the proof says the check lists exactly references/Glossary.md; the changed file makes it list references/writing_styles.md as well",
             "file": "agents/purlin.md",
-            "line": 157,
+            "line": 148,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-51: the test reads the ten skill files and the agent definition, requires each to name at least one path, and compares the absent paths found across all eleven with an empty result, which is what the proof names.",
-          "PROOF-51: the test also swaps `scripts/review/sign.py` for `scripts/review/signoff.py` in a copy of the sign skill and compares the absent paths with exactly that one path, as the proof says.",
-          "PROOF-51: the helpers that read and look up the paths are not shown, so whether a path written after `${CLAUDE_PLUGIN_ROOT}/` inside a command block is read cannot be told from the test's own lines.",
-          "PROOF-61: the test checks that the agent definition names `references/glossary.md`, swaps every one for `references/Glossary.md` in a copy, and compares the absent paths with exactly `references/Glossary.md`, which is the proof's case and its result.",
-          "PROOF-61: the comparison is with the whole list, so any other absent path in the agent definition, or a lookup that ignores case, fails the test."
+          "PROOF-51: the test counts 11 files, requires each to name at least one path, and compares the absent paths across all of them with an empty result, so a path that does not exist in any skill or in the agent definition fails it.",
+          "PROOF-51: the test also swaps `scripts/review/sign.py` for `scripts/review/signoff.py` in a copy of the sign skill and compares the absent paths with exactly that one path, which is the value the proof names.",
+          "PROOF-51: the test only sees the paths the path reader extracts, and that reader is not shown, so a path written in a form it does not read would not be checked.",
+          "PROOF-61: the test first confirms `references/glossary.md` is in the agent definition, then compares the absent paths of the recased copy with exactly `references/Glossary.md`, which is the case and the value the proof names.",
+          "PROOF-61: the exact comparison fails both when the recased path is missed and when any other absent path is listed beside it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-51 holds two cases: the paths of the real files, and the copy of the sign skill naming a missing path."
+          "PROOF-51 holds two cases: every path named exists, and a copy of the sign skill naming a missing path lists it."
         ],
         "proof_hash": "9c3973e11366758f241939f10faa5edcfcc5d0e9c9ae87a9dd1d7f524622e013",
         "rule_hash": "56c9823cb4f54f2c109a16a627e80cb387f8f10a346b953679dbab87a58ce3e7",
@@ -127,33 +136,35 @@
         "verdict": "strong"
       },
       "RULE-21": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-52": {
-            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --answer .purlin/runtime/signoff-answers.json [--version <version>] --project-root .",
+            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --all --commit --project .",
             "aim": "past the test",
-            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\" --answers .purlin/runtime/signoff-answers.json [--version <version>] --project-root .",
-            "bug_key": "75f66e2c0843b9ce37228cf29d2e37ad8b6635bb43e03dfe8d541dc1f1bf0fe3",
-            "case": "the sign skill's line running scripts/review/sign.py; the proof says each flag on it is in that script's --help; the changed line passes --answer, which the --help does not list",
-            "file": "skills/sign/SKILL.md",
-            "line": 218,
+            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\" --test --all --commit --project-root .",
+            "bug_key": "c30449df091ff5875a3a8525f721583f35bd27e974f334c372420f1d769f7997",
+            "case": "the hand-off line of the test skill running purlin_run.py; the proof says every flag on it is in that script's --help; the changed line passes --project, which the script's --help does not list as a flag",
+            "file": "skills/test/SKILL.md",
+            "line": 45,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-52: the test runs the flag check over every skill file and asserts it finds nothing, then adds `--nonesuch` to a copy of the test skill's `purlin_run.py` line and asserts the check lists exactly that pair, so both values the proof names are compared with literals.",
-          "PROOF-52: the test never shows how a flag is compared with the `--help` text, so a flag that is the start of a real one, such as `--answer` for `--answers`, passes if the comparison is by substring.",
-          "PROOF-52: the planted flag `--nonesuch` is the start of no real flag and is tried on one script only, so the test does not show that a near-miss flag, or a flag on a line naming another script, is listed."
+          "PROOF-52: the test asserts that the unknown-flag check over every skill file finds nothing, which is the proof's first half read over the real skills.",
+          "PROOF-52: the test then adds `--nonesuch` after the first `purlin_run.py` in a copy of the test skill and asserts the check lists exactly that script and flag, which is the proof's second half with its named value.",
+          "PROOF-52: the test shows nothing of how a flag is compared with the `--help` text, so a flag that is only the start of a real one, such as `--project` for `--project-root`, may pass if the helper matches by substring.",
+          "PROOF-52: the spot tests found nothing, and both assertions compare against literals rather than values taken from the code under test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-52 holds two cases: the skills as they stand, and a copy of the test skill passing `--nonesuch`."
+          "PROOF-52 holds two cases, the real skills having no unknown flag and the changed copy listing `--nonesuch`.",
+          "PROOF-52 names a script file and a `SKILL.md` path, which a person who cannot read code would have to take on trust."
         ],
         "proof_hash": "ef7078f1b9294baea90a8c11ab79dd4efb794237431777f2c3be97b71f28e3c3",
         "rule_hash": "f55996f8e63e2e1e12a0f104eb0274b55d84edeee45f573e818d9a672965dca5",
@@ -161,28 +172,28 @@
         "verdict": "strong"
       },
       "RULE-22": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-53": {
             "after": " \"stops\": {\"accession_screen RULE-1\": {\"answer\": \"note\", \"note\": \"the tube is blue\"},",
             "aim": "plain",
             "before": " \"stops\": {\"accession_screen RULE-1\": {\"answer\": \"note\", \"note\": \"the tube is red\"},",
-            "bug_key": "2d51a479fa13550f0473f5438391de6f49dd7d49638f0dbc32c8e43e226f0535",
-            "case": "the Step 5 answers file walked with --answers in a project whose hand checks are accession_screen RULE-1 and sample_age RULE-6; the proof says it exits 0 and the sign-off holds the note `the tube is red`; the changed block gives the note `the tube is blue`",
+            "bug_key": "b1c24579309ccc50e81deea7ce61305a90b636c1e71f82f99574124e4592073d",
+            "case": "the Step 5 JSON block walked with --answers in a project with hand checks accession_screen RULE-1 and sample_age RULE-6; the proof says exit 0 and the sign-off holds the note `the tube is red`; the changed block gives the note `the tube is blue`",
             "file": "skills/sign/SKILL.md",
             "line": 209,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-53: the test reads the JSON block under Step 5 of the sign skill, writes it as the answers file in a project with the two hand checks, walks it with `--answers`, and asserts exit 0, exactly one sign-off file, the note `the tube is red` on accession_screen RULE-1 and the two hand checks in the order walked.",
-          "PROOF-53: the test checks both results the proof names, the exit code and the note's exact text, so a change to the block that breaks either is seen.",
-          "PROOF-53: the test does not compare the note recorded for sample_age RULE-6 or the `audit` answer, which the proof does not name either.",
-          "The spot tests found nothing, and the test holds the proof's value `the tube is red` as a literal of its own, not one taken from the skill file."
+          "PROOF-53: the test takes the JSON block under `Step 5` from the sign skill itself, writes it as the answers file in a project with the two hand checks and runs the sign script with `--answers`, so it exercises the proof's own case.",
+          "PROOF-53: the test asserts exit code 0, exactly one sign-off file, the note `the tube is red` for `accession_screen RULE-1` and the order of the two hand checks, so it compares both results the proof names with literals of its own.",
+          "PROOF-53: a change to the block's keys, its stop names or its `sign` address would leave no sign-off or a non-zero exit, and a change to the note fails the literal comparison, so no change to the block that breaks the proof's case gets past the test.",
+          "PROOF-53: the test never reads the walk's printed output for a refusal line, so the rule's \"without a refusal about the file\" is shown only through the exit code and the sign-off written."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -193,34 +204,34 @@
         "verdict": "strong"
       },
       "RULE-23": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-54": {
-            "after": "the script with its input empty, `< dev/null`, so the question takes its default.",
+            "after": "the script with its input empty, `< /dev/null`, as `./dev/test_init.py` does, so the question takes its default.",
             "aim": "past the test",
             "before": "the script with its input empty, `< /dev/null`, so the question takes its default.",
-            "bug_key": "45073e89ecfb5e6be67fa8bcebe4c3b788b326d2cdda5ec034acbbad622731ea",
-            "case": "the skills, the agent definition and the references as they stand; the proof says no line holds `dev/` once every `/dev/null` is set aside; the changed init skill holds a line naming the relative path `dev/null`",
+            "bug_key": "053aa3ad89ca4b82c05509e1d7498b800ead93d2af4a2a09bcc14d69b61d4ecc",
+            "case": "the skills, the agent definition and the references searched for `dev/` with `/dev/null` set aside; the proof says no line holds it; the changed init skill holds `./dev/test_init.py` on a line that also holds `/dev/null`",
             "file": "skills/init/SKILL.md",
             "line": 30,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-54: the test runs the check over every skill file, the agent definition and every reference file, and asserts that it finds nothing, so a plain `dev/` path added to any of them fails it.",
-          "PROOF-54: the test asserts that a line holding `/dev/null` in backticks lists nothing, and that a copy of the build skill ending in a line naming `dev/test_x.py` lists exactly that line, which are the values the proof names.",
-          "PROOF-54: the test tries the set-aside only with `/dev/null` written with its leading slash, so it does not show by itself whether a relative `dev/null` is listed or set aside with it.",
-          "PROOF-54: the test asserts that `references/formats/spec_format.md` is among the files read, so the nested references are shown to be covered."
+          "PROOF-54: the test runs the check over every skill file, the agent definition and the reference files, and asserts it finds nothing, so a plain new `dev/` line in any of them fails it.",
+          "PROOF-54: the test asserts that a sentence holding only `/dev/null` lists nothing, and that a copy of the build skill with the line naming `dev/test_x.py` appended lists exactly that line, which is the proof's second half with its value.",
+          "PROOF-54: the test never tries a line that holds both `/dev/null` and another `dev/` path, nor a `dev/` path that follows a slash, so a check that drops such a line whole would still pass; the planted bug is aimed there.",
+          "PROOF-54: the assertion that `references/formats/spec_format.md` is among the files shows the reference list is not empty, but it does not show that every skill file is in the list."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-54 holds two cases: the files as they stand listing nothing, and a copy of the build skill naming `dev/test_x.py` listing that line."
+          "PROOF-54 holds two cases: the search of the real files that finds nothing, and the search of a changed copy of the build skill that lists the line."
         ],
         "proof_hash": "cc9bbd9be19173aff9d776f8037dff895e281f00f5d385c2858d5492cf63680a",
         "rule_hash": "93ef525b29e355c64dbec25addf5bfb93fb08f6ce0b78761cc46f01d2bd63ec5",
@@ -228,35 +239,34 @@
         "verdict": "strong"
       },
       "RULE-24": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-55": {
-            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_status.py\" --project-root .",
+            "after": "Get the status from the tool `sync_status`, passing `project_root`:",
             "aim": "plain",
-            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root .",
-            "bug_key": "523ee4ae50f9b77b5d79941b3fce00857b1e03365198e378bf04847aa738d8bd",
-            "case": "the spec-from-code skill, which holds sync_status; the proof says it holds scripts/run/purlin_status.py; the changed skill names scripts/purlin_status.py and no longer holds that path",
+            "before": "Get the status from the tool `mcp__plugin_purlin_purlin__sync_status`, passing `project_root`:",
+            "bug_key": "092cac205c115632e032421d29424a9f0d23462e744180ddd940462a018586d0",
+            "case": "each SKILL.md holding sync_status; the proof says it holds mcp__plugin_purlin_purlin__sync_status; the changed spec-from-code skill holds sync_status without the name a session lists",
             "file": "skills/spec-from-code/SKILL.md",
-            "line": 30,
+            "line": 24,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-55: the test gathers every skill file holding `sync_status`, runs `status_unnamed` over each and compares the combined list with the empty list, so a skill missing either name fails it, provided the helper looks for the two full strings.",
-          "PROOF-55: the test asserts the build skill is among the files gathered, so an empty gathering cannot pass it.",
-          "PROOF-55: the test removes every line of the build skill holding `scripts/run/purlin_status.py`, asserts the copy differs, and compares the helper's answer with the exact list `['build does not name scripts/run/purlin_status.py']`, which is the message the proof names.",
-          "PROOF-55: the tool's full name `mcp__plugin_purlin_purlin__sync_status` appears nowhere in the test's own lines, so the test relies on `status_unnamed`, a helper not shown here, to look for it.",
-          "PROOF-55: the proof names file names and a script path, which here are text a reader of the skill files sees."
+          "PROOF-55: the test gathers every skill file holding `sync_status`, requires the build skill to be among them, and asserts the check lists no problem for any of them, so a skill that drops the tool's full name or the script's path should fail it.",
+          "PROOF-55: the test then removes every line naming `scripts/run/purlin_status.py` from the build skill, asserts the copy differs, and compares the check's answer with the exact list `['build does not name scripts/run/purlin_status.py']`, which is the value the proof names.",
+          "PROOF-55: the check itself, `status_unnamed`, and the list of skill files come from helpers not shown here, so what counts as naming the tool or the script rests on those helpers and not on the test's own lines.",
+          "PROOF-55: the proof's `mcp__plugin_purlin_purlin__sync_status` does not appear in the test's own lines, so the test relies on the helper to look for it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-55 holds two cases: the check over every skill as it stands, and the check on a copy of the build skill with the script's line taken out."
+          "PROOF-55 holds two cases: the check over every skill as written, and the check on a copy of the build skill with the script's line taken out."
         ],
         "proof_hash": "a2271b5495fce64bfc29b4b31f33eab22a4e44fb18c8c0b767f34d416c1d8760",
         "rule_hash": "8e5d2fe5dc6af7a3dc385a62c6f1561711fb51f8b82b4a1a871061c889f7480e",
@@ -264,62 +274,60 @@
         "verdict": "strong"
       },
       "RULE-25": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-56": {
-            "after": "  `purlin:audit <feature> RULE-N` plants each bug that survived again and runs its",
+            "after": "| settle | To decide a surviving bug's finding with a test run, `purlin:audit <feature> --settle RULE-N` | `review_criteria.md`, \"Settling a finding\" |",
             "aim": "plain",
-            "before": "  `purlin:audit <feature> RULE-N --settle` plants each bug that survived again and runs its",
-            "bug_key": "2c41605ad3438b482e5ccfcb914d3933f3ca3f95b0680dad1bf265c2e3835e8d",
-            "case": "the text of references/glossary.md; the proof says it holds `purlin:audit <feature> RULE-N --settle`; the changed glossary holds `purlin:audit <feature> RULE-N` with no `--settle`",
+            "before": "| settle | To decide a surviving bug's finding with a test run, `purlin:audit <feature> RULE-N --settle` | `review_criteria.md`, \"Settling a finding\" |",
+            "bug_key": "dc9720c36ce4d083d8ed615abecf6569c4e530eeefabaf4768516d58807fe9d1",
+            "case": "the text of references/glossary.md; the proof says it holds `purlin:audit <feature> RULE-N --settle`; the changed glossary gives `purlin:audit <feature> --settle RULE-N` and holds the command nowhere",
             "file": "references/glossary.md",
-            "line": 129,
+            "line": 84,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-56: the test reads both files the proof names and asserts the settle command is in each, first through `not_named` and then as a substring of the text with wrapped lines joined by one space, so removing the command from either file fails it.",
-          "PROOF-56: the second assertion is a substring check, so a longer flag that begins with `--settle`, such as `--settled`, would still satisfy it unless `not_named`, whose source is not shown, reads the command as a whole.",
-          "PROOF-56: no spot test fired, and the proof's backticked value is in the test's file through the `SETTLE` constant the test uses."
+          "PROOF-56: the test reads the text of both `references/purlin_commands.md` and `references/glossary.md` and asserts the settle command is in each, which is the two observations the proof names.",
+          "PROOF-56: the second loop joins wrapped lines with one space and looks for the command as typed, so a command reworded, reordered or spaced differently in either file fails the test.",
+          "PROOF-56: the first two assertions rest on the helper `not_named`, whose source is not shown, so what it accepts as naming the command cannot be read here; the loop after it does not depend on it.",
+          "PROOF-56: the check is a substring search, so a longer command that begins with the same words, such as one ending `--settled`, would still satisfy both the test and the proof's own wording.",
+          "PROOF-56: the two files are themselves the product, so reading their text with nothing done first is the observation the proof calls for."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-56 names two files, each a case of its own."
-        ],
         "proof_hash": "85bcc8428f40578ae2f5f1600f50894394146f30d56d63582a6b6a965e3c4eb2",
         "rule_hash": "e4a1cd3935b341e3d4471a3524b6c2fa35f425378b88fff0138fbd9482db3efb",
         "test_hash": "7227e99fbcb127e7e327158494cf6e0739d3df463096fec1887d05e4e3c1e543",
         "verdict": "strong"
       },
       "RULE-26": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-57": {
             "after": "`@ai(<model>)`, with an ordinary marked test. `references/spec_quality_guide.md`, \"A proof about",
             "aim": "past the test",
             "before": "`@ai(<model>)`, with an ordinary marked test: `references/spec_quality_guide.md`, \"A proof about",
-            "bug_key": "79287a74082065d3966d9aa056915b61eb36631b4b308f4cb842c2cf348fbf58",
-            "case": "the text of agents/purlin.md; the proof says one sentence names `AI proof`, `@ai(<model>)` and both references; the changed text ends the sentence after `@ai(<model>)`, so the two references stand in a second sentence",
+            "bug_key": "1be252abbf71c5ebbda7fd2f1f5c5bafe7d2155edb5e78bf8baa5c28f2f1a925",
+            "case": "the text of agents/purlin.md; the proof says one sentence names `AI proof`, `@ai(<model>)` and both references; the changed text names `AI proof` and `@ai(<model>)` in one sentence and the two references in the next",
             "file": "agents/purlin.md",
-            "line": 43,
+            "line": 29,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-57: the test counts the sentences of the agent definition that `sentences_with` returns for `AI_PROOF` and asserts the count is 1, so it does observe the text the proof names.",
-          "PROOF-57: the four values the proof names are not in the test's own lines; they sit, if anywhere, in the `AI_PROOF` constant, so the test checks all four only if that constant holds all four.",
-          "PROOF-57: where a sentence ends is decided by the `sentences_with` helper, not shown here, so a sentence split in two before the references still passes if the helper reads a paragraph, or a period followed by a backtick, as one sentence.",
-          "No spot test fired, and nothing in the test's own lines contradicts that: it holds one assertion that can fail."
+          "PROOF-57: the test asserts that exactly one sentence of the agent definition matches `AI_PROOF`, through the helper `sentences_with`, and neither the constant nor the helper is in the source shown.",
+          "PROOF-57: whether the test holds all four names the proof gives, and where it ends a sentence, rests on that constant and helper, so a sentence split in two or a missing reference passes if either is looser than the proof.",
+          "PROOF-57: the spot tests found nothing, and the assertion can fail, since a count of 0 or 2 fails it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -330,46 +338,46 @@
         "verdict": "strong"
       },
       "RULE-27": {
-        "at": "2026-10-08T00:34:44Z",
+        "at": "2026-10-08T15:03:34Z",
         "bugs": {
           "PROOF-58": {
-            "after": "purlin_ai.py grade --feature <name> --proof <PROOF-N>",
+            "after": "purlin_ai.py grade --feature <name> --proof <id>",
             "aim": "plain",
             "before": "purlin_ai.py grade --feature <name> --proof PROOF-N",
-            "bug_key": "8e903faf498fbe5cddfa57241c5e755673ecb676d581c148bb41a489817dec45",
-            "case": "the text of the command reference; the proof says it holds the line `purlin_ai.py grade --feature <name> --proof PROOF-N`; the changed file holds `purlin_ai.py grade --feature <name> --proof <PROOF-N>` in its place",
+            "bug_key": "bff0b410b62f5d6eabc9d48df82ff401d27b15f1398a820c25d8e3d328126b5e",
+            "case": "the text of references/purlin_commands.md; the proof says it holds the line `purlin_ai.py grade --feature <name> --proof PROOF-N`; the changed file gives `purlin_ai.py grade --feature <name> --proof <id>` in its place",
             "file": "references/purlin_commands.md",
-            "line": 107,
+            "line": 100,
             "result": "caught",
             "why": ""
           },
           "PROOF-59": {
-            "after": "- Start `run --instructions <file>` for a prompt, a skill or a plugin, or `record` where the project makes the",
-            "aim": "plain",
+            "after": "- Start `run --instructions` for a prompt, `run` for a skill or a plugin, or `record` where the project makes the",
+            "aim": "past the test",
             "before": "- Start `run` for a prompt, a skill or a plugin, or `record` where the project makes the",
-            "bug_key": "9f6a9f76ccf2003da7c436bb374a472441653866d561d5e2427a3e03cd478e3b",
-            "case": "every SKILL.md and the agent definition searched for the helper's options; the proof says none holds `--instructions`; the changed build skill holds `--instructions`",
+            "bug_key": "f9992ca898c6c2119527c0163fe9e27f5ff4be63209b44dc137b461a9138987f",
+            "case": "every SKILL.md and agents/purlin.md searched for the helper's options; the proof says none holds `--instructions`; the changed build skill holds `--instructions` in a sentence with no `purlin_ai.py` on its line",
             "file": "skills/build/SKILL.md",
             "line": 99,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "f69d016e10eec330a04b2628219eab5ca4434e2e319143499838ebc6cc1b84b9",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
+        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-58: the test splits the command reference into lines and asserts that no line of `HELPER_LINES` is missing, so a change to any of the three lines fails it, provided that list, which is defined outside the test shown, holds the three lines the proof names.",
-          "PROOF-58: the test compares each line whole, so a helper line that gained an indent or trailing text would also fail it.",
-          "PROOF-59: the test asserts that the search over every skill file and the agent definition finds nothing, then that a copy of the build skill with the record line added lists exactly `--from <folder>`, which is the proof's two results.",
-          "PROOF-59: which strings count as a restated option is decided by `helper_options`, defined outside the test shown, and the test's own lines exercise only `--from <folder>` of the three.",
-          "No finding of the spot tests stands against either test."
+          "PROOF-58: the test splits the command reference into lines and asserts that each line of `HELPER_LINES` is one of them, so a changed helper line fails it as long as that list holds the three lines the proof names.",
+          "PROOF-58: `HELPER_LINES` is defined outside the test's own lines, so the request does not show whether it holds the proof's three lines word for word.",
+          "PROOF-59: the test asserts that `helper_options` finds nothing in the skill files and the agent definition, then that a copy of the build skill with `purlin_ai.py record --from <folder>` added lists exactly `--from <folder>`.",
+          "PROOF-59: the copy case exercises only `--from <folder>` on a line that names `purlin_ai.py`, so the test does not itself show that `--instructions` or `--proof PROOF-N` in plain prose would be listed.",
+          "PROOF-59: `helper_options`, `_found` and `skill_files` are defined outside the test's own lines, so which files are searched and how an option is matched cannot be read from the test."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-59 holds two cases: the search of the real files that finds nothing, and the copy of the build skill that lists `--from <folder>`."
+          "PROOF-59 holds two cases: the search of the files as they stand, and the search of a copy of the build skill with a line added."
         ],
         "proof_hash": "da60effa2c7c2e5359e53cbea1fc2fe95ecc79cb579c3816a23e9855f760191f",
         "rule_hash": "c1becf9f6781fd875b4efaa304b167590b40760bd25aed241f21681c444d8ac6",
