@@ -94,45 +94,6 @@
         "test_hash": "f6100a24eb108e5ef0cab0b40dba0066c1d033e9c5301a0c77aedce4d6fedec7",
         "verdict": "strong"
       },
-      "RULE-3": {
-        "at": "2026-10-08T00:34:44Z",
-        "bugs": {
-          "PROOF-6": {
-            "after": "    os_name = host_os()\n    subprocess.Popen(['sh', '-c', 'env -i /bin/sleep 600 &'],\n                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n                     stderr=subprocess.DEVNULL, start_new_session=True)",
-            "aim": "past the test",
-            "before": "    os_name = host_os()",
-            "bug_key": "b5c49c4490ba15dca64cfaa15e8f17ff44d65d10d67d2f7cfa3703327423267b",
-            "case": "setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running; the changed test run leaves a sleep running for 600 seconds",
-            "file": "scripts/run/purlin_run.py",
-            "line": 1947,
-            "result": "survived",
-            "test_key": "6b805e77deb6ec8301dc53b6991b7fa43ee292f279219b8447b5a004141e7b02",
-            "why": ""
-          }
-        },
-        "code_hash": "9ef105c329de441cb7a9eb6c74571c2917eca00408a9e551bfca317ea3e08b57",
-        "commit": "fc4cabd17bd38d59e521a4c665833ad547397f11",
-        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
-        "explanation": [
-          "PROOF-6: the test runs setup, a test run with `--commit` and the status in a scratch project, each in a session of its own, and asserts each exits 0, which is what the proof names.",
-          "PROOF-6: it reads the ids of the processes the commands' Python processes recorded starting, asserts there are at least 3, and asserts none is still running after up to three looks half a second apart, so \"no process any of them started is still running\" is observed for processes started from Python.",
-          "PROOF-6: it then asserts `left_running` returns nothing for the scratch project and the three commands' process ids, which by the test's comments covers a process left in a command's group or naming the project on its command line; that helper's source is not shown, so the command-line half of the proof is observed only as far as the helper does it.",
-          "PROOF-6: except on Windows it also asserts no process other than the test's own carries the environment mark, which reaches a process started by something other than Python, such as git or a shell; on Windows such a process is found only by its group or command line.",
-          "PROOF-6: the retry loops give a process up to about 1.5 seconds to exit, so one that outlives its command briefly still passes.",
-          "PROOF-6: the rule speaks of every Purlin command and the proof names three, so a process left by another command, such as the audit, is outside what this test observes.",
-          "Findings: the spot tests found nothing, and the test's assertions each compare against a value the commands can change, so none of the seven checks applies."
-        ],
-        "findings": [
-          "PROOF-6: the test still passes when scripts/run/purlin_run.py:1947 reads \"subprocess.Popen(['sh', '-c', 'env -i /bin/sleep 600 &'],\"",
-          "PROOF-6: the AI says this breaks: setup, a test run with --commit and the status in a scratch project; the proof says no process any of them started is still running; the changed test run leaves a sleep running for 600 seconds"
-        ],
-        "model": "claude-opus-5-5",
-        "no_bug": [],
-        "proof_hash": "8b4a1e30c44dfe443f1533df6f8cf3c5ea0554a9c85de3f63a1b58c368b02cbc",
-        "rule_hash": "7e040db3b040d335fd4d6bc9775c37a18b6041724ccadbda6fa8da3e4ce18769",
-        "test_hash": "5cb850aedfaec61dea72906a5cbeb6d63efed4e9e863f6aa744f5dcffbd50c79",
-        "verdict": "weak"
-      },
       "RULE-4": {
         "at": "2026-10-08T00:34:44Z",
         "bugs": {
@@ -171,24 +132,18 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T00:25:59Z",
-      "commit": "02c78fce03f7027fa20eb8bf34c1b1b3c352822d",
+      "at": "2026-10-08T10:36:32Z",
+      "commit": "e2b9f24642cb4b742726f1d922f05a0ce0d8eb49",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "9ef105c329de441cb7a9eb6c74571c2917eca00408a9e551bfca317ea3e08b57",
-        "spec": "81d2ce7cf5d701440e21046551b2439f62c3000813c6de45a1a6ebb8d14777a1",
-        "tests": "a3b8fb7d9ba950ebc59b128b0231aaf3cdbed71c9c5c7ff81a8a1149c6b505c2"
+        "spec": "2934a3d3e68065ccbd81ea42c28e98b46fd69a2edab56d60017075066c6c481d",
+        "tests": "0b74c16e12230dfe0c7abd6cde6d58e3a671494448f98a6d210200be85757b3b"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -196,14 +151,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 2.562,
+                "duration": 2.38,
                 "name": "test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "01298c7e5a7489224dbf4825d7c9663797a62779c579246f8521c2656f40788e"
             }
           },
           "result": "pass",
@@ -211,12 +166,6 @@
           "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -224,14 +173,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.409,
+                "duration": 0.286,
                 "name": "test_every_python_file_under_scripts_parses_as_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "01298c7e5a7489224dbf4825d7c9663797a62779c579246f8521c2656f40788e"
             }
           },
           "result": "pass",
@@ -239,12 +188,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -252,14 +195,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 1.362,
+                "duration": 0.937,
                 "name": "test_a_test_run_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "01298c7e5a7489224dbf4825d7c9663797a62779c579246f8521c2656f40788e"
             }
           },
           "result": "pass",
@@ -267,12 +210,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_a_test_run_runs_on_39"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -280,14 +217,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.669,
+                "duration": 0.616,
                 "name": "test_the_status_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "01298c7e5a7489224dbf4825d7c9663797a62779c579246f8521c2656f40788e"
             }
           },
           "result": "pass",
@@ -295,40 +232,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_the_status_runs_on_39"
         },
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
-          "env": null,
-          "id": "PROOF-6",
-          "manual": false,
-          "reported": {
-            "cases": [
-              {
-                "class": "dev.test_purlin_output.TestNoProcessLeft",
-                "duration": 2.257,
-                "name": "test_no_command_leaves_a_process_running",
-                "outcome": "pass"
-              }
-            ],
-            "report": {
-              "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
-            }
-          },
-          "result": "pass",
-          "rule": "RULE-3",
-          "test": "dev/test_purlin_output.py::TestNoProcessLeft::test_no_command_leaves_a_process_running"
-        },
-        {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -336,14 +239,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 0.243,
+                "duration": 0.233,
                 "name": "test_no_skill_and_not_the_agent_definition_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "01298c7e5a7489224dbf4825d7c9663797a62779c579246f8521c2656f40788e"
             }
           },
           "result": "pass",
@@ -354,7 +257,6 @@
       "rules": {
         "RULE-1": "passed",
         "RULE-2": "passed",
-        "RULE-3": "passed",
         "RULE-4": "passed"
       },
       "runner": "rich-labarca"
