@@ -1062,7 +1062,7 @@
         "verdict": "strong"
       },
       "RULE-131": {
-        "at": "2026-10-08T02:22:27Z",
+        "at": "2026-10-08T11:28:45Z",
         "bugs": {
           "PROOF-308": {
             "after": "    return [place + found[place] for place in sorted(found, reverse=True)]",
@@ -1076,13 +1076,13 @@
             "why": ""
           },
           "PROOF-309": {
-            "after": "    warnings = data['warnings']",
+            "after": "OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '\n                  'comment above the test, and take the old mark out.')",
             "aim": "past the test",
-            "before": "    warnings = list(data['warnings'])",
-            "bug_key": "82f4e1d21277ac6fafe89124593530c6c1c87f059e590faa4cc777348e816925",
-            "case": "the three-marker project read by the sync_status tool; the proof says the tool answers the command's text with the one warning of PROOF-308; the changed code answers a second warning line above it, `3 tests: marker from Purlin 0.9.5. It is not read. Run purlin:status to see each.`, from tool and com",
+            "before": "OLD_MARKERS_DO = ('For each, write the proof with purlin:spec, put the '\n                  'comment above the test, and take the old tag out.')",
+            "bug_key": "7fa86e8e11ab78ebf6d39e2414a184d0d0586ccf1cf39039879e57307e4b636c",
+            "case": "the three-marker project asked through the sync_status tool; the proof says the answer holds the line ending `and take the old tag out.`; the changed code answers a line ending `and take the old mark out.`",
             "file": "scripts/mcp/purlin/status.py",
-            "line": 180,
+            "line": 96,
             "result": "caught",
             "why": ""
           },
@@ -1121,15 +1121,27 @@
           }
         },
         "code_hash": "49043df0527a3689192de9efa70fc74bb10521a33023c84e90bdfe1b1c64b84b",
-        "commit": "f141b5691ace19462b20757d0c79f9cd9c87187a",
+        "commit": "420a1bd6a8e73ab8e3242de14bf4fba61685c2b1",
         "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
-        "explanation": [],
+        "explanation": [
+          "PROOF-308: the test runs the status command and counts the fixture's four-line block once and the words `marker from Purlin 0.9.5` once, so the four lines are checked only as far as the fixture's block, which is not shown, holds them as literals.",
+          "PROOF-309: the test compares the tool's answer line by line with the command's output and counts the same fixture block once in it, so a wrong warning line shared by both is caught only where the block is written out and not built from the status code's own words.",
+          "PROOF-309: the comparison is by `splitlines()`, so a difference only in a trailing line end between the tool's text and the command's would pass.",
+          "PROOF-310: the test tracks the two files with the line 9 mark left out and counts the two-test block once in the status text, built by the helper `_old_block`, whose source is not shown.",
+          "PROOF-311: the test tracks only the Python file with one mark and counts the block that opens on `tests/test_login.py:4` once, through the same helper.",
+          "PROOF-312: the test adds an unnumbered rule line, checks the line before the warning holds `not numbered`, that the four lines follow, that one blank line follows them and that every line up to `2 rules. 0 pass their tests.` holds text.",
+          "No finding of the spot tests is on record for these tests."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "1d10c9eeaf89b400b428e746f07084c0c4cf8c4610f4630e0cd4b5aff7b61750",
+        "notes": [
+          "PROOF-308 is longer than 60 words.",
+          "PROOF-312 is longer than 60 words."
+        ],
+        "proof_hash": "6c5906d84387c7c896f5acdfa60c2b37540a54a7f47bfc0a752c43e4d324f45a",
         "rule_hash": "c77279923a023fbf15787448664c48c5eb91f7e7706f5821c35f0a949b841a64",
-        "test_hash": "54ecf2c6d3f252278a0ae1125a85a4ea40fd38ee28c88c93a1fdd47667e0a53b",
+        "test_hash": "4adc6dfef2fc3d986b671824f6f71bae4252ee2edc39fe3a8bf49fea28dd6d44",
         "verdict": "strong"
       },
       "RULE-132": {
