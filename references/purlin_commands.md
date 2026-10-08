@@ -13,19 +13,21 @@ command (`references/evidence_and_signoff.md`, "What is left to do").
 No Purlin command pushes. Every push is yours: a sign-off ends on a line starting `Push`, with
 the `git push origin` command, and pushing is your act.
 
-`purlin:test` runs the tests and writes what it saw. Which tests a run starts:
+Which tests a run starts:
 
-- `purlin:test`, with or without a feature named, never starts the test of a slow proof, one
-  tagged `@slow` or `@ai`. It prints `Left out <n> slow proofs`, naming each, and keeps the result a slow
-  proof already has while that result still counts.
+- `purlin:test` with no feature named runs each feature that is out of date or has no run on
+  this system, as `skills/test/SKILL.md` lists; with features named, those. Either way it never
+  starts the test of a slow proof, one tagged `@slow` or `@ai`. It prints
+  `Left out <n> slow proofs`, naming each, and keeps the result a slow proof already has while
+  that result still counts.
 - `purlin:test --all` covers every feature: it starts every test, slow ones included, of each
   feature that changed or does not pass and of every anchor, and carries every other feature's
   results forward. Where an anchor's rule holds an audit entry, the spot tests then read it
   again, with no model asked.
 - `purlin:test --clean` starts every test of every feature, slow ones included, and carries no
   result forward. It reads an audited anchor's rules again as `--all` does.
-- `purlin:test --all` and `purlin:test --clean` start the test of each AI proof they reach
-  alone, after the suites, once per model run on each model the proof's tag names, and print
+- `--all` and `--clean` start the test of each AI proof they reach alone, after the suites, once
+  per model run on each model the proof's tag names, and print
   `Running <feature> <PROOF-N> on <model>, <i> of <n>` as each starts. This takes minutes and
   reaches a real model. `--all` keeps a model's result that passed every model run asked on
   the spec, code and tests as they stand, and starts the rest; `--clean` starts them all. A
@@ -36,22 +38,13 @@ the `git push origin` command, and pushing is your act.
 - A test that also carries the comment of a proof that is not slow is started all the same. So
   is a slow test a suite's command cannot leave out, which the run names;
   `references/supported_frameworks.md` says how each test tool leaves a test out.
-
-`purlin:audit` runs the tests the same way and adds what the audit found, a tool nothing waits
-on. `purlin:audit <feature> RULE-N --settle` also starts the tests of the slow proofs of the
-rules it names, an AI proof's on each model included, and leaves every other slow test out.
+- `purlin:audit` runs the tests as `purlin:test` does. `purlin:audit <feature> RULE-N --settle`
+  also starts the tests of the slow proofs of the rules it names, an AI proof's on each model
+  included, and leaves every other slow test out.
 
 The hand-off is `purlin:test --all --commit`, and the project's own run for the proofs tagged
 for another system (`references/evidence_and_signoff.md`, "A run on another system"). That run
 is `scripts/run/purlin_run.py --ci --commit`, which a pipeline runs and nobody types.
-
-`purlin:sign` builds the evidence package from the committed evidence, walks its hand checks
-with a person and signs it; the first sign-off of a version writes `signed/<version>`.
-`references/evidence_and_signoff.md` defines the two facts and the sign-off.
-
-**The folder an evidence file sits in is its source**: `purlin:test` and `purlin:audit` write
-yours under `.purlin/evidence/local/`, and commit it only with `--commit`; the project's own run
-on another system writes its section under `.purlin/evidence/ci/`. Both sources count.
 
 ## The tools and their scripts
 
@@ -158,14 +151,18 @@ A line marked **Stop and ask** in a skill is a question for the person: the agen
 ends its turn and acts only on the person's answer. It never answers it itself. This section is
 the one home of the mark.
 
-Four questions are asked by the scripts themselves. Each script does nothing by default: it asks
-on its input, takes the end of input as no, and goes on only with a typed answer or the flag.
+The scripts ask these questions themselves. Each script does nothing by default: it asks on its
+input, takes the end of input as no, and goes on only with a typed answer or the flag.
 
 | The question | The script | What goes on |
 |--------------|------------|--------------|
 | `Commit the files setup wrote? [y/N]` | `scripts/init/scaffold.py` | `--yes` |
+| `Apply <id>, which will <what it does>? [y/N]`, once per migration | `scripts/init/update.py` | `--yes`, or `--apply <id>[,<id>...]` for those named |
+| `Restore <file>? [y/N]`, once per missing file | `scripts/init/update.py` | `--yes` |
+| `Remove <file>? [y/N]`, once per workflow file that names a proof file | `scripts/init/update.py` | a typed yes alone; under `--yes` and `--apply` the file is kept and named |
 | `Do it? [y/N]`, before renumbering | `scripts/spec/renumber.py` | `--yes` |
 | `Write this tests setting to .purlin/config.json and commit that file? [y/N]` | `scripts/run/purlin_run.py` | `--write-tests` |
+| `Sign the evidence package for <version> as <email>? [y/N]` | `scripts/review/sign.py` | a typed yes alone |
 | `Sign the evidence package for <version> as <email>? Type that address to sign:` | `scripts/review/sign.py --answers <file>` | the signer's address, typed by the person, as `sign` in the answers file |
 
 ## Core
@@ -183,7 +180,7 @@ on its input, takes the end of input as no, and goes on only with a typed answer
 
 | Command | Purpose | Who runs it, and when |
 |---------|---------|------------------------|
-| `purlin:init` | Set a project up for Purlin, or bring a project Purlin 0.9.5 set up to this version | A developer, once. One question: whether to commit what it wrote |
+| `purlin:init` | Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes | A developer, once. One question: whether to commit what it wrote |
 | `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current | A developer, or product in Claude Code |
 | `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
 | `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has | A developer, once, on a codebase that has no specs. Optional |
@@ -191,16 +188,11 @@ on its input, takes the end of input as no, and goes on only with a typed answer
 ## Syntax
 
 ```
-Purlin
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   Specifying
-  ──────
   purlin:spec <name>              Write or edit a feature spec
   purlin:spec-from-code [dir]     Write the specs an existing codebase implies
 
   Building
-  ──────
   purlin:build [name]             Write a spec's code and its marked tests
   purlin:test                     Run the features the change touched, write the evidence
   purlin:test <feature> [...]     The same, for the features named
@@ -208,9 +200,9 @@ Purlin
   purlin:test --clean             Run every test of every feature
   purlin:test --commit            The same, then commit the work and the evidence
   purlin:test --all --commit      The hand-off: every feature, and the results committed
+  purlin:test --arm-timeout <seconds>  Give each suite longer
 
   Proving
-  ──────
   purlin:audit [feature ...]      Tests, spot tests and one planted bug per proof, into the evidence
   purlin:audit --all              The same, reading every passing rule again
   purlin:audit --commit           The same, then commit the work and the evidence
@@ -219,7 +211,6 @@ Purlin
   purlin:audit <feature> RULE-N --settle --sound PROOF-N  The same, where that proof's test was judged sound and left as it was
 
   Signing
-  ──────
   purlin:sign                     Build the evidence package, walk its hand checks, then sign it
   purlin:sign --version <version>  The same, for the version named
   purlin:sign --show              The overview and every stop, asking nothing
@@ -227,22 +218,20 @@ Purlin
   purlin:sign --check <file>      Check a package file against its fingerprint
 
   Reporting
-  ──────
   purlin:status                   The two facts, every rule's cells, the summary and Left to do
   purlin:status <name>            One spec: its rules and their cells
   purlin:drift                    What changed since your last pull
   purlin:drift --since <N|date>   A window other than since your last pull
 
   Project
-  ──────
   purlin:init                     Set the project up
   purlin:init --update            Bring a 0.9.5 project up to the installed plugin, or restore a file setup writes
   purlin:anchor create <name>     A local anchor
-  purlin:anchor add <url> --path <file> [--name <name>]   Pin an anchor from another repository
-  purlin:anchor sync [name|--all] [--check]   Advance a pin
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  purlin:anchor add <url> --path <file> [--name <name>] [--json]   Pin an anchor from another repository
+  purlin:anchor sync [name|--all] [--check] [--json]   Advance a pin; with --check, report only
 ```
+
+`--json` prints the anchor script's answer as JSON.
 
 ## What each command writes
 
@@ -262,14 +251,16 @@ Purlin
 
 | Command | 0 | 1 | 2 |
 |---------|---|---|---|
-| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names nothing a spec has; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no test command; for `--audit`, a file of the project changed while the audit ran. A weak or unaudited rule never exits 1, and neither does a test comment to correct | a bad command line |
+| `scripts/run/purlin_run.py --test`, `--audit` | everything asked happened | a tied test failed or did not run; evidence is missing; a marker names a feature, a proof or a rule no spec has, or a rule that has proofs; a spec under `specs/` writes a number twice or holds a line left from a merge conflict, after every test ran; no settings file; the settings file cannot be read; a project set up by 0.9.5 and not upgraded; no spec; no test command; `--settle` names a rule its spec does not have, or `--sound` is refused; for `--audit`, a file of the project changed while the audit ran. A weak or unaudited rule never exits 1, and neither does a marker naming a proof that was reworded | a bad command line, or a feature named that no spec has |
 | `scripts/run/purlin_run.py --ci` | the tests tied to the proofs tagged for this machine's system passed | one of those failed or could not run, and nothing else | a bad command line |
-| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal: tracked files changed and not committed, evidence not committed, a test still carrying a marker from Purlin 0.9.5, no version, a tag of the version's name that `purlin:sign` did not write, the version's tag on a commit this checkout does not hold or on other code, results not recorded on this version of the code, results taken while files were changed and not committed, a rule with no test, a rule that does not pass, the branch's copy on the host holding commits HEAD lacks, the signer has already signed, the committed package not matching its fingerprint, a stop with no answer in the answers file, or a commit signed with another key than the one the checkout names; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
+| `scripts/review/sign.py` | signed, shown, checked and matching, stopped, or answered no | a refusal, one line beginning `No sign-off:` or `No version:`, each of which `skills/sign/SKILL.md` gives in the order it is checked; no key; the package was not written; the commit was not made; git could not write the tag; `--check` did not match | a bad command line |
 | `scripts/review/ai_audit.py` | a rule was printed | the rule is not in the project; the settings file cannot be read | a bad command line |
 | `scripts/ai/purlin_ai.py` | `run`, `record`: the folder was printed; `grade`: the grader accepted | `run`, `record`: the folder already holds an output; `grade`: the grader rejected | the model gave no answer, or a bad command line. `purlin.json` tells the two apart, never the code: it holds `reached` false, or a `grade` whose `accepted` is null, where the model gave no answer, and a bad command line writes nothing |
 | `scripts/init/scaffold.py` | set up | the settings file cannot be read | a bad command line, not a git repository, or no such project root |
 | `scripts/init/update.py` | nothing pending, or applied | the settings file cannot be read | no project, a name after `--apply` that is no migration, or a `--test-command` not written `<tool>=<command>` |
 | `scripts/mcp/purlin/markers.py --near-misses` | always | never | a bad command line |
+| `scripts/anchor/upstream.py` | `add`: the anchor was written; `sync`: every pin is current, or was advanced | `sync --check` alone: a pin is behind | any error, such as a source that is refused or cannot be read, a name already taken or no `--path`; no project root; a bad command line |
+| `scripts/spec/renumber.py` | planned or done, nothing to do, or the answer was not yes | the feature is no spec of this checkout | a bad command line |
 
 A run that stops before running anything writes nothing and names the command that fixes it:
 
@@ -294,26 +285,23 @@ A run names each rule where it reports the problem:
 - `<feature> <RULE-N>: rule to write a test for. Run purlin:build <feature>.`, where the rule
   has no proof and no test.
 - `<feature> <ID>: test comment to correct. <file>:<line> names it, and no spec has it. Run purlin:build.`
+  This one fails the run; `references/formats/marker_format.md`, "What is reported", gives each
+  line a marker gets.
 - `<model>: model not reached. <why>. Run purlin:test --all.`, where a model an AI proof names,
   or its grader, gave no answer. It is no failure of the rule.
 
 `scripts/review/ai_audit.py --rule` names a rule no spec has:
 `<feature> <RULE-N> is not a rule any spec has. Run purlin:status <feature> to see its rules.`
 
-`purlin:sign` refuses a sign-off with one line beginning `No sign-off:` or `No version:`, exits 1
-and writes nothing; `skills/sign/SKILL.md` gives each line in the order it is checked.
-
 `scripts/mcp/purlin/wording.py [--project-root <dir>] [--file <path> ...]` is what `purlin:build`
 runs to list the test comments to correct. It prints one line per comment, then
 `<n> test comments to correct.`, `1 test comment to correct.` or `No test comment to correct.`,
 and exits 0.
 
-`markers.py --near-misses --project-root <dir>` is what `purlin:build` runs to find a marker
-comment that is nearly right. It prints one JSON array of `{"file", "line", "text", "fix",
-"why"}`: `purlin` misspelled by one letter or in capitals, no space after the colon, a
-`purlin:` comment that cannot be read, and a feature name or a `PROOF`/`RULE` id one edit from
-one that exists. Where the nearest id is a rule with exactly one proof, the fix names that
-proof; a rule with two or more proofs gives no near miss. A test run does not look for them.
+`scripts/mcp/purlin/markers.py --near-misses [--project-root <dir>]` is what `purlin:build` runs
+to find a marker comment that is nearly right. It prints one JSON array;
+`references/formats/marker_format.md`, "Comments that are nearly a marker", gives its fields and
+what counts as a near miss. A test run does not look for them.
 
 ## Path resolution
 

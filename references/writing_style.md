@@ -89,16 +89,12 @@ test run:
 
 Purlin's slides are the model. A doc page may say more than a slide, and it says it the same way.
 
-- One idea in a sentence. Two ideas are two sentences.
-- The concrete example before the abstract statement, or in place of it.
+- The concrete example before the abstract statement, or in place of it:
+  "A test checks an exact result, like the message `Account locked`."
 - Where a slide covers the same thing, the page uses the slide's words for it.
 - A page says what the reader needs for the next thing they do. Detail few readers need goes
   last, or on the page a link names.
 - Nothing true that a reader needs is cut, and every statement is what the code does.
-
-- Before: "It names what is done, what is seen and the value that settles it, such as the
-  message `Account locked`."
-- After: "A test checks an exact result, like the message `Account locked`."
 
 ## Sentence shapes
 
