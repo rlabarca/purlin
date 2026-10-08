@@ -103,7 +103,8 @@ fixes it. [docs/getting-started.md](docs/getting-started.md) walks the same path
   above it. The proof plugins and the git hooks are gone.
 - **Two facts replace the receipt.** `purlin:verify` is gone. `purlin:sign` signs the evidence,
   and it is optional.
-- **The audit plants a bug.** The `STRONG`, `WEAK` and `HOLLOW` grades are gone.
+- **The audit plants a bug.** A rule reads `strong` when its test catches the bug and `weak`
+  when it does not. 0.9.5 graded a test by reading it.
 - **A prompt or a skill is tested like code**, on the models a proof names.
 
 To upgrade, after the plugin updates:
