@@ -8,7 +8,7 @@ two `qa/` branches.
 
 | | Result |
 |---|---|
-| `bash dev/run_tests.sh` | 1676 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed. Two tests were strengthened after it; each file then ran whole and passed |
+| `bash dev/run_tests.sh` | 1675 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed, run last, after every change |
 | `purlin_run.py --test --all --commit` | 1683 markers tied, 0 not tied; 42 specs, 742 rules, every one passing, 1 of them graded by an AI |
 | `python3 dev/windows_run.py` | ended `743 rules. 743 pass their tests, 1 of them graded by an AI.`, before one rule was removed |
 | The audit | `The audit found 732 of 734 rules strong (99%): 732 strong, 10 spot-checked.` No rule is weak |
