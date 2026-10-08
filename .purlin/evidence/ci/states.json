@@ -2,24 +2,18 @@
   "feature": "states",
   "platforms": {
     "windows": {
-      "at": "2026-10-07T21:35:31Z",
-      "commit": "ccbd1bee4c976e79fc3f799c5d20145d01ca7dea",
+      "at": "2026-10-08T02:56:03Z",
+      "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "1e8e2be22f3850da85d22d7ef8212ac8ed1ba18a0981996fc24b7ea3b0172628",
-        "spec": "9913b475c972a9824f415e93a62df8685dd569ba4ff2e1fee4f926002f183401",
-        "tests": "17a42176ab1dc94b28b89becfc2777a6cf80dcb8f520ec0f4a700e7acc95aa53"
+        "code": "49043df0527a3689192de9efa70fc74bb10521a33023c84e90bdfe1b1c64b84b",
+        "spec": "83d26ba8a10f3da49024c993ef254a94024c7e9b808f66413b4b0ab32f114be2",
+        "tests": "d004df8c60e4942b07a6e94e0918470cc75398888b3b7fa855e3c8f8780dba7f"
       },
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T21:35:31Z",
-            "commit": "9c27f729b6f550ffce69fcbc6f4d12aae0380011",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-218",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_backing_tests.TestTheEvidenceNamesTheTests",
-                "duration": 1.441,
+                "duration": 1.357,
                 "name": "test_a_checkout_with_windows_line_endings_keeps_the_hash",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "cbabb0d9f5a23c011e4865427084f886bc0670070945b0b7af800e94ca173140"
+              "sha256": "f54cdc5456930a050513a369911dae1422d7d6b4b10bd5bc948ea38bcbeca523"
             }
           },
           "result": "pass",
