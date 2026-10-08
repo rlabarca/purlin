@@ -2,8 +2,8 @@
   "feature": "upstream",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T02:56:04Z",
-      "commit": "70410f2f526df87983a46ad95916d48c597a6b48",
+      "at": "2026-10-08T04:07:54Z",
+      "commit": "95f099bd4de9d6be1495d0fb7670ddb8950c0b20",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T02:56:04Z",
-            "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-46",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.214,
+                "duration": 0.858,
                 "name": "test_an_added_anchor_keeps_the_author_text_under_source_and_pin",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "f54cdc5456930a050513a369911dae1422d7d6b4b10bd5bc948ea38bcbeca523"
+              "sha256": "24846b357505380413a41702149b5c346f3555f9bedc64c296d820c422766017"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_upstream.py::test_an_added_anchor_keeps_the_author_text_under_source_and_pin"
         },
         {
-          "carried": {
-            "at": "2026-10-08T02:56:04Z",
-            "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-48",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.545,
+                "duration": 1.003,
                 "name": "test_check_when_behind_reports_and_changes_no_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "f54cdc5456930a050513a369911dae1422d7d6b4b10bd5bc948ea38bcbeca523"
+              "sha256": "24846b357505380413a41702149b5c346f3555f9bedc64c296d820c422766017"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_upstream.py::test_check_when_behind_reports_and_changes_no_file"
         },
         {
-          "carried": {
-            "at": "2026-10-08T02:56:04Z",
-            "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-50",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.815,
+                "duration": 1.186,
                 "name": "test_sync_advances_the_pin_and_names_the_rule_delta",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "f54cdc5456930a050513a369911dae1422d7d6b4b10bd5bc948ea38bcbeca523"
+              "sha256": "24846b357505380413a41702149b5c346f3555f9bedc64c296d820c422766017"
             }
           },
           "result": "pass",
