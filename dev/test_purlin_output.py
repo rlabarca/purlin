@@ -1,6 +1,6 @@
 """The checks of what Purlin prints and how its programs run.
 
-`specs/instructions/purlin_output.md` holds four rules. No file under
+`specs/instructions/purlin_output.md` holds three rules. No file under
 `scripts/` or `templates/`, no skill definition and not the agent definition
 carries a character with the Unicode property `Extended_Pictographic`, or
 U+FE0F, other than `▶`: Python's own `re` cannot name that property, so the
@@ -8,8 +8,7 @@ ranges are written out below as a table, taken from Unicode's
 `emoji-data.txt`, with adjacent ranges joined. Setup, a test run and the
 status run on Python 3.9: every file under `scripts/` parses as 3.9, and a
 test run and the status are run under a Python 3.9 in a scratch project,
-skipped where the machine has none. No command leaves a process of its own
-running once it exits.
+skipped where the machine has none.
 """
 
 import ast
@@ -19,10 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
-import time
 import tokenize
-import uuid
 
 import pytest
 
@@ -272,36 +268,17 @@ def new_repository(tmp_path):
     return root
 
 
-class Done:
-    """What a finished command left: its process id, exit code and output."""
-
-    def __init__(self, pid, returncode, stdout, stderr):
-        self.pid, self.returncode = pid, returncode
-        self.stdout, self.stderr = stdout, stderr
-
-
-def run(command, root, stdin=None, new_session=False):
-    """`command` from `root`, its input `stdin` or nothing. With
-    `new_session` it starts a process group of its own, numbered as its own
-    process id."""
-    # The output goes to files, not pipes: a process left running would hold
-    # a pipe open, and reading it to its end would wait for that process.
-    with tempfile.TemporaryFile('w+', encoding='utf-8') as stdout, \
-            tempfile.TemporaryFile('w+', encoding='utf-8') as stderr:
-        process = subprocess.Popen(
-            command, cwd=str(root), stdin=subprocess.PIPE, stdout=stdout,
-            stderr=stderr, encoding='utf-8', env=clean_environment(),
-            start_new_session=new_session)
-        process.communicate(stdin if stdin is not None else '', timeout=600)
-        stdout.seek(0)
-        stderr.seek(0)
-        return Done(process.pid, process.returncode, stdout.read(),
-                    stderr.read())
+def run(command, root, stdin=None):
+    """`command` from `root`, its input `stdin` or nothing."""
+    return subprocess.run(
+        command, cwd=str(root), input=stdin if stdin is not None else '',
+        capture_output=True, text=True, encoding='utf-8',
+        env=clean_environment(), timeout=600)
 
 
-def set_up(python, root, new_session=False):
+def set_up(python, root):
     return run(python + [SCAFFOLD, '--project-root', str(root), '--yes'],
-               root, new_session=new_session)
+               root)
 
 
 def give_it_a_spec(root):
@@ -321,12 +298,12 @@ def give_it_a_spec(root):
     git(root, 'commit', '-q', '-m', 'the feature and its spec')
 
 
-def a_test_run(python, root, *flags, new_session=False):
+def a_test_run(python, root, *flags):
     return run(python + [RUN_SCRIPT, '--project-root', str(root), '--test',
-                         '--all', *flags], root, new_session=new_session)
+                         '--all', *flags], root)
 
 
-def status(python, root, new_session=False):
+def status(python, root):
     """The status, asked of Purlin's server as the agent asks it, then the
     server's input closed."""
     requests = [
@@ -335,8 +312,7 @@ def status(python, root, new_session=False):
          'params': {'name': 'sync_status',
                     'arguments': {'project_root': str(root)}}}]
     return run(python + [SERVER], root,
-               stdin=''.join(json.dumps(r) + '\n' for r in requests),
-               new_session=new_session)
+               stdin=''.join(json.dumps(r) + '\n' for r in requests))
 
 
 def status_text(done):
@@ -423,211 +399,3 @@ class TestPython39:
         # The whole row: one rule, one proof, and no rule passing yet.
         assert 'app   1      1       0 of 1' in text.splitlines(), text
 
-
-# --- No process left behind -------------------------------------------------
-
-def processes():
-    """`(pid, process group, command line)` for every process running."""
-    if os.name == 'nt':
-        listed = subprocess.run(
-            ['powershell', '-NoProfile', '-Command',
-             'Get-CimInstance Win32_Process | ForEach-Object '
-             '{ "$($_.ProcessId)`t$($_.CommandLine)" }'],
-            capture_output=True, text=True, check=True)
-        rows = []
-        for line in listed.stdout.splitlines():
-            pid, _, command = line.partition('\t')
-            if pid.strip().isdigit():
-                rows.append((int(pid), None, command))
-        return rows
-    listed = subprocess.run(['ps', '-A', '-ww', '-o', 'pid=,pgid=,command='],
-                            capture_output=True, text=True, check=True)
-    rows = []
-    for line in listed.stdout.splitlines():
-        parts = line.split(None, 2)
-        if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
-            rows.append((int(parts[0]), int(parts[1]),
-                         parts[2] if len(parts) > 2 else ''))
-    return rows
-
-
-def left_running(root, groups):
-    """The processes still running that name `root` on their command line
-    or belong to one of the process groups `groups`, looked at three times
-    over a second and a half so that one on its way out is not counted."""
-    for _ in range(3):
-        left = [row for row in processes()
-                if row[0] != os.getpid()
-                and (str(root) in row[2] or row[1] in groups)]
-        if not left:
-            return []
-        time.sleep(0.5)
-    return left
-
-
-def processes_carrying(mark):
-    """`(pid, None, command line)` for every process whose environment
-    holds the text `mark`, the one that lists them left out. Not Windows."""
-    if os.path.isdir('/proc/self'):
-        rows = []
-        for name in os.listdir('/proc'):
-            if not name.isdigit():
-                continue
-            try:
-                with open('/proc/%s/environ' % name, 'rb') as handle:
-                    held = handle.read()
-                with open('/proc/%s/cmdline' % name, 'rb') as handle:
-                    command = handle.read().replace(b'\0', b' ')
-            except (IOError, OSError):
-                continue
-            if mark.encode('utf-8') in held:
-                rows.append((int(name), None,
-                             command.decode('utf-8', 'replace')))
-        return rows
-    # macOS and the BSDs: `-E` sets each process's environment after its
-    # command line, for the processes this user may read.
-    listing = subprocess.Popen(
-        ['ps', '-A', '-E', '-ww', '-o', 'pid=,command='],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-        errors='replace')
-    listed, _ = listing.communicate(timeout=60)
-    assert listing.returncode == 0, listed
-    rows = []
-    for line in listed.splitlines():
-        pid, _, command = line.strip().partition(' ')
-        if pid.isdigit() and int(pid) != listing.pid and mark in command:
-            rows.append((int(pid), None, command.split(' ' + mark)[0]))
-    return rows
-
-
-# Loaded by every Python a command starts, through `PYTHONPATH`: it writes the
-# process id of each process that Python starts into the file the variable
-# `PURLIN_TEST_STARTED_LOG` names, then loads the `sitecustomize` it stands in
-# front of, where there is one. The process that starts another writes the
-# line, so a process started with an empty environment, in a session of its
-# own, is written down all the same.
-STARTED_RECORD = '''import os
-import subprocess
-import sys
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_LOG = os.environ.get('PURLIN_TEST_STARTED_LOG')
-
-
-def _note(pid):
-    try:
-        with open(_LOG, 'a') as handle:
-            handle.write('%d\\n' % pid)
-    except OSError:
-        pass
-
-
-if _LOG:
-    _init = subprocess.Popen.__init__
-
-    def _noted_init(self, *args, **kwargs):
-        _init(self, *args, **kwargs)
-        _note(self.pid)
-
-    subprocess.Popen.__init__ = _noted_init
-
-    def _noting(call):
-        def noted(*args, **kwargs):
-            made = call(*args, **kwargs)
-            pid = made[0] if isinstance(made, tuple) else made
-            if pid:
-                _note(pid)
-            return made
-        return noted
-
-    for _name in ('fork', 'forkpty', 'posix_spawn', 'posix_spawnp'):
-        if hasattr(os, _name):
-            setattr(os, _name, _noting(getattr(os, _name)))
-
-for _entry in sys.path:
-    _next = os.path.join(_entry or os.curdir, 'sitecustomize.py')
-    if os.path.abspath(_entry or os.curdir) != _HERE and os.path.isfile(_next):
-        import importlib.util
-        _spec = importlib.util.spec_from_file_location(
-            '_sitecustomize_behind', _next)
-        _module = importlib.util.module_from_spec(_spec)
-        _spec.loader.exec_module(_module)
-        break
-'''
-
-
-def stop(rows):
-    for pid, _, _ in rows:
-        try:
-            os.kill(pid, 9)
-        except OSError:
-            pass
-
-
-class TestNoProcessLeft:
-
-    # purlin: purlin_output PROOF-6
-    def test_no_command_leaves_a_process_running(self, tmp_path, monkeypatch):
-        python = [sys.executable]
-        root = new_repository(tmp_path)
-        # Every process a command starts inherits this variable, so one that
-        # left its command's process group, and names nothing of the project
-        # on its command line, is still found: by its environment.
-        mark = 'PURLIN_TEST_STARTED_BY=%s' % uuid.uuid4().hex
-        monkeypatch.setenv(*mark.split('='))
-        # Each command starts a process group of its own, so a process it
-        # leaves behind is found by its group even when its command line
-        # names nothing of the project.
-        # Every Python a command starts writes down each process it starts,
-        # by its process id: whatever session, environment and command line
-        # that process is given, it is on the list.
-        record = tmp_path / 'record'
-        record.mkdir()
-        (record / 'sitecustomize.py').write_text(STARTED_RECORD,
-                                                 encoding='utf-8')
-        monkeypatch.setenv('PURLIN_TEST_STARTED_LOG',
-                           str(record / 'started.txt'))
-        monkeypatch.setenv('PYTHONPATH', os.pathsep.join(
-            [str(record)] + [entry for entry in os.environ.get(
-                'PYTHONPATH', '').split(os.pathsep) if entry]))
-        ran = [set_up(python, root, new_session=True)]
-        give_it_a_spec(root)
-        ran.append(a_test_run(python, root, '--commit', new_session=True))
-        ran.append(status(python, root, new_session=True))
-        for done in ran:
-            assert done.returncode == 0, done.stdout + done.stderr
-        # The test run starts the project's tests and git, so the list is
-        # not empty; none of the processes on it is still running.
-        listed = {int(line) for line in (record / 'started.txt').read_text(
-            encoding='utf-8').split()}
-        assert len(listed) >= 3, listed
-        still = []
-        for _ in range(3):
-            still = [row for row in processes() if row[0] in listed]
-            if not still:
-                break
-            time.sleep(0.5)
-        try:
-            assert still == [], 'a process a command started still runs'
-        finally:
-            stop(still)
-        leftover = left_running(root, {done.pid for done in ran})
-        try:
-            assert leftover == []
-        finally:
-            stop(leftover)
-        # No process any of the three started is still running, whatever
-        # group it is in and whatever its command line reads. Windows shows
-        # no other process's environment, so there the groups above stand.
-        if os.name != 'nt':
-            started = []
-            for _ in range(3):
-                started = [row for row in processes_carrying(mark)
-                           if row[0] != os.getpid()]
-                if not started:
-                    break
-                time.sleep(0.5)
-            try:
-                assert started == []
-            finally:
-                stop(started)

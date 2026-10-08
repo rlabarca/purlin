@@ -63,7 +63,6 @@ Every spec was audited in four lanes, each finding worked by the build skill's s
 
 Not strong, and why:
 
-- `purlin_output` RULE-3, `weak`: see "For the owner", item 5.
 - The 8 rules of the anchor, `spot-checked`: no bug is planted for an anchor's rule.
 - `evidence` RULE-32, `spot-checked`: its only proof is a Windows one.
 - `planted_bug` RULE-8, `spot-checked`: the model found no bug it may plant.
@@ -90,9 +89,9 @@ let finish: 48 model runs. Two faults, both fixed in the skills on the owner's a
    sample**, the plugin's own folder included. The docs state the limit.
 4. **A changed tag reruns every model it names.** A model not reached, or a raised `runs`,
    reruns what is missing alone.
-5. **`purlin_output` RULE-3 reads `weak`, and the owner chose to leave it so.** A process started through a shell in its own
-   session with an emptied environment is not seen as left running. The test already
-   finds a leftover by process id, by group and by environment.
+5. **Purlin holds no rule about leftover processes.** The owner, 2026-10-08: "I don't want
+   the rule about leftover processes. That's not for purlin to manage." `purlin_output`
+   RULE-3, its proof and its test are gone.
 6. **The warning `model not reached` prints twice in one test run**: when the model gives
    no answer, and in the status the run ends on. The owner kept both on 2026-10-08.
 7. **`TESTS` labels two rows on a rule's page**: the rule's state, and each proof's list of
@@ -106,11 +105,6 @@ let finish: 48 model runs. Two faults, both fixed in the skills on the owner's a
 The ten loose ends the first audit left were fixed on 2026-10-08, on the owner's word, and
 their specs audited again. What remains:
 
-- **An audit of `purlin_output` leaves a `/bin/sleep 600` running.** RULE-3 stays `weak`,
-  so its kept bug is planted again on every audit of that spec, and that bug starts a
-  process that leaves the group the audit ends. Stop it by hand (`pgrep -fl "sleep 600"`),
-  or strengthen PROOF-6's test: its check by environment misses a process started under
-  `env -i`.
 - **On Windows the audit ends no process a planted bug left** (`planted_bug` RULE-36 says
   so). A job object would do it, in a round that includes a Windows run.
 - **`states` PROOF-309 says "those five lines included"** where PROOF-308 lists four.
