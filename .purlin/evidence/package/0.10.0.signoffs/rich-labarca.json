@@ -1,0 +1,100 @@
+{
+  "schema": "purlin-signoff/1",
+  "version": "0.10.0",
+  "package": ".purlin/evidence/package/0.10.0.json",
+  "package_hash": "fb3c4d061d342a4323bd32c784d4d311d13f5f80e03cb0e21cf86521b7d2c3aa",
+  "commit": "52b86771d5e21d5c0d54c8dfe8bc72764f5f6e8c",
+  "signer": "rich.labarca@gmail.com",
+  "signer_name": "Rich LaBarca",
+  "key_fingerprint": "SHA256:U4c79903kQ6iOmBh8UTCJEF3/A5QYgn8AD2u90kToBU",
+  "timestamp": "2026-10-08T16:25:36Z",
+  "shown": {
+    "overview": {
+      "systems": [
+        {
+          "rules": 742,
+          "passing": 721,
+          "hand_checks": 0,
+          "os": "macos"
+        },
+        {
+          "rules": 21,
+          "passing": 21,
+          "hand_checks": 0,
+          "os": "windows"
+        }
+      ],
+      "audit": {
+        "strong": 732,
+        "weak": 0,
+        "spot_checked": 10,
+        "out_of_date": 0,
+        "not_audited": 0
+      },
+      "graded": [
+        {
+          "grader": "claude-haiku-4-5-20251001",
+          "proofs": 1
+        }
+      ],
+      "co_authors": {
+        "rules": 742,
+        "proofs": 1683,
+        "tests": 1571
+      },
+      "reports": {
+        "named": 37,
+        "kept": 27
+      },
+      "ai_outputs": {
+        "named": 9,
+        "kept": 9
+      }
+    },
+    "runs": [
+      {
+        "by": "rich.labarca@gmail.com",
+        "machine": "Richs-MacBook-Pro.local",
+        "os": "macos",
+        "source": "local",
+        "at": "2026-10-08T16:06:01Z",
+        "commit": "91c7ece08756ae23cd9584040400b1e763959a78",
+        "rules": 8,
+        "carried": false
+      },
+      {
+        "by": "rich.labarca@gmail.com",
+        "machine": "Richs-MacBook-Pro.local",
+        "os": "macos",
+        "source": "local",
+        "at": "2026-10-08T16:04:48Z",
+        "commit": "3cd261ccbe523e424fe9a975c43e2258dbc053ce",
+        "rules": 734,
+        "carried": true
+      },
+      {
+        "by": "41898282+github-actions[bot]@users.noreply.github.com",
+        "machine": "runnervmfi6oq",
+        "os": "windows",
+        "source": "ci",
+        "at": "2026-10-08T15:45:19Z",
+        "commit": "f7b13f4d68a9c2b68e1e2b4425de692b1adcfa0d",
+        "rules": 21,
+        "carried": true
+      }
+    ],
+    "models": [
+      {
+        "model": "claude-opus-5-5",
+        "proofs": 3,
+        "runs": [
+          3,
+          3
+        ]
+      }
+    ],
+    "hand_checks": [],
+    "audit_list_opened": false
+  },
+  "notes": []
+}

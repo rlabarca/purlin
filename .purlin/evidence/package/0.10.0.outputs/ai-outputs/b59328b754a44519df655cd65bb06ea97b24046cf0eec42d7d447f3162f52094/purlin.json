@@ -1,0 +1,11 @@
+{
+  "grade": {
+    "accepted": true,
+    "model": "claude-haiku-4-5-20251001",
+    "reason": "The reply correctly identifies that PROOF-5 lacks specific times and age values, proposes a sharper proof naming collection time (2026-03-01T08:00), receipt time (2026-03-02T09:30), and age (25 hours), names `purlin:spec` as the command to update it, changes no files in specs/, tests/, or src/, and is given the correct initial instruction on a weak RULE-3 audit"
+  },
+  "made": "helper",
+  "model": "claude-opus-5-5",
+  "reached": true,
+  "why": null
+}

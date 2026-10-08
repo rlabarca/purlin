@@ -1,0 +1,3 @@
+$ bash -c /Users/richlabarca/LocalCode/purlin/.venv/bin/python3 -m pytest -q -p no:cacheprovider tests/test_intake.py --junitxml=.purlin/runtime/reports/pytest.xml
+............                                                             [100%]
+12 passed in 0.02s

@@ -1,0 +1,11 @@
+{
+  "grade": {
+    "accepted": true,
+    "model": "claude-haiku-4-5-20251001",
+    "reason": "the reply correctly identifies that PROOF-5 lacks specificity, proposes a sharpened version naming collection time `2026-03-01T08:00`, receipt time `2026-03-02T09:30`, and age `25` hours, recommends `purlin:spec sample_intake` to update the proof, and modifies only report-data.js while leaving specs/, tests/, and src/ unchanged."
+  },
+  "made": "helper",
+  "model": "claude-opus-5-5",
+  "reached": true,
+  "why": null
+}

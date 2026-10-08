@@ -1,0 +1,1 @@
+{"version": "0.10.0", "tests": [{"name": "pytest", "run": "/Users/richlabarca/LocalCode/purlin/.venv/bin/python3 -m pytest -q -p no:cacheprovider {files} --junitxml={report}", "report": ".purlin/runtime/reports/pytest.xml", "format": "junit", "files": ["tests/test_*.py"]}]}
