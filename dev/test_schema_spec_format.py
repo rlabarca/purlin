@@ -103,6 +103,19 @@ def test_the_format_reference_names_two_sections_and_no_third():
         prose)
     assert 'These two are the whole structure. ' in prose, prose
     assert not re.search(r'\b(third|three|3)\b', prose), prose
+    # No sentence outside the list speaks of a section or a heading but
+    # the one that counts the two and the one on a heading nothing reads.
+    paragraphs = re.split(r'\n[ \t]*\n', re.sub(
+        r'^[ \t]*(?:\d+[.)]|[-*+])[ \t]+.*$', '', section, flags=re.MULTILINE))
+    sentences = [sentence for paragraph in paragraphs
+                 for sentence in re.split(r'(?<=[.?!])\s+',
+                                          ' '.join(paragraph.split()))]
+    assert [sentence for sentence in sentences
+            if re.search(r'\b(sections?|headings?|headed)\b', sentence,
+                         re.IGNORECASE)] == [
+        'Every spec has these two sections, matched case-insensitively:',
+        'A spec carrying some other heading still parses and nothing reads '
+        'that heading; new specs should not add one.'], sentences
 
 
 # purlin: schema_spec_format PROOF-13
@@ -353,10 +366,11 @@ def test_a_trailing_manual_tag_is_read():
 
 # purlin: schema_spec_format PROOF-26
 def test_env_then_manual_reads_the_same_as_the_other_order():
-    assert _read('Lock the file @env(windows) @manual') == \
-        _read('Lock the file @manual @env(windows)') == {
+    assert purlin_specs.proof_tags('Lock the file @env(windows) @manual') == \
+        purlin_specs.proof_tags('Lock the file @manual @env(windows)') == {
             'text': 'Lock the file', 'manual': True, 'env': 'windows',
-            'unknown': []}
+            'unknown': [], 'slow': False, 'ai': [], 'graded': None,
+            'runs': None, 'written': [], 'mistakes': []}
 
 
 # purlin: schema_spec_format PROOF-86
