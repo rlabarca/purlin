@@ -2,18 +2,17 @@
   "audit": {
     "rules": {
       "RULE-18": {
-        "at": "2026-10-08T15:03:34Z",
+        "at": "2026-10-08T15:47:24Z",
         "bugs": {
           "PROOF-49": {
             "after": "Get the status, with the tool `mcp__plugin_purlin_purlin__async_status` or the script",
             "aim": "past the test",
             "before": "Get the status, with the tool `mcp__plugin_purlin_purlin__sync_status` or the script",
-            "bug_key": "8e9b8e16d9af5fdbcb87bb38468c3479a17d1c87d9a0cbb267f263136fc77259",
+            "bug_key": "3fbfe3218188449a2f8f6603814fb98f6c7894066ec7e97ad51e6b73e82c019c",
             "case": "the text of agents/purlin.md; the proof says the command `sync_status` is held and none is missing; the changed file names only `async_status`, so `sync_status` is missing",
             "file": "agents/purlin.md",
             "line": 60,
-            "result": "survived",
-            "test_key": "d3b0e4b05a747184593e4249e2e57ace90c4394dbd0927b0b0f308768047d5a3",
+            "result": "caught",
             "why": ""
           },
           "PROOF-60": {
@@ -29,64 +28,43 @@
           }
         },
         "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
-        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "commit": "4d25a44baa7b93993a56155cdb7ba3125c65d858",
         "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
-        "explanation": [
-          "PROOF-49: the test reads the agent definition and asserts that the list of names not held, out of the commands and the files, is empty, so a name taken out of the text fails it.",
-          "PROOF-49: the file holds `sync_status` only inside `mcp__plugin_purlin_purlin__sync_status`, so the check does not require a boundary before a name, and a name lengthened at its front may still read as held.",
-          "PROOF-49: the lists of commands and files are constants of the test file and were not shown, so whether they hold every name the rule gives could not be read here.",
-          "PROOF-60: the test builds both copies the proof names, asserts the substitution changed something and the spaced name was present, and compares each result with the exact one-name list the proof gives.",
-          "PROOF-60: the test checks the proof's cases and their results, so the planted change is the plainest one: a second name goes missing and the first copy's list holds two names.",
-          "PROOF-60: both copies lengthen or break a name after its start, so neither exercises a name lengthened before its start."
-        ],
-        "findings": [
-          "PROOF-49: the test still passes when agents/purlin.md:60 reads \"Get the status, with the tool `mcp__plugin_purlin_purlin__async_status` or the script\"",
-          "PROOF-49: the AI says this breaks: the text of agents/purlin.md; the proof says the command `sync_status` is held and none is missing; the changed file names only `async_status`, so `sync_status` is missing"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-60 holds two cases, the copy reading `purlin:specs` and the copy with two spaces after `purlin:test`."
-        ],
         "proof_hash": "4466bc3fab9e5a05472b1781f46de2e7814971dce568b81a17796dce4d496d80",
         "rule_hash": "918783548978fb3a350991d76096a58e3ec7d1baccb77391b0e15265dac754a7",
-        "test_hash": "3411b10c3d0bdb9f199333e6775406336220a7f4957376b17be724f4b944573c",
-        "verdict": "weak"
+        "test_hash": "d8833054919aab0d150a776c3319edc1f7edac3119aa7cdceda5df3d21c56265",
+        "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-08T15:03:34Z",
+        "at": "2026-10-08T15:47:24Z",
         "bugs": {
           "PROOF-50": {
             "after": "worktree, is the main checkout current? Run `purlin:status` there, so its status and dashboard describe the\nmerged work.",
             "aim": "past the test",
             "before": "worktree, run `purlin:status` in the main checkout, so its status and dashboard describe the\nmerged work.",
-            "bug_key": "b5b08e7f678160dd60746e84463e22e9cf6027e2017c9b08b62907788711cd4d",
+            "bug_key": "5bc2fee99a286f3446b95a899a22876de0e18b8a3703a0e651d17e4e0a681f86",
             "case": "the Worktrees paragraph of agents/purlin.md; the proof says one sentence names a worktree, merging, `purlin:status` and the main checkout; the changed text ends the sentence at a question mark before the command, so no single sentence names all four",
             "file": "agents/purlin.md",
             "line": 79,
-            "result": "survived",
-            "test_key": "43e0b73d9b59644be05d650ab7fd450e417ad82b583bf5ff7a71ca31fedfabf5",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
-        "commit": "a3c1655a28b74444552f2ba9f358625d8d31c69f",
+        "commit": "4d25a44baa7b93993a56155cdb7ba3125c65d858",
         "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
-        "explanation": [
-          "PROOF-50: the test gathers the sentences of the agent definition that hold `worktree`, `merge` and `main checkout`, keeps those where `purlin:status` stands as a whole command, and asserts there is exactly one and that it holds the command in backticks, which is what the proof names.",
-          "PROOF-50: the sentences come from a helper outside the test's own lines, so whether a sentence ending in a question mark is split from the next is not visible here, and a split the helper does not make would leave the four names reading as one sentence.",
-          "PROOF-50: the test compares only the presence of the four names in one sentence, as the proof does, and not what the sentence tells the agent to do with them."
-        ],
-        "findings": [
-          "PROOF-50: the test still passes when agents/purlin.md:79 reads \"worktree, is the main checkout current? Run `purlin:status` there, so its status and dashboard describe the\"",
-          "PROOF-50: the AI says this breaks: the Worktrees paragraph of agents/purlin.md; the proof says one sentence names a worktree, merging, `purlin:status` and the main checkout; the changed text ends the sentence at a question mark before the command, so no single sentence names all four"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "1a82b9ff1468047dcd14423cdbadf89b6257cde8524d6a1ae01a701fca68b8be",
         "rule_hash": "509a26e09d1741e49f69c78c94492a7b3cc391d4436e08ccb03cb20acb8b766c",
-        "test_hash": "dc048af1899cdfb7ff4504fb1c10ac9750f7fe0663f08e14b1d284b7009ee88e",
-        "verdict": "weak"
+        "test_hash": "50c2db14e246201492a7e03295c8461340118856decfe0cb10cd7e70fa0d6c3a",
+        "verdict": "strong"
       },
       "RULE-20": {
         "at": "2026-10-08T15:03:34Z",
@@ -389,14 +367,14 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T13:52:06Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "at": "2026-10-08T15:47:12Z",
+      "commit": "4d25a44baa7b93993a56155cdb7ba3125c65d858",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "6516be0f7d1a0550f3654e60efe3ce59bdd3395245fd324d99648130c2076691",
         "spec": "20cfe81762cb527900aab3a36974ac298c8fa27595cf215d30994af193967e29",
-        "tests": "e2a10a0602863f0d7f5709f198430e15fb56f2c9c5ffb825d061fb52fe1647c5"
+        "tests": "d3b3ff3e3f99b1d258c60ae5def34b8b629a6ee46cf03e08d650d0ad72329115"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -415,7 +393,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -430,14 +408,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_a_name_is_held_whole_with_each_space_as_written",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -459,7 +437,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -474,14 +452,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.037,
+                "duration": 0.011,
                 "name": "test_every_path_a_skill_or_the_agent_definition_names_exists",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -496,14 +474,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_path_is_looked_for_letter_for_letter",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -518,14 +496,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.622,
+                "duration": 0.534,
                 "name": "test_every_flag_a_skill_passes_is_one_its_script_takes",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -540,14 +518,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 3.001,
+                "duration": 2.893,
                 "name": "test_the_answers_file_the_sign_skill_shows_is_walked",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -562,14 +540,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.007,
+                "duration": 0.006,
                 "name": "test_no_skill_agent_definition_or_reference_names_a_path_under_dev",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -591,7 +569,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -613,7 +591,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -635,7 +613,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -657,7 +635,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
@@ -679,7 +657,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "b5c647187bf50e2c4a7c388e9144c116a79b7f0b708cc0186e95eea338a734c0"
             }
           },
           "result": "pass",
