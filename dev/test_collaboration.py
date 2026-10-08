@@ -769,6 +769,21 @@ def test_three_people_reach_a_signed_version(tmp_path):
             UNKNOWN_RULE, ['PROOF-5'],
             [('PROOF-5', days_file, 'test_an_unknown_storage_is_refused')]),
     }, described
+    #     Each proof is in the package with its own words, as the spec under
+    #     the tag writes them after its number and its rule.
+    specs_at_tag = '\n'.join(
+        check.git('show', '%s:%s' % (TAG, path))
+        for path in check.git('ls-tree', '-r', '--name-only', TAG,
+                              'specs').split())
+    worded = 0
+    for feature in package['features']:
+        for rule in feature['rules']:
+            for proof in rule['proofs']:
+                assert proof['text'] and proof['text'] != rule['text'], proof
+                assert '- %s (%s): %s' % (proof['id'], rule['id'],
+                                          proof['text']) in specs_at_tag, proof
+                worded += 1
+    assert worded == 10, worded
     pointed = 0
     for name, (_text, _proofs, tests) in sorted(described.items()):
         for proof, rel, test in tests:
