@@ -6,33 +6,11 @@ marker, the `tests` setting, the four report formats and how a result is tied to
 
 A new project's `tests` setting is empty. Its first test run detects the frameworks below,
 runs nothing, and suggests an entry for every one it finds, in the order they are listed, with
-the flag that writes the report already in each command:
-
-```
-No test command is set in .purlin/config.json, so nothing ran.
-Suggested for pytest: python3 -m pytest {files} --junitxml={report}
-Suggested for vitest: npx vitest run --reporter=default --reporter=junit --outputFile.junit={report} {files}
-Suggested tests setting: [{"name": "pytest", ...}, {"name": "vitest", ...}]
-```
-
-A framework that needs something added before it can write that report gets one more line,
-right after its own, saying what. The run then asks:
-
-```
-Write this tests setting to .purlin/config.json and commit that file? [y/N]
-```
-
-On a yes it writes the suggested setting under `tests`, prints
-`Wrote the tests setting to .purlin/config.json.`, commits `.purlin/config.json` alone where the
-project is a git checkout, and runs. Any other answer, or no answer,
-writes nothing. `--write-tests` writes it without the question, which is how `purlin:test` goes
-on once you have said yes. Where the run detects none, it prints:
-
-```
-No test command is set and no test tool Purlin knows was found, so nothing ran. The agent reads the project and proposes a command for you to confirm.
-```
-
-and `purlin:test` reads the project and proposes an entry instead.
+the flag that writes the report already in each command. A framework that needs something
+added before it can write that report gets one more line saying what. The run then asks before
+it writes the setting and commits `.purlin/config.json`; any answer but yes, or no answer,
+writes nothing. Where it detects none, `purlin:test` reads the project and proposes an entry.
+`references/purlin_commands.md`, "Exit codes", has the lines the run prints.
 
 On Windows the pytest entry's command starts `py -3 -m pytest` in place of
 `python3 -m pytest`, and the rest of it is the same.
@@ -203,8 +181,9 @@ narrower globs.
 
 ## Leaving a slow test out
 
-`purlin:test` without `--all` never starts the test of a proof tagged `@slow`. Nothing is added
-to the test or to your suite: Purlin adds the tool's own option to the command in the `tests`
+`purlin:test` with neither `--all` nor `--clean` never starts the test of a proof tagged
+`@slow`; `references/purlin_commands.md` says which run starts what. Nothing is added to the
+test or to your suite: Purlin adds the tool's own option to the command in the `tests`
 setting, after the files it names, or at its end where it names none.
 
 | Framework | How the test is left out |
@@ -215,15 +194,9 @@ setting, after the files it names, or at its end where it names none.
 | go | `-skip`, with the slow tests' names; needs Go 1.20. It matches a name in every package, so a slow test that shares its name with a test that is not slow in another package is started |
 | sql, shell, any `exit` suite | the file is the test, and a slow file is not run |
 
-In five cases a slow test is started all the same:
-
-- the suite's command is none of these tools';
-- the test is one NUnit names row by row, under `[TestCase]` or `[TestCaseSource]`;
-- the command already carries that option;
-- the command names no `{files}` and pipes, chains or redirects;
-- the tool's option would leave another test out with the slow one, as the table says.
-
-The run says so in one line, as in
+Beside the cases in the table, a slow test is started all the same where the suite's command
+is none of these tools', where the command already carries that option, and where it names no
+`{files}` and pipes, chains or redirects. The run says so in one line, as in
 `Started 1 slow test in the e2e suite: its command gives Purlin no way to leave one test out.`
 Its result counts like any other.
 

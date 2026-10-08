@@ -62,10 +62,10 @@ are not repeated here.
 | `proofs_added` | `2 proofs added: sample_age PROOF-5, PROOF-6; stability PROOF-3.` |
 | `proofs_changed` | `sample_age PROOF-1 (RULE-1): changed. "72 hours" became "96 hours".`, or `It was reworded.` where the change is too large to show |
 | `proofs_moved` | `sample_age PROOF-4 moved to PROOF-6.` |
-| `numbers_twice` | `sample_age PROOF-4: number written twice. The line on origin/main keeps it. Renumber the other to PROOF-7 and move its test comments with it. It reads "<its first 8 words>".` |
+| `numbers_twice` | One of the four lines under "Numbers written twice, and the default branch" |
 | `comments_changed` | `sample_age PROOF-4 (RULE-2): test comment to correct. "<old words>" became "<new words>" after tests/test_age.py:14 last changed (a1b2c3d). Run purlin:build sample_age.` |
 | `default_branch` | `origin/main: last fetch. It was 3 days ago, and drift does not fetch. Run git fetch, then purlin:drift.`, printed only after a `numbers_twice` line |
-| `anchors_behind` | `proof_common: anchor pin behind. The pin 1a2b3c4 is behind its source, now 3c4d5e6. Run purlin:anchor sync proof_common.` |
+| `anchors_behind` | One of the lines under "Anchors behind" |
 
 ### A merge in progress
 
@@ -143,6 +143,7 @@ one: no process is handed it. An anchor with no `> Source:` is a local anchor an
 | The pin equals the source head | Nothing |
 | The pin is behind | `<name>: anchor pin behind. The pin <old7> is behind its source, now <new7>. Run purlin:anchor sync <name>.` |
 | A `> Source:` with no `> Pinned:` | `<name>: anchor with no pin. It names a source and no pin. Run purlin:anchor sync <name>.` |
+| The source is refused | `<name>: anchor source refused. Its > Source: line <why>. Run purlin:spec <name>.`, where `<why>` is `begins with "-"`, `names an ext:: transport`, `names an fd:: transport`, `contains a NUL byte` or `contains a newline` |
 | The source cannot be read | `<name>: anchor source not read. Reading it gave "<the error's first sentence, cut at 80 characters>". Check its > Source: line, then run purlin:anchor sync <name>.` |
 | The source names no repository: words, or a file on disk | `<name>: anchor source not a spec. <source> is not a spec in Purlin's format kept in a git repository. Run purlin:spec <name> to take out its > Source: and > Pinned: lines.` |
 
@@ -157,10 +158,11 @@ somewhere else gets read before it is adopted.
 |-------|-----------|---------|---------|
 | `version` | `purlin:init`, `purlin:init --update` | `purlin:init --update`, which compares it with the plugin's `VERSION` file to find an upgrade | From the plugin's `VERSION` file |
 | `tests` | `purlin:test`, at the first run, once you answer yes to its question, or with `--write-tests` | `scripts/run/purlin_run.py`, which runs each suite's own command and reads its report; the fingerprint, which reads markers only from the files a suite names | `[]` in the template; see `references/formats/marker_format.md` |
-| `runs` | You, by hand. No command writes it | `scripts/run/purlin_run.py`, for how many times the test of an AI proof runs on each model its `@ai(...)` names. A proof's own `runs=` wins over it; see `references/formats/spec_format.md`, "The AI tags" | Not set, which reads as 3. `templates/config.json` does not carry it |
+| `runs` | You, through the `purlin_config` tool or by hand, where the project wants another count than 3. Setup writes none | `scripts/run/purlin_run.py`, for how many times the test of an AI proof runs on each model its `@ai(...)` names. A proof's own `runs=` wins over it; see `references/formats/spec_format.md`, "The AI tags" | Not set, which reads as 3. `templates/config.json` does not carry it |
 
 `purlin:init` is the only command that writes the settings unprompted. `purlin:test` writes
-`tests` once you confirm it, and every other command reads. The project's name is read from the
+`tests` once you confirm it, the `purlin_config` tool writes `tests` or `runs` when it is asked
+to and refuses any other key, and every other command reads. The project's name is read from the
 project's own files each time; it is not a setting. Any
 other key is not read, and the status names it with its fix. `runs` is a whole number from 1
 up; any other value is read as not set, and the status names it. This table must name every field
