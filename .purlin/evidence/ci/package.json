@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-10-08T02:56:03Z",
-      "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
+      "commit": "81bafccc8997486f8781cdb11239597c30e3a6af",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-08T02:56:03Z",
+            "commit": "d7887410c6f7bebb1ae41a592db9d46f9bea343a",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
