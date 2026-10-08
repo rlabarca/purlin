@@ -1795,7 +1795,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-08T00:25:59Z",
-      "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+      "commit": "5539ff832688ad5c675f8a4086c78fde41fd930d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -1806,6 +1806,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -1828,6 +1834,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_a_run_with_no_way_named_prints_the_usage"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -1850,6 +1862,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_a_run_with_two_messages_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -1872,6 +1890,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_a_sample_with_instructions_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -1894,6 +1918,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_an_option_it_does_not_have_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -1916,6 +1946,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_a_skill_folder_with_no_skill_file_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -1938,6 +1974,12 @@
           "test": "dev/test_ai_helper.py::TestTheCommandLine::test_a_message_file_that_is_not_there_is_named"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -1960,6 +2002,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_the_call_is_the_bare_one_with_the_model_and_the_files"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -1982,6 +2030,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_the_call_starts_in_an_empty_folder_outside_the_project"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -2004,6 +2058,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_what_is_said_is_the_whole_of_standard_input"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -2026,6 +2086,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_what_is_said_reaches_a_session_on_standard_input"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-11",
           "manual": false,
@@ -2048,6 +2114,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_the_folder_holds_the_reply_the_json_and_the_record"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -2070,6 +2142,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_the_folder_is_all_it_prints"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-13",
           "manual": false,
@@ -2092,6 +2170,12 @@
           "test": "dev/test_ai_helper.py::TestInstructions::test_the_record_of_an_answered_run"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-14",
           "manual": false,
@@ -2114,6 +2198,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_a_plugin_is_loaded_from_its_own_folder"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -2136,6 +2226,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_a_skill_is_loaded_as_a_plugin_of_its_own"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-16",
           "manual": false,
@@ -2158,6 +2254,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_the_session_starts_in_a_copy_outside_the_project"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -2180,6 +2282,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_with_no_sample_the_session_starts_in_an_empty_folder"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-18",
           "manual": false,
@@ -2202,6 +2310,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_the_reply_is_the_result_and_the_transcript_every_line"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -2224,6 +2338,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_files_holds_what_is_new_or_changed_and_nothing_else"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -2246,6 +2366,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_a_deleted_file_leaves_no_trace"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -2268,6 +2394,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_the_sessions_own_folder_and_gits_are_left_out"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -2290,6 +2422,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_a_claude_folder_the_sample_holds_is_compared"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-23",
           "manual": false,
@@ -2312,6 +2450,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_the_session_is_not_told_what_the_run_set"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -2334,6 +2478,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_a_session_is_given_1800_seconds"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-25",
           "manual": false,
@@ -2356,6 +2506,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_no_claude_on_the_path"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-26",
           "manual": false,
@@ -2378,6 +2534,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_session_with_no_claude_on_the_path"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -2400,6 +2562,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_session_that_exits_with_an_error"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-28",
           "manual": false,
@@ -2422,6 +2590,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_session_that_prints_no_result"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -2444,6 +2618,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_bare_call_that_prints_nothing"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-30",
           "manual": false,
@@ -2466,6 +2646,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_session_past_its_limit"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-31",
           "manual": false,
@@ -2488,6 +2674,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_an_unknown_model_is_named_in_the_programs_own_words"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -2510,6 +2702,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_a_login_that_expired_is_named_by_a_session"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-33",
           "manual": false,
@@ -2532,6 +2730,12 @@
           "test": "dev/test_ai_helper.py::TestAModelThatGivesNoAnswer::test_what_a_session_wrote_to_standard_error_is_carried"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-34",
           "manual": false,
@@ -2554,6 +2758,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_a_second_run_into_the_folder_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-35",
           "manual": false,
@@ -2576,6 +2786,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_a_record_into_a_folder_that_holds_one_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-36",
           "manual": false,
@@ -2598,6 +2814,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_a_run_after_a_model_gave_no_answer_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-37",
           "manual": false,
@@ -2620,6 +2842,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_under_replay_a_run_hands_back_the_earlier_folder"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
@@ -2642,6 +2870,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_under_replay_a_record_hands_back_the_earlier_folder"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
@@ -2664,6 +2898,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_by_hand_the_folder_is_the_projects_and_emptied_first"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -2686,6 +2926,12 @@
           "test": "dev/test_ai_helper.py::TestTheFolder::test_a_run_with_no_model_named_says_to_set_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-46",
           "manual": false,
@@ -2708,6 +2954,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_a_record_with_no_model_named_anywhere_says_to_set_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-41",
           "manual": false,
@@ -2730,6 +2982,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_it_copies_the_four_parts_and_no_other_file"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -2752,6 +3010,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_a_reply_alone_is_enough"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -2774,6 +3038,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_the_record_says_the_projects_own_test_made_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -2796,6 +3066,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_the_model_the_command_line_names_wins"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -2818,6 +3094,12 @@
           "test": "dev/test_ai_helper.py::TestRecord::test_a_folder_with_no_reply_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -2840,6 +3122,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_the_grader_is_the_model_the_proof_names_started_bare"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -2862,6 +3150,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_the_grader_is_shown_the_sentence_the_input_and_the_output"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -2884,6 +3178,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_with_no_input_kept_the_request_is_the_sentence_and_the_output"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -2906,6 +3206,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_an_input_with_no_message_is_shown_by_the_files_it_holds"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -2928,6 +3234,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_an_accept_is_printed_and_recorded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -2950,6 +3262,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_reject_exits_1"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -2972,6 +3290,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_grading_leaves_the_outputs_fingerprint_as_it_was"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -2994,6 +3318,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_an_answer_in_neither_shape_is_no_answer"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -3016,6 +3346,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_an_answer_of_two_lines_is_no_answer"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -3038,6 +3374,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_grader_that_cannot_be_reached_is_recorded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -3060,6 +3402,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_under_replay_the_earlier_folder_is_graded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-78",
           "manual": false,
@@ -3082,6 +3430,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_under_replay_the_earlier_folders_input_is_shown"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -3104,6 +3458,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_proof_that_names_no_grader_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -3126,6 +3486,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_proof_no_spec_has_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -3148,6 +3514,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_folder_with_no_reply_is_not_graded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -3170,6 +3542,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_long_file_is_shown_by_its_two_ends"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -3192,6 +3570,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_a_file_that_is_not_text_is_shown_by_its_size"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -3214,6 +3598,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_files_after_the_fiftieth_are_named_and_not_shown"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-76",
           "manual": false,
@@ -3236,6 +3626,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_the_outputs_files_are_shown_before_the_inputs"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-77",
           "manual": false,
@@ -3258,6 +3654,12 @@
           "test": "dev/test_ai_helper.py::TestGrade::test_each_part_names_the_files_it_does_not_show"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -3280,6 +3682,12 @@
           "test": "dev/test_ai_helper.py::TestASession::test_the_session_is_told_to_leave_the_persons_connectors_out"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -3302,6 +3710,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_the_message_said_is_kept_as_it_was_sent"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -3324,6 +3738,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_the_message_file_is_kept_byte_for_byte"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-67",
           "manual": false,
@@ -3346,6 +3766,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_each_instruction_file_is_kept_under_its_own_name"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -3368,6 +3794,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_a_second_file_of_one_name_is_numbered"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-69",
           "manual": false,
@@ -3390,6 +3822,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_the_sample_is_kept_as_it_was_given"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-70",
           "manual": false,
@@ -3412,6 +3850,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_no_sample_and_no_skill_or_plugin_is_kept"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-71",
           "manual": false,
@@ -3434,6 +3878,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_a_symbolic_link_in_the_sample_is_not_kept"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-79",
           "manual": false,
@@ -3456,6 +3906,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_an_output_folder_inside_the_sample_is_not_kept"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-72",
           "manual": false,
@@ -3478,6 +3934,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_a_session_no_model_answered_keeps_no_input"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-73",
           "manual": false,
@@ -3500,6 +3962,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_a_bare_call_no_model_answered_keeps_no_input"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-74",
           "manual": false,
@@ -3522,6 +3990,12 @@
           "test": "dev/test_ai_helper.py::TestTheInput::test_the_input_is_part_of_the_folders_sha256"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-75",
           "manual": false,

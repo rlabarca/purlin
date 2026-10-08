@@ -2449,7 +2449,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-08T00:25:59Z",
-      "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+      "commit": "5539ff832688ad5c675f8a4086c78fde41fd930d",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -2460,6 +2460,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-122",
           "manual": false,
@@ -2482,6 +2488,12 @@
           "test": "dev/test_purlin_report.py::test_the_page_at_the_project_root_is_the_built_page"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -2504,6 +2516,12 @@
           "test": "dev/test_purlin_report.py::test_no_colour_is_written_as_hex_outside_the_token_block"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -2526,6 +2544,12 @@
           "test": "dev/test_purlin_report.py::test_no_shadow_and_no_gradient"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-6",
           "manual": false,
@@ -2548,6 +2572,12 @@
           "test": "dev/test_purlin_report.py::test_affordances_are_unicode_glyphs_not_an_icon_set"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -2570,6 +2600,12 @@
           "test": "dev/test_purlin_report.py::test_no_request_to_anything_outside_the_page"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-223",
           "manual": false,
@@ -2592,6 +2628,12 @@
           "test": "dev/test_purlin_report.py::test_the_top_bar_reads_met_and_the_sign_off_at_its_commit"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-225",
           "manual": false,
@@ -2614,6 +2656,12 @@
           "test": "dev/test_purlin_report.py::test_a_failing_rule_and_no_sign_off_read_not_met_and_not_signed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-241",
           "manual": false,
@@ -2636,6 +2684,12 @@
           "test": "dev/test_purlin_report.py::test_no_audit_and_no_sign_off_show_two_boxes_and_not_signed_plain"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-242",
           "manual": false,
@@ -2658,6 +2712,12 @@
           "test": "dev/test_purlin_report.py::test_the_strong_box_reads_the_count_and_its_hover_the_counts"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -2680,6 +2740,12 @@
           "test": "dev/test_purlin_report.py::test_a_step_box_counts_the_rules_that_reached_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-247",
           "manual": false,
@@ -2702,6 +2768,12 @@
           "test": "dev/test_purlin_report.py::test_passing_is_complete_once_every_other_rule_is_checked_at_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-114",
           "manual": false,
@@ -2724,6 +2796,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_with_no_proof_is_counted_in_its_own_box"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-170",
           "manual": false,
@@ -2746,6 +2824,12 @@
           "test": "dev/test_purlin_report.py::test_the_passing_box_carries_the_total"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-254",
           "manual": false,
@@ -2768,6 +2852,12 @@
           "test": "dev/test_purlin_report.py::test_the_strong_box_is_complete_beside_a_spot_checked_anchor"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-255",
           "manual": false,
@@ -2790,6 +2880,12 @@
           "test": "dev/test_purlin_report.py::test_the_strong_box_waits_on_a_weak_rule_that_is_not_an_anchors"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-256",
           "manual": false,
@@ -2812,6 +2908,12 @@
           "test": "dev/test_purlin_report.py::test_no_strong_box_where_the_audit_read_an_anchor_alone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -2834,6 +2936,12 @@
           "test": "dev/test_purlin_report.py::test_proof_lines_and_no_audit_show_four_columns"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-124",
           "manual": false,
@@ -2856,6 +2964,12 @@
           "test": "dev/test_purlin_report.py::test_an_audit_that_found_strong_and_weak_adds_the_strong_column"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-243",
           "manual": false,
@@ -2878,6 +2992,12 @@
           "test": "dev/test_purlin_report.py::test_one_spot_checked_result_draws_the_strong_column_and_box"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -2900,6 +3020,12 @@
           "test": "dev/test_purlin_report.py::test_every_count_carries_the_word_it_counts"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-245",
           "manual": false,
@@ -2922,6 +3048,12 @@
           "test": "dev/test_purlin_report.py::test_a_hand_check_is_counted_by_hand_and_out_of_the_strong_share"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-280",
           "manual": false,
@@ -2944,6 +3076,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_out_of_date_says_so_in_its_tests_cell"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-281",
           "manual": false,
@@ -2966,6 +3104,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchors_out_of_date_part_comes_last"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -2988,6 +3132,12 @@
           "test": "dev/test_purlin_report.py::test_a_feature_row_expands_to_its_rules"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-117",
           "manual": false,
@@ -3010,6 +3160,12 @@
           "test": "dev/test_purlin_report.py::test_an_open_spec_shows_its_description"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-138",
           "manual": false,
@@ -3032,6 +3188,12 @@
           "test": "dev/test_purlin_report.py::test_back_to_the_board_returns_to_the_board"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-182",
           "manual": false,
@@ -3054,6 +3216,12 @@
           "test": "dev/test_purlin_report.py::test_the_theme_button_reads_the_theme_it_turns_to"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-128",
           "manual": false,
@@ -3088,6 +3256,12 @@
           "test": "dev/test_purlin_report.py::test_the_theme_button_swaps_to_light"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-185",
           "manual": false,
@@ -3110,6 +3284,12 @@
           "test": "dev/test_purlin_report.py::test_a_chosen_theme_survives_a_reload"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-15",
           "manual": false,
@@ -3132,6 +3312,12 @@
           "test": "dev/test_purlin_report.py::test_the_rule_screen_shows_the_rule_its_proof_and_its_cells"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -3154,6 +3340,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_with_no_proof_reads_its_reason"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-135",
           "manual": false,
@@ -3176,6 +3368,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_out_of_date_reads_what_changed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-238",
           "manual": false,
@@ -3198,6 +3396,12 @@
           "test": "dev/test_purlin_report.py::test_a_slow_proof_not_run_shows_its_tag_and_its_reason"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-244",
           "manual": false,
@@ -3220,6 +3424,12 @@
           "test": "dev/test_purlin_report.py::test_a_hand_check_no_sign_off_noted_is_passed_as_checked_at_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -3242,6 +3452,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_waiting_on_an_operating_system_says_so"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-32",
           "manual": false,
@@ -3264,6 +3480,12 @@
           "test": "dev/test_purlin_report.py::test_the_rule_screen_says_what_each_system_found"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-92",
           "manual": false,
@@ -3286,6 +3508,12 @@
           "test": "dev/test_purlin_report.py::test_a_manual_proof_that_ran_nowhere_draws_no_system_box"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -3308,6 +3536,12 @@
           "test": "dev/test_purlin_report.py::test_data_of_another_schema_shows_one_notice_and_nothing_else"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-21",
           "manual": false,
@@ -3330,6 +3564,12 @@
           "test": "dev/test_purlin_report.py::test_no_data_at_all_names_the_command_that_writes_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-198",
           "manual": false,
@@ -3352,6 +3592,12 @@
           "test": "dev/test_purlin_report.py::test_each_warning_is_a_notice_after_the_working_tree_one"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-184",
           "manual": false,
@@ -3374,6 +3620,12 @@
           "test": "dev/test_purlin_report.py::test_an_uncommitted_tree_is_named_on_the_board"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-22",
           "manual": false,
@@ -3396,6 +3648,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_screen_draws_no_notice"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-282",
           "manual": false,
@@ -3418,6 +3676,12 @@
           "test": "dev/test_purlin_report.py::test_the_boxes_stand_above_the_notices_at_every_width"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -3440,6 +3704,12 @@
           "test": "dev/test_purlin_report.py::test_the_group_band_says_what_its_numbers_are"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-94",
           "manual": false,
@@ -3462,6 +3732,12 @@
           "test": "dev/test_purlin_report.py::test_the_bands_and_the_anchors_add_up_to_the_rules"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-96",
           "manual": false,
@@ -3484,6 +3760,12 @@
           "test": "dev/test_purlin_report.py::test_a_band_folds_from_the_keyboard"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -3506,6 +3788,12 @@
           "test": "dev/test_purlin_report.py::test_every_cell_of_a_spec_row_carries_its_hover"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-97",
           "manual": false,
@@ -3528,6 +3816,12 @@
           "test": "dev/test_purlin_report.py::test_a_proofs_hover_names_the_proof_no_test_runs"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-189",
           "manual": false,
@@ -3550,6 +3844,12 @@
           "test": "dev/test_purlin_report.py::test_a_spec_no_run_covered_says_so_in_its_hover"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-144",
           "manual": false,
@@ -3572,6 +3872,12 @@
           "test": "dev/test_purlin_report.py::test_a_weak_audit_reads_weak_its_finding_then_its_explanation"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-147",
           "manual": false,
@@ -3594,6 +3900,12 @@
           "test": "dev/test_purlin_report.py::test_the_audit_panel_of_a_rule_no_audit_read"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-239",
           "manual": false,
@@ -3616,6 +3928,12 @@
           "test": "dev/test_purlin_report.py::test_a_spot_checked_rule_reads_why_no_bug_was_caught"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-240",
           "manual": false,
@@ -3638,6 +3956,12 @@
           "test": "dev/test_purlin_report.py::test_an_audit_out_of_date_keeps_its_last_result_on_screen"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -3660,6 +3984,12 @@
           "test": "dev/test_report_refresh.py::test_a_sign_off_writes_the_data_file_naming_the_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -3682,6 +4012,12 @@
           "test": "dev/test_report_refresh.py::test_an_edit_with_no_command_leaves_the_data_file_alone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -3704,6 +4040,12 @@
           "test": "dev/test_report_refresh.py::test_a_directory_with_no_settings_file_gets_no_data_file"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -3726,6 +4068,12 @@
           "test": "dev/test_purlin_report.py::test_a_project_no_audit_read_never_reads_strong_or_audit"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-103",
           "manual": false,
@@ -3748,6 +4096,12 @@
           "test": "dev/test_purlin_report.py::test_a_project_with_no_proof_line_never_reads_proof"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -3770,6 +4124,12 @@
           "test": "dev/test_purlin_report.py::test_a_passing_test_marked_with_the_rules_id_shows_passed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-155",
           "manual": false,
@@ -3792,6 +4152,12 @@
           "test": "dev/test_purlin_report.py::test_a_rules_screen_reads_each_proof"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-180",
           "manual": false,
@@ -3814,6 +4180,12 @@
           "test": "dev/test_purlin_report.py::test_a_test_line_starts_with_a_dot_in_its_results_colour"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-69",
           "manual": false,
@@ -3836,6 +4208,12 @@
           "test": "dev/test_purlin_report.py::test_a_proof_with_no_test_names_the_build"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-107",
           "manual": false,
@@ -3858,6 +4236,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchors_rule_is_listed_under_the_anchor_alone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-108",
           "manual": false,
@@ -3880,6 +4264,12 @@
           "test": "dev/test_purlin_report.py::test_a_features_own_rule_opens_its_own_screen"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-109",
           "manual": false,
@@ -3902,6 +4292,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchors_rule_opens_the_anchors_screen"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-165",
           "manual": false,
@@ -3924,6 +4320,12 @@
           "test": "dev/test_purlin_report.py::test_a_rules_row_carries_a_badge_for_each_count_it_is_in"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-167",
           "manual": false,
@@ -3946,6 +4348,12 @@
           "test": "dev/test_purlin_report.py::test_the_badges_add_up_to_the_step_boxes"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-203",
           "manual": false,
@@ -3968,6 +4376,12 @@
           "test": "dev/test_purlin_report.py::test_the_anchors_stand_in_a_section_of_their_own"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-204",
           "manual": false,
@@ -3990,6 +4404,12 @@
           "test": "dev/test_purlin_report.py::test_a_project_with_no_anchor_has_no_anchors_section"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-217",
           "manual": false,
@@ -4012,6 +4432,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_of_a_spec_to_repair_says_why"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-228",
           "manual": false,
@@ -4034,6 +4460,12 @@
           "test": "dev/test_purlin_report.py::test_a_hand_check_no_sign_off_noted_reads_checked_at_sign_off"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-229",
           "manual": false,
@@ -4056,6 +4488,12 @@
           "test": "dev/test_purlin_report.py::test_a_hand_check_reads_the_newest_sign_offs_note_beneath_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-246",
           "manual": false,
@@ -4078,6 +4516,12 @@
           "test": "dev/test_purlin_report.py::test_a_note_written_before_the_rule_was_reworded_says_so_above_it"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-227",
           "manual": false,
@@ -4100,6 +4544,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchors_rule_with_nothing_to_check_says_why_it_passed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-75",
           "manual": false,
@@ -4122,6 +4572,12 @@
           "test": "dev/test_purlin_report_board_layout.py::test_both_screens_fit_every_width_in_the_dark_theme"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -4144,6 +4600,12 @@
           "test": "dev/test_purlin_report.py::test_every_text_measures_7_to_1_in_the_dark_theme"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-104",
           "manual": false,
@@ -4166,6 +4628,12 @@
           "test": "dev/test_purlin_report.py::test_every_text_measures_7_to_1_in_the_light_theme"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-303",
           "manual": false,
@@ -4188,6 +4656,12 @@
           "test": "dev/test_purlin_report_board_layout.py::test_an_ai_proofs_models_fit_every_width_in_both_themes"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-230",
           "manual": false,
@@ -4210,6 +4684,12 @@
           "test": "dev/test_report_refresh.py::test_status_replaces_an_older_page_with_the_plugins_own"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-231",
           "manual": false,
@@ -4232,6 +4712,12 @@
           "test": "dev/test_report_refresh.py::test_status_leaves_a_page_that_is_the_plugins_own"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-232",
           "manual": false,
@@ -4254,6 +4740,12 @@
           "test": "dev/test_purlin_report.py::test_the_top_bar_names_the_branch_the_commit_and_when"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-233",
           "manual": false,
@@ -4276,6 +4768,12 @@
           "test": "dev/test_report_refresh.py::test_status_names_the_branch_and_the_commit_it_ran_on"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-237",
           "manual": false,
@@ -4298,6 +4796,12 @@
           "test": "dev/test_purlin_report.py::test_a_browser_set_to_utc_reads_the_time_in_utc"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-234",
           "manual": false,
@@ -4320,6 +4824,12 @@
           "test": "dev/test_purlin_report.py::test_a_strong_audit_reads_its_explanation_under_its_answer"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-235",
           "manual": false,
@@ -4342,6 +4852,12 @@
           "test": "dev/test_purlin_report.py::test_a_planted_bug_the_tests_missed_is_shown_with_its_lines"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-236",
           "manual": false,
@@ -4364,6 +4880,12 @@
           "test": "dev/test_purlin_report.py::test_a_planted_bug_the_tests_caught_is_not_shown"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-248",
           "manual": false,
@@ -4386,6 +4908,12 @@
           "test": "dev/test_purlin_report_board_layout.py::test_the_theme_button_keeps_the_top_right_and_the_boxes_move_whole"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-257",
           "manual": false,
@@ -4408,6 +4936,12 @@
           "test": "dev/test_purlin_report.py::test_thirty_three_warnings_of_one_kind_are_one_notice"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-258",
           "manual": false,
@@ -4430,6 +4964,12 @@
           "test": "dev/test_purlin_report.py::test_two_of_a_kind_and_a_warning_about_no_spec_keep_their_notices"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-259",
           "manual": false,
@@ -4452,6 +4992,12 @@
           "test": "dev/test_purlin_report.py::test_a_grouped_notice_counts_specs_and_stands_where_the_first_stood"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-260",
           "manual": false,
@@ -4474,6 +5020,12 @@
           "test": "dev/test_purlin_report.py::test_three_lines_about_one_or_two_specs_name_each_spec"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-261",
           "manual": false,
@@ -4496,6 +5048,12 @@
           "test": "dev/test_purlin_report.py::test_lines_of_information_group_in_the_neutral_tone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-262",
           "manual": false,
@@ -4518,6 +5076,12 @@
           "test": "dev/test_purlin_report.py::test_every_kind_of_warning_about_a_spec_groups_under_its_own_words"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-275",
           "manual": false,
@@ -4540,6 +5104,12 @@
           "test": "dev/test_purlin_report.py::test_rules_with_nothing_to_check_group_in_the_neutral_tone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-263",
           "manual": false,
@@ -4562,6 +5132,12 @@
           "test": "dev/test_purlin_report.py::test_a_failing_box_counts_the_rules_that_failed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-264",
           "manual": false,
@@ -4584,6 +5160,12 @@
           "test": "dev/test_purlin_report.py::test_the_failing_box_stands_between_passing_and_strong"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-265",
           "manual": false,
@@ -4606,6 +5188,12 @@
           "test": "dev/test_purlin_report.py::test_no_failing_box_where_no_rule_failed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-266",
           "manual": false,
@@ -4628,6 +5216,12 @@
           "test": "dev/test_purlin_report.py::test_a_spec_and_a_category_with_a_failing_rule_come_first"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-267",
           "manual": false,
@@ -4650,6 +5244,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_with_a_failing_rule_comes_first"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-268",
           "manual": false,
@@ -4672,6 +5272,12 @@
           "test": "dev/test_purlin_report.py::test_two_failing_specs_keep_the_datas_order"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-269",
           "manual": false,
@@ -4694,6 +5300,12 @@
           "test": "dev/test_purlin_report.py::test_the_failing_box_and_the_failing_spec_are_on_the_first_screen"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-278",
           "manual": false,
@@ -4716,6 +5328,12 @@
           "test": "dev/test_purlin_report.py::test_the_spec_table_stands_first_where_a_spec_fails_and_no_anchor_does"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-279",
           "manual": false,
@@ -4738,6 +5356,12 @@
           "test": "dev/test_purlin_report.py::test_the_anchors_stand_first_where_an_anchor_fails"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-270",
           "manual": false,
@@ -4760,6 +5384,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_carries_the_line_for_a_spec_that_names_no_files"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-271",
           "manual": false,
@@ -4782,6 +5412,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_carries_an_anchor_rule_with_nothing_to_check"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-272",
           "manual": false,
@@ -4804,6 +5440,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_carries_a_changed_tests_setting_first"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-273",
           "manual": false,
@@ -4826,6 +5468,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_carries_an_anchor_whose_pin_is_behind"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-274",
           "manual": false,
@@ -4848,6 +5496,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_carries_the_uncommitted_spec_files_on_one_line"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-277",
           "manual": false,
@@ -4870,6 +5524,12 @@
           "test": "dev/test_report_refresh.py::test_the_data_file_names_no_update_once_the_page_is_replaced"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-249",
           "manual": false,
@@ -4892,6 +5552,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_whose_rule_is_spot_checked_reads_the_word_alone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-250",
           "manual": false,
@@ -4914,6 +5580,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_with_a_weak_rule_reads_weak_in_the_warn_tone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-251",
           "manual": false,
@@ -4936,6 +5608,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_whose_entry_is_out_of_date_reads_out_of_date"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-252",
           "manual": false,
@@ -4958,6 +5636,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchor_no_audit_read_has_an_empty_strong_cell"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-253",
           "manual": false,
@@ -4980,6 +5664,12 @@
           "test": "dev/test_purlin_report.py::test_an_anchors_strong_hover_says_first_that_no_bug_is_planted"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-283",
           "manual": false,
@@ -5002,6 +5692,12 @@
           "test": "dev/test_purlin_report.py::test_a_carried_proof_names_the_system_and_the_commit"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-284",
           "manual": false,
@@ -5024,6 +5720,12 @@
           "test": "dev/test_purlin_report.py::test_a_proof_whose_run_took_its_results_has_no_such_row"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-285",
           "manual": false,
@@ -5046,6 +5748,12 @@
           "test": "dev/test_purlin_report.py::test_the_carried_row_measures_7_to_1_in_both_themes"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-286",
           "manual": false,
@@ -5068,6 +5776,12 @@
           "test": "dev/test_purlin_report.py::test_a_rule_with_no_proof_names_where_its_tests_were_carried_from"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-287",
           "manual": false,
@@ -5090,6 +5804,12 @@
           "test": "dev/test_purlin_report.py::test_a_failing_test_shows_what_its_tool_reported"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-288",
           "manual": false,
@@ -5112,6 +5832,12 @@
           "test": "dev/test_purlin_report.py::test_a_failing_test_with_no_text_and_a_passing_one_show_no_panel"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-289",
           "manual": false,
@@ -5134,6 +5860,12 @@
           "test": "dev/test_purlin_report.py::test_a_long_failure_text_never_scrolls_the_page_sideways"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-290",
           "manual": false,
@@ -5156,6 +5888,12 @@
           "test": "dev/test_purlin_report.py::test_a_notice_sets_its_name_in_the_machine_typeface_and_its_kind_as_a_label"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-291",
           "manual": false,
@@ -5178,6 +5916,12 @@
           "test": "dev/test_purlin_report.py::test_a_notice_fits_every_width_and_its_name_and_kind_measure_7_to_1"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-304",
           "manual": false,
@@ -5200,6 +5944,12 @@
           "test": "dev/test_purlin_report.py::test_a_model_not_reached_is_a_notice_like_any_other"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-292",
           "manual": false,
@@ -5222,6 +5972,12 @@
           "test": "dev/test_purlin_report.py::test_a_notices_name_opens_the_rule_it_names"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-293",
           "manual": false,
@@ -5244,6 +6000,12 @@
           "test": "dev/test_purlin_report.py::test_a_name_the_page_has_no_rule_for_is_not_a_link"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-294",
           "manual": false,
@@ -5266,6 +6028,12 @@
           "test": "dev/test_purlin_report.py::test_a_graded_rule_counts_among_the_rules_that_pass"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-295",
           "manual": false,
@@ -5288,6 +6056,12 @@
           "test": "dev/test_purlin_report.py::test_a_graded_rules_badge_reads_graded_in_the_pass_tone"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-296",
           "manual": false,
@@ -5310,6 +6084,12 @@
           "test": "dev/test_purlin_report.py::test_a_graded_rule_reads_graded_in_its_hovers_and_on_its_screen"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-297",
           "manual": false,
@@ -5332,6 +6112,12 @@
           "test": "dev/test_purlin_report.py::test_the_passing_box_says_how_many_rules_an_ai_graded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-298",
           "manual": false,
@@ -5354,6 +6140,12 @@
           "test": "dev/test_purlin_report.py::test_no_graded_line_where_no_rule_is_graded"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-299",
           "manual": false,
@@ -5376,6 +6168,12 @@
           "test": "dev/test_purlin_report.py::test_an_ai_proof_reads_one_line_per_model_and_the_run_that_failed"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-300",
           "manual": false,
@@ -5398,6 +6196,12 @@
           "test": "dev/test_purlin_report.py::test_a_graded_proof_names_its_grader_and_its_reason_for_each_run"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-301",
           "manual": false,
@@ -5420,6 +6224,12 @@
           "test": "dev/test_purlin_report.py::test_runs_that_passed_ungraded_draw_no_line_and_a_plain_proof_no_row"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-302",
           "manual": false,
@@ -5442,6 +6252,12 @@
           "test": "dev/test_purlin_report.py::test_a_models_count_is_out_of_the_runs_asked_now"
         },
         {
+          "carried": {
+            "at": "2026-10-08T00:25:59Z",
+            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-305",
           "manual": false,
