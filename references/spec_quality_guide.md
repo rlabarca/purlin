@@ -82,35 +82,29 @@ dependency fails.
 
 A rule that must hold across the whole project, such as no secret in the code, is written
 once in an anchor. Its tests check every file of the project the rule speaks of, and the rule
-is counted and audited once. No spec names an anchor. A rule that several features
-share and that cannot be checked across the whole project is not an anchor's: write it in the
-spec of each feature that needs it, in that feature's words.
-
-Write an anchor's rule so it holds for a project that has none of what it speaks of: "for
-every X in the project, Y holds". A project with no X then has nothing to break it. This matters
-most for an anchor other projects pull, since a project has no way to set a pulled rule aside.
+is counted and audited once. No spec names an anchor.
 
 - Poor: "The settings screen meets the contrast standard."
 - Good: "Every screen in the project meets the contrast standard."
 
-Its test checks every X it finds. Where it finds none, it skips through the test tool's own
-skip, with a reason starting `nothing to check:`, as in
-`nothing to check: this project has no screens`. The rule then passes, and the status, the
-dashboard and the evidence package show the reason, so a signer sees the rule was not exercised.
-Only an anchor's rule passes this way; on a feature's own rule the same skip reads `not run`.
-
 #### A good anchor
 
 - Every rule holds across the whole project and is written as "for every X in the project, Y
-  holds", so a project with no X has nothing to break it.
-- Its test checks every X it finds and, finding none, skips with a reason starting
-  `nothing to check:`, so the rule passes and says it was not exercised.
+  holds", so a project with no X has nothing to break it. This matters most for an anchor
+  other projects pull, since a project has no way to set a pulled rule aside.
+- Its test checks every X it finds and, finding none, skips through the test tool's own skip
+  with a reason starting `nothing to check:`, as in
+  `nothing to check: this project has no screens`. The rule then passes and shows the reason,
+  so a signer sees it was not exercised. Only an anchor's rule passes this way; on a feature's
+  own rule the same skip reads `not run`. `references/formats/marker_format.md`, "Nothing to
+  check", shows the test.
 - A rule no test can show is given a `@manual` proof and is checked by a person in the sign-off
   walk, never left with a test that cannot fail; in a remote anchor the tag is written in its
   source.
 - A check across the whole project that takes a long time is tagged `@slow`, so it stays out of
   every build run and runs with `purlin:test --all`.
-- A rule only some features need is not an anchor's and goes in those features' own specs.
+- A rule only some features need, or one that cannot be checked across the whole project, is
+  not an anchor's: write it in the spec of each feature that needs it, in that feature's words.
 - An anchor carries no `> Scope:`.
 
 One anchor showing the three forms together, a fast check, a slow one and a hand check:
@@ -209,8 +203,10 @@ and feel is not a rule; a person judges it outside Purlin.
 ### Written for a person who cannot read code
 
 A proof names what a user, or a caller of the system, would see. It carries no source or test
-file path, no function name, no class, no selector and no name of a test framework. Someone
-from product or QA reads it and can say whether it shows the rule.
+file path, no function name, no class, no selector, class name or element id from a page's
+markup, and no name of a test framework. Someone from product or QA reads it and can say
+whether it shows the rule. A proof that says what is on the screen survives a rewrite of the
+page.
 
 - Poor: "Call `InvoiceService.total()` with the fixture in `tests/data/two_lines.json`; assert
   `result.amount == 11000`."
@@ -266,30 +262,18 @@ done, or in the kind of result seen, are cases of their own.
 
 ### Written by AI, read by a person
 
-AI may draft a proof. QA reads it against this page before it is committed, and checks three
+AI may draft a proof. QA reads it against this page before it is committed, and checks two
 things in particular:
 
 - **It would fail if the rule were broken.** Picture the software doing the wrong thing; the
   proof must say that something different would be seen.
-- **Its expected value is a real value.** A message, a number, a status, a line of text.
-  "Works correctly", "is handled properly" and "succeeds" are not values.
-- **It does not simply restate the rule.** It adds the input, the action and what is seen.
+- **It does not simply restate the rule.** It adds the input, the action and a real value:
+  "works correctly", "is handled properly" and "succeeds" are not values.
 
 - Poor, as AI wrote it for the rule "A locked account refuses sign-in": "A locked account
   refuses sign-in correctly."
 - Good: "An account locked by five wrong passwords is refused when the right password is
   entered, and the page reads `Account locked. Try again in 15 minutes.`"
-
-### Proofs about what a person sees
-
-Describe what is on the screen, never the markup. The test picks the tool.
-
-- Poor: "Count the elements with class `basket-row`; verify the count is 3."
-- Good: "With three different items in the basket, the basket page lists 3 rows and the total
-  reads `42.50`."
-
-No selectors, no class names, no element ids. A proof that says what is on the screen survives
-a rewrite of the page.
 
 ### Flow proofs
 
@@ -384,20 +368,14 @@ What an AI proof shows, and what it does not:
 
 ## Manual proofs
 
-A proof carries no `@manual` when a test settles it, whatever that test needs to run. Human
-judgment, such as visual polish, wording or brand voice, is the one case for `@manual`: "Read
-the error messages against the brand voice guide @manual".
+Human judgment, such as visual polish, wording or brand voice, is the one case for `@manual`;
+a proof a test can settle carries none, whatever that test needs to run. Source files under
+`views/`, `pages/`, `templates/` or `layouts/`, components with layout logic, and code
+producing HTML are a signal that the proofs go through the running app or are `@manual`.
 
-Source files under `views/`, `pages/`, `templates/` or `layouts/`, components with
-layout logic, and code producing HTML are a signal that the proofs go through the running app
-or are `@manual`. Where no test could observe what the proof names, the proof is `@manual`.
-
-`@manual` means there is no test, so nothing can run and there is no test body for the audit
-to read. A rule checked by hand alone reads `checked at sign-off` in both cells until a sign-off
-notes it. A person looks at it in the
-sign-off walk of `purlin:sign` and may type what they saw, and the sign-off records that note;
-the rule then shows its last note, the version it was signed at and how many commits have come
-since. Use `@manual` where a person's judgment is the only instrument.
+`@manual` means there is no test, so nothing runs and the audit has no test body to read. What
+such a rule reads before and after a sign-off is in
+[references/evidence_and_signoff.md](evidence_and_signoff.md).
 
 ## When a rule is stuck
 
@@ -408,7 +386,7 @@ whose row says what moves both.
 
 | Cell | Word | What it means | What moves it |
 |---|---|---|---|
-| passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. | Write the proof under `## Proof` so it names what is done and an expected value a test can reach. `purlin:spec`. A test marked with the rule's id answers it too. |
+| passed | `no test`, with `no proof written` | No proof line names the rule, and no test is marked with the rule's own id. `Left to do` counts it under `rules to write a test for`. | `purlin:build` writes a test marked with the rule's id, then `purlin:test`. Write the proof first with `purlin:spec`, so the test has a proof to carry out and the audit one to read it against. |
 | passed | `no test`, with `no test for <PROOF-N>` | One of the rule's proofs has no test carrying its marker comment; the reason names each such proof. | `purlin:build` writes the test, then `purlin:test`. |
 | passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
 | passed | `failed`, with `<RULE-N or PROOF-N> is written twice in the spec` or `the spec holds a line left from a merge conflict` | The spec writes a number twice or holds a line git left from a merge conflict, so every rule of it reads `failed` whatever its tests show. | `purlin:spec`, whose "Renumbering" resolves the conflict where both sides only added lines, and moves the line from the branch not yet merged when you say yes. |
@@ -422,7 +400,7 @@ whose row says what moves both.
 | passed | `partial` | The rule's tests passed on one operating system and failed on another. `partial` is not met. | Fix the code or the test for the system that failed, then run the tests there again. |
 | passed | `out of date` | A pass exists but the spec, the code or the tests moved since; the reason names which. | Run the tests again; the next run clears it. |
 | passed | `checked at sign-off` | Every proof of the rule is `@manual`, and no sign-off has noted it on its wording as it is. | Nothing to run. A person checks it in `purlin:sign`. |
-| strong | `weak`, with `<file>::<test>: ...` | A heuristic spot test read the test and found it cannot fail as written: it checks nothing, its check cannot fail, it swallows the error, it checks the code against itself, it replaces what it is testing, or it never checks the result the proof expects. | Fix the test as the finding says, with `purlin:build`. |
+| strong | `weak`, with `<file>::<test>: ...` | A heuristic spot test fired on the test the reason names. `references/review_criteria.md` lists the spot tests and what each finds. | Fix the test as the finding says, with `purlin:build`. |
 | strong | `weak`, with `PROOF-N: the test still passes when <file>:<line> reads "<line>"` | The audit planted that bug in a copy of the project and the proof's own test still passed. The line under it, `PROOF-N: the AI says this breaks: <case>`, is the AI's claim about which case the bug breaks. | `purlin:build` writes the assertion the proof names and settles the finding with a test run. |
 | strong | `no proof` | The rule's test passes and no proof says what it shows, so the audit has nothing to read the test against. | Write the proof with `purlin:spec`, then `purlin:audit`. |
 | strong | `checked at sign-off` | The proof is `@manual`, so no test can be written and a person checks it. Where the rule also has a tested proof, the audit's `weak`, `spot-checked` or `out of date` is shown in its place. | Nothing: the sign-off walk of `purlin:sign` shows it and asks what the person saw. |

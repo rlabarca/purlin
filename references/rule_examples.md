@@ -1,107 +1,70 @@
 # Rule examples from real projects
 
-Bad-to-good rule rewrites collected from spec reviews and from what the audit observed. Organized by the five coverage categories in the [spec quality guide](spec_quality_guide.md), "Coverage", then worked proofs about what an AI does. This file grows over time: when a bad rule is caught and rewritten, add the pair here.
-
----
+Worked rules and proofs. One bad-to-good rewrite of a rule for each of the five coverage
+categories in the [spec quality guide](spec_quality_guide.md), "Coverage", then worked proofs
+about what an AI does. A good rule names what a caller or a user sees: a field, an endpoint, an
+event, a value. It names no hook, library, SDK or function from inside the code.
 
 ## Inbound contracts
 
-Rules about data entering the system: API responses, config, props, messages. What goes wrong first: wrong field names mean wrong data on screen or in storage.
-
-### tca-frontend: Mortgage Report Data (2026-04)
+Data entering the system: API responses, config, props, messages.
 
 ```
-Bad:  "MortgageReport type defines the raw API response shape including AnalysisContact and report metadata"
-Good: "API field user.LogoFileName maps to header logo (via formatImageUrl); user.FirstName + ' ' + user.LastName maps to contact display name"
-Why:  The API uses lowercase 'contact' not 'AnalysisContact', 'user' not 'User'. Without exact field names, a rebuild wires to wrong fields.
-
-Bad:  "Fetches report data from the API"
-Good: "GET /EdgeMobileService/EdgeService.svc/json/GetAnalysisGuidDisplay with params {contactId, isFirstTime, position, isDetails, historyId, updateDate} returns full report directly"
-Why:  Missing the service path prefix and query params means a rebuild can't even call the API correctly.
-
 Bad:  "Hero calls useProductQuery hook"
 Good: "Hero displays product.address, product.loanAmount, and product.rate from GET /api/products/:id"
-Why:  Hook name is implementation. Data fields are what a developer needs to wire correctly.
+Why:  The hook's name is implementation. The endpoint and the exact field names are what a rebuild wires wrongly.
 ```
 
 ## Outbound contracts
 
-Rules about data leaving the system: analytics events, API calls out, database writes, log entries.
-
-### tca-frontend: Analytics Integration (2026-04)
+Data leaving the system: analytics events, API calls out, database writes, log entries.
 
 ```
 Bad:  "Sends analytics events on key interactions"
-Good: "Fires Firebase event 'report_viewed' with params {reportId, reportType, contactId} when report page loads"
-Why:  Without event name and param shape, analytics dashboards break on rebuild.
-
-Bad:  "Tracks user behavior with TrustEngine"
-Good: "TrustEngine pixel fires on page load, polling at 100ms intervals for max 50 attempts until container element exists"
-Why:  Polling strategy and retry limits are behavioral: affects whether analytics actually fires.
-
-Bad:  "Logs errors"
-Good: "API fetch failures log {endpoint, statusCode, errorMessage} at warn level; do not surface to user"
-Why:  Log shape matters for monitoring dashboards. 'Do not surface' is a UX constraint.
+Good: "Sends the analytics event 'report_viewed' with params {reportId, reportType, contactId} when the report page loads"
+Why:  Without the event name and the shape of its params, analytics dashboards break on a rebuild.
 ```
 
 ## Transformations
 
-Rules about logic that converts between inbound and outbound: field mappings, formulas, formatters.
-
-### tca-frontend: Data Builders (2026-04)
+Logic that converts between inbound and outbound: field mappings, formulas, formatters.
 
 ```
-Bad:  "Formats data for display"
-Good: "formatImageUrl prepends CDN base URL to user.LogoFileName; returns empty string if null"
-Why:  The null handling and URL construction are both behavioral: a rebuild without this shows broken images.
-
-Bad:  "Builds mortgage data from API response"
-Good: "Header logo comes from formatImageUrl(user.LogoFileName), not contact.CompanyLogo. Contact name from user.FirstName + user.LastName, not a single ContactName field."
-Why:  Field source matters. The API has multiple name-like fields: picking the wrong one shows wrong data.
-
-Bad:  "Loan details uses product.fields array"
-Good: "Loan details renders product.fields filtered by excluded=false, sorted by field.order"
-Why:  Without filter/sort spec, a rebuild shows all fields in wrong order.
-
 Bad:  "Calculates monthly payment"
 Good: "Monthly payment = principal * (rate/12) / (1 - (1 + rate/12)^-term); displayed as currency with 2 decimal places"
-Why:  The formula is the behavior. Getting it wrong means wrong financial numbers shown to users.
+Why:  The formula is the behaviour. Getting it wrong shows users wrong financial numbers.
 ```
 
 ## State
 
-Rules about feature lifecycle: valid states, transitions, timeouts.
-
-### tca-frontend: Recording Session (2026-04)
+Feature lifecycle: valid states, transitions, timeouts.
 
 ```
 Bad:  "Has multiple recording states"
 Good: "Recording lifecycle: idle → recording → paused → stopped. Cannot go from stopped back to recording without reinitializing."
 Why:  Missing transitions mean a rebuild allows invalid state changes.
-
-Bad:  "Polls for updates"
-Good: "Analysis polling: starts on mount at 5s intervals, pauses when tab hidden, resumes on tab focus, stops on unmount or when analysis complete"
-Why:  Tab visibility and cleanup behavior prevent resource leaks and stale data.
 ```
 
 ## Access
 
-Rules about who can see or do what: permissions, flags, views.
-
-### tca-frontend: Report Access (2026-04)
+Who can see or do what: permissions, flags, views.
 
 ```
-Bad:  "Checks user permissions"
-Good: "Password-protected reports show password form; authenticated reports show content directly. Password validated against GET /ValidatePassword endpoint."
-Why:  The kind of protection (password vs auth) and validation endpoint are both behavioral.
-
 Bad:  "Has a loan officer view"
 Good: "The loan officer view (activated by the lo=true URL hash param OR the lo cookie) shows editable benefit fields and a save button; it merges the loan officer overrides with the base report data"
-Why:  Activation mechanism (hash + cookie) and data merging are both things a rebuild would get wrong.
+Why:  How the view is activated and how its data is merged are both things a rebuild would get wrong.
+```
 
-Bad:  "Uses feature flags"
-Good: "Feature flag 'ai_chat_enabled' controls AI chat widget visibility; evaluated at render time via Split SDK"
-Why:  Flag name and evaluation timing matter: wrong flag name means wrong feature toggling.
+## Implementation details are not rules
+
+A rule that names a technique fails the rebuild test: a developer using another technique
+would still produce correct behaviour. Where the technique prevents a problem a user would
+see, the problem is the rule.
+
+```
+Bad:  "Stats grid uses CSS Grid with 3 columns"
+Good: "Stat cards remain usable (no overlap, no hidden content) on viewports below 768px"
+Why:  The layout technique is not a rule. What stays usable, and where, is.
 ```
 
 ## AI proofs
@@ -236,29 +199,3 @@ Why: the project builds its prompt in code and calls the model with its own key,
 makes the output and hands it over with `record`. It reads `PURLIN_AI_MODEL` to ask the model
 the proof names, and asserts on the folder `record` printed, never on its own copy, so the
 audit can hand it a wrong output.
-
-## Implementation details are not rules
-
-These describe *how* code works, not *what* it does. They fail the rebuild test: a developer using a different technique would still produce correct behavior.
-
-```
-"Uses useMediaQuery hook with 768px breakpoint"     -- names the hook, not the behavior
-"Hero background uses var(--surface-primary)"        -- names the token, not the behavior
-"SVG elbow connector uses rx={h/2} path formula"     -- names the technique
-"Info bar has margin-top: -66px"                     -- CSS pixel value, visual polish
-"Stats grid uses CSS Grid with 3 columns"            -- names the layout technique
-"Each accordion is a separate component"             -- component structure, not behavior
-"Has error boundary around chart"                    -- error handling technique, not outcome
-```
-
-When implementation causes a **behavioral** problem, the problem is a rule and the technique is not:
-
-```
-"Stat cards remain usable (no overlap, no hidden content) on viewports below 768px"  -- rule (behavioral)
-"Section colors follow the active theme"                                              -- rule (behavioral)
-"Missing chart data shows 'No data available' message instead of crashing"            -- rule (behavioral)
-```
-
----
-
-<!-- Add new project examples below. Format: ### project-name: Feature (YYYY-MM) under the relevant category -->

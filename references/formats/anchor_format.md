@@ -79,25 +79,13 @@ This matters most for an anchor other projects pull, since its author cannot
 know what each project holds.
 
 When the rule's test finds no X, it skips through its test tool's own skip,
-with a reason starting exactly `nothing to check:`:
-
-```python
-# purlin: security_baseline PROOF-3
-def test_every_screen_escapes_its_input():
-    screens = find_screens()
-    if not screens:
-        pytest.skip('nothing to check: this project has no screens')
-```
-
-The proof then reads `nothing to check` in the evidence, with the text after
-`nothing to check: ` as its reason, and on an anchor its rule counts as passed.
-The status, the dashboard and the evidence package show the reason, so a signer
-sees the rule was not exercised:
+with a reason starting exactly `nothing to check:`; `marker_format.md`,
+"Nothing to check", shows the test and how the skip is read. On an anchor the
+rule then counts as passed, and the status, the dashboard and the evidence
+package show the reason, so a signer sees the rule was not exercised:
 `security_baseline RULE-3: nothing to check here. It passes: this project has no screens.`
-Only an anchor's rule counts such a skip as passed; on any other spec's rule it
-reads as not run, its reason kept (`marker_format.md`). A project cannot set
-a pulled rule aside: a pulled rule that fails here is a problem to raise with
-its authors.
+A project cannot set a pulled rule aside: a pulled rule that fails here is a
+problem to raise with its authors.
 
 An anchor carries no `> Scope:`, and no spec carries `> Requires:` or
 `> Global:`. Each such line is not read, and every status and test run warns of
@@ -140,9 +128,10 @@ The file at the path is a spec in this format that holds at least one rule.
 - a description in words;
 - a file with no rule.
 
-A copy whose `> Source:` names no repository reads `error` in `purlin:drift`
-and in `purlin:anchor sync --check`. A local anchor carries no `> Source:` and
-is never checked.
+A copy whose `> Source:` names no repository is named by `purlin:drift` and by
+`purlin:anchor sync --check`, its row reading `error`:
+`X: anchor source not a spec. <source> is not a spec in Purlin's format kept in a git repository. Run purlin:spec X to take out its > Source: and > Pinned: lines.`
+A local anchor carries no `> Source:` and is never checked.
 
 The status and `purlin:drift` check a pin against its source and pull nothing:
 one cached `git ls-remote` per source per run reads the source's head, and the
@@ -155,8 +144,9 @@ head, keeps every `> Note:` line, and advances the pin. It commits nothing; the
 copy is left changed for you to read and commit.
 
 A `> Source:` value is repository-supplied text, so it never reaches git in
-option position. A value that begins with `-` or names an `ext::` or `fd::`
-transport is refused before any process starts, and the status line says
+option position. A value that begins with `-`, names an `ext::` or `fd::`
+transport, or carries a NUL byte or a newline is refused before any process
+starts, and the status and `purlin:drift` say
 `X: anchor source refused. Its > Source: line begins with "-". Run purlin:spec X.`
 
 ### Example: what a consumer's copy looks like

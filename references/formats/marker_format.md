@@ -309,13 +309,8 @@ no feature and PROOF or RULE id that can be read, or when its feature, or its
 PROOF or RULE id, is one character from exactly one that exists. A suggestion
 names only an id a comment may name: a proof, or a rule that has no proof. A
 comment one character from a rule with exactly one proof is offered that
-proof, and its `why` says both steps: for `RULE-30`, where `login`'s `RULE-3`
-has the one proof `PROOF-3`, it reads
-`` `RULE-30` is one character from `RULE-3`, which login has; a comment names its one proof, `PROOF-3`. ``
-One character from a rule with two or more proofs, or from two or more ids
-that exist, is not a near miss: Purlin never guesses.
-
-A comment whose feature holds a character no spec's name may hold has no fix,
-and its `why` names the characters a name holds: for
-`# purlin: sample.age PROOF-1` it reads
-`` `sample.age` holds a character a spec's name cannot: a name holds letters, digits, `_` and `-`. ``
+proof, and its `why` says both steps. One character from a rule with two or
+more proofs, or from two or more ids that exist, is not a near miss: Purlin
+never guesses. A comment whose feature holds a character no spec's name may
+hold, as `sample.age` does, has no fix, and its `why` names the characters a
+name holds.

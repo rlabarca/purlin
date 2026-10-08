@@ -154,19 +154,11 @@ normalised to one space, so reflowing a line leaves the hash the same.
 
 A rule no proof line names is read from a test marked with the rule's own id,
 `purlin: <feature> RULE-<n>`; with no such test its passed cell reads `no test`,
-with the reason `no proof written`.
+with the reason `no proof written`, and `Left to do` counts it as a rule to
+write a test for.
 
-### Good rules
-
-- Specific, testable constraints: "Return HTTP 400 when a required field is missing"
-- Observable behaviour: "Log a warning when the retry count exceeds 3"
-- Boundary conditions: "Reject passwords shorter than 8 characters"
-
-### Bad rules
-
-- Vague goals: "Handle errors properly"
-- Implementation details: "Use a try/except around the API call"
-- Untestable statements: "Be performant"
+`references/spec_quality_guide.md`, "Writing rules", says what makes a rule
+worth writing.
 
 ## Proof format
 
@@ -175,11 +167,10 @@ with the reason `no proof written`.
 - PROOF-N (RULE-A, RULE-B, RULE-C): <a flow that exercises several rules in order>
 ```
 
-A proof describes what a test asserts, not how it is written. A rule with no
-proof counts under `Left to do` as a rule to write a proof for, which does not
-stop the tests reading `met`: a test marked with the rule's own id answers it.
-A rule whose test passes and that has no proof reads `no proof` in its strong cell, with the reason `the rule has
-a test and no proof`. Several proofs can name the same rule, and one proof can name
+A proof describes what a test asserts, not how it is written. A rule whose
+test passes and that has no proof counts under `Left to do` as a rule to write
+a proof for, which does not stop the tests reading `met`, and reads `no proof`
+in its strong cell, with the reason `the rule has a test and no proof`. Several proofs can name the same rule, and one proof can name
 several rules when it drives a flow through all of them.
 
 A tag stands at the end of the proof line, after the text, never before the
@@ -216,18 +207,19 @@ A spec with no `> Highest-Proof:` line whose proofs run to `PROOF-9` gives its n
 
 ### The manual tag
 
-Append `@manual` to a proof that no test can settle:
+Append `@manual` to a proof that no test can settle, where a person's judgment
+is the only instrument. A proof with no tag is settled by a marked test,
+whatever that test needs to run.
 
 ```
-- PROOF-1 (RULE-1): Started with no settings file, the app reports a request timeout of `30` seconds
-- PROOF-2 (RULE-2): A sign-up with an email no account uses is answered with the status `201`, and the email then appears in the list of users
 - PROOF-3 (RULE-3): Read the error messages against the brand voice guide @manual
 ```
 
-| Tag | When to use |
-|-----|-------------|
-| (none) | A marked test settles the proof, whatever it needs to run |
-| `@manual` | A person's judgment is the only instrument. No test, so the rule reads `checked at sign-off` in its strong cell, and in its passed cell where its every proof is `@manual`. A person checks it in the sign-off walk of `purlin:sign` and may type a one-line note of what they saw, which the sign-off records; Enter alone records `no note`. Once signed, the cell also carries the newest note, as `noted at the sign-off of 0.1.0 by quinn.qa@labconnect.example, 4 commits since: the tube is red` |
+No test runs for it, so the rule reads `checked at sign-off` in its strong
+cell, and in its passed cell where its every proof is `@manual`. A person
+checks it in the sign-off walk of `purlin:sign`;
+`references/evidence_and_signoff.md` says what the sign-off records of it and
+what the cell then shows.
 
 `@manual`, `@slow`, `@env`, `@ai` and `@graded` are the only tags a proof line
 carries, at most one of each, in any order, at the end of the line. Any other trailing `@<name>` is not a tag: it stays
@@ -334,19 +326,6 @@ A rule about what code must never do is a regular rule with a proof that
 asserts absence. No special syntax:
 
 ```markdown
-## Rules
 - RULE-3: No eval() in user-facing code
-- RULE-4: Every SQL query uses a parameterised statement
-
-## Proof
 - PROOF-3 (RULE-3): Every source file of the app is searched for the call `eval(`, and 0 are found
-- PROOF-4 (RULE-4): Every source file of the app is searched for an SQL statement joined to other text with `+` or `%`, and 0 are found
-```
-
-```python
-# purlin: security_input PROOF-3
-def test_no_eval():
-    result = subprocess.run(["grep", "-rn", "eval(", "src/"],
-                            capture_output=True, text=True)
-    assert result.stdout == "", "Found eval() in:\n" + result.stdout
 ```
