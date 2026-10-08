@@ -8,10 +8,10 @@ two `qa/` branches.
 
 | | Result |
 |---|---|
-| `bash dev/run_tests.sh` | 1666 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed |
-| `purlin_run.py --test --all --commit` | 1674 markers tied, 0 not tied; 42 specs, 742 rules, every one passing, 1 of them graded by an AI |
-| `python3 dev/windows_run.py` | ends `742 rules. 742 pass their tests, 1 of them graded by an AI.` |
-| The audit | `The audit found 731 of 734 rules strong (99%): 731 strong, 1 weak, 10 spot-checked.` |
+| `bash dev/run_tests.sh` | 1676 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed. Two tests were strengthened after it; each file then ran whole and passed |
+| `purlin_run.py --test --all --commit` | 1684 markers tied, 0 not tied; 42 specs, 743 rules, every one passing, 1 of them graded by an AI |
+| `python3 dev/windows_run.py` | ends `743 rules. 743 pass their tests, 1 of them graded by an AI.` |
+| The audit | `The audit found 732 of 735 rules strong (99%): 732 strong, 1 weak, 10 spot-checked.` |
 | `sign.py --show` | does not refuse; it opens `AI proofs run on claude-opus-5-5: 3 proofs, 3 runs each.` |
 
 Formats: spec 25, anchor 12, marker 6, evidence 18, package 18, signature 18. The
@@ -53,8 +53,10 @@ A project can test, and keep evidence for, the prompts and skills it produces.
 Every spec was audited in four lanes, each finding worked by the build skill's steps.
 
 - 92 rules were weak on a first read, about 1 in 8. 112 planted bugs got past a test; all
-  but the ones named below were caught once the test held the value its proof names. 10
-  proofs were settled with `--sound`, each reason recorded. No code, rule or proof was
+  but the ones named below were caught once the test held the value its proof names. 11
+  proofs were settled with `--sound`, each reason recorded. The loose ends fixed after it
+  put about 250 rules out of date; they were audited again, and 9 more weak tests were
+  strengthened and settled. No code, rule or proof was
   changed to clear a finding, and no strengthened test failed on the code as it stood.
 - The tests of pages were the weakest: a test that reads a page's text does not see a
   stylesheet hide it. Next: "nothing else" not held, and standard error not read.
@@ -88,42 +90,34 @@ let finish: 48 model runs. Two faults, both fixed in the skills on the owner's a
    sample**, the plugin's own folder included. The docs state the limit.
 4. **A changed tag reruns every model it names.** A model not reached, or a raised `runs`,
    reruns what is missing alone.
-5. **`purlin_output` RULE-3 reads `weak`.** A process started through a shell in its own
+5. **`purlin_output` RULE-3 reads `weak`, and the owner chose to leave it so.** A process started through a shell in its own
    session with an emptied environment is not seen as left running. The test already
    finds a leftover by process id, by group and by environment.
 6. **The warning `model not reached` prints twice in one test run**: when the model gives
-   no answer, and in the status the run ends on.
+   no answer, and in the status the run ends on. The owner kept both on 2026-10-08.
 7. **`TESTS` labels two rows on a rule's page**: the rule's state, and each proof's list of
-   test files.
+   test files. The owner kept both on 2026-10-08.
 8. **Left by earlier rounds, unchanged**: a rule can read `strong` while one of its proofs
    has no caught bug; a session runs the scripts directly where a skill names a command;
    a session's status tool keeps the code it loaded when it started.
 
-## Found and not fixed, so the audit stays current
+## Found and not fixed
 
-A change to a script puts its rules' audit results out of date, so these wait for the next
-round that changes that code.
+The ten loose ends the first audit left were fixed on 2026-10-08, on the owner's word, and
+their specs audited again. What remains:
 
-- `The test at <file>:<line> has no result.` has two homes: `purlin_run.NO_RESULT` and
-  `states.NO_RESULT`.
-- `ai_start` in `purlin_run.py` and `planted_bug._plant_change` each build the variables an
-  AI proof's test is given; one function would do.
-- `outputs.runs_setting` reads the settings with `markers.load_config`, and the payload
-  with `config_engine.resolve_config`.
-- `dev/skill_checks.py`, `not_named` and `must_name`, match a substring, so
-  `purlin:specs` passes for `purlin:spec`; `absent_paths` ignores letter case on macOS.
-- `specs/mcp/states.md` PROOF-312 can be read two ways; say "the last blank line above".
-  `specs/dashboard/purlin_report.md` PROOF-287 says six lines where the sample has seven.
-  `specs/run/reports.md` PROOF-3's three paths cannot show whether `*` crosses a `/`.
-- `fingerprint.carry_plan`'s `incomplete_reason` clause has no test that reaches it.
-- A planted bug can leave a process running when its test does not catch it; the audit
-  does not clean up after it.
-- After a sign-off a project shows an untracked `.purlin/report-data.js` where its
-  `.gitignore` does not name it.
-- Whether `purlin:test --clean` keeps an output where a suite cannot leave one test out
-  was not tested; the audit's line promises it.
-- `ai_helper`: where the sample folder contains the output folder, the output is left out
-  of `input/project/`; that guard has no proof.
+- **An audit of `purlin_output` leaves a `/bin/sleep 600` running.** RULE-3 stays `weak`,
+  so its kept bug is planted again on every audit of that spec, and that bug starts a
+  process that leaves the group the audit ends. Stop it by hand (`pgrep -fl "sleep 600"`),
+  or strengthen PROOF-6's test: its check by environment misses a process started under
+  `env -i`.
+- **On Windows the audit ends no process a planted bug left** (`planted_bug` RULE-36 says
+  so). A job object would do it, in a round that includes a Windows run.
+- **`states` PROOF-309 says "those five lines included"** where PROOF-308 lists four.
+- **`run_script` RULE-105 reads `strong` with no bug planted for PROOF-277**: its test does
+  not pass in a copy of the project.
+- **`_run` in `purlin_run.py` starts every command with `Popen`** since the process-group
+  fix. It has passed two Windows runs.
 
 ## How to work, as the owner settled it
 
