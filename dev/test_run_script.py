@@ -1238,6 +1238,8 @@ class TestARunCoversWhatTheChangeTouched:
         assert 'Nothing to run' not in output, output
         assert _selection(output) is None, output
         assert _started(output) == ['pytest'], output
+        assert [line for line in output.splitlines()
+                if line.startswith('Running pytest: ')], output
         assert _ran(root) == ['test_export', 'test_login'], output
 
 # ---------------------------------------------------------------------------
@@ -1537,9 +1539,11 @@ class TestNoTestCommand:
             # The flag as whole words: `--reporters=jest-junit-reporter`
             # names another reporter and does not carry it.
             # And as part of the command: after a ` #` it would be a
-            # comment the shell never runs.
+            # comment the shell never runs, and after a ` -- ` the tool
+            # reads it as a path, not as a flag.
+            command = suggestions[name]['run'].split(' #', 1)[0]
             assert re.search(r'(?<!\S)%s(?!\S)' % re.escape(flag),
-                             suggestions[name]['run'].split(' #', 1)[0]), name
+                             (command + ' ').split(' -- ', 1)[0]), name
 
     # purlin: run_script PROOF-133
     def test_the_page_shows_the_same_entries(self, suggestions, tmp_path):
