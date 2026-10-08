@@ -38,7 +38,13 @@ FILES = ('references/glossary.md', 'references/evidence_and_signoff.md',
 
 # purlin: purlin_agent PROOF-49
 def test_the_agent_definition_holds_each_command_and_file():
-    assert not_named(read(AGENT), COMMANDS + FILES) == []
+    # A name a letter or a digit runs into is another name: `async_status`
+    # is not `sync_status`, and `mcp__plugin_purlin_purlin__sync_status` is.
+    names = sorted(COMMANDS + FILES, key=len, reverse=True)
+    run_into = re.compile(r'[^\W_](?:%s)' % '|'.join(
+        r'\s+'.join(re.escape(word) for word in name.split(' '))
+        for name in names))
+    assert not_named(run_into.sub(' ', read(AGENT)), COMMANDS + FILES) == []
 
 
 # purlin: purlin_agent PROOF-60
@@ -58,9 +64,12 @@ def test_a_name_is_held_whole_with_each_space_as_written():
 def test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout():
     # The command is held whole: `purlin:statusline` is not `purlin:status`.
     status = re.compile(r'(?<![\w:-])purlin:status(?![\w:-])')
-    found = [sentence for sentence in sentences_with(
-                 AGENT, ('worktree', 'merge', 'main checkout'))
-             if status.search(sentence)]
+    # A sentence ends at `?` and `!` as it does at `.`.
+    names = ('worktree', 'merge', 'main checkout')
+    found = [sentence for part in sentences_with(AGENT, ())
+             for sentence in re.split(r'(?<=[?!])\s+', part)
+             if all(name in sentence for name in names)
+             and status.search(sentence)]
     assert len(found) == 1, found
     assert '`purlin:status`' in found[0], found
 
