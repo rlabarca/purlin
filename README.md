@@ -120,7 +120,7 @@ To upgrade, after the plugin updates:
 
 | Command | Purpose |
 |---------|---------|
-| `purlin:init` | Set a project up for Purlin, or bring a project Purlin 0.9.5 set up to this version |
+| `purlin:init` | Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes |
 | `purlin:spec <name>` | Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand |
 | `purlin:build [name]` | Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset |
 | `purlin:test [feature ...] [--all \| --clean] [--commit] [--arm-timeout <seconds>]` | Run the project's marked tests and record the results as evidence; with --all --commit, the hand-off before a sign-off |
