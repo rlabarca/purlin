@@ -20,11 +20,9 @@ Sign-off: signed 0.1.0, 4 commits since
 ```
 
 **The tests** read `met` when every rule passes its tests on the committed evidence, and
-`not met` otherwise. They read `not met` while any kind of work that blocks is left: a spec to
-repair, a test comment to correct, a rule to fix, a rule to write a test for, a rule to test here
-or on another system, a slow proof to run, a rule to test on a model, or results written and not committed. What they require is that every
-rule that has a test passes it on the committed evidence: a rule checked by hand alone reads
-`checked at sign-off`, is counted under no kind of work and never stops the tests reading `met`.
+`not met` while any kind of work that blocks is left, as the table under "What is left to do"
+marks. A rule checked by hand alone reads `checked at sign-off`, is counted under no kind of
+work and never stops the tests reading `met`.
 
 **The sign-off** reads one of three things, for the newest version whose sign-off counts, found
 by its `signed/*` tag on `HEAD` or an ancestor of it, or by its sign-off files where this
@@ -40,11 +38,10 @@ Neither fact is a bar a rule clears, and no setting changes what either means. A
 run `purlin:sign` whenever it chooses.
 
 **Every rule has two cells.** The passed cell says whether every test tied to the rule ran and
-passed, each current section answering for the proofs it lists. A rule that passes with a proof
-a model grades reads `graded` there, not `passed`. It counts as passing everywhere, and the
-tests read `met` beside it. The strong cell says what the
-audit found: `strong`, `weak`, `spot-checked`, `out of date`, `not audited`, `checked at sign-off`
-for a hand check, `no proof`, or `waiting` while the passed cell is not met. Nothing waits on the strong cell.
+passed, and the strong cell says what the audit found; `references/glossary.md` lists the words
+each can read. A rule that passes with a proof a model grades reads `graded`, not `passed`, and
+counts as passing everywhere. The passed cell lists one platform per system a current section
+covers, and reads `partial` where two of them disagree. Nothing waits on the strong cell.
 
 ## What is left to do
 
@@ -79,11 +76,11 @@ reports the problem. A kind at zero is left out, and the first line is the next 
 
 | Kind | When it applies | The line | Command | Stops the tests being met |
 |------|-----------------|----------|---------|---------------------------|
-| `to_repair` | the rule's spec writes a rule or proof number twice or holds a line left from a merge conflict, so every rule of it reads `failed`; the line counts specs | `<n> specs to repair` | `purlin:spec` | yes |
+| `to_repair` | the rule's spec writes a rule or proof number twice, holds a line left from a merge conflict, or carries an `@ai` or `@graded` tag that names no model, a model's name that cannot be read or a `@graded` with no `@ai` (`references/formats/spec_format.md`, "The AI tags"), so every rule of it reads `failed`; the line counts specs | `<n> specs to repair` | `purlin:spec` | yes |
 | `no_proof` | the rule's tests pass and no proof line names it | `<n> rules to write a proof for` | `purlin:spec` | no |
 | `to_correct` | a comment above a test names nothing a spec has, names a rule that has proofs, or names a proof whose wording changed after the test was last changed; the line counts comments | `<n> test comments to correct` | `purlin:build` | yes |
 | `to_fix` | the passed cell reads `failed` or `partial` | `<n> rules to fix` | `purlin:build` | yes |
-| `no_test` | the passed cell reads `no test` | `<n> rules to write a test for` | `purlin:build` | yes |
+| `no_test` | the passed cell reads `no test`: a proof of the rule has no test, or the rule has no proof and no test, with the reason `no proof written` | `<n> rules to write a test for` | `purlin:build` | yes |
 | `to_test` | the passed cell reads `not run` or `out of date`, and this machine can run it | `<n> rules to test` | `purlin:test` | yes |
 | `to_run_slow` | a proof tagged `@slow` reads `not run`: no run that starts its test has answered for the spec, code and tests as they stand; the line counts proofs, and a rule that waits for such proofs alone is counted here and not under `to_test`. An AI proof, one tagged `@ai`, is a slow proof, and one no run has tried on any model is counted here | `<n> slow proofs to run` | `purlin:test --all` | yes |
 | `to_test_model` | an AI proof a run has tried holds no counting result on a model its tag names: no entry for the model, a model run that is `not run`, or fewer model runs than are asked now; one line per model, a rule counted on each model it waits for | `<n> rules to test on <model>` | `purlin:test --all` | yes |
@@ -168,7 +165,8 @@ that come back.
 each model it names, and passes when every model run on every model passed
 (`references/formats/evidence_format.md`, "The models of an AI proof"). The tests are not `met`
 while a model it names has no counting result. A model that gave no answer reads `not run`,
-never `failed`.
+never `failed`. `purlin:sign` refuses while one has no counting result on the commit to sign:
+`No sign-off: these results are not recorded on this version of the code, <sha7>: <feature> on <model>. Run purlin:test --all --commit, then purlin:sign.`
 
 **An anchor's rule with nothing to check passes, and says so.** Where every test tied to a proof
 of an anchor skipped with a reason starting `nothing to check:`, the rule reads `passed`, and the
@@ -213,101 +211,90 @@ tests ran, what the signer was shown, and who signed the package. It does not de
 sign; any role may, and several people may sign one version. The document control system decides who was
 entitled.
 
-**The evidence package** is one data file, `.purlin/evidence/package/<version>.json`
-(`references/formats/package_format.md`), which `purlin:sign` builds from the committed evidence:
-every rule's words, proofs, tests and results, what the test tool reported for each test, what
-the audit found, who ran the tests and where, for each AI proof the models and every model run on
-each, who wrote and last changed each rule, proof and
-test, with the co-authors git names on those commits, the hand checks, and a fingerprint of its
-own bytes. `purlin:sign --check <file>` checks a package against its fingerprint.
+**The evidence package** is one data file, `.purlin/evidence/package/<version>.json`, which
+`purlin:sign` builds from the committed evidence. `references/formats/package_format.md` gives
+every field and, under "The file name", where the version is read from;
+`purlin:sign --version <version>` names it instead. `purlin:sign --check <file>` checks a
+package against its fingerprint and needs no key.
 
-**What the test tool reported** is kept beside each result: each test's name as the tool gives
-it, whether it passed, failed, stopped on an error or was skipped, how long it took and, where it
-did not pass, the whole text the tool reported (`references/formats/evidence_format.md`, "What
-the report held"). The run keeps each report file it read on the machine that ran it. The first
-sign-off of a version commits those files with the package, under
-`.purlin/evidence/package/<version>.outputs/`, and the package lists each with its sha256. A
-report taken on another machine, or removed since, is not there to commit: the package still
-names it, the sign-off's overview says how many are kept, and no sign-off is refused for one.
-To keep every report of a release, sign on the machine that ran `purlin:test --clean --commit`.
+**The outputs.** The first sign-off of a version commits, with the package, each test report
+and each folder of what an AI produced that the signing machine still keeps
+(`references/formats/package_format.md`, "Outputs"). One taken on another machine, or removed
+since, is not there to commit: the package still names it, the sign-off's overview says how many
+are kept, and no sign-off is refused for one. To keep every report of a release, sign on the
+machine that ran `purlin:test --clean --commit`.
 
-**What an AI produced** is kept the same way. Each model run of an AI proof's test leaves a folder on
-the machine that ran it, and the evidence names it by a sha256 over its files. The package gives,
-for each AI proof, the models, the model runs asked, each one's result and, where a model graded the
-output, the grader, whether it accepted and its one reason. The first sign-off commits each
-folder this machine still keeps under `.purlin/evidence/package/<version>.outputs/ai-outputs/`,
-and `purlin:sign --check <file>` works each sha256 out again from the files. A folder that is
-not there is counted in the overview and refuses nothing.
-
-**The version** is read from the `VERSION` file at the project root, then the `version` of
-`package.json`, then `[project]` and then `[tool.poetry]` `version` in `pyproject.toml`, then
-`<Version>` in the first `*.csproj` at the root. `purlin:sign --version <version>` names it
-instead.
-
-A **sign-off** is one file,
+A **sign-off** is one file per signer per version,
 `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json`, added in a signed commit by
 `purlin:sign` (`references/formats/signature_format.md`). It carries the package's fingerprint,
-the commit the package describes, the signer's name and email as git holds them, the time, the
-key's fingerprint, what the walk showed, and every note typed. It records no judgment. One file
-per signer per version.
+what the walk showed and every note typed. It records no judgment: no approve or reject answer
+and no stated meaning of the signature.
 
 A sign-off counts when two things are true:
 
-- The last commit touching its file carries a signature, and that signature verifies over the
-  commit. The key is not compared with the signer. An SSH signature is checked with
-  `ssh-keygen -Y check-novalidate`, which needs no list of allowed signers, and an OpenPGP one
-  with `git verify-commit`. Otherwise it does not count, with
-  `the commit that added it is not signed` or
-  `the signature on the commit that added it does not verify`.
-- Its `package_hash` equals the fingerprint computed over the package `HEAD` holds for that
-  version. A package changed after it was signed no longer matches.
+- **The last commit that touched its file carries a signature, and that signature verifies over
+  the commit.** The signature is the commit's `gpgsig` header, `gpgsig-sha256` in a SHA-256
+  repository. An SSH signature is checked with `ssh-keygen -Y check-novalidate -n git`, which
+  reads the key the signature carries: it needs no list of allowed signers, and a key deleted
+  since still verifies. Any other signature verifies when `git verify-commit` exits 0. The key
+  is checked against no list, and neither it nor the commit's author is compared with the
+  signer.
+- **Its `package_hash` equals the fingerprint computed over the package `HEAD` holds for that
+  version.** The fingerprint is computed from the package's content; the `fingerprint` field
+  the file stores is not taken on trust. A package changed after it was signed no longer
+  matches, so every sign-off of it stops counting, and a later sign-off is refused with
+  `No sign-off: .purlin/evidence/package/<version>.json does not match its fingerprint: <why>. Restore it as it was signed, or name a new version: purlin:sign --version <version>.`
 
-A sign-off is read as `HEAD` holds it. A sign-off file changed and not committed does not count.
+| What is read | The reason it does not count |
+|---|---|
+| The last commit touching the file carries no signature header, or the file is not tracked | `the commit that added it is not signed` |
+| That commit carries a signature that does not verify | `the signature on the commit that added it does not verify` |
+| `package_hash` is not the fingerprint computed over the committed package, or that package does not match its own fingerprint | `it signs another evidence package than the one committed` |
 
-The status reads `signed` only where a sign-off of that version counts, and the tag names a
-commit that holds the package or this checkout holds no tag of that name. A tag written by hand reads `not signed`, with one warning, and
-`purlin:sign` refuses to sign that version until the tag is deleted.
+A sign-off is read as `HEAD` holds it: the files are listed and read from `HEAD`'s tree. A file
+git does not track is no sign-off, and an edit that is not committed is not read. A note is
+shown only from a sign-off that counts.
 
-The key recorded is the key that signed the commit. Where another key signed it, as a global
-`gpg.ssh.program` can cause, the sign-off is taken back and names both keys.
+**Where the status reads `signed`.** It reads `signed <version>` only where a sign-off of that
+version counts, and one of two things holds:
 
-After a `git pull` the tag may be missing: a pull fetches no tags. The status then reads the
-sign-off from its files and names `git fetch --tags`.
+- `signed/<version>` is on `HEAD` or an ancestor of it and names a commit that holds the package
+  for that version.
+- This checkout holds no tag `signed/<version>`, as after a pull, which fetches no tags, and
+  `HEAD` holds the version's package. The sign-off is then read at the commit that added the
+  oldest sign-off that counts, and the status adds one line:
+  `signed/<version>: tag not in this checkout. The sign-off at <sha7> is read from its files. Run git fetch --tags, or purlin:sign if no one wrote the tag.`
 
-**How each is checked.**
+The newest such version answers. A tag that names no such commit is passed over, with one
+warning, so an older version whose sign-off counts still answers, and the status reads
+`not signed` only where no version is left:
 
-- The evidence package is checkable alone, by its fingerprint: `purlin:sign --check <file>`
-  reads the one file and needs no key.
-- The sign-off file is not. It carries no hash of itself and no signature inside it.
-- The sign-off names the package's fingerprint. The signed commit that added it binds the
-  sign-off, the package and the code.
-- A receiving system takes the signed commit as the record.
-- The sign-off records no approve or reject answer and no stated meaning of the signature.
+| The tag | The warning |
+|---|---|
+| names a commit that holds no package for its version, as a tag written by hand does | `signed/<version>: tag with no sign-off. Its commit holds no evidence package for <version>. Run git tag -d signed/<version>.` |
+| names a commit that holds the package, and no sign-off of it counts | `signed/<version>: tag with no sign-off. No sign-off counts: <the reason above, or HEAD holds none>. Run purlin:sign --version <version>.` |
 
-**The sign-off walk.** `purlin:sign` refuses, and writes nothing, in each of these cases:
+`purlin:sign` refuses to sign a version whose tag was written by hand until the tag is deleted.
 
-- tracked files are changed and not committed;
-- the evidence is written and not committed;
-- a test still carries a marker from Purlin 0.9.5;
-- a result is not recorded on this version of the code, or was taken while files were changed
-  and not committed;
-- a model an AI proof names has no counting result on the commit to sign: `No sign-off: these
-  results are not recorded on this version of the code, <sha7>: <feature> on <model>. Run
-  purlin:test --all --commit, then purlin:sign.`;
-- the committed package was changed after it was signed;
-- a rule has no test, or a rule does not pass;
-- the version's tag is on other code;
-- the branch's copy on the host holds commits the checkout lacks.
+**What binds what.** The package is checkable alone, by its fingerprint. The sign-off file is
+not: it carries no hash of itself and no signature inside it. It names the package's
+fingerprint, and the signed commit that added it binds the sign-off, the package and the code.
+A receiving system takes the signed commit as the record.
 
-Otherwise it names who ran the tests, where and when, then each model the AI proofs ran on, as
-`AI proofs run on claude-opus-5-5: 12 proofs, 5 runs each.` It shows an overview, which counts
-the graded proofs per grader, as `Graded by an AI: 6 proofs, by claude-haiku-4-5-20251001.`,
-and ends on
-how many rules, proofs and tests were last changed in a commit that names a co-author, as a
-commit made with an AI's help usually does, and on how many test reports and AI outputs are kept
-with the package. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is graded, it asks once whether to open a list, as `To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: `: the weak rules' findings, the settled proofs, then each graded proof's model runs with the grader and its reason. A graded rule counts as one that passes, and a graded proof adds no stop. It stops only at hand checks, where the signer
-may type what they saw; an empty answer is recorded as `no note`. What the audit found never
-blocks the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
+**The sign-off walk.** `purlin:sign` refuses, and writes nothing, where a result does not
+count for a sign-off ("Which evidence counts"), a rule has no test or does not pass, a file or
+the evidence is changed and not committed, or the version's tag or the branch's copy on the host
+stands elsewhere. `references/purlin_commands.md`, "Exit codes", lists every refusal.
+
+Otherwise it names who ran the tests, where and when, and each model the AI proofs ran on, then
+shows an overview; `references/formats/signature_format.md` gives each line it prints, under
+`shown`. Where a rule reads weak, a proof was settled with its test unchanged, or a proof is
+graded, it asks once whether to open a list, as
+`To read before you sign: 1 weak, 1 proof graded by an AI. list / go on: `: the weak rules'
+findings, the settled proofs, then each graded proof's model runs with the grader and its
+reason. A graded proof adds no stop. The walk stops only at hand checks, where the signer may
+type what they saw; an empty answer is recorded as `no note`. What the audit found never blocks
+the sign-off, whatever its word. The first sign-off of a version is one signed commit carrying
 the package and the sign-off; a later one adds its own file alone.
 
 **A hand check** is read from the sign-offs that count:
@@ -346,31 +333,9 @@ Commit: <full sha>
 ```
 
 No tag is written over one that is already there; code that changed after `signed/<version>` is
-signed under a new version. Nothing is pushed: a person pushes the branch and the tag, with the
-`git push origin` line the sign-off prints.
-
-## What stops nothing
-
-- Writing code without invoking a skill.
-- Writing a test with no marker comment above it. It runs; `sync_status` does not count it.
-- Committing without running an audit. The audit is a tool; nothing waits on it.
-- A weak rule, a `spot-checked` rule, a rule whose audit is out of date, or a rule the audit has
-  not read.
-- A rule whose passed cell reads `out of date`. The spec, the code or the tests moved; the next
-  run clears it.
-- Pushing a branch. A push is a person's act, to any branch, and Purlin runs nothing at push time
-  or at commit time.
-
-## Platforms
-
-Each section of the evidence names the system it ran on, and answers only for the proofs it
-lists: a proof a section does not list is neither passed, failed nor `not run` there. The passed
-cell lists one **platform** per system a current section covers, each with its own word, its
-source and when it ran, and the cell's own word rolls them up. Where two systems that each have a
-current section disagree the cell reads `partial`: a rule whose tests pass on Linux/Unix and fail
-on Windows is neither passed nor failed, `partial` is not met, and the rule is left to do as
-`to fix`, as a failure is. A system a proof is tagged `@env` for with no current section makes the
-cell read `not run`, with the reason `<System>: no run yet`, for example `Windows: no run yet`.
+signed under a new version. Nothing is pushed: the sign-off prints
+`Tagged signed/<version> at <sha7>.`, then
+`Push the branch and the tag: git push origin <branch> signed/<version>`, and a person pushes.
 
 ## What stands behind an instruction
 
