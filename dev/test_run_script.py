@@ -3062,6 +3062,13 @@ class TestARunOverEveryFeatureCarriesForward:
         assert lines[1].startswith('Usage: purlin_run.py'), output
         assert [index for index, line in enumerate(lines)
                 if line.startswith(('purlin:', 'Usage:'))] == [0, 1], output
+        # The usage whole: every form of the command under its first, the
+        # form `--clean` goes in among them, and nothing after it.
+        assert len(lines) > 2 and all(
+            line.startswith('       purlin_run.py ')
+            for line in lines[2:]), output
+        assert [line for line in lines[2:] if line.startswith(
+            '       purlin_run.py --clean --test ')] == [lines[2]], output
 
     # purlin: run_script PROOF-321
     def test_clean_beside_ci_is_refused(self, tmp_path):
