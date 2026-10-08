@@ -2,68 +2,49 @@
   "audit": {
     "rules": {
       "RULE-1": {
-        "at": "2026-10-08T02:57:53Z",
+        "at": "2026-10-08T03:25:33Z",
         "bugs": {
           "PROOF-1": {
             "after": "        'proofs': [{'id': proof.get('id'), 'text': rule.get('text') or '',",
             "aim": "past the test",
             "before": "        'proofs': [{'id': proof.get('id'), 'text': proof.get('text') or '',",
-            "bug_key": "622223c36b63c093083c01612ae13f68b9bcec211f80f9aa1cc83888d27684f9",
+            "bug_key": "6c828dc86c6d6cd5cc96fd190233ff35a972604c925de8323fb8de24670a9df7",
             "case": "Pat, Quinn and Dana reach signed/0.1.0 after two renumberings; the proof says the evidence package describes the code under the tag; the changed code writes each proof into the package with its rule's words in place of the proof's own wording",
             "file": "scripts/export/package.py",
             "line": 466,
-            "result": "survived",
-            "test_key": "2e1adee22d339b505018698703f4f3cb3af7faff265aae47e77aa80b080b8555",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "5a40fe14522bc7625254199846c50e0955c5c07ad438665ad87b1aa716466895",
-        "commit": "f219ab89372cd9371000fe5d95db69e4ca188f3e",
+        "commit": "29e1753616e5d71915c98dd4b329125a77a696ee",
         "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
-        "explanation": [
-          "PROOF-1: the test walks three clones through both collisions, the renumbering, the hand-off and two sign-offs, and asserts the printed lines, the spec numbers, the test comments, the tag on the host, the fingerprint check and the exit code of every command.",
-          "PROOF-1: for the package it compares each rule's words, each proof's id, each test's file and name, the hand checks, the rule count, `met`, `tag`, `version` and the commit, and it never reads a proof's text in the package, so a package holding the wrong wording for a proof still passes.",
-          "PROOF-1: it also reads no result, run, status, author or audit field of the package, so those parts could be wrong and the test would not notice.",
-          "PROOF-1: the fingerprint check is taken over whatever the package holds, so it shows the file is whole and does not show that its content matches the spec under the tag.",
-          "PROOF-1: the proof names `0.1.0` and `signed/<version>` and then says \"every check of RULE-1 holds\", which names no observed value for most of the rule's clauses."
-        ],
-        "findings": [
-          "PROOF-1: the test still passes when scripts/export/package.py:466 reads \"'proofs': [{'id': proof.get('id'), 'text': rule.get('text') or '',\"",
-          "PROOF-1: the AI says this breaks: Pat, Quinn and Dana reach signed/0.1.0 after two renumberings; the proof says the evidence package describes the code under the tag; the changed code writes each proof into the package with its rule's words in place of the proof's own wording"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "notes": [
-          "PROOF-1 holds several cases in one line: two collisions merged in opposite orders, a test comment left on a moved number, a hand-off run and two sign-offs."
-        ],
         "proof_hash": "bdc5d16c1962fa9806e4cfaba1688bacb39e9f08367be9edf610077111eb04ea",
         "rule_hash": "4cbafafd9d9f5ac89eae5cf8052d1950979452e8574ef3317f2591da2a75a797",
-        "test_hash": "3b57186967ef6139da0bed56454f0ac1ecd87cb634ce3e746fb23a43dda8d4ed",
-        "verdict": "weak"
+        "test_hash": "668487e0494371284ed14c0e8be6b459662f911a980e594c0b36df9ab9644010",
+        "verdict": "strong"
       }
     }
   },
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T00:25:59Z",
-      "commit": "e38e8f86d4cb7f97f248995a4bd0ca11ef333630",
+      "at": "2026-10-08T03:24:44Z",
+      "commit": "29e1753616e5d71915c98dd4b329125a77a696ee",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "5a40fe14522bc7625254199846c50e0955c5c07ad438665ad87b1aa716466895",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
-        "tests": "eb9e151b276a03b8f3a24e5ef0b4c2fe2d0f324033536c4d3d97b8474041f5b8"
+        "tests": "25f13a8fcfe432460c17a0f4a5f5e39a4be4da6a142e57c7b5014bf4717e0066"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T00:25:59Z",
-            "commit": "ff3b4b84cd257d005112b67050123d30371a0f36",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -71,14 +52,14 @@
             "cases": [
               {
                 "class": "dev.test_collaboration",
-                "duration": 21.769,
+                "duration": 20.211,
                 "name": "test_three_people_reach_a_signed_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "24756ff0e3fa9527352f5a627948dd778d16a91501887f4586f62f24228d4dd1"
+              "sha256": "39b37b25d7153bd0f11374875059df236932cabfb637f1aab0995b0d5c36154a"
             }
           },
           "result": "pass",
