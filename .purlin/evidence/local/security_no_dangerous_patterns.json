@@ -198,8 +198,8 @@
   "feature": "security_no_dangerous_patterns",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T02:23:24Z",
-      "commit": "41d847485c7b187b0b478916fabdfc6b7410ea48",
+      "at": "2026-10-08T02:26:06Z",
+      "commit": "e38e8f86d4cb7f97f248995a4bd0ca11ef333630",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -217,14 +217,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule1RunsNoStringAsCode",
-                "duration": 0.033,
+                "duration": 0.028,
                 "name": "test_no_py_sh_or_js_file_under_scripts_runs_a_string_as_code",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -239,14 +239,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule1RunsNoStringAsCode",
-                "duration": 0.002,
+                "duration": 0.004,
                 "name": "test_python_eval_is_found",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -268,7 +268,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -290,7 +290,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -312,7 +312,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -334,7 +334,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -349,14 +349,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule3CallsNoShellBuiltin",
-                "duration": 0.007,
+                "duration": 0.005,
                 "name": "test_no_py_file_under_scripts_calls_os_system",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -378,7 +378,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -400,7 +400,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -415,14 +415,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule4AssignsNoCredential",
-                "duration": 0.123,
+                "duration": 0.116,
                 "name": "test_no_py_sh_or_js_file_under_scripts_assigns_a_credential",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -444,7 +444,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -459,14 +459,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule4AssignsNoCredential",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_a_file_named_test_is_not_counted",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -481,14 +481,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule5LaunchesWithAnArgumentVector",
-                "duration": 0.015,
+                "duration": 0.013,
                 "name": "test_no_launch_in_a_py_or_js_file_under_scripts_is_handed_a_command_string",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -510,7 +510,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -525,14 +525,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestRule5LaunchesWithAnArgumentVector",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_python_run_given_a_list_is_not_counted",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -547,14 +547,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.47,
+                "duration": 0.523,
                 "name": "test_a_source_reaches_ls_remote_after_end_of_options",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -569,14 +569,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.275,
+                "duration": 0.328,
                 "name": "test_drift_hands_rev_list_diff_and_show_each_commit_after_end_of_options",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -591,14 +591,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.273,
+                "duration": 0.569,
                 "name": "test_every_path_follows_a_double_dash",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -613,14 +613,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.293,
+                "duration": 0.281,
                 "name": "test_a_source_beginning_with_a_dash_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -635,14 +635,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.322,
+                "duration": 0.266,
                 "name": "test_a_source_naming_the_ext_transport_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
@@ -657,14 +657,14 @@
             "cases": [
               {
                 "class": "dev.test_security.TestGitArgvHardening",
-                "duration": 0.275,
+                "duration": 0.269,
                 "name": "test_a_source_naming_the_fd_transport_is_refused",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6ac4f0d66692747d1561526492c3ee0829e37676910495d91be66b7d4a557105"
+              "sha256": "ece7e965fbcf1c4843ad1dc96c3f81ae37f6da2db96845697971a9248c26dcf7"
             }
           },
           "result": "pass",
