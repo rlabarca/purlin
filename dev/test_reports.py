@@ -1235,10 +1235,11 @@ class TestTheFailureText:
 class TestWhatIsKeptForATest:
 
     # purlin: reports PROOF-136
-    def test_each_case_is_kept_with_its_name_outcome_time_and_text(self):
+    def test_each_case_is_kept_with_its_name_outcome_time_and_text(
+            self, tmp_path):
         sha = 'a' * 64
-        # The four cases as `reports/pytest.xml` holds them.
-        read = reports.read_junit(
+        (tmp_path / 'reports').mkdir()
+        (tmp_path / 'reports' / 'pytest.xml').write_text(
             '<testsuite>'
             '<testcase classname="tests.test_x" name="test_many[1]" '
             'time="0.5"/>'
@@ -1248,14 +1249,14 @@ class TestWhatIsKeptForATest:
             '<error>fixture broke</error></testcase>'
             '<testcase name="test_many[4]">'
             '<skipped message="not today"/></testcase>'
-            '</testsuite>')
+            '</testsuite>', encoding='utf-8')
+        read, problem = reports.read_report('junit', str(tmp_path),
+                                            'reports/pytest.xml')
+        assert problem is None
         assert [case.name for case in read] == [
             'test_many[1]', 'test_many[2]', 'test_many[3]', 'test_many[4]']
-        outcomes = []
-        for case in read:
-            case.source = 'reports/pytest.xml'
-            outcomes.append(reports.Outcome(case.outcome, case.reason,
-                                            case.error, case))
+        outcomes = [reports.Outcome(case.outcome, case.reason, case.error,
+                                    case) for case in read]
         kept = reports.reported(outcomes, {'reports/pytest.xml': sha})
         assert kept == {
             'cases': [

@@ -840,7 +840,9 @@ def _name_the_machine(root, machine, message):
     """Commit `feat`'s local evidence with this system's section naming
     `machine`, as another machine's run would leave it."""
     data = _evidence(root)
-    data['platforms'][HERE]['machine'] = machine
+    data['platforms'][HERE].update(
+        machine=machine, at='2026-09-01T00:00:00Z',
+        email='%s@example.com' % machine)
     _put(root, data)
     _git(root, 'commit', '-q', '-am', message)
 
@@ -865,13 +867,18 @@ def test_a_run_rewrites_a_section_resolved_to_either_side_of_a_merge(
     _git(root, 'add', '.purlin/evidence/local/feat.json')
     _git(root, 'commit', '-q', '--no-edit')
     assert _evidence(root)['platforms'][HERE]['machine'] == 'build-9'
+    started = writer.now_iso()
 
     code, out = _run(root, '--feature', 'feat', '--test')
 
     assert code == 0, out
     this_machine = platform.node()
     assert this_machine, 'this machine has no name to check against'
-    assert _evidence(root)['platforms'][HERE]['machine'] == this_machine, out
+    section = _evidence(root)['platforms'][HERE]
+    assert section['machine'] == this_machine, out
+    assert section['at'] >= started, out
+    assert (section['commit'], section['email']) == (
+        _head(root), 'dev@example.com'), out
 
 
 def _current_hashes(root, rule_id='RULE-1'):
