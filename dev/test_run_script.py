@@ -1536,8 +1536,10 @@ class TestNoTestCommand:
         for name, flag in expected.items():
             # The flag as whole words: `--reporters=jest-junit-reporter`
             # names another reporter and does not carry it.
+            # And as part of the command: after a ` #` it would be a
+            # comment the shell never runs.
             assert re.search(r'(?<!\S)%s(?!\S)' % re.escape(flag),
-                             suggestions[name]['run']), name
+                             suggestions[name]['run'].split(' #', 1)[0]), name
 
     # purlin: run_script PROOF-133
     def test_the_page_shows_the_same_entries(self, suggestions, tmp_path):
