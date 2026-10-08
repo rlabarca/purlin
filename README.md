@@ -18,6 +18,18 @@ Purlin cannot prove your code is correct, and it makes no claim of compliance. I
 environment, use it beside your document control system:
 [the sign-off](docs/sign-off.md) says how.
 
+## Who it is for
+
+Agentic developers using Claude Code that need proof their AI-written code does what was asked,
+requirement by requirement.
+
+Choose something else when:
+
+- **A spec only has to steer an agent.** GitHub Spec Kit, OpenSpec and Kiro do that with less
+  to learn.
+- **Your team does not use Claude Code.** Purlin is a plugin for it.
+- **You need a validated system of record.** Purlin hands its evidence to one, and is not one.
+
 ## What it touches
 
 - A settings file, `.purlin/config.json`, a folder for evidence and a few lines in `.gitignore`.

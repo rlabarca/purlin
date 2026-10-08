@@ -82,21 +82,27 @@ slide('example', 'One requirement', 'One requirement, from words to evidence', [
  'required review when they are merged, or the system of record\'s. Purlin records who wrote and '
  'last changed each proof, and a result stops counting when its proof is reworded.',
  lead='Purlin ties each requirement to the test that shows it, and keeps the result.', width=560, pad=16)
-slide('compare', 'How Purlin differs', 'What the popular tools leave out', [
-    ('GitHub Spec Kit', 'Turns a spec into a plan and code with an AI agent. <b>Missing:</b> tests tied to each requirement, evidence, a sign-off.'),
-    ('Kiro', 'Turns requirements into code and generated tests, in its own editor. <b>Missing:</b> team work in git, evidence, a sign-off.'),
-    ('Ketryx', 'Traces requirements to tests and collects signatures for regulated releases. <b>Missing:</b> help writing tests, or checking they catch bugs.'),
-    ('Cucumber', 'Requirements as scenarios that run as tests. <b>Missing:</b> a check that tests catch bugs, evidence, a sign-off.'),
-], '<b>Only Purlin does all three:</b> ties each requirement to its test, checks the test catches bugs, and keeps evidence a person can sign.',
- 'GitHub Spec Kit (github.com/github/spec-kit) is the most used spec-driven workflow for AI agents; '
- 'it checks that tasks are done, not that tests show each requirement. Kiro (kiro.dev) generates '
- 'property-based tests from EARS requirements, inside its own IDE. Ketryx (ketryx.com) is a '
- 'commercial compliance platform for life-science software, with Part 11 signatures over Jira and '
- 'GitHub; it is a system of record, which Purlin hands evidence to. Cucumber and other BDD tools '
- 'make plain-language scenarios executable. Purlin is the one that pairs each requirement with its '
- 'test, plants a bug to check that test, and keeps the evidence and sign-off in the repository, '
- 'with product, QA and developers working in git.',
- lead='Each solves part of the problem. None of them ties requirements, tests that catch bugs and evidence together.', width=420, pad=16, numbers=False)
+slide('compare', 'How Purlin differs', 'What each tool does best, and leaves out', [
+    ('GitHub Spec Kit', 'Turns a spec into a plan and code, with the AI agent you already use. <b>Leaves out:</b> tests tied to each requirement, evidence, a sign-off.'),
+    ('Kiro', 'Turns requirements into code and generated tests tied to them. <b>Leaves out:</b> a check that the tests catch bugs, evidence, a sign-off.'),
+    ('Ketryx', 'Traces requirements to tests and collects signatures for regulated releases. <b>Leaves out:</b> help writing tests, or checking they catch bugs.'),
+    ('Mutation testing', 'Makes every small change to the code and counts how many the tests catch. <b>Leaves out:</b> the requirement behind each test, prompts and skills, evidence.'),
+], '<b>Choose Purlin:</b> agentic developers using Claude Code that need proof their AI-written code does what was asked, requirement by requirement.',
+ 'GitHub Spec Kit (github.com/github/spec-kit) is the most used spec-driven workflow and works '
+ 'with 30 AI agents; it checks that tasks are done, not that a test shows each requirement. '
+ 'Choose it, or OpenSpec, when a spec only has to steer an agent. Kiro (kiro.dev) generates '
+ 'property-based tests from EARS requirements and links each to its requirement, in its own '
+ 'editor and its command line. Ketryx (ketryx.com) is a commercial compliance platform for '
+ 'life-science software, with Part 11 signatures over Jira and GitHub; it is a system of record, '
+ 'which Purlin hands evidence to and is not. A mutation testing tool, such as Stryker, PIT or '
+ 'mutmut, plants every small change the same way each time; Purlin\'s audit plants one bug per '
+ 'proof, written by an AI and aimed at what the proof names, so it works in any language and on '
+ 'a prompt or a skill, and it is less thorough on code. The two can be used together. A tool '
+ 'that tests a skill or a prompt alone, such as claude plugin eval or promptfoo, compares against '
+ 'a baseline and needs no spec. Purlin is the one that keeps each requirement, its test, a check '
+ 'of that test and the signed evidence together in the repository. A team not on Claude Code '
+ 'should choose something else: Purlin is a plugin for it.',
+ lead='Each does its own job better than Purlin. None keeps the whole chain together.', width=420, pad=16, numbers=False)
 slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
     ('A settings file', '%s holds your test command. Also a folder for evidence and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),

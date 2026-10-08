@@ -168,5 +168,10 @@ a bug written without seeing them ([Kiele et al., ESEM 2026](https://arxiv.org/p
 A model can give the same verdict every time and still be wrong
 ([Norman, Rivera and Hughes, 2026](https://arxiv.org/pdf/2606.19544)), so the AI writes the
 bug and the test run decides.
+
+A mutation testing tool, such as Stryker, PIT or mutmut, makes every small change to the code
+and counts how many the tests catch. It is more thorough on code. The audit plants one bug per
+proof, aimed at what the proof names, in any language and for a prompt or a skill. The two can
+be used together.
 [The research behind the audit](audit-research.md) has every source, the quotes, a trial on a
 sample project and what Purlin does not claim.
