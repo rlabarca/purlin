@@ -128,7 +128,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-08T13:52:06Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "commit": "3cd261ccbe523e424fe9a975c43e2258dbc053ce",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
@@ -139,6 +139,12 @@
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-08T13:52:06Z",
+            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -161,6 +167,12 @@
           "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
         },
         {
+          "carried": {
+            "at": "2026-10-08T13:52:06Z",
+            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -183,6 +195,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
         },
         {
+          "carried": {
+            "at": "2026-10-08T13:52:06Z",
+            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -205,6 +223,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_a_test_run_runs_on_39"
         },
         {
+          "carried": {
+            "at": "2026-10-08T13:52:06Z",
+            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -227,6 +251,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_the_status_runs_on_39"
         },
         {
+          "carried": {
+            "at": "2026-10-08T13:52:06Z",
+            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+            "email": "rich.labarca@gmail.com",
+            "machine": "Richs-MacBook-Pro.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,

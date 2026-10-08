@@ -2017,7 +2017,7 @@
   "platforms": {
     "macos": {
       "at": "2026-10-07T21:48:33Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "commit": "3cd261ccbe523e424fe9a975c43e2258dbc053ce",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
