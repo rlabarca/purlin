@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-10-08T11:22:00Z",
-      "commit": "6177b673f6663f249a5461b5d333987242bea762",
+      "commit": "bb5753d526a7c9cd93700bf8be416f3fa7f05a2c",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
