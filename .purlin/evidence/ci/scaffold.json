@@ -2,8 +2,8 @@
   "feature": "scaffold",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T11:22:01Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "at": "2026-10-08T14:24:14Z",
+      "commit": "a559ffa36a1744479201df760336d5cb6a14cf45",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T11:22:01Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-130",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheIgnoreFile",
-                "duration": 1.586,
+                "duration": 1.551,
                 "name": "test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_init_scaffold.py::TestTheIgnoreFile::test_on_windows_a_crlf_gitignore_is_the_same_after_a_second_run"
         },
         {
-          "carried": {
-            "at": "2026-10-08T11:22:01Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-132",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheMarketplacePath",
-                "duration": 1.642,
+                "duration": 1.802,
                 "name": "test_on_windows_no_file_names_the_copy",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_init_scaffold.py::TestTheMarketplacePath::test_on_windows_no_file_names_the_copy"
         },
         {
-          "carried": {
-            "at": "2026-10-08T11:22:01Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-136",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheEvidenceFolder",
-                "duration": 1.26,
+                "duration": 1.188,
                 "name": "test_on_windows_the_readme_is_the_bytes_purlin_ships",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",

@@ -2,8 +2,8 @@
   "feature": "evidence",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T11:22:00Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "at": "2026-10-08T14:24:14Z",
+      "commit": "a559ffa36a1744479201df760336d5cb6a14cf45",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T11:22:00Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-71",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.732,
+                "duration": 0.638,
                 "name": "test_a_crlf_checkout_takes_the_code_part_of_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_fingerprint.py::test_a_crlf_checkout_takes_the_code_part_of_the_commit"
         },
         {
-          "carried": {
-            "at": "2026-10-08T11:22:00Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-84",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_fingerprint",
-                "duration": 0.953,
+                "duration": 0.988,
                 "name": "test_an_anchors_code_part_is_the_blob_ids_the_commit_holds",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_fingerprint.py::test_an_anchors_code_part_is_the_blob_ids_the_commit_holds"
         },
         {
-          "carried": {
-            "at": "2026-10-08T11:22:00Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-75",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_evidence_reader",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_on_windows_the_reader_names_its_own_machine_windows",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",

@@ -2,8 +2,8 @@
   "feature": "server",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T11:22:01Z",
-      "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
+      "at": "2026-10-08T14:24:14Z",
+      "commit": "a559ffa36a1744479201df760336d5cb6a14cf45",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T11:22:01Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-159",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestTransport",
-                "duration": 0.344,
+                "duration": 0.442,
                 "name": "test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
-          "carried": {
-            "at": "2026-10-08T11:22:01Z",
-            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
-          },
           "env": "windows",
           "id": "PROOF-160",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestWhichProjectRoot",
-                "duration": 0.638,
+                "duration": 0.784,
                 "name": "test_on_windows_a_workspace_named_from_the_home_folder_is_found",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "299283db8e46f390d6f2cb36385cadb1b93633f727f1e1d055f062f8a518c6a6"
+              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
             }
           },
           "result": "pass",
