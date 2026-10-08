@@ -11,40 +11,24 @@ Purlin cannot prove the code is right. It gives the team a paper trail.
 
 ## The words
 
-- A **rule** is one line saying what the software must do.
-- A **proof** says in plain language how that is shown. It is written to
-  `references/spec_quality_guide.md`, "Writing proofs". QA writes and reads proofs, and you may
-  draft them.
-- A **test** is any test in the project's own suite with one marker comment above it. The marker
-  names the proof, `purlin: login PROOF-4`, or the rule where the rule has no proof.
-- The **evidence** is what a run saw, one file per feature per source. `purlin:test` writes each
-  proof's result, `purlin:audit` adds what the audit found, and `--commit` commits it.
-- Its **source** is the folder it sits in, `.purlin/evidence/ci/` or `.purlin/evidence/local/`.
-  Both count.
-- The **evidence package** is one data file describing one version of the code. `purlin:sign`
-  builds it from the committed evidence.
-- A **sign-off** is one person's signature over that package, a file in a signed commit.
+`references/glossary.md` defines every word Purlin uses, one row each. The ones the rest of this
+page leans on:
 
-Purlin shows **two facts**, defined in `references/evidence_and_signoff.md`:
-
-- The tests: `met` when every rule passes its tests on the committed evidence, else `not met`.
-- The sign-off: `signed 0.1.0 at a1b2c3d`, `signed 0.1.0, 4 commits since`, or `not signed`.
-
-Every rule has two **cells**:
-
-- `passed` says every test tied to the rule ran and passed, on every **platform** a counting run
-  covered. A passed cell whose platforms disagree reads `partial`, which is not met.
-- `strong` says what the audit found. Nothing waits on it.
-
-A **hand check** is a proof marked `@manual`. Its rule reads `checked at sign-off` until a
-sign-off notes it: a person looks at it in the sign-off walk.
+- A **rule** is one line saying what the software must do. A **proof** says in plain language
+  how that is shown, written to `references/spec_quality_guide.md`, "Writing proofs". A **test**
+  is any test in the project's own suite with one marker comment above it, `purlin: login PROOF-4`.
+- The **evidence** is what a run saw, the **evidence package** is one data file describing one
+  version of the code, and a **sign-off** is one person's signature over that package.
+- Purlin shows **two facts**, the tests and the sign-off, defined in
+  `references/evidence_and_signoff.md`.
+- Every rule has two **cells**: `passed` says every test tied to the rule ran and passed, and
+  `strong` says what the audit found. Nothing waits on `strong`.
+- A **hand check** is a proof marked `@manual`: a person looks at it in the sign-off walk.
 
 A proof about what an AI does with a prompt or a skill is an **AI proof**, tagged
 `@ai(<model>)`, with an ordinary marked test: `references/spec_quality_guide.md`, "A proof about
 what an AI does", says how to write one, and `references/purlin_commands.md`, "The helper", how
 its test makes the output.
-
-`references/glossary.md` defines the rest of the words.
 
 ## The core loop
 
@@ -161,7 +145,5 @@ then get the status: a reference it cannot resolve is one the rename missed.
 
 ## How you write
 
-Plain and declarative, one job per sentence. Second person for what the reader does, third
-person for what Purlin does. Exact numbers, never rounded: "42 rules, 3 to fix". State a limit
-out loud rather than skipping it. Sentence case everywhere; command names lowercase with the
-colon. Commands, rule ids, paths and shas in backticks; the prose around them plain.
+As `references/writing_style.md` says: plain and declarative, exact numbers, sentence case,
+commands, rule ids, paths and shas in backticks, and no emoji.
