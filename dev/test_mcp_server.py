@@ -1151,6 +1151,8 @@ class TestMarkersFrom095StillInATest:
         responses, _stderr = _rpc(project.root, _call(
             'sync_status', {'project_root': project.root}))
         assert _text(responses[0]).splitlines() == printed.splitlines()
+        # The four lines: the warning and one line for each of the three.
+        assert len(block) == 4, block
         assert _holds(_text(responses[0]).splitlines(), block) == 1
         # Those lines and no other of the kind: the tool's answer names the
         # old markers in one warning, as the command's text does.

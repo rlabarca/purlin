@@ -106,8 +106,8 @@ The ten loose ends the first audit left were fixed on 2026-10-08, on the owner's
 their specs audited again. What remains:
 
 - **On Windows the audit ends no process a planted bug left** (`planted_bug` RULE-36 says
-  so). A job object would do it, in a round that includes a Windows run.
-- **`states` PROOF-309 says "those five lines included"** where PROOF-308 lists four.
+  so). A job object would do it. The owner, 2026-10-08: not now; build it in a round that
+  changes that code anyway.
 - **`run_script` RULE-105 reads `strong` with no bug planted for PROOF-277**: its test does
   not pass in a copy of the project.
 - **`_run` in `purlin_run.py` starts every command with `Popen`** since the process-group
