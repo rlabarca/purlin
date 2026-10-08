@@ -9,9 +9,9 @@ two `qa/` branches.
 | | Result |
 |---|---|
 | `bash dev/run_tests.sh` | 1676 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed. Two tests were strengthened after it; each file then ran whole and passed |
-| `purlin_run.py --test --all --commit` | 1684 markers tied, 0 not tied; 42 specs, 743 rules, every one passing, 1 of them graded by an AI |
-| `python3 dev/windows_run.py` | ends `743 rules. 743 pass their tests, 1 of them graded by an AI.` |
-| The audit | `The audit found 732 of 735 rules strong (99%): 732 strong, 1 weak, 10 spot-checked.` |
+| `purlin_run.py --test --all --commit` | 1683 markers tied, 0 not tied; 42 specs, 742 rules, every one passing, 1 of them graded by an AI |
+| `python3 dev/windows_run.py` | ended `743 rules. 743 pass their tests, 1 of them graded by an AI.`, before one rule was removed |
+| The audit | `The audit found 732 of 734 rules strong (99%): 732 strong, 10 spot-checked.` No rule is weak |
 | `sign.py --show` | does not refuse; it opens `AI proofs run on claude-opus-5-5: 3 proofs, 3 runs each.` |
 
 Formats: spec 25, anchor 12, marker 6, evidence 18, package 18, signature 18. The
