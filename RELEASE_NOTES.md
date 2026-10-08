@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased — 0.10.0
+## v0.10.0
 
 For a project running 0.9.5. This section is what differs between 0.9.5 and 0.10.0: what is
 new, what changed and what you do differently, what is gone, and what `purlin:init --update`

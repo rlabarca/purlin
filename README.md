@@ -52,7 +52,7 @@ claude plugin install purlin@purlin --scope project
 Start Claude Code in the project, or run `/reload-plugins` in a session that is already open.
 The `purlin:` commands are there.
 
-Coming from 0.9.5? See [docs/upgrading.md](docs/upgrading.md).
+Coming from 0.9.5? See [Coming from 0.9.5](#coming-from-095).
 
 ## The first run
 
@@ -94,6 +94,26 @@ fixes it. [docs/getting-started.md](docs/getting-started.md) walks the same path
   each proof, in a copy of the project, and runs that proof's test. Nothing waits on it.
 
 [docs/how-purlin-works.md](docs/how-purlin-works.md) is the model in one page.
+
+## Coming from 0.9.5
+
+0.10.0 is a different tool. What differs:
+
+- **Nothing is installed in your test suite.** A test is any test of yours with one comment
+  above it. The proof plugins and the git hooks are gone.
+- **Two facts replace the receipt.** `purlin:verify` is gone. `purlin:sign` signs the evidence,
+  and it is optional.
+- **The audit plants a bug.** The `STRONG`, `WEAK` and `HOLLOW` grades are gone.
+- **A prompt or a skill is tested like code**, on the models a proof names.
+
+To upgrade, after the plugin updates:
+
+1. `purlin:init --update` lists each change, asks before it, and makes one commit with a
+   backup.
+2. `purlin:test --all --commit` runs every test. Every rule reads `not run` until it does.
+
+[RELEASE_NOTES.md](RELEASE_NOTES.md) has every difference.
+[docs/upgrading.md](docs/upgrading.md) walks the upgrade.
 
 ## Commands
 
