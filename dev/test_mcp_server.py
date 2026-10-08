@@ -1152,6 +1152,10 @@ class TestMarkersFrom095StillInATest:
             'sync_status', {'project_root': project.root}))
         assert _text(responses[0]).splitlines() == printed.splitlines()
         assert _holds(_text(responses[0]).splitlines(), block) == 1
+        # Those lines and no other of the kind: the tool's answer names the
+        # old markers in one warning, as the command's text does.
+        assert _text(responses[0]).count('marker from Purlin 0.9.5') == 1, \
+            _text(responses[0])
 
     # purlin: states PROOF-310
     def test_two_are_both_named(self, project):
