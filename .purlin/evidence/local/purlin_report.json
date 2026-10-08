@@ -1979,14 +1979,14 @@
         "verdict": "strong"
       },
       "RULE-87": {
-        "at": "2026-10-07T19:36:19Z",
+        "at": "2026-10-08T00:31:35Z",
         "bugs": {
           "PROOF-287": {
-            "after": "pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere;white-space:normal}",
+            "after": "pre.failure{margin:0 0 var(--space-3);max-height:6em;overflow:hidden;overflow-wrap:anywhere}",
             "aim": "past the test",
             "before": "pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere}",
-            "bug_key": "f45fd21c5366ebc0954be9da24b78584f1ddad3dcdb32fedd68a71acaba5acc6",
-            "case": "login RULE-1's first test given fail and a six-line failure; the proof says the panel's text is those six lines exactly; the changed page draws them run together as one wrapped paragraph, the line ends collapsed to spaces",
+            "bug_key": "cce5dee1ffdd594267e8386ec35076c9f6fbccb45f8222fd1f81cfe3e582eea8",
+            "case": "login RULE-1's first test given `fail` and a `failure` of seven lines; the proof says the panel's text is those seven lines exactly; the changed page clips the panel after about two lines with no way to scroll, so the rest are never shown",
             "file": "scripts/report/purlin-report.html",
             "line": 114,
             "result": "caught",
@@ -2016,15 +2016,26 @@
           }
         },
         "code_hash": "77273348c4318e0b96df67a3c1164066e1913de78ad63a2157ffbf785db9062b",
-        "commit": "908424b7ca1d9c8fe3a89268189a98b5a42aaaee",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [],
+        "commit": "686c54fddd812607c0e84dcb8bd45a6a315e5a16",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
+        "explanation": [
+          "PROOF-287: the test gives the first test of `login RULE-1` a seven-line failure with two empty lines, opens the rule's screen, and compares the one panel's drawn text and held text with that text exactly.",
+          "PROOF-287: the test also compares the line before the panel with the test's file and name, so a panel under the wrong line fails it.",
+          "PROOF-287: the test reads the panel's text from the page and never measures how much of it is visible, so a panel that clips its lines with no scroll may still pass, unless the helper `undrawn` measures clipping.",
+          "PROOF-288: the test opens the rule's screen once with `fail` and no failure text and once with `pass` and the text, and asserts no panel is found either time.",
+          "PROOF-289: the test opens the screen at 1500 and 390 pixels in both themes, and asserts the panel's content is no wider than the panel, the page is no wider than the window, and the long line's text measures at least 7 to 1."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
-        "proof_hash": "849d13251b114016e018449454023ea05d5a641b8cb772b5501ccf7d87edd7f1",
+        "notes": [
+          "PROOF-288 holds two cases, a failing test with no text and a passing test with text.",
+          "PROOF-288 says \"the six lines\" where PROOF-287 names a failure of seven lines.",
+          "PROOF-289 holds four cases, two widths in each of two themes."
+        ],
+        "proof_hash": "7b3fc331b698e66f258b23c2921f688563fae15489c5471d9da172fc149d7a11",
         "rule_hash": "d7d58295b8c2cda04ce5dd9b6de37f5b1b30404d4e0b1b3175592268221c0f8b",
-        "test_hash": "012c03326f23bd4107788d501d2b415028a44af87c424e84b8c78c91c5a0619a",
+        "test_hash": "d8ec2d625e4cefbe1697085ca6f43ca3d2e82102960b60f8741752190ca90814",
         "verdict": "strong"
       },
       "RULE-88": {

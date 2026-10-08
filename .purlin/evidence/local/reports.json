@@ -364,18 +364,17 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-10-07T19:21:22Z",
+        "at": "2026-10-08T00:31:35Z",
         "bugs": {
           "PROOF-3": {
-            "after": "        out += _segment_regex(part) + ('' if last else '/(?:.*/)?')",
+            "after": "        if char == '*':\n            out.append('.*')",
             "aim": "plain",
-            "before": "        out += _segment_regex(part) + ('' if last else '/')",
-            "bug_key": "16f6221d0d8504a859f3c1f921290c1f8f4533e02b9f48d838f76a70588940ca",
-            "case": "the glob `dev/test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py` and `a/b/c.test.ts`; the proof says it matches `dev/test_a.py` alone; the changed code matches `dev/test_a.py` and `dev/sub/test_b.py`",
+            "before": "        if char == '*':\n            out.append('[^/]*')",
+            "bug_key": "4490224b6c5eaaf17bed1edbc07122edcd2392bc6e47f07399238cf64a8396cf",
+            "case": "the glob `dev/test_*.py` over `dev/test_a.py`, `dev/sub/test_b.py`, `a/b/c.test.ts` and `dev/test_sub/x.py`; the proof says it matches `dev/test_a.py` alone; the changed code also matches `dev/test_sub/x.py`",
             "file": "scripts/mcp/purlin/markers.py",
-            "line": 318,
+            "line": 329,
             "result": "caught",
-            "test_unchanged": true,
             "why": ""
           },
           "PROOF-43": {
@@ -402,23 +401,21 @@
           }
         },
         "code_hash": "0f32e250cd5ff3c5c9246f2ee65086e448364d5e09b41227f3f7bd041f84c86b",
-        "commit": "853849de02301e750c27064ff31b7fd4ed23ebf7",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "commit": "686c54fddd812607c0e84dcb8bd45a6a315e5a16",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-3: the test compares the whole list of matched paths with `['dev/test_a.py']`, so any change that adds or drops a match for the proof's glob over the proof's three paths fails it.",
-          "PROOF-3: none of the three paths is one that only a `*` crossing a `/` would match, since `dev/sub/test_b.py` does not continue `dev/test_`, so a `*` compiled as `.*` would leave this test passing and the proof's stated reason unobserved.",
-          "PROOF-43: the test compares the whole list of matched paths with `dev/test_a.py` and `dev/sub/test_b.py`, which is the result the proof names for the glob `test_*.py`.",
-          "PROOF-47: the test builds the two suites in the proof's order and compares the suite name of every file returned with `first` for `tests/test_a.py` and `second` for `other/test_b.py`, so a file given to the wrong suite or an extra file fails it.",
-          "The spot tests found nothing, and each test compares a literal expected value taken from its proof."
+          "PROOF-3: the test adds `dev/test_sub/x.py` to the shared paths and compares the whole matched list with `['dev/test_a.py']`, so a `*` that crosses a `/` changes the list and fails it; the `_matched` helper and `PATHS` are not shown, so the reading assumes they hold the proof's other three paths and call the glob matcher.",
+          "PROOF-43: the test compares the whole matched list for `test_*.py` with the two paths the proof names, in order, so a wrongly matched third path or a missed nested one fails it.",
+          "PROOF-47: the test builds the two suites in the proof's order and compares the full path-to-suite mapping with the two pairs the proof names, so a file given to the second suite or left out fails it; the `_two_files` helper is not shown.",
+          "No proof of the rule names a case for `?`, for `**` matching zero segments, or for a file no suite matches being left unread.",
+          "Findings: none, and the spot tests have nothing to explain here."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [
-          "PROOF-3 was settled with its test unchanged: it was judged to assert what the proof names."
-        ],
-        "proof_hash": "1980b0d01e05f0ac4373954adfccb338ba81822188b373ab095b74aa002ccd55",
+        "no_bug": [],
+        "proof_hash": "6468d8cda619d8fe0ab1c56492c83480c50a99f7b92df8cf31a50e64dda714cd",
         "rule_hash": "20270baa8c99aeef0ab10d4f239da18d0f838e9653b0693e924c5d8db549f77d",
-        "test_hash": "0561e26064b4db6e27e3917c4f16a5962ed80934daa28d3dacd20728b7c0e562",
+        "test_hash": "91263764f722d13d1f3e76e4eb6a3f7ea96f740492a5b59e432d07c01ef0dc48",
         "verdict": "strong"
       },
       "RULE-32": {

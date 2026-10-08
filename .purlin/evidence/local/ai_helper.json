@@ -1394,7 +1394,7 @@
         "verdict": "strong"
       },
       "RULE-39": {
-        "at": "2026-10-07T18:51:37Z",
+        "at": "2026-10-08T00:31:35Z",
         "bugs": {
           "PROOF-69": {
             "after": "        for rel in _files_under(project, {SESSION_FOLDER}, but=folder):",
@@ -1428,29 +1428,37 @@
             "line": 598,
             "result": "caught",
             "why": ""
+          },
+          "PROOF-79": {
+            "after": "        for rel in _files_under(project, {GIT_FOLDER}):",
+            "aim": "plain",
+            "before": "        for rel in _files_under(project, {GIT_FOLDER}, but=folder):",
+            "bug_key": "72b2262ebb53572b258a02317f98dd2f19f391d96b6d38bcb9da556bd9644d93",
+            "case": "PURLIN_AI_OUT names sample/out inside a sample holding keep.md and report.md; the proof says input/project/ holds exactly keep.md and report.md; the changed code also keeps out/input/message.md there",
+            "file": "scripts/ai/purlin_ai.py",
+            "line": 457,
+            "result": "caught",
+            "why": ""
           }
         },
         "code_hash": "ea70580fb735909e8ab2eee111457862996771d8909c9d1396468d26dbf758a1",
-        "commit": "abccd9d4a24b005aaac34c6b05723cb65f14e0b1",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "commit": "686c54fddd812607c0e84dcb8bd45a6a315e5a16",
+        "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
         "explanation": [
-          "PROOF-69: the test builds the sample the proof names, has the session rewrite `report.md`, add `out/summary.md` and delete `keep.md`, and compares the whole of `input/` with the exact paths and bytes the proof names, so an extra, missing or changed file fails it.",
-          "PROOF-69: the bytes of `docs/.git/kept.md` and `.claude/settings.json` are fixed by the test itself, and those of `keep.md` and `report.md` come from the fixture and match the proof's `kept` and `F-1`.",
-          "PROOF-70: the test runs the skill with no `--project` and compares all of `input/` with `message.md` alone, then runs the plugin with `--project sample` and compares all of `input/` with exactly `message.md`, `project/keep.md` and `project/report.md`, so a kept skill or plugin file fails it.",
-          "PROOF-70: the directory listing in the first half also fails on an empty `project/` folder, which the tree comparison alone might not see.",
-          "PROOF-71: the test removes `keep.md`, adds the link `link.md` to `report.md`, and compares all of `input/project/` with `report.md` alone, so a kept link fails it.",
-          "PROOF-71: on a system that cannot make a symbolic link the test is skipped and observes nothing.",
-          "No spot test fired, and each test names its proof's values and compares the whole folder, which leaves no way past any of the three."
+          "PROOF-69: the test adds the three extra sample files, has the session change, add and delete files, and compares the whole of `input/` by path and bytes with the five files the proof names, so an extra, missing or altered file fails it.",
+          "PROOF-70: the test compares the whole of `input/` with `message.md` alone for the skill run with no sample, and with `message.md`, `project/keep.md` and `project/report.md` for the plugin run, so a kept skill or plugin file or a stray `project/` fails it.",
+          "PROOF-71: the test removes `keep.md`, adds the link and compares the whole of `input/project/` with `report.md` alone, so a kept link fails it; it is skipped on a system that makes no symbolic link.",
+          "PROOF-79: the test sets the output folder to `sample/out` and compares the whole of `input/project/` there by path and bytes with `keep.md` and `report.md`, so any file of the output folder kept as input fails it."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "notes": [
-          "PROOF-70 holds two cases, a skill run with no `--project` and a plugin run with `--project sample`."
+          "PROOF-70 holds two cases, a skill run with no sample and a plugin run with one."
         ],
-        "proof_hash": "91f2ff493f8bdc2ee6906fe18744e0a50e503f2be790dab027a222f121dc7839",
-        "rule_hash": "8ddaaced1ac7502637051d95409305396d5e23a75f569f58d7712723f54a694e",
-        "test_hash": "faa33c84f58c3d60568ca2439a8a39eca6f8f3109d72059e4cf82f7c3ceec452",
+        "proof_hash": "02e797ee6c8c2c3d9823d48a1525358cb0c0f45a955eafffa95ae528f390af42",
+        "rule_hash": "cb89cbd169f7e18b5b22d3dd0460b812fba340a52cacf81881a13545d43ac6ad",
+        "test_hash": "25a6421de545de401078180d8f5ef6fb48ba7e8a435fedee3f0adeab043d2459",
         "verdict": "strong"
       },
       "RULE-4": {
