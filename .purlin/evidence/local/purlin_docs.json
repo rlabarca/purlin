@@ -353,14 +353,14 @@
   "feature": "purlin_docs",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T12:28:26Z",
-      "commit": "224f8d9f91a383bdab52903b817aa6a0a6cf6d9e",
+      "at": "2026-10-08T12:35:13Z",
+      "commit": "6177b673f6663f249a5461b5d333987242bea762",
       "dirty": false,
       "email": "rich.labarca@gmail.com",
       "fingerprint": {
         "code": "8646ae0829053640a7617894fe8034ac9c2b31597857ca697e4446350c7191ee",
         "spec": "8869713f04652aae963578b9b31b60f1ce90b611bea1639a93d36be5e4b30413",
-        "tests": "96b21d9bc7b20ae256750c6bfd77225f5eac12cd1dda098471374a317d5ed574"
+        "tests": "70aa7f30f8913496541dbe81f66c36b23ef6fcc5259a5476c627692e5f1dba3f"
       },
       "machine": "Richs-MacBook-Pro.local",
       "proofs": [
@@ -372,14 +372,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.01,
+                "duration": 0.016,
                 "name": "test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -401,7 +401,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -416,14 +416,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.001,
+                "duration": 0.003,
                 "name": "test_every_link_of_the_research_page_appears_again_under_sources",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -445,7 +445,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -467,7 +467,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -482,14 +482,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.0,
+                "duration": 0.001,
                 "name": "test_the_example_clones_purlin_at_the_signed_tag_of_this_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -511,7 +511,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -526,14 +526,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_the_two_ai_pages_are_linked_from_each_other_and_each_folding_page",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -555,7 +555,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
@@ -570,14 +570,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_docs",
-                "duration": 0.002,
+                "duration": 0.005,
                 "name": "test_the_audit_pages_count_the_spot_tests_as_the_reference_does",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "882adaac303596fb811b775712f9341872de4c2068f4359df7f95587c2d1c490"
+              "sha256": "33d759ba07478057dfe6a5a1cd6bb290b7310c37a691f8552cb4ebc18e96bc62"
             }
           },
           "result": "pass",
