@@ -245,6 +245,8 @@ bug. The test run decides.
   will be detected more often"
   ([Inozemtseva and Holmes](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf),
   section 6.1).
+- **That the audit is a mutation testing package.** It plants one bug per proof. A tool that
+  makes every small change is more thorough on code; a proof's own test can run one.
 - **That a surviving bug is a real fault.** It is a case to settle with a test run. In the
   papers, 14% to 36% of an AI's surviving bugs changed nothing; in the trial, every doubtful
   survivor was a strict reading of the proof.

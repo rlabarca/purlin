@@ -87,7 +87,7 @@ slide('compare', 'How Purlin differs', 'What each tool does best, and leaves out
     ('Kiro', 'Turns requirements into code and generated tests tied to them. <b>Leaves out:</b> a check that the tests catch bugs, evidence, a sign-off.'),
     ('Ketryx', 'Traces requirements to tests and collects signatures for regulated releases. <b>Leaves out:</b> help writing tests, or checking they catch bugs.'),
     ('Mutation testing', 'Makes every small change to the code and counts how many the tests catch. <b>Leaves out:</b> the requirement behind each test, prompts and skills, evidence.'),
-], '<b>Choose Purlin:</b> agentic developers using Claude Code that need proof their AI-written code does what was asked, requirement by requirement.',
+], '<b>Who should choose Purlin:</b><br>agentic developers using Claude Code that need proof their AI-written code does what was asked, requirement by requirement.',
  'GitHub Spec Kit (github.com/github/spec-kit) is the most used spec-driven workflow and works '
  'with 30 AI agents; it checks that tasks are done, not that a test shows each requirement. '
  'Choose it, or OpenSpec, when a spec only has to steer an agent. Kiro (kiro.dev) generates '
@@ -102,7 +102,7 @@ slide('compare', 'How Purlin differs', 'What each tool does best, and leaves out
  'a baseline and needs no spec. Purlin is the one that keeps each requirement, its test, a check '
  'of that test and the signed evidence together in the repository. A team not on Claude Code '
  'should choose something else: Purlin is a plugin for it.',
- lead='Each does its own job better than Purlin. None keeps the whole chain together.', width=420, pad=16, numbers=False)
+ lead='Each does its own job better than Purlin. None keeps the whole chain together.', width=420, gap=16, pad=16, numbers=False)
 slide('touches', 'Your project and your workflow', 'Purlin workflows don\'t change your project much', [
     ('A settings file', '%s holds your test command. Also a folder for evidence and a few lines in %s.' % (m('.purlin/config.json'), m('.gitignore'))),
     ('Your specs', 'Markdown files you write, under %s. Each holds the rules of one feature.' % m('specs/')),

@@ -123,6 +123,10 @@ each step.
 
 - **It does not prove your tests catch every bug.** It tests what each proof says, one bug at
   a time.
+- **It is not a full mutation testing package.** A tool such as Stryker, PIT or mutmut makes
+  every small change to the code and counts how many the tests catch. That is more thorough on
+  code. Where a rule needs it, write a proof that says so: its test runs the tool and checks
+  the count, and Purlin records the result like any other. Tag that proof `@slow`.
 - **It does not check the AI's claim** about which case a bug breaks. `purlin:build` puts the
   claim to a test run.
 - **It does not give the same bug every time.** Two audits of the same code may plant
@@ -169,9 +173,5 @@ A model can give the same verdict every time and still be wrong
 ([Norman, Rivera and Hughes, 2026](https://arxiv.org/pdf/2606.19544)), so the AI writes the
 bug and the test run decides.
 
-A mutation testing tool, such as Stryker, PIT or mutmut, makes every small change to the code
-and counts how many the tests catch. It is more thorough on code. The audit plants one bug per
-proof, aimed at what the proof names, in any language and for a prompt or a skill. The two can
-be used together.
 [The research behind the audit](audit-research.md) has every source, the quotes, a trial on a
 sample project and what Purlin does not claim.
