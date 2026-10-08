@@ -2527,18 +2527,17 @@
         "verdict": "strong"
       },
       "RULE-63": {
-        "at": "2026-10-08T03:35:42Z",
+        "at": "2026-10-08T04:12:10Z",
         "bugs": {
           "PROOF-130": {
             "after": "        'run': 'go test ./... # go test -json',",
             "aim": "past the test",
             "before": "        'run': 'go test -json ./...',",
-            "bug_key": "32bcd5f1e94e7e20f8665dacbb411ed8dd53a48221c7268bed7927060b966e7e",
+            "bug_key": "667fccb3d41fbaf214aeba8d36ae166a168908817128a90f35de490beba4d65f",
             "case": "the go entry among the seven suggested; the proof says its command carries `go test -json`, the flag that writes the report; the changed command runs `go test ./...` and holds the words `go test -json` only in a trailing shell comment",
             "file": "scripts/mcp/purlin/frameworks.py",
             "line": 63,
-            "result": "survived",
-            "test_key": "2b50c76d97f08f7f9f9f00ac72e5f252762d2ff5ae58a79ff8864829b070914b",
+            "result": "caught",
             "why": ""
           },
           "PROOF-133": {
@@ -2565,28 +2564,18 @@
           }
         },
         "code_hash": "4b10634004b5149745344d5380e83f18e2a325ed1124c036e81750275d725f64",
-        "commit": "7f14594c32241a33dba5139e607a39de86d798dc",
+        "commit": "57ccb5f4f11f9ba830c8dface165214bdcb37990",
         "criteria": "763c604758b0914b98ce14173b7a60f7396a290ef4a8d067f9507bcffdc3bab9",
-        "explanation": [
-          "PROOF-130: the test compares the seven tool names and searches each command for its flag as whole words anywhere in the text, so it reads that the words are present and not that they are the part of the command that runs.",
-          "PROOF-130: the `suggestions` fixture is not shown, so where the seven entries come from, the run or the table in the code, cannot be read from the test.",
-          "PROOF-221: the test builds the project the proof names, asks for the suggestion with the system given as Windows and compares the one command with the proof's exact text, then does the same with the system read from the machine.",
-          "PROOF-326: the test runs `--all --test` in a project with one passing test and looks for the proof's exact line among the output's lines, on a Windows machine only.",
-          "PROOF-133: the test reads the page's entries and compares them with the array a run prints for a project holding all seven tools, with the fixture's entries in the named order, and with each block's text as the entry written out, so order and wording are both observed.",
-          "PROOF-133: the helpers that read the page and the run's output are not shown, so what part of the page they read cannot be judged from the test's own lines."
-        ],
-        "findings": [
-          "PROOF-130: the test still passes when scripts/mcp/purlin/frameworks.py:63 reads \"'run': 'go test ./... # go test -json',\"",
-          "PROOF-130: the AI says this breaks: the go entry among the seven suggested; the proof says its command carries `go test -json`, the flag that writes the report; the changed command runs `go test ./...` and holds the words `go test -json` only in a trailing shell comment"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
           "No bug was planted: PROOF-326 needs Windows, and this machine is macOS."
         ],
         "proof_hash": "885a244209e705bf8a675c5ae35345b35e134074b4c26eed5f1c9b16d5748fd3",
         "rule_hash": "4aac672a8d4d4cbba4d6890d1b2a648ce33ace55d18bfbbbc1b5cd5861f1e47e",
-        "test_hash": "de239f11766a2d5336e7ca97b07e972e29491eb728c6b4756f9c0d72505ce77e",
-        "verdict": "weak"
+        "test_hash": "1b38aada076788209c10213d5f05b6c85e222bff7bf2b35e1fcce23676944d78",
+        "verdict": "strong"
       },
       "RULE-67": {
         "at": "2026-10-08T01:33:52Z",
