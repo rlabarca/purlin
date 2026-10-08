@@ -2,8 +2,8 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T14:24:14Z",
-      "commit": "a559ffa36a1744479201df760336d5cb6a14cf45",
+      "at": "2026-10-08T15:45:18Z",
+      "commit": "f7b13f4d68a9c2b68e1e2b4425de692b1adcfa0d",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_audit.TestTheCall",
-                "duration": 1.085,
+                "duration": 1.278,
                 "name": "test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "0eda265621ae0a891b1d83296ef670580cdd0cf93210ea582dfbe506d1fbfe23"
+              "sha256": "bf73b3db9586f9e9a587e77f37ebc346115f16d5b7f6e41cf02617b9c19745e9"
             }
           },
           "result": "pass",
