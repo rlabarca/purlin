@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-10-08T11:22:00Z",
-      "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
+      "commit": "79e21fb38ecabbe95b1909043e03e7f9289c2749",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "runnervmfi6oq",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-10-08T11:22:00Z",
+            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-38",
           "manual": false,
@@ -36,6 +42,12 @@
           "test": "dev/test_config_engine.py::TestWriting::test_on_windows_a_write_ends_its_lines_with_no_carriage_return"
         },
         {
+          "carried": {
+            "at": "2026-10-08T11:22:00Z",
+            "commit": "bf5814f94923bf647a6cc0f29d4e095103a435f6",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmfi6oq"
+          },
           "env": "windows",
           "id": "PROOF-39",
           "manual": false,
