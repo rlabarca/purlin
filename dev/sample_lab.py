@@ -415,7 +415,7 @@ def build(folder):
     _write(root, 'tests/test_intake.py', TESTS)
     _write(root, '.purlin/config.json', json.dumps(
         {'version': '0.10.0', 'tests': [suites.pytest_suite()]}))
-    _write(root, '.gitignore', suites.ignored())
+    _write(root, '.gitignore', '__pycache__/\n.purlin/runtime/\n')
     _git(root, 'init', '-q', '-b', 'main')
     _git(root, 'add', '-A')
     _git(root, '-c', 'user.name=Quinn', '-c',
@@ -847,7 +847,7 @@ def build_note(folder, check=ANY_BARCODE, runs=1):
     _write(root, '.purlin/config.json', json.dumps(
         {'version': '0.10.0', 'tests': [suites.pytest_suite()],
          'runs': runs}))
-    _write(root, '.gitignore', suites.ignored())
+    _write(root, '.gitignore', '__pycache__/\n.purlin/runtime/\n')
     _git(root, 'init', '-q', '-b', 'main')
     _git(root, 'add', '-A')
     _git(root, '-c', 'user.name=Quinn', '-c',
