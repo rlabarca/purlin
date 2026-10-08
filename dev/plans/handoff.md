@@ -10,7 +10,7 @@ two `qa/` branches.
 |---|---|
 | `bash dev/run_tests.sh` | 1675 passed, 0 failed, 13 skipped; 4 suites passed, 0 failed, run last, after every change |
 | `purlin_run.py --test --all --commit` | 1683 markers tied, 0 not tied; 42 specs, 742 rules, every one passing, 1 of them graded by an AI |
-| `python3 dev/windows_run.py` | ended `743 rules. 743 pass their tests, 1 of them graded by an AI.`, before one rule was removed |
+| `python3 dev/windows_run.py` | passed on 2026-10-08, after the last change to a test |
 | The audit | `The audit found 732 of 734 rules strong (99%): 732 strong, 10 spot-checked.` No rule is weak |
 | `sign.py --show` | does not refuse; it opens `AI proofs run on claude-opus-5-5: 3 proofs, 3 runs each.` |
 
@@ -122,6 +122,18 @@ their specs audited again. What remains:
 - A change to `README.md` or a page under `docs/` puts the audit of `install` and
   `purlin_docs` (14 rules) out of date. The audit after the 2026-10-08 change found 9 of
   them weak with new bugs; each was settled with a stronger test.
+
+- The references pass of 2026-10-08 cut `references/` and `agents/purlin.md` from 5,279 lines
+  to 4,802, made the glossary six tables, and cut the 0.10.0 release notes to 62 lines. The
+  audit after it found 9 of 154 rules weak. Eight tests were strengthened. Two proofs were
+  settled with `--sound`: `reports` PROOF-139 (the planted change leaves the evidence entry
+  the same) and `run_script` PROOF-288 (its line is read on Windows alone; the proof has no
+  `@env(windows)` tag, so no Windows run covers it).
+- `specs.py` does not flag a second `runs=` in one `@ai` tag; the spec format says at most
+  one.
+- `purlin:anchor sync --check` prints `anchor source not read` for a refused source, where
+  the status and the drift print `anchor source refused`.
+- Ten kinds of notice in `notices.py` are named in no reference.
 
 ## How to work, as the owner settled it
 
