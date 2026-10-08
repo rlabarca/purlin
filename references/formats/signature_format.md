@@ -97,10 +97,9 @@ holds no judgment.
 `purlin:sign` adds the file in one signed commit whose subject is
 `sign(<version>): <signer email>`. The first sign-off of a version carries
 the package, `.purlin/evidence/package/<version>.json`, the outputs kept
-with it (`package_format.md`, "Outputs") and its own file in that commit, and writes the signed tag `signed/<version>` on it, with the
-message `Signed <version>.`, a blank line and `Commit: <the package's
-commit>`. A later sign-off carries its own file alone, after the tag, which
-does not move.
+with it (`package_format.md`, "Outputs") and its own file in that commit, and
+writes the signed tag `signed/<version>` on it. A later sign-off carries its
+own file alone, after the tag, which does not move.
 
 Where git cannot write the tag, the commit stands and `purlin:sign` prints
 `No tag: git could not write signed/<version>: <git's reason>. Fix that, then
@@ -123,61 +122,8 @@ is therefore the key on its commit.
 
 ## When a sign-off counts
 
-A sign-off counts when the last commit that touched its file is signed, that
-signature verifies over the commit, and its `package_hash` equals the
-fingerprint computed over the package `HEAD` holds for its version. The key
-is not compared with the signer.
-
-A sign-off is read as `HEAD` holds it. The files are listed and read from
-`HEAD`'s tree: a file git does not track is no sign-off, and an edit that is
-not committed is not read, so its note is not shown. A note is shown only
-from a sign-off that counts.
-
-The package's fingerprint is computed from its content, as
-`package_format.md` gives it; the `fingerprint` field the file stores is not
-taken on trust. A package changed after it was signed no longer matches, so
-every sign-off of it stops counting, and a later sign-off is refused with
-`No sign-off: .purlin/evidence/package/<version>.json does not match its
-fingerprint: <why>. Restore it as it was signed, or name a new version:
-purlin:sign --version <version>.`
-
-The file is tracked, and the last commit that touched it carries a `gpgsig`
-header (`gpgsig-sha256` in a SHA-256 repository) among its headers. An SSH
-signature verifies when `ssh-keygen -Y check-novalidate -n git` accepts it
-over the commit object without that header; it reads the key the signature
-carries, so it needs no list of allowed signers, and a key deleted since
-still verifies. Any other signature verifies when `git verify-commit` exits
-0. The key is not checked against any list, and the commit's author is not
-compared with the signer.
-
-| What is read | The reason it does not count |
-|---|---|
-| The last commit touching the file carries no signature header, or the file is not tracked | `the commit that added it is not signed` |
-| That commit carries a signature that does not verify | `the signature on the commit that added it does not verify` |
-| `package_hash` is not the fingerprint computed over the committed package, or that package does not match its own fingerprint | `it signs another evidence package than the one committed` |
-
-## Where the status reads `signed`
-
-The status reads `signed <version>` only where a sign-off of that version
-counts, and one of two things holds:
-
-- `signed/<version>` is on `HEAD` or an ancestor of it and names a commit that
-  holds the package for that version.
-- This checkout holds no tag `signed/<version>`, as after a pull that fetched
-  no tag, and `HEAD` holds the version's package. The sign-off is then read
-  at the commit that added the oldest sign-off that counts, and the status
-  adds one line: `signed/<version>: tag not in this checkout. The sign-off at
-  <sha7> is read from its files. Run git fetch --tags, or purlin:sign if no one
-  wrote the tag.`
-
-The newest such version answers. A tag that names no such commit is passed
-over, with one warning, and the status reads `not signed` where no version
-is left:
-
-| The tag | The warning |
-|---|---|
-| names a commit that holds no package for its version, as a tag written by hand does | `signed/<version>: tag with no sign-off. Its commit holds no evidence package for <version>. Run git tag -d signed/<version>.` |
-| names a commit that holds the package, and no sign-off of it counts | `signed/<version>: tag with no sign-off. No sign-off counts: <the reason above, or HEAD holds none>. Run purlin:sign --version <version>.` |
-
-`references/evidence_and_signoff.md` holds when a sign-off counts and what
-the tag `signed/<version>` means.
+`references/evidence_and_signoff.md`, "When a sign-off counts", is the one
+home of which sign-off counts: the signature on the commit, the
+`package_hash`, the reason given where one does not count, and where the
+status reads `signed`. "What `signed/<version>` means", there, gives the
+tag's message and meaning.

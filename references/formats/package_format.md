@@ -349,29 +349,14 @@ and names `purlin:build` where a rule has no test (`no_test`).
 
 `rules`, `steps` and `left` are what `purlin:status` says of the commit the
 package reads. Each rule is counted under one kind, the first that applies,
-and a kind at zero has no line. `to_repair` counts specs, not rules: a spec
-that writes a number twice or holds a line left from a merge conflict, whose
-every rule is counted there. `to_correct` counts test comments, not rules,
-and is carried by the project. `to_run_slow` counts proofs, not rules: each
-slow proof that reads `not run`, an AI proof no run has tried among them.
-`to_test_model` has one line per model, each with the model under `model`,
-and counts a rule on each model it waits for:
-
-| `kind` | `text`, for one rule and for more | `command` |
-|---|---|---|
-| `to_repair` | `1 spec to repair`, `<n> specs to repair` | `purlin:spec` |
-| `no_proof` | `1 rule to write a proof for`, `<n> rules to write a proof for` | `purlin:spec` |
-| `to_correct` | `1 test comment to correct`, `<n> test comments to correct` | `purlin:build` |
-| `to_fix` | `1 rule to fix`, `<n> rules to fix` | `purlin:build` |
-| `no_test` | `1 rule to write a test for`, `<n> rules to write a test for` | `purlin:build` |
-| `to_test` | `1 rule to test`, `<n> rules to test` | `purlin:test` |
-| `to_run_slow` | `1 slow proof to run`, `<n> slow proofs to run` | `purlin:test --all` |
-| `to_test_model` | `1 rule to test on <model>`, `<n> rules to test on <model>` | `purlin:test --all` |
-| `to_test_remote` | `1 rule to test on <systems>`, `<n> rules to test on <systems>` | `run purlin:test on <systems>` |
-| `to_strengthen` | `1 rule to strengthen`, `<n> rules to strengthen` | `purlin:build` |
-
-`<systems>` names each system in the words `Linux/Unix`, `macOS` and
-`Windows`, in that order.
+and a kind at zero has no line. `kind` is one of `to_repair`, `no_proof`,
+`to_correct`, `to_fix`, `no_test`, `to_test`, `to_run_slow`, `to_test_model`,
+`to_test_remote` and `to_strengthen`, in that order.
+`references/evidence_and_signoff.md`, "What is left to do", says when each
+applies and what it counts, and gives its `text`, for one and for more, and
+its `command`. `to_test_model` has one line per model, each with the model
+under `model`. `to_commit` never appears: the package is built from a
+checkout of one commit, where no result is written and not committed.
 
 ## The canonical form
 

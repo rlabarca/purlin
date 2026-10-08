@@ -382,11 +382,8 @@ Each `audit.rules` entry:
 | `commit` | string | the full sha of `HEAD` when the audit ran |
 | `notes` | array of strings | optional: one sentence per proof the audit found longer than the standard or holding two cases. Present only when there are some. A note does not make the rule weak |
 
-`verdict` is `weak` when a heuristic spot test fired on one of the rule's
-tests or a planted bug survived, each finding one sentence. It is `strong`
-when none did and a planted bug was caught by its proof's test. It is
-`spot-checked` when none did and no bug was planted and caught, and `no_bug`
-then says why.
+`references/review_criteria.md`, "The verdict", says what sets `verdict`.
+Under `spot-checked`, `no_bug` says why no bug was planted and caught.
 
 A planted bug's `result` is `caught` when the proof's test ran and failed with the
 bug in place, `survived` when it still passed, `not made` when the change
@@ -395,46 +392,41 @@ place, or ended in an error its tool does not report as a failure, which is
 neither caught nor survived. For such an error `why` reads
 `the test ended in an error, not a failure`.
 
-`purlin:audit <feature> RULE-N --settle` plants a `survived` bug again
-(`references/review_criteria.md`, "Settling a finding"). Where the test then
-fails, the entry reads `caught` with the same change. Where the test still
-passes and one new bug survives too, no bug is kept: `result` reads
-`not made`, `why` reads `two planted bugs left the proof's check passing`,
-`file`, `line`, `before` and `after` are null, and `no_bug` holds
-`No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
-A dropped bug is in no field. A proof whose last result was not `survived`
-and was taken on another test or code has no entry under `bugs` after a
-settle, so the next audit plants a bug for it. An entry settled without a
-model being asked keeps the `model` and `criteria` of the entry it replaces,
-and its `explanation` is empty.
+`references/review_criteria.md`, "Settling a finding", says what
+`purlin:audit <feature> RULE-N --settle` does. What it leaves in the entry:
 
-`purlin:test --all` and `purlin:test --clean` write an anchor's entries
-again: for each rule of an anchor that passes its tests and holds an entry,
-the spot tests run over its tests and no model is asked
-(`references/review_criteria.md`, "Anchors and rules with no proof"). The
-entry reads `spot-checked` or `weak`, holds no bug, and keeps the `model` and
-`criteria` of the entry it replaces. It keeps that entry's `explanation` and
-`notes` where the rule, its proofs and its tests are as that entry read
-them, and holds neither where one of them changed.
+- A bug the test now catches reads `caught`, with the same change.
+- Where the test still passes and one new bug survives too, no bug is kept:
+  `result` reads `not made`, `why` reads
+  `two planted bugs left the proof's check passing`, `file`, `line`,
+  `before` and `after` are null, and `no_bug` holds
+  `No bug was caught for PROOF-N: two planted bugs left the proof's check passing.`
+  A dropped bug is in no field.
+- A proof whose last result was not `survived` and was taken on another test
+  or code has no entry under `bugs`, so the next audit plants a bug for it.
+- An entry settled without a model being asked keeps the `model` and
+  `criteria` of the entry it replaces, and its `explanation` is empty.
+- Under `--sound PROOF-N` the proof's entry holds `test_unchanged`: `true`,
+  whatever its `result`, unless a new bug for it reads `survived`, and
+  `no_bug` holds
+  `PROOF-N was settled with its test unchanged: it was judged to assert what the proof names.`
+  Both stay while the entry is kept, and go when a later audit plants a new
+  bug for the proof. Where the model could not be reached for the new bug,
+  the proof has no entry and `no_bug` holds the sentence alone. `--sound`
+  for a proof whose test did change writes neither.
 
 `test_key` says whether a proof's test changed since its bug got past it.
 It is the sha256 of the sorted lines `<file> <test name> <sha256 of the
 test's source>`, one per test tied to that proof, the source as the audit
 reads it: the test's own lines, not its file. `bug_key` covers the
 feature's code as well, so it cannot tell a changed test from changed code.
-A settle plants nothing for a proof whose `test_key` is the one taken now,
-and the bug stays `survived`. A test whose source is not found is read as
-changed.
 
-`purlin:audit <feature> RULE-N --settle --sound PROOF-N` lets the settle go
-on for such a proof. The entry the settle then writes for the proof holds
-`test_unchanged`: `true`, whatever its `result`, unless a new bug for it
-reads `survived`, and `no_bug` holds
-`PROOF-N was settled with its test unchanged: it was judged to assert what the proof names.`
-Both stay while the entry is kept, and go when a later audit plants a new
-bug for the proof. Where the model could not be reached for the new bug,
-the proof has no entry and `no_bug` holds the sentence alone. `--sound` for
-a proof whose test did change writes neither.
+`purlin:test --all` and `purlin:test --clean` write an anchor's entries
+again (`references/review_criteria.md`, "Anchors and rules with no proof").
+Such an entry reads `spot-checked` or `weak`, holds no bug, and keeps the
+`model` and `criteria` of the entry it replaces. It keeps that entry's
+`explanation` and `notes` where the rule, its proofs and its tests are as
+that entry read them, and holds neither where one of them changed.
 
 A rule the model could not be reached for is written with the model `unknown`
 and no bug recorded for a proof the model was not reached for, so the next
@@ -461,11 +453,10 @@ out of date, and then the later `at`.
 
 ## Carried forward
 
-`purlin:test --all` runs a feature whose spec, code or tests changed since
-its results here were taken, a feature whose results here are not all
-passes, and every anchor. Every other feature it carries forward: it records
-the feature's results again on the run's own commit and runs none of its
-tests. `purlin:test --clean` runs every test and carries nothing.
+`references/evidence_and_signoff.md`, "Which evidence counts", says which
+features `purlin:test --all` runs and which it carries forward: it records a
+carried feature's results again on the run's own commit and runs none of its
+tests. This section gives the test a section must meet and what is written.
 
 A section is carried forward where its stored fingerprint equals the one
 taken now and its `dirty` is false. The run writes the section again:
@@ -551,45 +542,34 @@ each part that differs: `code changed since 4f1c2ab`, `spec changed since
   `proof_hash` and `test_hash` equal the rule's current ones, the newer `at`
   where both hold one.
 - Every run deletes the files under `local/` and `ci/` whose feature has no
-  spec.
+  spec, and prints `Removed <path>: no spec defines <feature>.` No other
+  file is deleted: the history is the file's `git log`.
 - A `--ci` run merges the same way: it replaces its own system's section
   of the `ci/` file on disk and leaves every other section as it was. Two
   systems in one pipeline run one after the other, each on the branch as
   the one before left it.
 
-## Retention
+**A run that sees nothing new writes nothing.** A run that sees the same
+results over the same fingerprint on the same `machine`, with the same
+`dirty`, as the section already there leaves the file byte for byte as it
+was, `at`, `commit` and `email` included, where every commit from the one
+the section names to the run's own changes only paths under `.purlin/`, so
+a second run finds nothing new to commit. Any other section replaces it,
+with its own `at`, `commit`, `dirty` and `email`. Two things are left out
+of that comparison:
 
-A file keeps the newest section per operating system and the newest audit
-entry per rule. The history is the file's `git log`. Within a file, every
-write drops the entries of rules the spec no longer carries. A whole file is
-deleted only where no spec defines its feature: every run deletes such a
-file, under `local/` and `ci/`, and prints `Removed <path>: no spec defines
-<feature>.`
+- `carried`, on an entry or a model, where the run carried the result
+  forward: the file stays as it was, with no `carried` in it. A result the
+  run took itself replaces one the section on disk holds as `carried`.
+- Each case's `duration` and the `report` of a `reported`, a model run's
+  included: they say when a run happened, not what it saw. A section left
+  as it was keeps the durations and the report of the run that wrote it,
+  and that report stays kept.
 
-A run that sees the same results over the same fingerprint on the same
-`machine`, with the same `dirty`, as the section already there leaves the
-file byte for byte as it was, `at`, `commit` and `email` included, where
-every commit from the one the section names to the run's own changes only
-paths under `.purlin/`, so a second run finds nothing new to commit. Any
-other section replaces it, with its own `at`, `commit`, `dirty` and `email`.
-
-`carried` is left out of that comparison in one direction: a result the run
-carried forward is the result the section on disk already holds, so the file
-stays as it was, with no `carried` in it. A result the run took itself
-replaces an entry the section on disk holds as `carried`.
-
-Of `reported`, each case's `duration` and the `report` are left out of the
-comparison as well: they say when a run happened, not what it saw. A section
-left as it was keeps the durations and the report of the run that wrote it,
-and that report stays kept. The cases' names, outcomes and texts are
-compared, so a test that fails with another text replaces the section.
-
-An AI proof's `models` are compared the same way. A model's `carried`, and
-the `duration` and `report` of a model run's `reported`, are left out.
-Everything else is compared, each model run's `result`, `output`, `made`,
-`why` and `grade` included, so a model run that wrote another output
-replaces the section. A model
-the run took itself replaces one the section on disk holds as `carried`.
+Everything else is compared: the cases' names, outcomes and texts, and each
+model run's `result`, `output`, `made`, `why` and `grade`. A test that fails
+with another text, or a model run that wrote another output, replaces the
+section.
 
 ## The two commits
 

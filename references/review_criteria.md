@@ -48,19 +48,13 @@ audits still set its verdict: a finding of the spot tests or a kept bug that sur
 
 The audit's first step reads each marked test as text, without running it, and flags a test that cannot fail. It catches the mistakes model-written tests are known to make. Each check below names what it flags, what it deliberately does not flag, the finding it reports, and the research it rests on.
 
-### How the checks are designed
-
-- **Each check flags only what it can be sure of.** Test-smell detectors are known to raise many
-  false alarms, and most classic smells say little about whether a test can catch a bug
-  ([Panichella et al., EMSE 2022](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf)).
-  So every check below is narrow: it fires on a pattern that is wrong in every case, and stays
-  silent where a reasonable test could look similar. A missed case is left to the planted bug,
-  the audit's third step, which runs the test for real.
-- **A finding never blocks anything.** It is reported, with the test's file and name and one
-  sentence on why, and the rule reads `weak` until the test changes.
-- **Each check is about whether the test can fail, not about style.** Smells about readability
-  or maintenance, such as many assertions in one test or magic numbers, are left out (see
-  "Considered and left out").
+Each check is narrow: it fires on a pattern that is wrong in every case, and stays silent where
+a reasonable test could look similar, because test-smell detectors raise many false alarms and
+most classic smells say little about whether a test can catch a bug
+([Panichella et al., EMSE 2022](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf)).
+A missed case is left to the planted bug, which runs the test for real. A finding blocks
+nothing: it is reported, with the test's file and name and one sentence on why, and the rule
+reads `weak` until the test changes.
 
 ### The seven checks
 
@@ -156,11 +150,10 @@ marks an empty value and names nothing to look for; the same number written anot
 **Finding:** `tests/test_age.py::test_age: the proof expects 90 and the test never checks it.`
 
 **Why:** this check needs a specification, so no general tool can make it, and it is Purlin's
-own. It follows from the oracle problem: the expected value should come from the requirement,
-not the code ([Barr et al., TSE 2015](https://discovery-pp.ucl.ac.uk/id/eprint/1471263/1/06963470.pdf)),
-and a model shown buggy code more often rejects the right expected answer
-([Konstantinou et al., 2024](https://arxiv.org/pdf/2410.21136)). The proof is the requirement's
-expected value, written by a person; a test that never mentions it is checking something else.
+own. The expected value should come from the requirement, not the code
+([Barr et al., TSE 2015](https://discovery-pp.ucl.ac.uk/id/eprint/1471263/1/06963470.pdf)).
+The proof is the requirement's expected value, written by a person; a test that never mentions
+it is checking something else.
 
 #### 7. The test of a graded proof never calls grade
 
@@ -179,20 +172,13 @@ says a model judged the output; where the test never asks, nothing judged it.
 
 ### Considered and left out
 
-- **Many assertions in one test, magic numbers, eager tests, a shared fixture, a sleep, a print.**
-  These are maintenance smells. They make a test harder to read, not unable to fail, and their tie
-  to real flaws is weak ([Panichella et al., EMSE 2022](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf)).
+- **Maintenance smells:** many assertions in one test, magic numbers, eager tests, a shared
+  fixture, a sleep, a print. They make a test harder to read, not unable to fail
+  ([Panichella et al., EMSE 2022](https://pure.tudelft.nl/ws/portalfiles/portal/137994226/s10664_022_10207_5.pdf)).
 - **Code coverage.** Running a line says little about whether a bug in it would be caught
   ([Inozemtseva and Holmes, ICSE 2014](https://cs.ubc.ca/~rtholmes/papers/icse_2014_inozemtseva.pdf)).
-- **A weak but failable check, such as "is not None".** Flagging it would raise many false alarms;
-  the planted bug shows whether it is too weak.
-
-### How the checks are held to account
-
-- Each check has a rule and proofs, with tests that show it firing on a wrong test and staying
-  silent on a right one, in Python, JavaScript or TypeScript, and C#.
-- Before a release of Purlin, run the checks over Purlin's own tests. A person reads every
-  finding. Fix the test or, where the check was wrong, narrow the check.
+- **A weak but failable check, such as "is not None".** The planted bug shows whether it is too
+  weak.
 
 ## The planted bug
 
@@ -468,8 +454,7 @@ rule,
 `  PROOF-2: no bug is on record for its test as it stands. Run purlin:audit <feature> to plant one.`
 
 The spot tests run again over the rule's tests, and "The verdict" sets the rule's word as in
-any audit, from the results the entry holds: `weak` where a spot test fires or a bug survived,
-else `strong` where a bug was caught, else `spot-checked`. A proof whose two bugs both survived
+any audit, from the results the entry holds. A proof whose two bugs both survived
 holds no caught bug, and the rule still reads `strong` where another of its proofs does. A
 rule with two bugs that survived, one proof's test changed and the other's not, has the first
 settled and the second refused, and reads `weak` while the second survives.
@@ -497,11 +482,6 @@ drops a bug, plants one more and ends: nothing counts the bugs between runs.
 Where a settled rule needs no new bug, no model is asked. Its entry keeps the `model` and the
 `criteria` of the entry it replaces and holds no `explanation`, since that reading was of the
 test as it was.
-
-An audit without `--settle` plants a recorded bug again only where the code changed and the
-test is as it was, as "The planted bug" says, and the bug stays while the test still passes
-with it. For a proof whose test changed, that audit asks for a new bug, and a survivor reads
-`weak`.
 
 The audit checks that the test changed, not that the changed test asserts what its proof
 names; and under `--sound` it records the judgment and does not check it. A rule made `strong`
@@ -577,9 +557,7 @@ runs past its 300 seconds or gives no answer, no explanation is recorded and the
 line naming the reason, `claude is not on PATH`, `claude exited with an error`,
 `claude timed out after 300 s` or `claude gave no answer`:
 `The model could not be reached: claude is not on PATH. 2 rules are spot-checked alone. Run purlin:audit again.`
-Bugs kept from earlier audits still count. A rule on which a spot test fired, or with a kept
-bug that survived, is still written `weak`; one with neither and a kept bug that was caught is
-written `strong`; any other is written `spot-checked`.
+Bugs kept from earlier audits still count, as "The verdict" says.
 
 ## Anchors and rules with no proof
 
@@ -626,9 +604,3 @@ A rule the audit found weak shows under `Left to do` as a rule to strengthen, an
 works on it: it strengthens the test, then settles the rule as "Settling a finding" says. A case
 the test is missing is fixed by writing its proof line; the next `purlin:build` writes the test
 for it.
-
-## What the audit holds back
-
-Nothing. The audit is a tool a person runs by hand. Neither the tests being met nor a sign-off
-waits on it. Where it ran, what it found is written into the evidence and the evidence package,
-and the signer of `purlin:sign` can read its findings as a list.
