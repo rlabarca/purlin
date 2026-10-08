@@ -34,11 +34,16 @@ def pages():
 # --- The links --------------------------------------------------------------
 
 LINK = re.compile(r'\[([^\]]*)\]\(([^)\s]+)\)')
+HTML_LINK = re.compile(r'<a\b[^>]*?\bhref\s*=\s*["\']?([^"\'\s>]+)', re.I)
 
 
 def targets(text):
-    """Every link target of a Markdown text, in the order they stand."""
-    return [target for _, target in LINK.findall(text)]
+    """Every link target of a Markdown text, in the order they stand, one
+    written as an HTML `<a href>` included."""
+    found = [(match.start(), match.group(2)) for match in LINK.finditer(text)]
+    found += [(match.start(), match.group(1))
+              for match in HTML_LINK.finditer(text)]
+    return [target for _, target in sorted(found)]
 
 
 def anchor_of(heading):
@@ -125,6 +130,11 @@ def test_every_relative_link_on_the_docs_pages_names_a_file_and_a_heading():
     assert broken_links('docs/index.md', text) == [
         'docs/index.md: how-purlin-works.md#no-such-heading',
         'docs/index.md: no-such-page.md']
+    # A link written in HTML is followed like any other.
+    written = ('<a href="how-purlin-work.md">how-purlin-works.md</a> '
+               '<a href="how-purlin-works.md">the model</a>')
+    assert broken_links('docs/index.md', written) == [
+        'docs/index.md: how-purlin-work.md']
 
 
 # --- The audit page and its research ----------------------------------------
@@ -167,12 +177,31 @@ def test_the_research_page_cites_the_five_papers_each_as_an_https_link():
         'Foster et al., FSE 2025', 'LLMorpheus']
 
 
+def listed_under(after):
+    """Every link target a list item under `Sources` gives: an item is a
+    line that opens `- ` and the indented lines that follow it."""
+    items, inside = [], False
+    for line in after.splitlines():
+        if line.startswith('- '):
+            inside = True
+            items.append(line)
+        elif inside and line.startswith('  ') and line.strip():
+            items.append(line)
+        else:
+            inside = False
+    return targets('\n'.join(items))
+
+
 def links_not_listed(text):
     """Each link target the page gives before `Sources` that the list under
     `Sources` does not give again."""
     before, after = around_sources(text)
-    listed = set(targets(after))
-    return [target for target in targets(before) if target not in listed]
+    # A paper's link is given again in a list item. A link to one of the
+    # project's own pages is given again anywhere under the heading.
+    listed, under_heading = set(listed_under(after)), set(targets(after))
+    return [target for target in targets(before)
+            if target not in (listed if re.match(r'[a-z]+:', target)
+                              else under_heading)]
 
 
 # purlin: purlin_docs PROOF-22
@@ -188,17 +217,23 @@ def test_every_link_of_the_research_page_appears_again_under_sources():
                in re.findall(r'https?://[^\s)>\]]+', before)]
     assert len(written) >= 10, written
     assert [address for address in written
-            if address not in targets(after)] == []
+            if address not in listed_under(after)] == []
     # The audit page links to the research page and names 3 or 4 of its
     # sources, each by an https link the list under `Sources` holds.
     given = targets(read(AUDIT_PAGE))
     assert 'audit-research.md' in given, given
     named = [target for target in given if target.startswith('https://')]
     assert 3 <= len(set(named)) <= 4 and len(named) == len(set(named)), named
-    assert [target for target in named if target not in targets(after)] == []
+    assert [target for target in named
+            if target not in listed_under(after)] == []
     # A link the text gives and the list leaves out is found.
     sample = ('[a](https://example.com/a.pdf) [b](https://example.com/b.pdf)'
               '\n\n## Sources\n\n- [a](https://example.com/a.pdf)\n')
+    assert links_not_listed(sample) == ['https://example.com/b.pdf']
+    # A link in a sentence under the heading is in no list item.
+    sample = ('[a](https://example.com/a.pdf) [b](https://example.com/b.pdf)'
+              '\n\n## Sources\n\n- [a](https://example.com/a.pdf),\n'
+              '  2014\n\nIt follows [b](https://example.com/b.pdf).\n')
     assert links_not_listed(sample) == ['https://example.com/b.pdf']
 
 
@@ -232,8 +267,12 @@ def test_the_audit_page_says_what_to_do_with_a_finding_after_how_it_works():
     # No heading of any kind stands between the two: not one of another
     # level, not one written as a line underlined with `=` or `-`, and not
     # one in HTML. Lines inside a fenced block are not headings.
-    between = text.partition('\n## How it works\n')[2].partition(
-        '\n## What to do with a finding\n')[0].splitlines()
+    # A heading inside a block quote is one too: each line is read with the
+    # `>` marks that open it taken off.
+    assert re.sub(r'^(?: {0,3}>)+ ?', '', '> > ## Build') == '## Build'
+    between = [re.sub(r'^(?: {0,3}>)+ ?', '', line) for line
+               in text.partition('\n## How it works\n')[2].partition(
+                   '\n## What to do with a finding\n')[0].splitlines()]
     other, fenced = [], False
     for number, line in enumerate(between):
         if line.lstrip().startswith('```'):
@@ -266,12 +305,21 @@ def paragraphs(text):
             if block.strip()]
 
 
+def names_a_worktree(words):
+    """Whether the words name a worktree, written as one word, as two, or
+    with a hyphen."""
+    return bool(re.search(r'work[\s-]?tree', words, re.I))
+
+
 # purlin: purlin_docs PROOF-24
 def test_one_paragraph_of_working_together_names_a_worktree():
     text = read(os.path.join(DOCS, 'working-together.md'))
     naming = [paragraph for paragraph in paragraphs(text)
-              if 'worktree' in paragraph.lower()]
+              if names_a_worktree(paragraph)]
     assert len(naming) == 1, naming
+    assert [words for words in ('a work tree', 'Work-trees', 'worktree')
+            if not names_a_worktree(words)] == []
+    assert not names_a_worktree('work on a tree')
     paragraph = naming[0]
     assert paragraph.count('Each checkout') == 1, paragraph
     assert 'its own results' in paragraph
@@ -316,6 +364,13 @@ def test_one_paragraph_of_working_together_names_a_worktree():
 
 # --- The example that fetches Purlin ----------------------------------------
 
+def branches_named(command):
+    """Each branch one `git clone` command names, in order, by `--branch`,
+    `--branch=` or `-b`, the quotation marks of the shell taken off."""
+    return re.findall(r'(?<!\S)(?:--branch[= ]|-b[= ]?)\s*(\S+)',
+                      re.sub(r'["\']', '', command))
+
+
 # purlin: purlin_docs PROOF-26
 def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
     with open(os.path.join(ROOT, 'VERSION'), encoding='utf-8') as handle:
@@ -336,13 +391,16 @@ def test_the_example_clones_purlin_at_the_signed_tag_of_this_version():
     assert named == ['signed/' + version], named
     # The clone of the purlin repository names that branch and no second
     # one: git takes the last branch a command names.
+    # A flag written in quotation marks is the same flag to the shell.
     every = []
     for clone in clones:
         command = re.split(r'\n|\|\||&&|;', clone)[0]
         if re.search(r'/purlin(?:\.git)?\b', command):
-            every += re.findall(
-                r'(?<!\S)(?:--branch[= ]|-b[= ]?)\s*(\S+)', command)
+            every += branches_named(command)
     assert every == ['signed/' + version], every
+    assert branches_named(' --depth 1 --branch signed/1 "--branch" main '
+                          "'-b' next https://example.com/purlin") == [
+                              'signed/1', 'main', 'next']
 
 
 # --- The index --------------------------------------------------------------
@@ -416,6 +474,14 @@ def links_missing(texts):
             if target not in pages_linked(texts.get(page, ''))]
 
 
+def shown(text):
+    """A page with what a reader cannot follow taken out: every HTML
+    comment, every fenced block and every code span."""
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
+    text = re.sub(r'^```.*?^```$', '', text, flags=re.M | re.S)
+    return re.sub(r'`[^`]*`', '', text)
+
+
 # purlin: purlin_docs PROOF-28
 def test_the_two_ai_pages_are_linked_from_each_other_and_each_folding_page():
     texts = {page: read(os.path.join(DOCS, page))
@@ -424,11 +490,13 @@ def test_the_two_ai_pages_are_linked_from_each_other_and_each_folding_page():
     # A link shown as code is text a reader sees and cannot follow: with
     # every fenced block and every code span taken out, each page still
     # holds each link.
-    followed = {page: re.sub(r'`[^`]*`', '',
-                             re.sub(r'^```.*?^```$', '', text,
-                                    flags=re.M | re.S))
-                for page, text in texts.items()}
+    # A link inside an HTML comment is not shown at all.
+    followed = {page: shown(text) for page, text in texts.items()}
     assert links_missing(followed) == []
+    hidden = dict(texts)
+    hidden['sign-off.md'] = shown(
+        '[a](testing-ai.md) <!-- [b](graded-by-ai.md) -->')
+    assert links_missing(hidden) == ['sign-off.md: graded-by-ai.md']
     # A page that names the other in plain words, or in a code span, does
     # not link it; a link with a `#` part does.
     sample = dict(texts)
@@ -446,8 +514,9 @@ def diagrams(text):
 
 def box_labels(lines):
     """The label of every box a mermaid flow chart draws: the quoted text
-    inside `[...]`, `(...)` or `{...}` after a node's id."""
-    return re.findall(r'\b\w+(?:\[|\(\[|\{)"([^"]*)"', '\n'.join(lines))
+    inside `[...]`, `(...)`, `{...}` or `>...]` after a node's id."""
+    return re.findall(r'(?<![\w<])\w+(?:\[|\(\[|\{|>)"([^"]*)"',
+                      '\n'.join(lines))
 
 
 # purlin: purlin_docs PROOF-29
@@ -467,7 +536,8 @@ def test_each_ai_page_holds_one_flow_diagram_with_each_box_named_in_bold():
         drawn = re.sub(r'"[^"\n]*"',
                        lambda held: ('"<b>' if held.group(0).startswith('"<b>')
                                      else '"'), drawn)
-        opened = re.findall(r'\b\w+(?:\(\[|\[|\{|\()(.{0,4})', drawn)
+        opened = re.findall(r'(?<![\w<])\w+(?:\(\[|\[|\{|\(|>)(.{0,4})',
+                            drawn)
         assert len(opened) == len(labels), (page, opened, labels)
         assert [box for box in opened if box != '"<b>'] == [], (page, opened)
     # A label on an arrow is no box, and a box whose name is not bold is
@@ -475,6 +545,9 @@ def test_each_ai_page_holds_one_flow_diagram_with_each_box_named_in_bold():
     sample = ['flowchart LR', '    A["<b>One</b><br>x"] -->|"yes"| B(["Two"])',
               '    B --> C{"<b>Three</b>"}']
     assert box_labels(sample) == ['<b>One</b><br>x', 'Two', '<b>Three</b>']
+    # A box drawn as a flag, `F>"..."]`, is a box.
+    assert box_labels(['    N -->|"one fails"| F>"failed<br>x"]']) == [
+        'failed<br>x']
 
 
 # --- The count of spot tests ------------------------------------------------
@@ -482,6 +555,15 @@ def test_each_ai_page_holds_one_flow_diagram_with_each_box_named_in_bold():
 def check_counts(text):
     """Each `The <word> checks` the text holds, as the word."""
     return re.findall(r'\bThe (\w+) checks\b', text)
+
+
+def counts_of(text):
+    """Each number, in a word or in digits, that stands before `of the` and
+    one of the names the checks go by."""
+    return re.findall(
+        r'\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|'
+        r'twelve|\d+) of (?:the|these|those|its) (?:\w+ )?(?:checks|'
+        r'spot tests|spot checks|heuristics)\b', text, re.I)
 
 
 # purlin: purlin_docs PROOF-30
@@ -500,5 +582,9 @@ def test_the_audit_pages_count_the_spot_tests_as_the_reference_does():
             r'twelve|\d+) (?:\w+ )?(?:checks|spot tests|spot checks|'
             r'heuristics)\b', text, re.I)
         assert counted == ['seven'], (page, counted)
+        # `All eight of the spot tests` counts them too.
+        assert counts_of(text) == [], (page, counts_of(text))
+    assert counts_of('All eight of the spot tests, 7 of the checks') == [
+        'eight', '7']
     assert check_counts('The six checks are in. The seven checks') == [
         'six', 'seven']

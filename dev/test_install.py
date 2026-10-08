@@ -332,7 +332,10 @@ def test_claude_code_offers_every_purlin_skill_to_the_model(installed):
     assert answer.get('is_error') is False, answer
     names = skill_folders()
     assert len(names) >= 9, names
-    offered = set(re.findall(r'purlin:([a-z][a-z-]*)', answer['result']))
+    # A command is read whole: `purlin:drift2` does not offer `drift`.
+    offered = set(re.findall(r'purlin:([a-z][\w-]*)', answer['result']))
+    assert re.findall(r'purlin:([a-z][\w-]*)', '/purlin:drift2 /purlin:test') == [
+        'drift2', 'test']
     assert [name for name in names if name not in offered] == [], \
         answer['result']
 
