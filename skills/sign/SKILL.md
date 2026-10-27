@@ -1,6 +1,7 @@
 ---
 name: sign
 description: "Sign off a version: build the evidence package from the committed evidence, walk its hand checks with a person, and sign it in a signed commit; also check a package against its fingerprint"
+tier: performance
 ---
 
 Sign this version of the code. `purlin:sign` reads the committed evidence, builds the evidence

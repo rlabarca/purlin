@@ -1,6 +1,7 @@
 ---
 name: spec
 description: "Write or change a spec: turn a requirement into rules and proofs, or add, sharpen, reword or remove a rule, a case or a proof of an existing spec. Use it for any change to a file under specs/, instead of editing the file by hand"
+tier: performance
 ---
 
 # purlin:spec

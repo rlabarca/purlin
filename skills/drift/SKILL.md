@@ -1,6 +1,7 @@
 ---
 name: drift
 description: Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took
+tier: fast
 ---
 
 Report what changed since you last brought someone else's changes into your checkout, in one

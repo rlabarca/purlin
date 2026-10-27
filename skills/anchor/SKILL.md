@@ -1,6 +1,7 @@
 ---
 name: anchor
 description: Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current
+tier: balanced
 ---
 
 # purlin:anchor

@@ -712,6 +712,39 @@ def _call(prompt, command, runner, cwd, model=None, system=None):
     return found
 
 
+# The routing files and the tier whose model writes the planted bugs:
+# `references/formats/routing_format.md`, "The audit's planted bugs".
+ROUTING = os.path.join('.purlin', 'routing.json')
+ROUTING_LOCAL = os.path.join('.purlin', 'routing.local.json')
+PLANTED_BUG_TIER = 'performance'
+PLANTED_BUG_DEFAULT = 'opus'
+
+
+def _json_at(path):
+    """The object the JSON file at `path` holds, or None."""
+    try:
+        with open(path, encoding='utf-8') as handle:
+            found = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return found if isinstance(found, dict) else None
+
+
+def planted_bug_model(project_root):
+    """The model the planted bugs are written on: the `performance` tier's
+    of the project's routing, the person's own `tiers` first; None where
+    the project has no routing file or it is not on."""
+    routing = _json_at(os.path.join(project_root, ROUTING))
+    if not routing or routing.get('enabled') is not True:
+        return None
+    for tiers in ((_json_at(os.path.join(project_root, ROUTING_LOCAL))
+                   or {}).get('tiers'), routing.get('tiers')):
+        model = tiers.get(PLANTED_BUG_TIER) if isinstance(tiers, dict) else None
+        if isinstance(model, str) and model.strip():
+            return model.strip()
+    return PLANTED_BUG_DEFAULT
+
+
 def audit_one(project_root, reading, criteria, command=None, runner=None,
               cwd=None):
     """The model's one reply for a rule, or why it could not be asked.
@@ -723,7 +756,8 @@ def audit_one(project_root, reading, criteria, command=None, runner=None,
     reply sets no verdict.
     """
     prompt = model_prompt(project_root, reading, criteria)
-    called = ask_model(prompt, command, runner, cwd)
+    called = ask_model(prompt, command, runner, cwd,
+                       model=planted_bug_model(project_root))
     if called['why']:
         return {'why': called['why']}
     parts, explanation, notes = read_reply(called['answer'],

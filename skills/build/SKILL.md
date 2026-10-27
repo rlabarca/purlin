@@ -1,6 +1,7 @@
 ---
 name: build
 description: Write the code and the marked tests for a spec's rules, fix a failing rule, strengthen a weak test, and commit the changeset
+tier: balanced
 ---
 
 # purlin:build

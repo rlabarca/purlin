@@ -1,6 +1,7 @@
 ---
 name: test
 description: Run the project's marked tests and record the results as evidence; with --all --commit, the hand-off before a sign-off
+tier: balanced
 ---
 
 Run the project's own test suites, tie each result to the marker comment above its test, write

@@ -84,7 +84,7 @@ def _found(files, check):
 # purlin: purlin_agent PROOF-51
 def test_every_path_a_skill_or_the_agent_definition_names_exists():
     files = skill_files() + [AGENT]
-    assert len(files) == 11, files
+    assert len(files) == 12, files
     for rel in files:
         assert named_paths(read(rel)), '%s names no path' % rel
     assert _found(files, absent_paths) == {}

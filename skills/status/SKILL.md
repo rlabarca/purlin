@@ -1,6 +1,7 @@
 ---
 name: status
 description: "Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do"
+tier: fast
 ---
 
 Show where every feature stands: whether the tests are met, whether this code is signed, how many

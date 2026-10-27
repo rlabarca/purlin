@@ -22,8 +22,8 @@
 >   proof that asks its grader. Every line about it says `wrong output`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 91
-> Highest-Proof: 216
+> Highest-Rule: 92
+> Highest-Proof: 218
 
 ## Rules
 
@@ -90,6 +90,7 @@
 - RULE-89: `ai_audit.py --feature <f> --rule RULE-N` names, for a rule with an `@ai` proof, under a line `Output` after the tests, each such proof and the folder of the kept output a wrong one is planted in, or `no passing output kept on this machine`
 - RULE-90: No test of the audit of an `@ai` proof reaches a real model: the output is handed over by the helper's `record`, and the audit's model and the grader are a fake `claude` under the test's own temporary folder
 - RULE-91: Where the kept output holds files under `input/`, what the AI was given, the request shows them under `Input of <PROOF-N>:`, before `Output of <PROOF-N>:`, and says no wrong output changes a path under `input/`
+- RULE-92: Where `.purlin/routing.json` reads `"enabled": true`, the audit asks the model for its bugs on the `performance` tier's model, the `tiers` of `.purlin/routing.local.json` read before those of `.purlin/routing.json` and `opus` where neither names it; with no such file it names no model
 
 ## Proof
 
@@ -235,3 +236,5 @@
 - PROOF-214 (RULE-89): `ai_audit.py --feature refusal_note --rule RULE-1` is run on the refusal note; it prints, after the test's source, the line `Output` and under it `  PROOF-1  .purlin/runtime/ai/refusal_note/PROOF-1/claude-opus-5-5/1`; with the folder `.purlin/runtime/ai` removed that line reads `  PROOF-1  no passing output kept on this machine`
 - PROOF-215 (RULE-90): The refusal note is built and audited; every start of `claude` is logged by a fake under the test's own temporary folder, and the helper's record of each kept output reads `made` `project`
 - PROOF-216 (RULE-91): The kept output of `PROOF-1` holds `input/message.md` reading `The bench refused LC-1234567.` and `reply.md`; the request holds, in this order, `Input of PROOF-1:`, `File: input/message.md`, `The bench refused LC-1234567.`, `Output of PROOF-1:` and `File: reply.md`, and the line `In the part, file: is a path of that output as given below, never one under input/, and case:`
+- PROOF-217 (RULE-92): The model the audit names is `opus` for a project whose `.purlin/routing.json` is on and names no `performance` model, `sonnet` where its `tiers` give `performance` `sonnet`, `haiku` where `.purlin/routing.local.json` then gives it `haiku`, and none with no file or with `"enabled": false`
+- PROOF-218 (RULE-92): Asked for one rule's bugs in a project whose routing gives `performance` the model `sonnet`, the audit starts `claude` with `--model sonnet`
