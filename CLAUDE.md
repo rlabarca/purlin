@@ -48,6 +48,7 @@ emission:**
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and remote, parsed by `sync_status` and `purlin:anchor sync` |
 | `marker_format.md` | The marker comment above a test, the `tests` setting, the four report formats and the tie, read by `purlin_run.py` and `sync_status` |
+| `routing_format.md` | The routing file `purlin:route` writes, each skill's tier, each tier's model, the project skills, the hand-off and its message, and the audit's planted-bug model, read by the session and `ai_audit.py` |
 | `signature_format.md` | The sign-off `purlin:sign` writes over the evidence package, read by `purlin:sign` and `sync_status` |
 | `package_format.md` | The evidence package `purlin:sign` builds, commits and checks, handed to a regulated sign-off system as evidence |
 | `evidence_format.md` | The evidence file per feature per source and its fingerprint, written by `purlin:test`, `purlin:audit` and a project's own run on another system, read by `sync_status` and `purlin:sign` |

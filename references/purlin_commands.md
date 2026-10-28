@@ -1,6 +1,6 @@
 # Purlin commands
 
-The ten skills below. Six are the core loop; the rest support it. This page is the one home
+The eleven skills below. Six are the core loop; the rest support it. This page is the one home
 of the skill one-liners: the frontmatter `description` of `skills/<name>/SKILL.md` and the
 README table carry the sentence in the Purpose column below, and nothing repeats it in its own
 words.
@@ -184,6 +184,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
 | `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current | A developer, or product in Claude Code |
 | `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
 | `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has | A developer, once, on a codebase that has no specs. Optional |
+| `purlin:route [on \| off]` | Show model routing, or turn it on or off, so each Purlin skill runs on a model sized to its work | A developer, once per project or when the models change. Optional: without it every skill runs on the session's model. In a project with routing set up, type `/spec`, `/build` and the rest to run each on its tier's model; `/purlin:<skill>` runs on the session's model |
 
 ## Syntax
 
@@ -229,6 +230,11 @@ input, takes the end of input as no, and goes on only with a typed answer or the
   purlin:anchor create <name>     A local anchor
   purlin:anchor add <url> --path <file> [--name <name>] [--json]   Pin an anchor from another repository
   purlin:anchor sync [name|--all] [--check] [--json]   Advance a pin; with --check, report only
+
+  Routing
+  purlin:route                    The tier and model of each skill
+  purlin:route on                 Give each tier a model, write a project skill per skill, start sessions as the Purlin agent
+  purlin:route off                Run every skill on the session's model again
 ```
 
 `--json` prints the anchor script's answer as JSON.
@@ -246,6 +252,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
 | `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, and `purlin-report.html`, its page, where the project's copy is missing or differs from the plugin's; git ignores both. `purlin:test`, `purlin:audit` and `purlin:sign` write the same two when they finish |
 | `purlin:drift` | Nothing. It reads only this checkout and never fetches |
+| `purlin:route` | `on`: `.purlin/routing.json`, or `.purlin/routing.local.json` for one person's models, one project skill `.claude/skills/<skill>/SKILL.md` per skill that names a tier, and `"agent"` and `"model"` in `.claude/settings.json` or `.claude/settings.local.json`, committed as `chore: model routing`. `off`: `"enabled": false`, the project skills it wrote removed and the two settings taken out, committed as `chore: model routing off`. With no word it writes nothing |
 
 ## Exit codes
 

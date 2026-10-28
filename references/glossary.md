@@ -19,7 +19,7 @@ behaves.
 | `@env(<os>)` | The tag of a proof that can only be shown on `windows`, `macos` or `linux` | `formats/spec_format.md`, "Operating system tags" |
 | slow proof | A proof tagged `@slow`, or an AI proof: `purlin:test` never starts its test and `purlin:test --all` does. An anchor's proof may be one | `formats/spec_format.md`, "The slow tag"; `purlin_commands.md` |
 | AI proof | A proof tagged `@ai(<model>, ...)`, about what an AI does with a prompt or a skill. It is a slow proof, and it passes on a model when every model run passed | `formats/spec_format.md`, "The AI tags"; `spec_quality_guide.md`, "A proof about what an AI does" |
-| model | An AI model, by the name a proof's tag gives it, such as `claude-opus-5-5`. A proof names its own; no setting names one | `formats/spec_format.md`, "The AI tags" |
+| model | An AI model, by the name a proof's tag gives it, such as `claude-opus-5-5`. A proof names its own; no setting names one, and routing never changes it | `formats/spec_format.md`, "The AI tags" |
 | model run | One start of an AI proof's test on one model. It is not a run | `formats/spec_format.md`, "The AI tags" |
 | output | What the AI produced in one model run, kept as one folder | `purlin_commands.md`, "The helper" |
 | helper | `scripts/ai/purlin_ai.py`, the program an AI proof's test starts to make an output, to hand one over, or to have one graded | `purlin_commands.md`, "The helper" |
@@ -105,6 +105,15 @@ behaves.
 | worktree | A checkout git adds beside the first. It is a checkout like any other | this row |
 | git host | Where a project's repository is kept, such as GitHub or Azure DevOps. Purlin calls none | `evidence_and_signoff.md`, "A run on another system" |
 | drift | `purlin:drift`: the facts your last pull, merge, rebase, checkout, clone or reset brought in, in one view | `drift_criteria.md` |
+
+## Model routing
+
+| Word | Meaning | Detail |
+|------|---------|--------|
+| model routing | Which model each Purlin skill runs on: its tier from its front matter, and the tier's model from `.purlin/routing.json`, which `purlin:route` writes. Without the file every skill runs on the session's model | `formats/routing_format.md` |
+| tier | `fast`, `balanced` or `performance`: the size of model a skill's work needs. A skill names its tier, and a project gives each tier a model | `formats/routing_format.md`, "The two tables" |
+| project skill | `.claude/skills/<skill>/SKILL.md`, written by `purlin:route on`: typed as `/<skill>`, it runs `purlin:<skill>` on its tier's model | `formats/routing_format.md`, "The project skills" |
+| hand-off | A skill that asks the person, `spec`, `spec-from-code` or `sign`, run whole on a `purlin:runner` subagent on its model, each answer sent to that same subagent | `formats/routing_format.md`, "The hand-off" |
 
 ## The chain
 

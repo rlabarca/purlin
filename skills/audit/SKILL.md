@@ -1,6 +1,7 @@
 ---
 name: audit
 description: Check how much the tests are worth: heuristic spot tests and one planted bug per proof, written into the evidence
+tier: balanced
 ---
 
 Show how much the tests are worth. The audit runs the marked tests, then for each rule that

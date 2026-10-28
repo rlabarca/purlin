@@ -1,6 +1,7 @@
 ---
 name: init
 description: Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes
+tier: balanced
 ---
 
 # purlin:init

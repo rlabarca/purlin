@@ -133,6 +133,14 @@ A request that names no command still routes: "make sure nobody logs in with a b
 password" is a rule, so it reaches `purlin:spec`, and the spec skill ends by offering the
 build.
 
+## Model routing
+
+Each skill names its tier in its front matter, and a project with `.purlin/routing.json` gives
+each tier a model. A command the person types, `/<skill>`, runs on its model through the project
+skill `purlin:route on` wrote: `references/formats/routing_format.md`, "The project skills".
+A skill that asks the person runs whole on a `purlin:runner` subagent, each answer sent to that
+same subagent: the same reference, "The hand-off", is the one home of that step and its message.
+
 ## Renaming a feature
 
 A feature's name is carried in three places, and a rename moves them together in one commit: the

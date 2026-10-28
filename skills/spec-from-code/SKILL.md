@@ -1,6 +1,7 @@
 ---
 name: spec-from-code
 description: Write the specs for a codebase that has none, from the code and the tests it already has
+tier: performance
 ---
 
 # purlin:spec-from-code

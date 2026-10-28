@@ -130,6 +130,7 @@ To upgrade, after the plugin updates:
 | `purlin:drift` | Report what a pull, a merge, a rebase or a checkout changed in the rules, the proofs and the tests, and name a number two branches both took |
 | `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current |
 | `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has |
+| `purlin:route [on \| off]` | Show model routing, or turn it on or off, so each Purlin skill runs on a model sized to its work |
 
 [references/purlin_commands.md](references/purlin_commands.md) has every flag.
 
