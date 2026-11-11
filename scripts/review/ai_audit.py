@@ -638,7 +638,7 @@ def empty_folder():
 
 def ask_model(prompt, command=None, runner=None, cwd=None, model=None,
               system=None):
-    """One call: `{'answer', 'model', 'why', 'printed', 'said'}`.
+    """One call: `{'answer', 'model', 'why', 'printed', 'said', 'cost'}`.
 
     The request goes on stdin and stdin is closed after it, so the command
     line never carries it. `claude` is started in `cwd`, the audit's empty
@@ -652,12 +652,13 @@ def ask_model(prompt, command=None, runner=None, cwd=None, model=None,
     `SYSTEM_PROMPT`; the audit gives neither. `printed` is the program's
     standard output, and `said` what the program itself said of a call
     that failed: the `result` of a JSON that reports an error, else its
-    standard error where it exited with an error, else ''.
+    standard error where it exited with an error, else ''. `cost` is the
+    `total_cost_usd` the program's JSON reports, or None (RULE-94).
     """
     command = command or claude_path()
     if not command:
         return {'answer': None, 'model': None, 'why': NOT_ON_PATH,
-                'printed': '', 'said': ''}
+                'printed': '', 'said': '', 'cost': None}
     if cwd is None:
         with empty_folder() as folder:
             return _call(prompt, command, runner or subprocess.run, folder,
@@ -668,7 +669,7 @@ def ask_model(prompt, command=None, runner=None, cwd=None, model=None,
 
 def _call(prompt, command, runner, cwd, model=None, system=None):
     found = {'answer': None, 'model': None, 'why': None, 'printed': '',
-             'said': ''}
+             'said': '', 'cost': None}
     argv = [command] + list(COMMAND[1:-1])
     if model:
         argv.extend(['--model', model])
@@ -692,6 +693,10 @@ def _call(prompt, command, runner, cwd, model=None, system=None):
         body = json.loads(result.stdout or '')
     except ValueError:
         body = None
+    if isinstance(body, dict) and isinstance(
+            body.get('total_cost_usd'), (int, float)) \
+            and not isinstance(body.get('total_cost_usd'), bool):
+        found['cost'] = float(body['total_cost_usd'])
     if isinstance(body, dict) and body.get('is_error') \
             and isinstance(body.get('result'), str):
         found['said'] = body['result']
@@ -725,11 +730,15 @@ def audit_one(project_root, reading, criteria, command=None, runner=None,
     prompt = model_prompt(project_root, reading, criteria)
     called = ask_model(prompt, command, runner, cwd)
     if called['why']:
-        return {'why': called['why']}
+        unreached = {'why': called['why']}
+        if called.get('cost') is not None:
+            unreached['cost'] = called['cost']
+        return unreached
     parts, explanation, notes = read_reply(called['answer'],
                                            reading.get('plant') or ())
     return {'parts': parts, 'explanation': explanation, 'notes': notes,
-            'model': called['model'], 'criteria': criteria_hash(criteria)}
+            'model': called['model'], 'criteria': criteria_hash(criteria),
+            'cost': called.get('cost')}
 
 
 def audit_all(project_root, readings, parallel=AUDIT_PARALLEL, runner=None,

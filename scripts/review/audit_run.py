@@ -103,6 +103,10 @@ NO_RULE_PASSES = 'The audit found no rule that passes its tests.'
 NOT_REACHED = 'The model could not be reached: %s.%s Run purlin:audit again.'
 ALONE_ONE = ' 1 rule is spot-checked alone.'
 ALONE_MANY = ' %d rules are spot-checked alone.'
+# Before those two: the models that answered, how many calls they answered,
+# and what every call reported it cost (ai_audit RULE-94).
+ASKED = 'The audit asked %s about %s: %s.'
+NO_COST = 'no cost reported'
 
 # What a rule read prints: its name and verdict, then one line per finding
 # and per `no_bug` sentence.
@@ -897,7 +901,7 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
             answer = item.setdefault('answer', {
                 'parts': {}, 'explanation': [], 'notes': [],
                 'model': item['last'].get('model'),
-                'criteria': item['last'].get('criteria')})
+                'criteria': item['last'].get('criteria'), 'asked': False})
             bugs, survived, no_bug = planted_bugs(
                 project_root, item['reading'], item['plan'],
                 item['scope_files'], item['last'], answer, said=item['said'],
@@ -954,6 +958,10 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
         for line in rule_lines(item['verdict'], item['findings'],
                                item['no_bug']):
             say(FINDING_LINE % line)
+    asked_line = asked_of([item['answer'] for item in done
+                           if item['answer'].get('asked', True)])
+    if asked_line:
+        say(asked_line)
     if reasons:
         say(NOT_REACHED % ('; '.join(reasons),
                            '' if not alone else ALONE_ONE if alone == 1
@@ -961,6 +969,27 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
 
     say(share_line(project_root, payload, selected))
     return 0
+
+
+def asked_of(answers):
+    """`ASKED` filled from the answers of the calls the audit made, or None
+    where none was answered (ai_audit RULE-94): each model that answered,
+    joined by `and`; how many calls were answered; the sum of the cost every
+    call reported, or `NO_COST` where none reported one."""
+    answered = [answer for answer in answers if not answer.get('why')]
+    if not answered:
+        return None
+    models = []
+    for answer in answered:
+        name = answer.get('model') or UNKNOWN_MODEL
+        if name not in models:
+            models.append(name)
+    costs = [answer['cost'] for answer in answers
+             if isinstance(answer.get('cost'), float)]
+    return ASKED % (' and '.join(models),
+                    '1 rule' if len(answered) == 1
+                    else '%d rules' % len(answered),
+                    '$%.2f' % sum(costs) if costs else NO_COST)
 
 
 def read_anchors_again(project_root, features, selected):
