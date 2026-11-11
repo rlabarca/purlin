@@ -152,7 +152,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T14:53:06Z",
-      "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+      "commit": "03d309f0bffe9bbd5c06ecac64071fa6dd9a7120",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -163,6 +163,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-62",
           "manual": false,
@@ -185,6 +191,12 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_holds_each_command_and_file"
         },
         {
+          "carried": {
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-63",
           "manual": false,
@@ -207,6 +219,12 @@
           "test": "dev/test_skill_spec.py::test_the_spec_skill_says_where_the_two_highest_lines_go"
         },
         {
+          "carried": {
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-64",
           "manual": false,
@@ -229,6 +247,12 @@
           "test": "dev/test_skill_spec.py::test_the_part_on_proofs_shows_the_two_tags_with_their_models"
         },
         {
+          "carried": {
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-65",
           "manual": false,
@@ -251,6 +275,12 @@
           "test": "dev/test_skill_spec.py::test_the_part_on_proofs_asks_which_check_and_where_it_may_ask_picks_no_model"
         },
         {
+          "carried": {
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
