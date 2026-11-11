@@ -2,24 +2,18 @@
   "feature": "server",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T16:09:18Z",
-      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
+      "at": "2026-11-11T18:04:19Z",
+      "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "2ea4a41cbde06203c11925b1bd55aa43fbd69172cc05b327a096d86fee72e07c",
+        "code": "eacf09ac400dcdcb79423d59620d6fe69eb8c4d4a8719c7772c34edf1f4a926a",
         "spec": "431a23f2a56d56d24f93e8d25e3b987ec82b7d1b3bfe98e1cfcfa5256da38054",
-        "tests": "0d9db2e0154569e57734f03b89743d77094c0db9337db0a3bdbecb0e14633b29"
+        "tests": "6d014de45301285a2b1e6a98b5f8a65e81c3280905f5277545a94f173c15c7f4"
       },
       "machine": "runnervmm7ud1",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T16:09:18Z",
-            "commit": "b34fd0d3701e4c0368de98e739f648f67cd09d67",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-159",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestTransport",
-                "duration": 0.368,
+                "duration": 0.358,
                 "name": "test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "3d8cde0ab64f3f6d6d498a474cf7b6a84af83d378b2804fd01b33c03e511b11f"
+              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
-          "carried": {
-            "at": "2026-11-11T16:09:18Z",
-            "commit": "b34fd0d3701e4c0368de98e739f648f67cd09d67",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-160",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestWhichProjectRoot",
-                "duration": 0.766,
+                "duration": 0.786,
                 "name": "test_on_windows_a_workspace_named_from_the_home_folder_is_found",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "3d8cde0ab64f3f6d6d498a474cf7b6a84af83d378b2804fd01b33c03e511b11f"
+              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
             }
           },
           "result": "pass",
