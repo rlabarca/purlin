@@ -690,8 +690,8 @@
   "feature": "scaffold",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T14:33:38Z",
-      "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+      "at": "2026-11-11T15:31:33Z",
+      "commit": "cbcd3f06d48e4819096ceda26aca7cdec64fa65c",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -709,14 +709,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestNothingInTheTests",
-                "duration": 0.526,
+                "duration": 0.553,
                 "name": "test_nothing_is_written_into_a_pytest_suite",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -731,14 +731,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestNothingInTheTests",
-                "duration": 0.486,
+                "duration": 0.512,
                 "name": "test_a_runner_config_the_project_wrote_is_left_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -753,14 +753,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestWhatInitWrites",
-                "duration": 0.525,
+                "duration": 0.569,
                 "name": "test_what_appears_is_exactly_what_the_summary_wrote",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -775,14 +775,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestWhatInitWrites",
-                "duration": 0.676,
+                "duration": 0.693,
                 "name": "test_a_second_run_writes_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -797,14 +797,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheSettings",
-                "duration": 0.758,
+                "duration": 0.819,
                 "name": "test_a_tests_setting_the_project_carries_is_kept",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -827,14 +827,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheMarketplacePath",
-                "duration": 1.306,
+                "duration": 1.382,
                 "name": "test_the_copy_sets_a_project_up_the_same_way",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -849,14 +849,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheMarketplacePath",
-                "duration": 0.478,
+                "duration": 0.521,
                 "name": "test_no_project_file_names_a_development_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -879,14 +879,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestNoHookIsInstalled",
-                "duration": 0.492,
+                "duration": 0.534,
                 "name": "test_no_git_hook_is_written_at_all",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -901,14 +901,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestNoHookIsInstalled",
-                "duration": 0.501,
+                "duration": 0.519,
                 "name": "test_a_hook_someone_else_wrote_is_left_alone",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -923,14 +923,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheRefusals",
-                "duration": 0.645,
+                "duration": 0.818,
                 "name": "test_update_hands_the_project_to_the_upgrade",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -945,14 +945,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheRefusals",
-                "duration": 0.713,
+                "duration": 0.819,
                 "name": "test_update_hands_over_the_migrations_named_and_a_test_command",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -974,7 +974,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -989,14 +989,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestRunCommitAndSignOff",
-                "duration": 1.246,
+                "duration": 1.399,
                 "name": "test_the_sign_off_makes_a_signed_commit_naming_the_signer",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1018,7 +1018,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1033,14 +1033,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestEachLanguageIsSetUp",
-                "duration": 3.655,
+                "duration": 3.644,
                 "name": "test_a_python_project_runs_its_marked_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1055,14 +1055,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestEachLanguageIsSetUp",
-                "duration": 3.748,
+                "duration": 5.062,
                 "name": "test_a_typescript_project_runs_its_marked_test",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1077,18 +1077,18 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestEachLanguageIsSetUp",
-                "duration": 0.001,
+                "duration": 2.132,
                 "name": "test_a_csharp_project_runs_its_marked_test",
-                "outcome": "skip",
-                "text": "dotnet is not installed here"
+                "outcome": "fail",
+                "text": "AssertionError: Running dotnet: dotnet test --logger trx --results-directory .purlin/runtime/reports/dotnet\n  --- dotnet output (last 60 lines) ---\n    Determining projects to restore...\n  /Users/rlabarca/homebrew/Cellar/dotnet/10.0.403/libexec/sdk/10.0.403/NuGet.targets(198,5): warning : Unable to find a project to restore! [/private/var/folders/cw/fpvv_31d0vvfsvfsdl_glpv80000gp/T/pytest-of-rlabarca/pytest-11/walk-csharp0/csharp/App.slnx]\n  --- end of dotnet output ---\n  \n[+24 more lines; full report in element text]\n\nself = <test_init_scaffold.TestEachLanguageIsSetUp object at 0x10b2a7490>\ncsharp_project = <test_init_scaffold.Walk object at 0x10b3760d0>\n\n    def test_a_csharp_project_runs_its_marked_test(self, csharp_project):\n        walk = csharp_project\n        assert walk.code['init'] == 0, walk.out['init']\n        assert walk.facts['tests after init'] == []\n        assert suggested_name(walk) == 'dotnet', walk.out['first test run']\n>       assert '1 rule. 1 passes its tests.' in walk.lines('test run'), (\n            walk.out['test run'])\nE       AssertionError: Running dotnet: dotnet test --logger trx --results-directory .purlin/runtime/reports/dotnet\nE         --- dotnet output (last 60 lines) ---\nE           Determining projects to restore...\nE         /Users/rlabarca/homebrew/Cellar/dotnet/10.0.403/libexec/sdk/10.0.403/NuGet.targets(198,5): warning : Unable to find a project to restore! [/private/var/folders/cw/fpvv_31d0vvfsvfsdl_glpv80000gp/T/pytest-of-rlabarca/pytest-11/walk-csharp0/csharp/App.slnx]\nE         --- end of dotnet output ---\nE         \nE         Markers: 1 tied to a test, 0 not tied.\nE         Ran dotnet on 1 feature.\nE         \nE         dotnet suite: evidence missing. It wrote no report at .purlin/runtime/reports/dotnet. Check the suite in .purlin/config.json, then run purlin:test.\nE         greeting PROOF-1 (RULE-1): evidence missing. The test at App.Tests/GreetingTests.cs:5 has no result. Check that it ran and was not skipped, then run purlin:test.\nE         \nE         Evidence written to .purlin/evidence/local/greeting.json.\nE         \nE         Purlin status: csharp.github-origin, plugin 0.10.0\nE         Tests: not met\nE         Sign-off: not signed\nE         \nE         Spec      Rules  Proofs  Tests\nE         \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nE         greeting  1      1       0 of 1\nE         \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nE         \nE         1 rule. 0 pass their tests.\nE         Left to do:\nE           1 rule to test: purlin:test\nE         \nE       assert '1 rule. 1 passes its tests.' in ['Running dotnet: dotnet test --logger trx --results-directory .purlin/runtime/reports/dotnet', '--- dotnet output (la...sdl_glpv80000gp/T/pytest-of-rlabarca/pytest-11/walk-csharp0/csharp/App.slnx]', '--- end of dotnet output ---', '', ...]\nE        +  where ['Running dotnet: dotnet test --logger trx --results-directory .purlin/runtime/reports/dotnet', '--- dotnet output (la...sdl_glpv80000gp/T/pytest-of-rlabarca/pytest-11/walk-csharp0/csharp/App.slnx]', '--- end of dotnet output ---', '', ...] = lines('test run')\nE        +    where lines = <test_init_scaffold.Walk object at 0x10b3760d0>.lines\n\ndev/test_init_scaffold.py:1110: AssertionError"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
-          "result": "missing",
+          "result": "fail",
           "rule": "RULE-37",
           "test": "dev/test_init_scaffold.py::TestEachLanguageIsSetUp::test_a_csharp_project_runs_its_marked_test"
         },
@@ -1100,14 +1100,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheEvidenceFolder",
-                "duration": 0.542,
+                "duration": 0.53,
                 "name": "test_the_first_run_writes_the_readme",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1130,14 +1130,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheIgnoreFile",
-                "duration": 0.494,
+                "duration": 0.505,
                 "name": "test_the_gitignore_names_the_dashboard_page",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1152,14 +1152,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheIgnoreFile",
-                "duration": 0.498,
+                "duration": 0.5,
                 "name": "test_the_gitignore_names_the_runtime_folder",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1174,14 +1174,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheIgnoreFile",
-                "duration": 0.479,
+                "duration": 0.503,
                 "name": "test_the_gitignore_names_the_bytecode_cache",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1196,14 +1196,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.505,
+                "duration": 0.516,
                 "name": "test_with_no_answer_nothing_is_committed",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1218,14 +1218,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.523,
+                "duration": 0.614,
                 "name": "test_yes_commits_the_files_and_names_them",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1240,14 +1240,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.302,
+                "duration": 0.347,
                 "name": "test_a_project_with_no_commit_gets_setup_s_as_its_first",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1262,14 +1262,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.475,
+                "duration": 0.552,
                 "name": "test_a_file_already_staged_stays_out_of_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1284,14 +1284,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.613,
+                "duration": 0.654,
                 "name": "test_a_second_run_with_yes_commits_what_the_first_wrote",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1306,14 +1306,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheCommit",
-                "duration": 0.675,
+                "duration": 0.761,
                 "name": "test_a_tracked_gitignore_is_committed_by_the_second_run",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1328,14 +1328,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheRefusals",
-                "duration": 0.056,
+                "duration": 0.06,
                 "name": "test_outside_a_repository_setup_refuses",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1350,14 +1350,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheRefusals",
-                "duration": 0.303,
+                "duration": 0.342,
                 "name": "test_a_settings_file_that_cannot_be_read_stops_setup",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1372,14 +1372,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheRefusals",
-                "duration": 0.341,
+                "duration": 0.42,
                 "name": "test_git_refusing_leaves_the_files_staged_and_says_so",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1394,14 +1394,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheQuestion",
-                "duration": 0.587,
+                "duration": 0.764,
                 "name": "test_a_foreign_proof_adds_no_question_to_the_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1416,14 +1416,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheSettings",
-                "duration": 0.474,
+                "duration": 0.507,
                 "name": "test_the_settings_hold_version_and_an_empty_tests",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1438,14 +1438,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheQuestion",
-                "duration": 0.291,
+                "duration": 0.304,
                 "name": "test_an_empty_project_is_asked_only_whether_to_commit",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1460,14 +1460,14 @@
             "cases": [
               {
                 "class": "dev.test_init_scaffold.TestTheFlags",
-                "duration": 0.32,
+                "duration": 0.363,
                 "name": "test_the_usage_lists_setup_s_flags_and_no_other",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "c29d9c28cc960037659c2bd81bf15420134d825421718f93d984b7b169df86a3"
+              "sha256": "fdf6e52999c36f1b83923266a0cefc5931fbbecfefed4f20ee4ecab640bbb6c3"
             }
           },
           "result": "pass",
@@ -1482,7 +1482,7 @@
         "RULE-24": "passed",
         "RULE-33": "passed",
         "RULE-36": "passed",
-        "RULE-37": "not run",
+        "RULE-37": "failed",
         "RULE-47": "not run",
         "RULE-67": "passed",
         "RULE-68": "passed",
