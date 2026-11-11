@@ -127,24 +127,18 @@
   "feature": "purlin_output",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T17:24:54Z",
-      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
+      "at": "2026-11-11T18:58:07Z",
+      "commit": "897897387efcc4b40d49fad89586175634d0a877",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "4e0dfd0dc7de23607456dd9fe930f282c673f1edb4abb84fea49002baf30aebf",
+        "code": "9d58c87625650939a80e6188837735f3143d57e65ecddf8b6f56abb3f6f89cd1",
         "spec": "2934a3d3e68065ccbd81ea42c28e98b46fd69a2edab56d60017075066c6c481d",
         "tests": "0b74c16e12230dfe0c7abd6cde6d58e3a671494448f98a6d210200be85757b3b"
       },
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T17:24:54Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -152,14 +146,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 1.839,
+                "duration": 1.806,
                 "name": "test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "80e02cc39722caff53e4e60de95b98858397661b1fc0f0728c46c9001e8304b5"
             }
           },
           "result": "pass",
@@ -167,12 +161,6 @@
           "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:54Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -180,14 +168,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.429,
+                "duration": 0.357,
                 "name": "test_every_python_file_under_scripts_parses_as_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "80e02cc39722caff53e4e60de95b98858397661b1fc0f0728c46c9001e8304b5"
             }
           },
           "result": "pass",
@@ -195,12 +183,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:54Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -208,14 +190,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 1.6,
+                "duration": 1.534,
                 "name": "test_a_test_run_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "80e02cc39722caff53e4e60de95b98858397661b1fc0f0728c46c9001e8304b5"
             }
           },
           "result": "pass",
@@ -223,12 +205,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_a_test_run_runs_on_39"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:54Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -236,14 +212,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestPython39",
-                "duration": 0.655,
+                "duration": 0.664,
                 "name": "test_the_status_runs_on_39",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "80e02cc39722caff53e4e60de95b98858397661b1fc0f0728c46c9001e8304b5"
             }
           },
           "result": "pass",
@@ -251,12 +227,6 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_the_status_runs_on_39"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:54Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
@@ -264,14 +234,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_output.TestNoPictograph",
-                "duration": 0.182,
+                "duration": 0.184,
                 "name": "test_no_skill_and_not_the_agent_definition_holds_a_pictograph",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "80e02cc39722caff53e4e60de95b98858397661b1fc0f0728c46c9001e8304b5"
             }
           },
           "result": "pass",
