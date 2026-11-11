@@ -1,5 +1,35 @@
 # Release Notes
 
+## v0.10.1
+
+The dashboard opens anywhere, and Purlin reads git the same on Windows as on macOS and Linux.
+
+### The dashboard
+
+- **The page carries its own data.** `purlin-report.html` no longer reads
+  `.purlin/report-data.js` beside it, so it opens with no server: from disk, in the browser pane
+  of the Claude Code desktop app, as an email attachment or as an artifact. The next command
+  removes the old data file. A copy you send carries what the board shows, signer email
+  addresses included.
+- **`purlin:status --open` shows it.** It writes the page, then opens it in your default
+  browser, or prints its path where no browser can be reached, as on a CI runner.
+- **The status names it.** Its fourth line reads
+  `Dashboard: purlin-report.html (purlin:status --open opens it)` wherever it wrote the page.
+- **The agent keeps it current.** After it changes a spec, a test, code in scope, the settings
+  or the checkout, it runs `purlin:status` before it ends its turn.
+
+### Windows
+
+- **A commit message outside cp1252 no longer stops `purlin:drift`.** A curly quote or an
+  arrow such as `”` or `←` raised `UnicodeDecodeError`. Every program Purlin starts is now read
+  as UTF-8, whatever the system's own encoding.
+
+### Upgrading from 0.10.0
+
+1. `purlin:init --update` adds `/purlin-report.html` to `.gitignore` where it is missing. A
+   project 0.10.0 set up already has it.
+2. `purlin:status` writes the new page.
+
 ## v0.10.0
 
 0.10.0 is a different tool from 0.9.5. Purlin keeps two things in your repository, the evidence
