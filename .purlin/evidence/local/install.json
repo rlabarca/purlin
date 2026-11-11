@@ -176,24 +176,18 @@
   "feature": "install",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T13:52:06Z",
-      "commit": "91c7ece08756ae23cd9584040400b1e763959a78",
+      "at": "2026-11-11T14:53:06Z",
+      "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
       "dirty": false,
-      "email": "rich.labarca@gmail.com",
+      "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "b5f9e03bb5cedd2fb6060c1319efb2ef7f2fef0edcf54881a6f0e39a4963c581",
+        "code": "3ec0c066f839c22c040389586a542b1a7923d3a75e2095d4457a6b2726255b1e",
         "spec": "57c4530829b6585103130a56f43158a5fd4c8d787262c0f9a1e4f9672ca03a81",
         "tests": "78f57f9a6cd8733513100f44a1dec95fc876d97904189989e97a3b3699900136"
       },
-      "machine": "Richs-MacBook-Pro.local",
+      "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-08T13:52:06Z",
-            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -208,7 +202,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
             }
           },
           "result": "pass",
@@ -216,12 +210,6 @@
           "test": "dev/test_install.py::test_both_pages_give_the_same_install_lines_and_this_repositorys_address"
         },
         {
-          "carried": {
-            "at": "2026-10-08T13:52:06Z",
-            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -229,14 +217,14 @@
             "cases": [
               {
                 "class": "dev.test_install",
-                "duration": 3.763,
+                "duration": 3.049,
                 "name": "test_the_pages_commands_leave_purlin_installed_and_enabled",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
             }
           },
           "result": "pass",
@@ -244,12 +232,6 @@
           "test": "dev/test_install.py::test_the_pages_commands_leave_purlin_installed_and_enabled"
         },
         {
-          "carried": {
-            "at": "2026-10-08T13:52:06Z",
-            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -257,14 +239,14 @@
             "cases": [
               {
                 "class": "dev.test_install",
-                "duration": 0.261,
+                "duration": 0.399,
                 "name": "test_every_skill_of_this_checkout_landed_byte_for_byte",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
             }
           },
           "result": "pass",
@@ -272,12 +254,6 @@
           "test": "dev/test_install.py::test_every_skill_of_this_checkout_landed_byte_for_byte"
         },
         {
-          "carried": {
-            "at": "2026-10-08T13:52:06Z",
-            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -285,14 +261,14 @@
             "cases": [
               {
                 "class": "dev.test_install",
-                "duration": 9.642,
+                "duration": 4.152,
                 "name": "test_claude_code_offers_every_purlin_skill_to_the_model",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
             }
           },
           "result": "pass",
@@ -300,12 +276,6 @@
           "test": "dev/test_install.py::test_claude_code_offers_every_purlin_skill_to_the_model"
         },
         {
-          "carried": {
-            "at": "2026-10-08T13:52:06Z",
-            "commit": "09f12cf3f20913e654f440caeb7740ca479bf56f",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -313,14 +283,14 @@
             "cases": [
               {
                 "class": "dev.test_install",
-                "duration": 1.319,
+                "duration": 1.448,
                 "name": "test_the_persons_own_claude_code_reads_the_same_afterwards",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "79ff5270ef038886fb0d597ead36899fcea1bc10ea6bf0e94a1fd0eb0e5b8fb4"
+              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
             }
           },
           "result": "pass",
@@ -335,7 +305,7 @@
         "RULE-4": "passed",
         "RULE-5": "passed"
       },
-      "runner": "rich-labarca"
+      "runner": "rich"
     }
   },
   "schema": "purlin-evidence/2",
