@@ -1,5 +1,19 @@
 # Release Notes
 
+## v0.10.2
+
+`purlin:init --update` commits only the files it changed.
+
+### Fixed
+
+- **A run that changed nothing made a commit anyway.** Answering no to every question still
+  committed whatever you had staged, under the subject `chore(update): restore ` with nothing
+  after it.
+- **Every update commit took your staged changes with it.** A restore or a migration from 0.9.5
+  committed the files it wrote together with anything already staged. It now commits its own
+  files alone, and what you staged stays staged. One exception: a file the update itself
+  rewrites, such as `.gitignore`, is committed as the update left it.
+
 ## v0.10.1
 
 The dashboard opens anywhere, and Purlin reads git the same on Windows as on macOS and Linux.
