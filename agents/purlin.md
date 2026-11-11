@@ -72,6 +72,16 @@ next step: say which, and say why. A project whose tests are met ends on
 `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign`.
 A sign-off is optional: run `purlin:sign` only when a person asks for one.
 
+## Keep the dashboard current
+
+The dashboard, `purlin-report.html`, shows what the last `purlin:status`, `purlin:test`,
+`purlin:audit` or `purlin:sign` saw, and nothing writes it in the background. A person may have it
+open beside you. So whenever you change something it shows, run `purlin:status` before you end your
+turn: a spec, an anchor or its pin, a test or the comment above it, code under a spec's `> Scope:`,
+`.purlin/config.json`, or the checkout itself after a pull, a merge, a rebase or a checkout. Skip it
+only where the last command you ran was one of those four, since each writes the page as it
+finishes. One status after a batch of edits is enough; you need not run it after each file.
+
 ## Worktrees
 
 Each checkout of a repository, a worktree included, has its own results, its own status and its
