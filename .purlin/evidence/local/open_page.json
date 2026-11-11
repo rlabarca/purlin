@@ -76,40 +76,31 @@
         "verdict": "strong"
       },
       "RULE-3": {
-        "at": "2026-11-11T18:29:51Z",
+        "at": "2026-11-11T18:30:44Z",
         "bugs": {
           "PROOF-4": {
             "after": "    args = parser.parse_args(argv)\n    open_page(args.project_root)",
             "aim": "past the test",
             "before": "    args = parser.parse_args(argv)\n    return open_page(args.project_root)",
-            "bug_key": "86c11ce07f9c971c1bf00b29c4b01e1933fdf31aebbc6603f36b61c9259c9e56",
+            "bug_key": "846da58a41faf6aba332f7666630d1f309f13ab37ec413c372b3370d3f678599",
             "case": "a project with no purlin-report.html runs the opener; the proof says it exits 1; the changed opener prints the line and exits 0",
             "file": "scripts/report/open_page.py",
             "line": 66,
-            "result": "survived",
-            "test_key": "fd5b000de8b39ed1cafa353514b34049757373fa1c6aa13eb0e0e79366fdb375",
+            "result": "caught",
             "why": ""
           }
         },
         "code_hash": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
-        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "commit": "fd3dd257af3cfa1861912c70933a99b3c26ded31",
         "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
-        "explanation": [
-          "PROOF-4: the test compares the printed line exactly, checks that the browser was given no address and checks the exit code 1, so it observes everything the proof names for this case.",
-          "PROOF-4: the test passes a browser stand-in to `_run`, which `main` does not accept, so `_run` most likely calls `open_page` directly and never reaches `main`.",
-          "PROOF-4: if so, the exit status the opener hands back to the shell is never observed, and a fault in `main` would get past the test.",
-          "No spot test finding was raised, and none applies: the test asserts, and its expected values come from literals, not the code."
-        ],
-        "findings": [
-          "PROOF-4: the test still passes when scripts/report/open_page.py:66 reads \"open_page(args.project_root)\"",
-          "PROOF-4: the AI says this breaks: a project with no purlin-report.html runs the opener; the proof says it exits 1; the changed opener prints the line and exits 0"
-        ],
+        "explanation": [],
+        "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
         "proof_hash": "fed7d9e54b8e3addab529ce1637678953e674204bb6df3c171637913989533f7",
         "rule_hash": "121c01dd1d62540b896f183b9f29f3e2d32b47a8dbf8a99d57daa40e47926e7a",
-        "test_hash": "e10d7fb69f771c6db0d69d6ad933e2ba3e02ac0cb7929a7e580f3645c66c388a",
-        "verdict": "weak"
+        "test_hash": "21f7067b8ac53b87c630e98bcbafe2de52f4682b5ad793b0a0df5b422111ef04",
+        "verdict": "strong"
       },
       "RULE-4": {
         "at": "2026-11-11T18:29:51Z",
@@ -148,14 +139,14 @@
   "feature": "open_page",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T18:10:48Z",
-      "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+      "at": "2026-11-11T18:30:26Z",
+      "commit": "fd3dd257af3cfa1861912c70933a99b3c26ded31",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
         "code": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
         "spec": "98c3d92d088d8375f8405dc51b25f095b38239c2d783438a196d1cbd1b03aa73",
-        "tests": "f4d1d75410071082b0ec07a4a87c4ed7540cd302c1ed381929365136977a71f8"
+        "tests": "f597697c6d50d07f2ac12647e410a470d2f99fac74f4ff0c8c14ece1d446c696"
       },
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
@@ -167,14 +158,14 @@
             "cases": [
               {
                 "class": "dev.test_open_page",
-                "duration": 0.165,
+                "duration": 0.023,
                 "name": "test_a_browser_that_opens_the_page_is_named",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
             }
           },
           "result": "pass",
@@ -189,14 +180,14 @@
             "cases": [
               {
                 "class": "dev.test_open_page",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_browser_that_opens_nothing_leaves_the_path",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
             }
           },
           "result": "pass",
@@ -211,14 +202,14 @@
             "cases": [
               {
                 "class": "dev.test_open_page",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_on_ci_no_browser_is_started",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
             }
           },
           "result": "pass",
@@ -233,14 +224,14 @@
             "cases": [
               {
                 "class": "dev.test_open_page",
-                "duration": 0.001,
+                "duration": 0.053,
                 "name": "test_a_project_with_no_page_names_the_command",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
             }
           },
           "result": "pass",
@@ -255,14 +246,14 @@
             "cases": [
               {
                 "class": "dev.test_open_page",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_a_folder_with_a_space_and_an_accent_is_percent_encoded",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
             }
           },
           "result": "pass",
