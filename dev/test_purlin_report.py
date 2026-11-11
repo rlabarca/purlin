@@ -51,6 +51,24 @@ def read(path):
         return handle.read()
 
 
+def page_with(payload):
+    """The built page with `payload` written into it, as a command writes it."""
+    if os.path.join(ROOT, 'scripts', 'mcp') not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
+    from purlin import payload as payload_module
+    text = payload_module.page_with_data(read(PAGE), payload)
+    assert text is not None, 'the built page has no empty data script'
+    return text
+
+
+def write_board(root, payload):
+    """Write the page with `payload` in it to `root`. Returns its path."""
+    path = os.path.join(root, 'purlin-report.html')
+    with open(path, 'w', encoding='utf-8', newline='') as handle:
+        handle.write(page_with(payload))
+    return path
+
+
 def build_page():
     """Run the build and return the page it wrote."""
     result = subprocess.run([sys.executable, BUILD], capture_output=True,
@@ -128,7 +146,7 @@ def browser():
 
 def open_board(browser, tmp_path, payload, viewport=None, clock_at=None,
                timezone='UTC'):
-    """The page, opened over file:// with this payload beside it.
+    """The page, opened over file:// with this payload written into it.
 
     The browser's timezone is `timezone`, never the machine's own, since the
     page shows each time as the person looking at it reads the clock.
@@ -138,11 +156,7 @@ def open_board(browser, tmp_path, payload, viewport=None, clock_at=None,
     """
     root = str(tmp_path)
     os.makedirs(root, exist_ok=True)
-    shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
-    os.makedirs(os.path.join(root, '.purlin'), exist_ok=True)
-    with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
-              encoding='utf-8') as handle:
-        handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
+    write_board(root, payload)
     page = browser.new_page(viewport=viewport or {'width': 1440,
                                                   'height': 1000},
                             timezone_id=timezone)
@@ -399,15 +413,10 @@ def test_no_request_to_anything_outside_the_page(page_text, browser,
     assert re.findall(r'''(?:src|href)\s*=\s*["']?\s*https?:''', page_text,
                       re.I) == []
     # An address a script sets is one the page asks for once it is open:
-    # opened beside its data, the page asks for nothing but files on the
-    # disk, and no element it drew holds an address on another host.
+    # opened with its data, the page asks for nothing but its own file, and
+    # no element it drew holds an address on another host.
     root = str(tmp_path)
-    shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
-    os.makedirs(os.path.join(root, '.purlin'))
-    with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
-              encoding='utf-8') as handle:
-        handle.write('const PURLIN_DATA = '
-                     + json.dumps(payload_named('regulated')) + ';\n')
+    write_board(root, payload_named('regulated'))
     page = browser.new_page()
     asked = []
     page.on('request', lambda request: asked.append(request.url))
@@ -1304,19 +1313,20 @@ def test_data_of_another_schema_shows_one_notice_and_nothing_else(browser,
 
 
 # purlin: purlin_report PROOF-21
-def test_no_data_at_all_names_the_command_that_writes_it(browser, tmp_path):
+def test_the_page_as_built_holds_no_data_and_names_the_command(browser,
+                                                               tmp_path):
     root = str(tmp_path)
     shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
     page = browser.new_page(viewport={'width': 1200, 'height': 800})
     page.goto('file://' + os.path.join(root, 'purlin-report.html'))
     page.wait_for_selector('.empty', timeout=10000)
+    # The page as the build writes it: its data script is there and empty.
+    assert '<script id="purlin-data"></script>' in read(PAGE)
     assert page.inner_text('.empty') == (
-        'No board data yet. Run purlin:status to write '
-        '.purlin/report-data.js, then reload this page.')
+        'No board data yet. Run purlin:status, then reload this page.')
     # The empty screen reads that sentence and nothing more.
     assert page.inner_text('body').strip() == (
-        'No board data yet. Run purlin:status to write '
-        '.purlin/report-data.js, then reload this page.')
+        'No board data yet. Run purlin:status, then reload this page.')
     assert undrawn(page, '.empty') == []
     page.close()
 
@@ -2062,10 +2072,10 @@ def _run_and_read(root):
         result.stdout + result.stderr)
     sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
     from purlin import report_data
+    from purlin import payload as payload_module
     path = report_data.refresh(str(root))
-    assert path, 'no dashboard data was written'
-    text = read(os.path.join(str(root), '.purlin', 'report-data.js'))
-    return json.loads(text[len('const PURLIN_DATA = '):].rstrip().rstrip(';'))
+    assert path, 'no dashboard page was written'
+    return payload_module.page_data(read(path))
 
 
 def _rule_marked_with_its_id(browser, tmp_path, passing):
@@ -3615,3 +3625,103 @@ def test_the_row_of_a_rules_passed_cell_is_labelled_tests(browser, tmp_path):
     assert word == 'GRADED', word
     assert second == [['Tests', 'TESTS'], ['Strong', 'STRONG'],
                       ['Spec', 'SPEC'], ['Last run', 'LAST RUN']], second
+
+
+# --- The page carries its data inside itself ---------------------------------
+
+def _spec_rows_and_passing(page):
+    """How many spec rows the board draws, and what the `Passing` box reads."""
+    counts = {label: count for label, count, _ in boxes(page)}
+    return len(feature_names(page)), counts.get('Passing')
+
+
+# purlin: purlin_report PROOF-307
+def test_the_page_alone_in_an_empty_folder_draws_the_board(browser, tmp_path):
+    written = tmp_path / 'written'
+    written.mkdir()
+    write_board(str(written), payload_named('regulated'))
+    alone = tmp_path / 'alone'
+    alone.mkdir()
+    shutil.copyfile(str(written / 'purlin-report.html'),
+                    str(alone / 'purlin-report.html'))
+    # Nothing else is in the folder: no `.purlin/`, no data file.
+    assert os.listdir(str(alone)) == ['purlin-report.html']
+    page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+    page.goto('file://' + str(alone / 'purlin-report.html'))
+    page.wait_for_selector('.topbar', timeout=10000)
+    assert _spec_rows_and_passing(page) == (5, '7')
+    page.close()
+
+
+# purlin: purlin_report PROOF-308
+def test_the_page_opened_from_a_data_address_draws_the_board(browser):
+    import base64
+    text = page_with(payload_named('regulated'))
+    address = ('data:text/html;charset=utf-8;base64,'
+               + base64.b64encode(text.encode('utf-8')).decode('ascii'))
+    page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+    page.goto(address)
+    page.wait_for_selector('.topbar', timeout=10000)
+    assert _spec_rows_and_passing(page) == (5, '7')
+    page.close()
+
+
+# purlin: purlin_report PROOF-309
+def test_a_written_page_asks_for_no_other_file(tmp_path):
+    root = tmp_path / 'project'
+    root.mkdir()
+    _marked_project(root, True)
+    payload = _run_and_read(root)
+    assert payload and payload['features']
+    text = read(str(root / 'purlin-report.html'))
+    assert '<script id="purlin-data">const PURLIN_DATA = ' in text
+    assert re.findall(r'<script\b[^>]*\bsrc\s*=', text, re.I) == []
+    assert re.findall(r'<iframe\b', text, re.I) == []
+    # The data may name evidence files under `.purlin/`; the page around
+    # it names none, so nothing it runs asks for one.
+    start = text.index('<script id="purlin-data">')
+    end = text.index('</script>', start)
+    assert '.purlin/' not in text[:start] + text[end:]
+
+
+def _with_rule_text(text):
+    def change(payload):
+        rule_of(payload, 'login', 'RULE-1')['text'] = text
+    return change
+
+
+# purlin: purlin_report PROOF-310
+def test_text_that_would_end_the_script_shows_as_written(browser, tmp_path):
+    written = 'Reject </script><b>bold</b> <!-- input'
+    page = open_sample(browser, tmp_path, 'regulated',
+                       _with_rule_text(written))
+    assert len(feature_names(page)) == 5
+    open_rule(page, 'login', 'RULE-1')
+    assert written in page.inner_text('body')
+    assert page.query_selector_all('#app b:text-is("bold")') == []
+    assert page.evaluate(
+        "() => [...document.querySelectorAll('#app b')].every("
+        "b => b.textContent.trim() !== 'bold')")
+    page.close()
+
+
+# purlin: purlin_report PROOF-311
+def test_the_data_is_ascii_and_reads_back_as_written(browser, tmp_path):
+    description = u'Café sign-in ← “quoted”'
+
+    def change(payload):
+        login = next(f for f in payload['features'] if f['name'] == 'login')
+        login['description'] = description
+    payload = payload_named('regulated')
+    change(payload)
+    text = page_with(payload)
+    start = text.index('<script id="purlin-data">')
+    end = text.index('</script>', start)
+    assert all(ord(c) < 128 for c in text[start:end])
+    page = open_board(browser, tmp_path, payload)
+    page.click('[data-act="feature"][data-feature="login"]')
+    beneath = page.eval_on_selector(
+        '.tr[data-feature="login"]',
+        "el => el.nextElementSibling.textContent.trim()")
+    assert beneath == description
+    page.close()

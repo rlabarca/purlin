@@ -52,13 +52,10 @@ SIGN_OPTIONAL = ('Every rule passes its tests on the committed evidence. Optiona
 
 
 def _dashboard_data(root):
-    """The payload `.purlin/report-data.js` holds, as the page reads it."""
-    path = os.path.join(root, '.purlin', 'report-data.js')
-    with open(path, encoding='utf-8') as handle:
-        text = handle.read()
-    prefix, suffix = 'const PURLIN_DATA = ', ';\n'
-    assert text.startswith(prefix) and text.endswith(suffix), text[:80]
-    return json.loads(text[len(prefix):-len(suffix)])
+    """The payload `purlin-report.html` holds, as the page reads it."""
+    with open(os.path.join(root, 'purlin-report.html'),
+              encoding='utf-8') as handle:
+        return purlin_payload.page_data(handle.read())
 
 
 def _feature(payload, name='login'):
@@ -992,21 +989,18 @@ class TestPayload:
             assert entry['path'] == '.purlin/evidence/local/login.json'
 
     # purlin: states PROOF-37
-    def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
+    def test_the_page_data_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
         # The payload as it stood before the write, key for key.
         written = json.loads(json.dumps(data))
-        path = purlin_payload.write_report_data(project.root, data)
+        page = purlin_payload.page_with_data(
+            purlin_payload.DATA_SLOT, data)
         assert sorted(data) == sorted(written), 'the write changed the payload'
-        # The bytes, before a text read on Windows folds `\r\n` into `\n`.
-        with open(path, 'rb') as handle:
-            raw = handle.read()
-        assert raw.endswith(b';\n'), raw[-8:]
-        assert b'\r' not in raw, 'the data file holds a carriage return'
-        with open(path, encoding='utf-8') as handle:
-            text = handle.read()
-        assert text.startswith('const PURLIN_DATA = ') and text.endswith(';\n')
-        read_back = json.loads(text[len('const PURLIN_DATA = '):-len(';\n')])
+        text = page[len(purlin_payload.DATA_OPEN):-len(
+            purlin_payload.DATA_CLOSE)]
+        assert '\r' not in text and '\n' not in text
+        assert text.startswith('const PURLIN_DATA = ') and text.endswith(';')
+        read_back = json.loads(text[len('const PURLIN_DATA = '):-len(';')])
         assert read_back['commit'] == data['commit']
         # The whole payload, key for key.
         assert sorted(read_back) == sorted(written), sorted(read_back)
@@ -1786,8 +1780,7 @@ def test_a_test_run_leaves_its_results_in_the_page_data(tmp_path):
     from run_project import _pytest_project, _run, _spec
     root = _pytest_project(tmp_path)
     _spec(root, 'feat')
-    assert not os.path.exists(os.path.join(str(root), '.purlin',
-                                           'report-data.js'))
+    assert not os.path.exists(os.path.join(str(root), 'purlin-report.html'))
     code, output = _run(root, '--all', '--test')
     assert code == 0, output
     data = _dashboard_data(str(root))
@@ -1838,10 +1831,9 @@ def dashboard_page():
 
 def _dashboard(browser, page_text, folder, payload):
     """`(headings, {spec: cells})` of the dashboard opened over `payload`."""
-    os.makedirs(os.path.join(folder, '.purlin'))
-    _write(os.path.join(folder, 'purlin-report.html'), page_text)
-    _write(os.path.join(folder, '.purlin', 'report-data.js'),
-           'const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
+    os.makedirs(folder, exist_ok=True)
+    _write(os.path.join(folder, 'purlin-report.html'),
+           purlin_payload.page_with_data(page_text, payload))
     page = browser.new_page(viewport={'width': 1440, 'height': 1000})
     try:
         page.goto('file://' + os.path.join(folder, 'purlin-report.html'))
@@ -2000,7 +1992,7 @@ class TestStatusTable:
                '{"version": "0.10.0",')
         text = purlin_status.sync_status(project.root)
         written = os.path.exists(os.path.join(
-            project.root, '.purlin', 'report-data.js'))
+            project.root, 'purlin-report.html'))
         assert text == (
             '.purlin/config.json cannot be read: Expecting property name '
             'enclosed in double quotes at line 1. Fix the file by hand; '

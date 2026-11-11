@@ -196,11 +196,11 @@ kind; and `text`, the whole line. Three or more entries of one kind that
 each name a spec are one entry, which opens on the kind, carries `names`,
 every spec it counts, and null for `about`, `feature` and `rule`.
 
-`write_report_data` writes the payload to `.purlin/report-data.js` as
-`const PURLIN_DATA = {...};`, which is gitignored and is what the local
-dashboard page loads. The payload `report_data.refresh` hands it also holds,
-in `information` and `warnings`, the lines the status prints outside those
-two lists (`report_data.with_status_lines`).
+`page_with_data` writes the payload into the dashboard page, in its one
+data script, as `const PURLIN_DATA = {...};`, and `page_data` reads it back.
+The page `report_data.refresh` writes is gitignored. The payload it hands
+over also holds, in `information` and `warnings`, the lines the status prints
+outside those two lists (`report_data.with_status_lines`).
 """
 
 import datetime
@@ -229,8 +229,11 @@ from purlin import (PURLIN_VERSION,
                     wording as wording_module)
 
 SCHEMA_VERSION = 20
-REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
 _PREFIX = 'const PURLIN_DATA = '
+# The page's one data script, empty as the build writes it.
+DATA_OPEN = '<script id="purlin-data">'
+DATA_CLOSE = '</script>'
+DATA_SLOT = DATA_OPEN + DATA_CLOSE
 
 
 def now_iso():
@@ -1006,23 +1009,54 @@ def _is_dirty(project_root):
 
 
 # ---------------------------------------------------------------------------
-# The dashboard's data file
+# The dashboard's data, inside the page
 # ---------------------------------------------------------------------------
 
-def report_data_path(project_root):
-    return os.path.join(project_root, REPORT_DATA_PATH)
+def data_text(payload):
+    """`const PURLIN_DATA = {...};`: the payload as the page's data script holds it.
+
+    The JSON is ASCII alone, so the page reads the same data whatever
+    encoding a host opens the file in, and every `<` is written `\\u003c`, so
+    no text in the data, a `</script>` or a `<!--`, ends the script it sits
+    in. JSON and JavaScript both read that escape back as the character.
+    """
+    body = json.dumps(payload, sort_keys=True, default=str,
+                      ensure_ascii=True, separators=(',', ':'))
+    return _PREFIX + body.replace('<', '\\u003c') + ';'
 
 
-def write_report_data(project_root, payload):
-    """Write the payload as `const PURLIN_DATA = {...};`. Returns the path."""
-    path = report_data_path(project_root)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    body = json.dumps(payload, indent=2, sort_keys=True, default=str)
-    text = _PREFIX + body + ';\n'
+def page_with_data(page_text, payload):
+    """The page with `payload` written into its data script, or None where the
+    page has no empty data script to write it into."""
+    if page_text.count(DATA_SLOT) != 1:
+        return None
+    return page_text.replace(DATA_SLOT, DATA_OPEN + data_text(payload)
+                             + DATA_CLOSE)
 
-    tmp_path = path + '.tmp'
-    # `newline='\n'` keeps every line ending a line feed on Windows too.
-    with open(tmp_path, 'w', encoding='utf-8', newline='\n') as handle:
-        handle.write(text)
-    os.replace(tmp_path, path)
-    return path
+
+def page_without_data(page_text):
+    """The page with its data script emptied, as the build writes it.
+
+    A page a command wrote then reads the same as the plugin's own, so a
+    check of which version of the page a project holds ignores the data.
+    """
+    start = page_text.find(DATA_OPEN)
+    if start < 0:
+        return page_text
+    start += len(DATA_OPEN)
+    end = page_text.find(DATA_CLOSE, start)
+    if end < 0:
+        return page_text
+    return page_text[:start] + page_text[end:]
+
+
+def page_data(page_text):
+    """The payload a page holds in its data script, or None where it holds none."""
+    start = page_text.find(DATA_OPEN + _PREFIX)
+    if start < 0:
+        return None
+    start += len(DATA_OPEN + _PREFIX)
+    end = page_text.find(';' + DATA_CLOSE, start)
+    if end < 0:
+        return None
+    return json.loads(page_text[start:end])

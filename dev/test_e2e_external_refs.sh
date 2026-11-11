@@ -113,7 +113,7 @@ init_project() {
   local tmpdir="$1"
   mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
   printf '{"version": "0.10.0", "tests": []}\n' > "$tmpdir/.purlin/config.json"
-  printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
+  printf '.purlin/runtime/\n/purlin-report.html\n' > "$tmpdir/.gitignore"
   (
     cd "$tmpdir"
     git init -q
@@ -352,12 +352,11 @@ echo "--- 9: the dashboard data carries the pin ---"
 result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT5" python3 -c '
 import json, os, re, sys
 sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
-from purlin import report_data
+from purlin import payload, report_data
 root = os.environ["PURLIN_ROOT"]
-report_data.refresh(root)
-with open(os.path.join(root, ".purlin", "report-data.js"), encoding="utf-8") as h:
-    text = h.read()
-data = json.loads(re.sub(r";\s*$", "", text.split("= ", 1)[1]))
+path = report_data.refresh(root)
+with open(path, encoding="utf-8") as h:
+    data = payload.page_data(h.read())
 rows = {f["name"]: f for f in data["features"]}
 anchor = rows["no_eval"]
 feature = rows["checkout"]

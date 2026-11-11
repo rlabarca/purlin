@@ -1118,13 +1118,13 @@ def test_a_reporter_the_plugin_never_shipped_is_left_alone(tmp_path):
 
 
 # purlin: update PROOF-34
-def test_the_dashboard_data_is_untracked_and_ignored(tmp_path):
+def test_the_dashboard_data_file_is_removed_from_git_and_disk(tmp_path):
     root = _project(tmp_path, V095)
     assert '.purlin/report-data.js' in _tracked(root)
+    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))
     _apply(root)
     assert '.purlin/report-data.js' not in _tracked(root)
-    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))
-    assert '.purlin/report-data.js' in _read(root, '.gitignore').splitlines()
+    assert not os.path.lexists(os.path.join(root, '.purlin', 'report-data.js'))
 
 
 # --- the evidence folder and the page -------------------------------------------
@@ -2441,7 +2441,7 @@ EVIDENCE_README = '.purlin/evidence/README.md'
 SETTINGS = '.purlin/config.json'
 PAGE = 'purlin-report.html'
 FOR = {
-    IGNORE: 'keeps .purlin/runtime/ and .purlin/report-data.js out of git: '
+    IGNORE: 'keeps .purlin/runtime/ and /purlin-report.html out of git: '
             'each run writes them again',
     EVIDENCE_README: 'says what the evidence folder holds',
     SETTINGS: 'holds the settings, with version reading %s' % VERSION,
@@ -2456,7 +2456,7 @@ OF_095 = ('0.9.5', 'migrat', 'not run', 'verify:', 'update-backup',
 
 def _fresh(tmp_path):
     """A project this release set up, built by `sample_lab`: its `.gitignore`
-    lacks `.purlin/report-data.js` and it has no evidence README. Its tests
+    lacks `/purlin-report.html` and it has no evidence README. Its tests
     have run once, so the status counts its rules."""
     root = sample_lab.build(tmp_path)
     _git(root, 'config', 'user.name', 'Test Person')
@@ -2496,7 +2496,7 @@ def test_a_project_of_this_release_has_its_missing_files_restored_and_named(
     assert _read_bytes(root, EVIDENCE_README) == _read_bytes(
         ROOT, 'templates/evidence-readme.md')
     assert _read(root, IGNORE) == was + (
-        '\n# Regenerated locally, never committed\n.purlin/report-data.js\n')
+        '\n# Regenerated locally, never committed\n/purlin-report.html\n')
     assert _ids(root) == []
 
 

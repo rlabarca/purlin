@@ -1,4 +1,4 @@
-"""Refresh `.purlin/report-data.js`, the file the dashboard page reads.
+"""Write the dashboard page, `purlin-report.html`, with its data in it.
 
 `purlin:status`, `purlin:test`, `purlin:audit` and `purlin:sign` refresh it
 as they finish. The first three end on the status table, and
@@ -8,11 +8,14 @@ sign-off commit is done, so the page names the sign-off. Nothing runs in the
 background, so a file edited with no Purlin command leaves the data file as
 it was, and the page shows what the last command saw.
 
-Each refresh also writes the page itself, `purlin-report.html` at the project
-root, where the project's copy differs from the one this plugin ships, so the
-page and its data always come from the same version of Purlin.
+Each refresh writes the page at the project root from the copy this plugin
+ships, with the payload in its one data script, so the page and its data
+always come from the same version of Purlin, and the page opens with no
+other file beside it: from disk, from a `data:` address, as an attachment.
+It then removes `.purlin/report-data.js`, where an earlier version of Purlin
+kept the data beside the page.
 
-The data file holds the payload and, in its two lists of lines, every line
+The data holds the payload and, in its two lists of lines, every line
 the status prints between its table and its summary sentence, so the board's
 notices say what the terminal says. `with_status_lines` adds the ones the
 payload's own lists leave to the status:
@@ -34,14 +37,14 @@ pending.
 
 `scripts/mcp/purlin/status.py` is the one home of each line's words.
 
-Both files are gitignored: they are what this checkout last reported, not
+The page is gitignored: it is what this checkout last reported, not
 evidence.
 """
 
 import os
-import shutil
 import subprocess
 import sys
+import time
 
 _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
@@ -53,14 +56,16 @@ from purlin import (fingerprint as fingerprint_module, notices,
 CONFIG_PATH = os.path.join('.purlin', 'config.json')
 PAGE_NAME = 'purlin-report.html'
 SHIPPED_PAGE = os.path.join(os.path.dirname(_MCP_DIR), 'report', PAGE_NAME)
+# Where Purlin 0.10.0 and earlier kept the data beside the page.
+OLD_DATA = os.path.join('.purlin', 'report-data.js')
 
 
 def refresh(project_root, data=None, generated_by='sync_status'):
-    """Write the payload to `.purlin/report-data.js`. Returns the path, or None.
+    """Write the page with the payload in it. Returns the page's path, or None.
 
     `data` is a payload the caller already built, so a command that has just
     read the project does not read it twice. A root with no
-    `.purlin/config.json` is not a Purlin project and gets no file; neither
+    `.purlin/config.json` is not a Purlin project and gets no page; neither
     does a project with no spec, where the page's own empty screen says what
     to run. A write that fails leaves the command's answer untouched: the
     page is a view, and a view that could not be written never fails the
@@ -74,11 +79,11 @@ def refresh(project_root, data=None, generated_by='sync_status'):
                                                 generated_by=generated_by)
         if not data.get('features'):
             return None
-        path = payload_module.write_report_data(
-            project_root, with_status_lines(project_root, data))
+        path = write_page(project_root, with_status_lines(project_root, data))
     except (IOError, OSError):
         return None
-    write_page(project_root)
+    if path:
+        _remove_old_data(project_root)
     return path
 
 
@@ -120,33 +125,68 @@ def with_status_lines(project_root, data):
     return out
 
 
-def write_page(project_root):
-    """Write the plugin's page to the project root where the project's differs.
+def write_page(project_root, data):
+    """Write the plugin's page to the project root with `data` in it.
 
-    Returns the path where it wrote, else None. A copy that already reads
-    byte for byte as the plugin's is left alone, modification time included.
-    A project with no page gets one where git ignores the path, as a project
-    `purlin:init` set up does, or where the root is not a git checkout: an
-    untracked page git does not ignore would read as uncommitted work.
+    Returns the path, else None. A project with no page gets one where git
+    ignores the path, as a project `purlin:init` set up does, or where the
+    root is not a git checkout: an untracked page git does not ignore would
+    read as uncommitted work. A page already there is written over, a link
+    included, so the page and its data come from this version of Purlin.
     """
     target = os.path.join(project_root, PAGE_NAME)
-    try:
-        shipped = _page_bytes(SHIPPED_PAGE)
-        if shipped is None:
-            return None
-        if os.path.lexists(target):
-            if not os.path.islink(target) and _page_bytes(target) == shipped:
-                return None
-            os.remove(target)
-        elif not _ignored(project_root):
-            return None
-        shutil.copyfile(SHIPPED_PAGE, target)
-    except (IOError, OSError):
+    shipped = _page_text(SHIPPED_PAGE)
+    if shipped is None:
         return None
+    text = payload_module.page_with_data(shipped, data)
+    if text is None:
+        return None
+    if not os.path.lexists(target) and not _ignored(project_root):
+        return None
+    tmp = target + '.tmp'
+    # `newline=''` writes the page's line endings as the plugin ships them,
+    # on Windows too.
+    with open(tmp, 'w', encoding='utf-8', newline='') as handle:
+        handle.write(text)
+    _replace(tmp, target)
     return target
 
 
-def _page_bytes(path):
+def _replace(source, target):
+    """`os.replace`, tried again for a moment where Windows refuses it.
+
+    On Windows a file another program holds open, a virus scanner or a
+    search indexer, cannot be replaced until it lets go; a second or two is
+    the usual wait. The last refusal is raised, and `refresh` then leaves
+    the page as it was.
+    """
+    for wait in (0.1, 0.3, 0.6, 1.0):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            time.sleep(wait)
+    try:
+        os.replace(source, target)
+    except OSError:
+        try:
+            os.remove(source)
+        except OSError:
+            pass
+        raise
+
+
+def _remove_old_data(project_root):
+    """Remove the data file an earlier version kept beside the page."""
+    path = os.path.join(project_root, OLD_DATA)
+    try:
+        if os.path.lexists(path):
+            os.remove(path)
+    except OSError:
+        pass
+
+
+def _page_text(path):
     """The page's text exactly as the file holds it, or None where it cannot be read."""
     try:
         with open(path, 'r', encoding='utf-8', newline='') as handle:

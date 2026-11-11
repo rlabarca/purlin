@@ -1706,8 +1706,7 @@ class TestTheSignOff:
         assert json.loads(first)['signer'] == 'jane@acme.com'
         assert read_json(signed.root, SIGNOFFS + '/jane-2.json')['signer'] \
             == 'jane@labs.org'
-        assert status(signed.root).replace('?? .purlin/report-data.js\n',
-                                           '') == ''
+        assert status(signed.root) == ''
 
 
 def signed_with_another_key(made):

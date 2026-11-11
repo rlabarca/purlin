@@ -65,7 +65,7 @@ COMMIT = 'Commit the files setup wrote? [y/N] '
 README = '.purlin/evidence/README.md'
 # The dashboard's data file, which the status the run ends on refreshes
 # wherever a spec exists.
-REPORT_DATA = '.purlin/report-data.js'
+DASHBOARD_PAGE = 'purlin-report.html'
 
 
 # ---------------------------------------------------------------------------
@@ -369,7 +369,7 @@ class TestTheIgnoreFile:
         first = tree(project.root)['.gitignore']
         project.run()
         assert tree(project.root)['.gitignore'] == first
-        assert first.decode('utf-8').count('.purlin/report-data.js') == 1
+        assert first.decode('utf-8').count('/purlin-report.html') == 1
 
 
 # ---------------------------------------------------------------------------
@@ -722,7 +722,7 @@ class TestTheMarketplacePath:
             assert code == 0, ours_out + err
             theirs, ours = tree(made.root), tree(here.root)
             for files in (theirs, ours):
-                files.pop(REPORT_DATA, None)
+                files.pop(DASHBOARD_PAGE, None)
             assert theirs == ours
             assert (masked(theirs_out, made.root)
                     == masked(ours_out, here.root))

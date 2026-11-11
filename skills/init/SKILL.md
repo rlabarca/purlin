@@ -44,7 +44,7 @@ It writes `.purlin/` and `specs/`; `.purlin/config.json`; a block in `.gitignore
 `.purlin/evidence/` with one README saying what the folder holds. The folder for anchors,
 `specs/_anchors/`, is made when the first anchor is written. It installs nothing in the project's
 tests, and adds no git hook, no background job and no pipeline. The `.gitignore` block covers `.purlin/runtime/`, where a run's reports
-land, `.purlin/report-data.js`, and `purlin-report.html`, the dashboard page, which opens from
+land, and `purlin-report.html`, the dashboard page, which holds its own data and opens from
 disk. `.purlin/evidence/` stays tracked. It prints every file it wrote, kept or copied, one per
 line, then asks its question.
 

@@ -62,6 +62,7 @@ if _MCP_DIR not in sys.path:
 
 from purlin import (console as console_module,                # noqa: E402
                     markers as markers_module,
+                    payload as payload_module,
                     project as project_module,
                     specs as specs_module)
 import config_engine                                          # noqa: E402
@@ -193,7 +194,7 @@ OLD_FRAMEWORKS = {'pytest': 'pytest', 'jest': 'jest', 'vitest': 'vitest',
                   'xunit': 'dotnet', 'sql': 'sql', 'shell': 'shell'}
 
 # --- what this release writes instead --------------------------------------
-IGNORE_LINES = ('.purlin/runtime/', '.purlin/report-data.js')
+IGNORE_LINES = ('.purlin/runtime/', '/purlin-report.html')
 # Each file the update changes is kept here as it was, at its own path. The
 # folder is under `.purlin/runtime/`, which git ignores.
 BACKUP_DIR = '.purlin/runtime/update-backup'
@@ -542,9 +543,15 @@ def _detect_untracked(root):
         hits.append(CACHE_DIR + '/')
     path = os.path.join(root, '.gitignore')
     lines = _read(path).splitlines() if os.path.isfile(path) else []
-    if any(line not in lines for line in IGNORE_LINES) or _old_ignore(lines):
+    if any(not _ignores(lines, entry) for entry in IGNORE_LINES) \
+            or _old_ignore(lines):
         hits.append('.gitignore')
     return sorted(set(hits))
+
+
+def _ignores(lines, entry):
+    """True where `lines` hold `entry`, or the same path with no leading `/`."""
+    return entry in lines or entry.lstrip('/') in lines
 
 
 def _old_ignore(lines):
@@ -575,7 +582,12 @@ def _apply_untracked(root, files, args, out):
             continue
         _untrack(root, rel)
         out.done(rel)
-        if rel.startswith('specs/'):
+        if rel == DASHBOARD_DATA:
+            # The page holds its own data now: the file beside it is gone.
+            path = os.path.join(root, *rel.split('/'))
+            if os.path.lexists(path):
+                os.remove(path)
+        elif rel.startswith('specs/'):
             os.remove(os.path.join(root, rel))
             gone += 1
         elif rel == CACHE_DIR + '/':
@@ -588,7 +600,8 @@ def _apply_untracked(root, files, args, out):
         out.keep(root, '.gitignore')
         if _old_ignore(text.splitlines()):
             text = _fresh_ignore(text)
-        missing = [l for l in IGNORE_LINES if l not in text.splitlines()]
+        missing = [l for l in IGNORE_LINES
+                   if not _ignores(text.splitlines(), l)]
         if missing:
             if text and not text.endswith('\n'):
                 text += '\n'
@@ -596,8 +609,8 @@ def _apply_untracked(root, files, args, out):
                      + ''.join(line + '\n' for line in missing))
         _write(path, text)
         out.done('.gitignore')
-    out.say('deleted %d file%s beside the specs%s, and untracked the '
-            'dashboard data; a run writes no file beside a spec, and evidence '
+    out.say('deleted %d file%s beside the specs%s, and removed the '
+            'dashboard data file; a run writes no file beside a spec, and evidence '
             'lives in %s' % (gone, '' if gone == 1 else 's',
                              ' and the folder %s/' % CACHE_DIR if cache
                              else '', EVIDENCE_DIR))
@@ -1095,6 +1108,13 @@ def _detect_dashboard(root):
         with open(path, 'rb') as handle:
             current = handle.read()
     except (IOError, OSError):
+        return [DASHBOARD_PAGE]
+    # A command writes the page with its data in it: the page is this
+    # release's where it reads as the shipped one once the data is set aside.
+    try:
+        current = payload_module.page_without_data(
+            current.decode('utf-8')).encode('utf-8')
+    except UnicodeDecodeError:
         return [DASHBOARD_PAGE]
     return [] if current == _shipped_page() else [DASHBOARD_PAGE]
 

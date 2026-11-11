@@ -1117,10 +1117,11 @@ def three_old_markers(project):
 
 
 def _report_data(root):
-    with open(os.path.join(root, '.purlin', 'report-data.js'),
+    """The payload the page holds, as the page reads it."""
+    from purlin import payload as payload_module
+    with open(os.path.join(root, 'purlin-report.html'),
               encoding='utf-8') as handle:
-        text = handle.read()
-    return json.loads(text[text.index('{'):text.rindex('}') + 1])
+        return payload_module.page_data(handle.read())
 
 
 def _tree(root):
@@ -1194,7 +1195,7 @@ class TestMarkersFrom095StillInATest:
         assert all(between.strip() for between in lines[at + 5:count]), lines
 
     # purlin: states PROOF-313
-    def test_the_dashboard_data_carries_one_line_last(self, three_old_markers):
+    def test_the_page_data_carries_one_line_last(self, three_old_markers):
         project, _block = three_old_markers
         purlin_status.sync_status(project.root)
         warnings = _report_data(project.root)['warnings']
@@ -1248,7 +1249,7 @@ class TestMarkersFrom095StillInATest:
             for number in range(20)] + ['  and 2 more', ''], lines
 
     # purlin: states PROOF-319
-    def test_one_in_the_dashboard_data_is_named_by_its_file_and_line(
+    def test_one_in_the_page_data_is_named_by_its_file_and_line(
             self, project):
         _tracked(project, {
             'tests/test_login.py': 'import pytest\n\n\n'

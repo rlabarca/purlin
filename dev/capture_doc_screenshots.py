@@ -51,15 +51,17 @@ SHOTS = (
 
 
 def stage(root, fixture):
-    """A directory holding the page with one fixture payload beside it."""
-    shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
-    os.makedirs(os.path.join(root, '.purlin'), exist_ok=True)
+    """A directory holding the page with one fixture payload written into it."""
+    sys.path.insert(0, os.path.join(os.path.dirname(PAGE), '..', 'mcp'))
+    from purlin import payload as payload_module
     with open(os.path.join(FIXTURES, fixture + '.json'),
               encoding='utf-8') as handle:
         payload = json.load(handle)
-    with open(os.path.join(root, '.purlin', 'report-data.js'), 'w',
-              encoding='utf-8') as handle:
-        handle.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
+    with open(PAGE, encoding='utf-8', newline='') as handle:
+        page = payload_module.page_with_data(handle.read(), payload)
+    with open(os.path.join(root, 'purlin-report.html'), 'w',
+              encoding='utf-8', newline='') as handle:
+        handle.write(page)
     return 'file://' + os.path.join(root, 'purlin-report.html')
 
 

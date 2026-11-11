@@ -1,13 +1,11 @@
-"""The dashboard's data file and its page: which commands write them, and that
-nothing else does.
+"""The dashboard page and the data it holds: which commands write it, and
+that nothing else does.
 
-`.purlin/report-data.js` is what the page reads. `purlin:status`,
+`purlin-report.html` carries its data inside itself. `purlin:status`,
 `purlin:test`, `purlin:audit` and `purlin:sign` each write it as they finish,
-and nothing runs in the background, so an edit made with no Purlin command
-leaves it as it was. Whenever the data file is written, the page beside it,
-`purlin-report.html`, is written too where it differs from the plugin's own.
-Each test drives the real command against a throwaway project and reads the
-files back.
+from the plugin's own page, and nothing runs in the background, so an edit
+made with no Purlin command leaves it as it was. Each test drives the real
+command against a throwaway project and reads the page back.
 
     python3 -m pytest dev/test_report_refresh.py -q
 """
@@ -26,6 +24,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'export'))
 
 import sign as sign_module  # noqa: E402
+from purlin import payload as payload_module  # noqa: E402
 from purlin import report_data  # noqa: E402
 from purlin import status as purlin_status  # noqa: E402
 from mcp_project import SPEC, Project  # noqa: E402
@@ -34,23 +33,36 @@ from test_run_script import (_setting_gains_v,  # noqa: E402
                              _touched_project)
 from test_purlin_report import browser, build_page  # noqa: E402,F401
 
-DATA = os.path.join('.purlin', 'report-data.js')
+OLD_DATA = os.path.join('.purlin', 'report-data.js')
 PAGE = 'purlin-report.html'
 
 
+def _page_text(root):
+    with open(os.path.join(str(root), PAGE), encoding='utf-8',
+              newline='') as handle:
+        return handle.read()
+
+
 def _data(root):
-    """The payload the data file holds, or None where there is no file."""
-    path = os.path.join(str(root), DATA)
-    if not os.path.isfile(path):
+    """The payload the page holds, or None where there is no page."""
+    if not os.path.isfile(os.path.join(str(root), PAGE)):
         return None
-    with open(path, encoding='utf-8') as handle:
-        text = handle.read()
-    prefix = 'const PURLIN_DATA = '
-    assert text.startswith(prefix) and text.endswith(';\n'), text[:80]
-    return json.loads(text[len(prefix):-len(';\n')])
+    return payload_module.page_data(_page_text(root))
 
 
-def _stamp(root, name=DATA):
+def _outside_data(text):
+    """The page with its data script emptied: what the plugin ships."""
+    assert payload_module.page_data(text) is not None, 'the page holds no data'
+    return payload_module.page_without_data(text)
+
+
+def _shipped():
+    with open(report_data.SHIPPED_PAGE, encoding='utf-8',
+              newline='') as handle:
+        return handle.read()
+
+
+def _stamp(root, name=PAGE):
     """A file's bytes and its modification time, to the nanosecond."""
     path = os.path.join(str(root), name)
     with open(path, 'rb') as handle:
@@ -69,11 +81,11 @@ def _rule_ids(data):
 
 
 # purlin: purlin_report PROOF-59
-def test_a_sign_off_writes_the_data_file_naming_the_sign_off(capsys):
+def test_a_sign_off_writes_the_page_naming_the_sign_off(capsys):
     made = signing_project()
     try:
         purlin_status.sync_status(made.root)
-        os.remove(os.path.join(made.root, DATA))
+        os.remove(os.path.join(made.root, PAGE))
         answers = os.path.join(made.root, '.purlin', 'runtime',
                                'signoff-answers.json')
         os.makedirs(os.path.dirname(answers), exist_ok=True)
@@ -85,7 +97,7 @@ def test_a_sign_off_writes_the_data_file_naming_the_sign_off(capsys):
         assert code == 0, capsys.readouterr().out
         tagged = _git(made.root, 'rev-list', '-n', '1', 'signed/1.0.0')
         data = _data(made.root)
-        assert data is not None, 'purlin:sign wrote no data file'
+        assert data is not None, 'purlin:sign wrote no page'
         assert _rule_ids(data) == ['RULE-1', 'RULE-2']
         assert data['met'] is True
         assert data['signoff']['word'] == 'signed 1.0.0 at %s' % tagged[:7], \
@@ -99,7 +111,7 @@ EXTRA_RULE = ('- RULE-3: A locked account reads 423 until fifteen minutes '
 
 
 # purlin: purlin_report PROOF-60
-def test_an_edit_with_no_command_leaves_the_data_file_alone():
+def test_an_edit_with_no_command_leaves_the_page_alone():
     made = Project()
     try:
         purlin_status.sync_status(made.root)
@@ -123,7 +135,7 @@ def test_an_edit_with_no_command_leaves_the_data_file_alone():
 
 
 # purlin: purlin_report PROOF-61
-def test_a_directory_with_no_settings_file_gets_no_data_file(tmp_path):
+def test_a_directory_with_no_settings_file_gets_no_page(tmp_path):
     os.makedirs(os.path.join(str(tmp_path), 'specs', 'auth'))
     with open(os.path.join(str(tmp_path), 'specs', 'auth', 'login.md'), 'w',
               encoding='utf-8') as handle:
@@ -131,12 +143,12 @@ def test_a_directory_with_no_settings_file_gets_no_data_file(tmp_path):
     assert not os.path.exists(os.path.join(str(tmp_path), '.purlin',
                                            'config.json'))
     purlin_status.sync_status(str(tmp_path))
-    assert not os.path.exists(os.path.join(str(tmp_path), DATA))
+    assert not os.path.exists(os.path.join(str(tmp_path), PAGE))
     assert os.listdir(str(tmp_path)) == ['specs']
 
 
 # purlin: purlin_report PROOF-233
-def test_status_names_the_branch_and_the_commit_it_ran_on():
+def test_the_page_data_names_the_branch_and_the_commit_it_ran_on():
     made = Project()
     try:
         _git(made.root, 'checkout', '-q', '-b', 'feature/login')
@@ -169,9 +181,9 @@ def test_status_replaces_an_older_page_with_the_plugins_own(browser,  # noqa: F8
     try:
         _write_page(made.root, older)
         purlin_status.sync_status(made.root)
-        with open(report_data.SHIPPED_PAGE, 'rb') as handle:
-            own = handle.read()
-        assert _stamp(made.root, PAGE)[0] == own
+        written = _page_text(made.root)
+        assert written != _shipped()
+        assert _outside_data(written) == _shipped()
         page = browser.new_page(viewport={'width': 1440, 'height': 1000})
         page.goto('file://' + os.path.join(made.root, PAGE))
         page.wait_for_selector('.topbar', timeout=10000)
@@ -187,20 +199,44 @@ def test_status_replaces_an_older_page_with_the_plugins_own(browser,  # noqa: F8
         made.close()
 
 
-# purlin: purlin_report PROOF-231
-def test_status_leaves_a_page_that_is_the_plugins_own():
+# purlin: purlin_report PROOF-306
+def test_each_status_writes_the_page_again_with_the_new_commit():
     made = Project()
     try:
-        with open(report_data.SHIPPED_PAGE, encoding='utf-8',
-                  newline='') as handle:
-            _write_page(made.root, handle.read())
-        long_ago = 1700000000
-        os.utime(os.path.join(made.root, PAGE), (long_ago, long_ago))
-        before = _stamp(made.root, PAGE)
         purlin_status.sync_status(made.root)
-        assert _data(made.root) is not None
-        assert _stamp(made.root, PAGE) == before
-        assert before[1] == long_ago * 10 ** 9
+        first = _data(made.root)
+        spec = os.path.join(made.root, 'specs', 'auth', 'login.md')
+        with open(spec, 'a', encoding='utf-8') as handle:
+            handle.write('\n')
+        _git(made.root, 'commit', '-q', '-am', 'a change to a spec')
+        head = _git(made.root, 'rev-parse', 'HEAD')
+        assert first['commit'] != head
+        purlin_status.sync_status(made.root)
+        written = _page_text(made.root)
+        assert payload_module.page_data(written)['commit'] == head
+        assert _outside_data(written) == _shipped()
+    finally:
+        made.close()
+
+
+# purlin: purlin_report PROOF-312
+def test_a_status_removes_the_data_file_an_earlier_version_wrote(browser,  # noqa: F811
+                                                               tmp_path):
+    made = Project()
+    try:
+        old = os.path.join(made.root, OLD_DATA)
+        os.makedirs(os.path.dirname(old), exist_ok=True)
+        with open(old, 'w', encoding='utf-8') as handle:
+            handle.write('const PURLIN_DATA = {"written": "by 0.10.0"};\n')
+        purlin_status.sync_status(made.root)
+        assert not os.path.exists(old)
+        page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+        page.goto('file://' + os.path.join(made.root, PAGE))
+        page.wait_for_selector('.topbar', timeout=10000)
+        rows = page.eval_on_selector_all(
+            '.tr .name .n', 'els => els.map(e => e.textContent.trim())')
+        page.close()
+        assert rows == ['login'], rows
     finally:
         made.close()
 
@@ -226,7 +262,7 @@ NO_FILES = ('login: spec with no scope. Its tests run every time. Run '
 
 
 # purlin: purlin_report PROOF-270
-def test_the_data_file_carries_the_line_for_a_spec_that_names_no_files():
+def test_the_page_data_carries_the_line_for_a_spec_that_names_no_files():
     assert '> Scope:' not in NO_SCOPE_SPEC
     made = Project(spec=NO_SCOPE_SPEC)
     try:
@@ -241,7 +277,7 @@ def test_the_data_file_carries_the_line_for_a_spec_that_names_no_files():
 
 
 # purlin: purlin_report PROOF-271
-def test_the_data_file_carries_an_anchor_rule_with_nothing_to_check():
+def test_the_page_data_carries_an_anchor_rule_with_nothing_to_check():
     made = Project()
     try:
         made.spec('# Anchor: screens\n\n## Rules\n\n- RULE-1: Every screen in '
@@ -271,7 +307,7 @@ def test_the_data_file_carries_an_anchor_rule_with_nothing_to_check():
 
 
 # purlin: purlin_report PROOF-272
-def test_the_data_file_carries_a_changed_tests_setting_first(tmp_path):
+def test_the_page_data_carries_a_changed_tests_setting_first(tmp_path):
     root, _sha = _touched_project(tmp_path)
     _setting_gains_v(root)
     said = ('.purlin/config.json: tests setting changed. Every result is out '
@@ -300,7 +336,7 @@ def _anchor_source(folder):
 
 
 # purlin: purlin_report PROOF-273
-def test_the_data_file_carries_an_anchor_whose_pin_is_behind(tmp_path):
+def test_the_page_data_carries_an_anchor_whose_pin_is_behind(tmp_path):
     source = str(tmp_path / 'policy-source')
     old, new = _anchor_source(source)
     made = Project()
@@ -328,7 +364,7 @@ def test_the_data_file_carries_an_anchor_whose_pin_is_behind(tmp_path):
 
 
 # purlin: purlin_report PROOF-274
-def test_the_data_file_carries_the_uncommitted_spec_files_on_one_line():
+def test_the_page_data_carries_the_uncommitted_spec_files_on_one_line():
     made = Project()
     try:
         with open(os.path.join(made.root, 'specs', 'auth', 'login.md'), 'a',
@@ -347,7 +383,7 @@ def test_the_data_file_carries_the_uncommitted_spec_files_on_one_line():
 
 
 # purlin: purlin_report PROOF-277
-def test_the_data_file_names_no_update_once_the_page_is_replaced():
+def test_the_page_data_names_no_update_once_the_page_is_replaced():
     made = Project()
     try:
         with open(os.path.join(made.root, '.gitignore'), 'a',

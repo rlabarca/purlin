@@ -31,8 +31,7 @@ script, which prints the same status:
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root .
 ```
 
-Never read `.purlin/report-data.js` or `purlin-report.html` as the status: they hold what the
-last command saw.
+Never read `purlin-report.html` as the status: it holds what the last command saw.
 
 In a worktree the top folder is the worktree's own, since each checkout has its own results,
 status and dashboard.
