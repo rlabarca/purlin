@@ -200,7 +200,7 @@ def test_status_replaces_an_older_page_with_the_plugins_own(browser,  # noqa: F8
 
 
 # purlin: purlin_report PROOF-306
-def test_each_status_writes_the_page_again_with_the_new_commit():
+def test_each_status_writes_the_page_again_with_the_new_commit(browser):  # noqa: F811
     made = Project()
     try:
         purlin_status.sync_status(made.root)
@@ -215,6 +215,16 @@ def test_each_status_writes_the_page_again_with_the_new_commit():
         written = _page_text(made.root)
         assert payload_module.page_data(written)['commit'] == head
         assert _outside_data(written) == _shipped()
+        # The page as a person opens it names the new commit.
+        page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+        page.goto('file://' + os.path.join(made.root, PAGE))
+        page.wait_for_selector('.topbar .stamp', timeout=10000)
+        drawn = page.inner_text('.topbar .stamp').strip()
+        page.close()
+        branch = _git(made.root, 'rev-parse', '--abbrev-ref', 'HEAD')
+        assert drawn.startswith('%s at %s, written ' % (branch, head[:7])), \
+            drawn
+        assert first['commit'][:7] not in drawn, drawn
     finally:
         made.close()
 

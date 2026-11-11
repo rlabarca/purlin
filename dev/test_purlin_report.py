@@ -3675,8 +3675,24 @@ def test_a_written_page_asks_for_no_other_file(tmp_path):
     assert payload and payload['features']
     text = read(str(root / 'purlin-report.html'))
     assert '<script id="purlin-data">const PURLIN_DATA = ' in text
-    assert re.findall(r'<script\b[^>]*\bsrc\s*=', text, re.I) == []
-    assert re.findall(r'<iframe\b', text, re.I) == []
+    # Read as a browser reads the tags, so an attribute value holding `>`
+    # or a tag at another casing hides nothing.
+    from html.parser import HTMLParser
+
+    class Tags(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.found = []
+
+        def handle_starttag(self, tag, attrs):
+            self.found.append((tag, dict(attrs)))
+
+    tags = Tags()
+    tags.feed(text)
+    scripts = [attrs for tag, attrs in tags.found if tag == 'script']
+    assert scripts, 'the page holds no script element'
+    assert [attrs for attrs in scripts if 'src' in attrs] == []
+    assert [tag for tag, _ in tags.found if tag == 'iframe'] == []
     # The data may name evidence files under `.purlin/`; the page around
     # it names none, so nothing it runs asks for one.
     start = text.index('<script id="purlin-data">')
@@ -3698,10 +3714,18 @@ def test_text_that_would_end_the_script_shows_as_written(browser, tmp_path):
     assert len(feature_names(page)) == 5
     open_rule(page, 'login', 'RULE-1')
     assert written in page.inner_text('body')
-    assert page.query_selector_all('#app b:text-is("bold")') == []
+    # Nothing in bold: no `<b>` was made of the text, and the element that
+    # draws it is set at the running text's weight, below bold.
     assert page.evaluate(
         "() => [...document.querySelectorAll('#app b')].every("
         "b => b.textContent.trim() !== 'bold')")
+    weights = page.evaluate(
+        "text => { const walk = document.createTreeWalker(document.body,"
+        " NodeFilter.SHOW_TEXT); const out = []; let node;"
+        " while ((node = walk.nextNode())) { if (node.nodeValue.includes(text))"
+        " { out.push(parseInt(getComputedStyle(node.parentElement)"
+        ".fontWeight, 10)); } } return out; }", 'bold</b>')
+    assert weights and all(weight < 600 for weight in weights), weights
     page.close()
 
 
