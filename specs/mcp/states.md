@@ -8,8 +8,8 @@
 >   output.
 > Scope: scripts/mcp/purlin/states.py, scripts/mcp/purlin/payload.py, scripts/mcp/purlin/status.py, scripts/mcp/purlin/facts.py, scripts/mcp/purlin/project.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, hashlib, subprocess (list-only)
-> Highest-Rule: 145
-> Highest-Proof: 352
+> Highest-Rule: 146
+> Highest-Proof: 354
 
 ## Rules
 
@@ -77,6 +77,7 @@
 - RULE-143: A passed cell reads `graded` in place of `passed` where the rule passes its tests and one of its proofs carries `@graded(...)`, and that proof's own result and its word on each model it passed on read `graded` too. `graded` counts wherever `passed` does: the rule's bucket is `passed`, the strong cell reads what the audit found and not `waiting`, `summary.steps.passed` counts the rule, and `summary.steps.graded` counts the rules whose passed cell reads `graded`. `states.passes` is true of the words `passed` and `graded` and of no other
 - RULE-144: A change to a proof's `@ai(...)` or `@graded(...)` tag alone, adding it, taking it off, or changing the models or the `runs=` it names, is no change of the proof's wording: its test comment is not named as one to correct
 - RULE-145: A model that gave no answer stays in the payload's `warnings`, and so in the status and on the dashboard, in the line the run printed, `<model>: model not reached. <why> Run purlin:test --all.`, until a later run reaches it: one line per model, however many proofs name it, for each model of an AI proof's tag whose runs, as the payload's `models` hold them, include one reading `not run` with a `why` other than `The test at <file>:<line> has no result.`, the `why` being that of the first such run in the order of the specs, their rules, their proofs and each tag; where that run holds a `grade` with no verdict the grader is the model named. A model no run has tried and a model the tag does not name get no line, and the line adds nothing to `left`
+- RULE-146: Where the status writes the dashboard page, its fourth line, straight after the two facts, is `Dashboard: purlin-report.html (purlin:status --open opens it)`; where it writes no page, the status carries no such line
 
 ## Proof
 
@@ -222,3 +223,5 @@
 - PROOF-349 (RULE-145): `PROOF-2` ends `@ai(claude-opus-5-5, claude-sonnet-5-5, example-model-3)` and holds three passing runs on `claude-opus-5-5`, one run on `claude-sonnet-5-5` reading `not run` with the `why` `The test at tests/test_login.py:6 has no result.`, and nothing for `example-model-3`; the payload's `warnings` is empty and the status prints no line holding `: model not reached.`, while the proof's `models` read `passed` with 3 runs, `not run` with 1 and `not run` with 0
 - PROOF-350 (RULE-145): `PROOF-2` ends `@ai(claude-opus-5-5) @graded(claude-haiku-4-5-20251001)` and holds on `claude-opus-5-5` one run reading `not run` with the `why` `The grader was overloaded.` and a `grade` of the model `claude-haiku-4-5-20251001` whose `accepted` is null; the payload's `warnings` and the status's lines holding `: model not reached.` are each exactly `claude-haiku-4-5-20251001: model not reached. The grader was overloaded. Run purlin:test --all.`
 - PROOF-351 (RULE-145): The sentence a test run writes for a test that left no result, `NO_RESULT` of the evidence reader filled with `tests/test_login.py` and `6`, is `The test at tests/test_login.py:6 has no result.`; `PROOF-2` ends `@ai(claude-opus-5-5, claude-sonnet-5-5)` and holds three passing runs on `claude-opus-5-5` and one run on `claude-sonnet-5-5` reading `not run` with that sentence as its `why`, and the payload's `warnings` is empty; neither `states` nor the run script holds a `NO_RESULT` of its own
+- PROOF-353 (RULE-146): A project whose `.gitignore` names `/purlin-report.html` has its status read; its fourth line is `Dashboard: purlin-report.html (purlin:status --open opens it)` and the page exists
+- PROOF-354 (RULE-146): A project whose `.gitignore` does not name the page has its status read; no page is written and no line of the status begins `Dashboard:`

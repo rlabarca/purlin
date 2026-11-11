@@ -6,8 +6,8 @@
 >   plus the argv hardening that keeps a repository-supplied string out of git's option
 >   position. Its tests read every file under `scripts/`, where all of Purlin's executable
 >   code lives.
-> Highest-Rule: 8
-> Highest-Proof: 91
+> Highest-Rule: 9
+> Highest-Proof: 94
 
 ## Rules
 
@@ -19,6 +19,7 @@
 - RULE-6: No repository-supplied string reaches git in option position: `--end-of-options` precedes an anchor's `> Source:` address and every revision argument that comes from outside Purlin, such as a commit read from git or from a spec, and the fixed word `HEAD`, which Purlin writes itself, needs none
 - RULE-7: `--` precedes every path argument handed to git
 - RULE-8: A `> Source:` value that begins with `-` or names an `ext::` or `fd::` transport is refused before any subprocess starts, with the status line saying which
+- RULE-9: Every Python call under `scripts/` that starts a program and reads its output as text names `encoding='utf-8'`, so what a program prints is read the same on Windows as on macOS and Linux
 
 ## Proof
 
@@ -43,3 +44,6 @@
 - PROOF-6 (RULE-8): A project holds one anchor, `evil_policy`, whose `> Source:` is `--upload-pack=/bin/echo /tmp/policy.git`, and its status is read. The status carries the line `evil_policy: anchor source refused. Its > Source: line begins with "-". Run purlin:spec evil_policy.`, and no command started while it is read carries the value
 - PROOF-47 (RULE-8): A project holds one anchor, `ext_policy`, whose `> Source:` is `ext::sh -c "touch /tmp/purlin-pwned" /tmp/policy.git`, and its status is read. The status carries the line `ext_policy: anchor source refused. Its > Source: line names an ext:: transport. Run purlin:spec ext_policy.`, and no command started while it is read carries the value
 - PROOF-48 (RULE-8): A project holds one anchor, `fd_policy`, whose `> Source:` is `fd::7/policy.git`, and its status is read. The status carries the line `fd_policy: anchor source refused. Its > Source: line names an fd:: transport. Run purlin:spec fd_policy.`, and no command started while it is read carries the value
+- PROOF-92 (RULE-9): Every file under `scripts/` ending `.py` is read and each `subprocess.run`, `subprocess.Popen`, `subprocess.check_output` and `subprocess.call` given `text=True` or `universal_newlines=True` is checked for `encoding='utf-8'`; 0 lack it
+- PROOF-93 (RULE-9): A planted `.py` file holding `subprocess.run(argv, capture_output=True, text=True)` is found, and the finding names its file and line
+- PROOF-94 (RULE-9): A planted `.py` file holding `subprocess.run(argv, capture_output=True, text=True, encoding='utf-8')` is not counted
