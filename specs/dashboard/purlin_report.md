@@ -203,7 +203,7 @@
 - PROOF-306 (RULE-76): Run `purlin:status`, commit a change to a spec, and run it again; the page then names the new commit, and outside its data it reads the same as the plugin's own page
 - PROOF-307 (RULE-94): Write the regulated sample into the page, copy `purlin-report.html` alone into an empty folder and open it there; the board draws 5 spec rows and the `Passing` box reads 7
 - PROOF-308 (RULE-94): Write the regulated sample into the page and open the page's whole text as a `data:` address; the board draws 5 spec rows and the `Passing` box reads 7
-- PROOF-309 (RULE-94): A page a command wrote holds no `<script` element with a `src`, no `<iframe`, and no `.purlin/` path
+- PROOF-309 (RULE-94): A page a command wrote holds no `<script` element with a `src`, no `<iframe`, and, outside its data, no `.purlin/` path
 - PROOF-310 (RULE-95): Write the regulated sample with login `RULE-1`'s text set to `Reject </script><b>bold</b> <!-- input`; the board draws 5 spec rows, and the rule's screen shows that text character for character, with nothing in bold
 - PROOF-311 (RULE-95): Write the regulated sample with login's description set to `Café sign-in ← “quoted”`; every byte of the page's data is below 128, and the opened spec reads `Café sign-in ← “quoted”`
 - PROOF-312 (RULE-96): A project holding the `.purlin/report-data.js` Purlin 0.10.0 wrote runs `purlin:status`; the file is gone and the page draws the board
