@@ -79,6 +79,10 @@ import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
+# The release this checkout is, so a sample project reads as one this
+# release set up, whatever number `VERSION` holds.
+with open(os.path.join(_ROOT, 'VERSION'), encoding='utf-8') as _handle:
+    VERSION = _handle.read().strip()
 for _path in (_HERE, os.path.join(_ROOT, 'scripts', 'review')):
     if _path not in sys.path:
         sys.path.insert(0, _path)
@@ -414,7 +418,7 @@ def build(folder):
     _write(root, 'src/intake.py', SOURCE)
     _write(root, 'tests/test_intake.py', TESTS)
     _write(root, '.purlin/config.json', json.dumps(
-        {'version': '0.10.0', 'tests': [suites.pytest_suite()]}))
+        {'version': VERSION, 'tests': [suites.pytest_suite()]}))
     _write(root, '.gitignore', '__pycache__/\n.purlin/runtime/\n')
     _git(root, 'init', '-q', '-b', 'main')
     _git(root, 'add', '-A')
@@ -845,7 +849,7 @@ def build_note(folder, check=ANY_BARCODE, runs=1):
     _write(root, 'prompts/refusal_note.md', NOTE_PROMPT)
     _write(root, 'tests/test_note.py', NOTE_TESTS.replace(ANY_BARCODE, check))
     _write(root, '.purlin/config.json', json.dumps(
-        {'version': '0.10.0', 'tests': [suites.pytest_suite()],
+        {'version': VERSION, 'tests': [suites.pytest_suite()],
          'runs': runs}))
     _write(root, '.gitignore', '__pycache__/\n.purlin/runtime/\n')
     _git(root, 'init', '-q', '-b', 'main')
