@@ -36,8 +36,8 @@ under `src/` are where the reasoning lives. Nothing else is rewritten, so a
 line in the page is a line someone wrote. The output is a pure function of the
 inputs: building twice gives the same bytes.
 
-The page is also copied to the project root, where `.purlin/report-data.js`
-sits beside it.
+The page is also copied to the project root. It holds no data: a Purlin
+command writes the data into its one empty script, `purlin-data`.
 """
 
 import os

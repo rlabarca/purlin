@@ -108,7 +108,8 @@ class Project(object):
         settings.update(config or {})
         write(os.path.join(self.root, '.purlin', 'config.json'),
               json.dumps(settings))
-        write(os.path.join(self.root, '.gitignore'), '.purlin/runtime/\n')
+        write(os.path.join(self.root, '.gitignore'),
+              '.purlin/runtime/\n/purlin-report.html\n')
         write(os.path.join(self.root, 'specs', 'auth', 'login.md'), spec)
         write(os.path.join(self.root, 'src', 'login.py'),
               'def login(user, password):\n'

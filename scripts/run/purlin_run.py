@@ -1476,6 +1476,7 @@ def _git_email(project_root):
     try:
         result = subprocess.run(['git', 'config', 'user.email'],
                                 capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=project_root, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return ''
@@ -1498,6 +1499,7 @@ def uncommitted_paths(project_root):
         result = subprocess.run(['git', 'status', '--porcelain', '-z',
                                  '--no-renames'],
                                 capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=project_root, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return []
@@ -1536,6 +1538,7 @@ def working_tree_dirty(project_root):
     try:
         result = subprocess.run(['git', 'status', '--porcelain'],
                                 capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=project_root, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return False
@@ -1833,7 +1836,8 @@ def changed_paths(project_root, paths):
         result = subprocess.run(
             ['git', 'status', '--porcelain', '-z', '--no-renames',
              '--untracked-files=all', '--'] + list(paths),
-            capture_output=True, text=True, cwd=project_root, timeout=60)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=60)
     except (OSError, subprocess.SubprocessError):
         return []
     if result.returncode != 0:

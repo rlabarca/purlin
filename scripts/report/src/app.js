@@ -84,31 +84,12 @@ var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
 var CELL_LABELS = {passed: TESTS, strong: STRONG};
 
 
+/* The data a Purlin command wrote into the page, in the script element
+   `purlin-data`, or null where the page holds none: the page as the build
+   writes it. The page asks for no other file, so it opens the same from
+   disk, from a `data:` address and as an attachment. */
 function loadData(callback) {
-  var frame = document.createElement('iframe');
-  var done = false;
-  frame.setAttribute('hidden', '');
-  frame.setAttribute('aria-hidden', 'true');
-  frame.style.display = 'none';
-
-  function finish(value) {
-    if (done) { return; }
-    done = true;
-    window.removeEventListener('message', onMessage);
-    callback(value);
-  }
-  function onMessage(event) {
-    if (event.source !== frame.contentWindow) { return; }
-    if (!event.data || typeof event.data !== 'object') { return; }
-    if (!('purlin' in event.data)) { return; }
-    finish(event.data.purlin);
-  }
-  window.addEventListener('message', onMessage);
-  frame.srcdoc = '<script src=".purlin/report-data.js?t=' + Date.now()
-    + '"><\/script><script>parent.postMessage({purlin: '
-    + '(typeof PURLIN_DATA === "undefined") ? null : PURLIN_DATA}, "*");<\/script>';
-  document.body.appendChild(frame);
-  setTimeout(function () { finish(null); }, 3000);
+  callback(typeof PURLIN_DATA === 'undefined' ? null : PURLIN_DATA);
 }
 
 /* Whether the page names proofs at all: a project that writes no proof line
@@ -621,8 +602,7 @@ function render() {
   var app = document.getElementById('app');
   if (!DATA) {
     app.innerHTML = '<div class="wrap"><div class="empty">No board data yet. '
-      + 'Run purlin:status to write .purlin/report-data.js, then reload this '
-      + 'page.</div></div>';
+      + 'Run purlin:status, then reload this page.</div></div>';
     return;
   }
   if (DATA.schema_version !== SCHEMA) {

@@ -10,8 +10,8 @@
 >   pulling. It reads only this checkout, reports facts and judges nothing.
 > Scope: scripts/mcp/purlin/drift.py, scripts/mcp/purlin/wording.py
 > Stack: python/stdlib, json, re, subprocess (list-only)
-> Highest-Rule: 45
-> Highest-Proof: 91
+> Highest-Rule: 46
+> Highest-Proof: 92
 
 ## Rules
 
@@ -33,6 +33,7 @@
 - RULE-43: The view names the proofs the range added, in one count line by feature; each proof whose wording the range changed, as `<spec> PROOF-N (RULE-N): changed.` and the words that changed, never either wording whole; and each proof whose text the range moved, unchanged, to another id of the same spec
 - RULE-44: While a merge is in progress and not committed, the view's second line says so and what to do, and `merge_in_progress` is true
 - RULE-45: Where a rule written twice moves, the view names each proof that follows it to the new number
+- RULE-46: Drift reads git's output as UTF-8 whatever the operating system's own encoding, so a commit message holding `”` or `←` never stops it
 
 ## Proof
 
@@ -74,3 +75,4 @@
 - PROOF-69 (RULE-43): A pull moves the text of `login`'s `PROOF-4` to `PROOF-6` and gives `PROOF-4` a new text; the view holds `login PROOF-4 moved to PROOF-6.`
 - PROOF-89 (RULE-44): A merge of a branch stops on a conflict in `specs/auth/login.md` and is not committed; the view's second line reads `MERGE_HEAD: merge in progress. The range above stops before it. Commit the merge, then run purlin:drift.`, and `merge_in_progress` is true
 - PROOF-90 (RULE-45): After a merge, `login` writes `RULE-2` twice, the branch's with its proof `PROOF-3`; the view holds, directly after the line naming `RULE-2`, `login: PROOF-3 will name RULE-3.`
+- PROOF-92 (RULE-46): With the system's encoding taken as Windows' `cp1252`, a project whose last commit reads `Fix “quotes” ← arrows` has its drift read; it answers with its view and raises no error

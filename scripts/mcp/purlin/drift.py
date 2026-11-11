@@ -73,6 +73,7 @@ def _git(project_root, args, timeout=15, stdin=None):
     try:
         result = subprocess.run(
             ['git'] + args, capture_output=True, text=True,
+            encoding='utf-8', errors='replace',
             cwd=project_root, timeout=timeout, input=stdin)
     except (subprocess.SubprocessError, OSError):
         return ''
@@ -190,7 +191,8 @@ def _ls_remote(project_root, url):
     try:
         result = subprocess.run(
             ['git', 'ls-remote', '--end-of-options', url, 'HEAD'],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', timeout=10,
             cwd=project_root or '.')
     except subprocess.TimeoutExpired:
         return {'error': 'timeout reaching the remote'}

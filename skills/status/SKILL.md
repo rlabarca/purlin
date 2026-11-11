@@ -1,11 +1,11 @@
 ---
 name: status
-description: "Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do"
+description: "Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do; with --open, show the dashboard"
 ---
 
 Show where every feature stands: whether the tests are met, whether this code is signed, how many
 rules pass their tests, what is left to do, and what to do next. This skill writes no file you
-commit; it refreshes the dashboard's data, which git ignores. For a project Purlin 0.9.5 set up,
+commit; it writes the dashboard page, `purlin-report.html`, with its data in it, which git ignores. For a project Purlin 0.9.5 set up,
 while its upgrade is pending, it writes nothing.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
@@ -16,9 +16,11 @@ is relative to the plugin root; see `references/purlin_commands.md#path-resoluti
 ```
 purlin:status                   Every feature and anchor
 purlin:status <name>            One spec: its rules and their cells
+purlin:status --open            The status, then the dashboard opened
 ```
 
-Plain language reaches the same place: "where are we", "what is left", "show the board".
+Plain language reaches the same place: "where are we", "what is left", "show the board". "Show
+me the dashboard" and "open the board" are `purlin:status --open`.
 
 ## Step 1: call the tool
 
@@ -31,8 +33,7 @@ script, which prints the same status:
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py" --project-root .
 ```
 
-Never read `.purlin/report-data.js` or `purlin-report.html` as the status: they hold what the
-last command saw.
+Never read `purlin-report.html` as the status: it holds what the last command saw.
 
 In a worktree the top folder is the worktree's own, since each checkout has its own results,
 status and dashboard.
@@ -201,3 +202,19 @@ The next step is the first line of `Left to do`. Add no line of your own; a
 | `<n> features whose results are not committed` | `→ Run: purlin:test --commit` |
 | `Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign` | Nothing is left to do, so print no `→ Run:` line. A sign-off is optional: run `purlin:sign` only when a person asks for one |
 | `Every rule passes its tests on the committed evidence. Before a sign-off, run <command>: ...` | `→ Run: <command>`. `purlin:sign` refuses these results as they stand: some were recorded on an earlier version of the code, or while files were changed and not committed |
+
+## Opening the dashboard
+
+`purlin:status --open` gets the status as Step 1 says, which writes the page, then opens
+`purlin-report.html` at the project root. The page holds its own data, so it opens with no server.
+`purlin:status --open` opens it in a browser pane or with `scripts/report/open_page.py`. Where your session can show a local file in a browser pane, as the Claude Code desktop
+app can, open the page's path there. Otherwise run the opener:
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/report/open_page.py" --project-root .
+```
+
+It prints `Opened <path> in the default browser.`, or, where no browser can be reached,
+`Dashboard: <path>. Open it in a browser.`: give the person that path. Where the status wrote
+no page, the status carries no `Dashboard:` line; the page is written only where git ignores
+it, as `purlin:init` sets up, and `purlin:init --update` restores that line of `.gitignore`.

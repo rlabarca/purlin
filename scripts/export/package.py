@@ -116,7 +116,8 @@ class PackageError(Exception):
 def _git(project_root, *args):
     try:
         return subprocess.run(['git'] + list(args), capture_output=True,
-                              text=True, cwd=project_root, timeout=120)
+                              text=True,
+                              encoding='utf-8', errors='replace', cwd=project_root, timeout=120)
     except (subprocess.SubprocessError, OSError) as error:
         return subprocess.CompletedProcess(args, 1, '', str(error))
 

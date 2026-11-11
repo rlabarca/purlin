@@ -182,7 +182,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
 |---------|---------|------------------------|
 | `purlin:init` | Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes | A developer, once. One question: whether to commit what it wrote |
 | `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current | A developer, or product in Claude Code |
-| `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
+| `purlin:status [name] [--open]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules; with `--open`, to see the dashboard. After merging work from a worktree, in the main checkout |
 | `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has | A developer, once, on a codebase that has no specs. Optional |
 
 ## Syntax
@@ -220,6 +220,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
   Reporting
   purlin:status                   The two facts, every rule's cells, the summary and Left to do
   purlin:status <name>            One spec: its rules and their cells
+  purlin:status --open            The status, then the dashboard opened in a browser
   purlin:drift                    What changed since your last pull
   purlin:drift --since <N|date>   A window other than since your last pull
 
@@ -244,7 +245,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
 | `purlin:sign` | Once the signer answers yes, or types their address where the agent asks, one signed commit `sign(<version>): <signer email>`. The first sign-off of a version carries `.purlin/evidence/package/<version>.json`, `.purlin/evidence/package/<version>.signoffs/<signer-slug>.json` and, under `.purlin/evidence/package/<version>.outputs/`, each test report and each output of a model run the package lists that the machine keeps, and writes the signed tag `signed/<version>` on that commit, which a person pushes; a later sign-off adds its own file alone. `--show` and `--check` write nothing. The skill writes the answers it collects to `.purlin/runtime/signoff-answers.json`, which is not committed. On any refusal it writes nothing |
 | `purlin:init` | `.purlin/`, `specs/`, `.purlin/config.json` holding `version` and an empty `tests` setting, a block in `.gitignore`, `.purlin/evidence/` with its README, and `purlin-report.html` at the project root. It commits the files it wrote in one commit, `chore(init): set up Purlin`, once you agree or with `--yes`. `--update` commits what it applied as `chore(update): migrate to <VERSION> (<ids>)` |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, creating `specs/_anchors/` with the first anchor |
-| `purlin:status` | `.purlin/report-data.js`, the data the dashboard reads, and `purlin-report.html`, its page, where the project's copy is missing or differs from the plugin's; git ignores both. `purlin:test`, `purlin:audit` and `purlin:sign` write the same two when they finish |
+| `purlin:status` | `purlin-report.html`, the dashboard page, with the data it shows written into it, where git ignores the page or it is already there; git ignores it. It removes the `.purlin/report-data.js` an earlier version wrote. `purlin:test`, `purlin:audit` and `purlin:sign` write the same page when they finish |
 | `purlin:drift` | Nothing. It reads only this checkout and never fetches |
 
 ## Exit codes

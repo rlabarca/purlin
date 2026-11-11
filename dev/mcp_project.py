@@ -106,7 +106,8 @@ class Project(object):
         config.update(extra_config or {})
         _write(os.path.join(self.root, '.purlin', 'config.json'),
                json.dumps(config))
-        _write(os.path.join(self.root, '.gitignore'), '.purlin/runtime/\n')
+        _write(os.path.join(self.root, '.gitignore'),
+               '.purlin/runtime/\n/purlin-report.html\n')
         if spec:
             _write(os.path.join(self.root, 'specs', 'auth', 'login.md'), spec)
         _write(os.path.join(self.root, 'src', 'login.py'), 'def login():\n    return 200\n')

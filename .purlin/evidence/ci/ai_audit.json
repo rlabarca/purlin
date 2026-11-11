@@ -2,23 +2,23 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-10-08T15:45:18Z",
-      "commit": "91c7ece08756ae23cd9584040400b1e763959a78",
+      "at": "2026-11-11T18:04:18Z",
+      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "83103c5fb843b17d7b3aa8523d53a41cffef0c2c07fba4afcf8a9c2b81e91f0b",
+        "code": "e4e377906280dd1805686b818c54c49106110c9fc4b40659881f9eed5197ddec",
         "spec": "3fbef037992a995d77b2a52edc60c10dba07ec0c8096aa54871aed0454373bb2",
         "tests": "a30dfe7d0a651196e92ca1267c680b370d0cf5917b7116b34474dc8696720c97"
       },
-      "machine": "runnervmfi6oq",
+      "machine": "runnervmm7ud1",
       "proofs": [
         {
           "carried": {
-            "at": "2026-10-08T15:45:18Z",
-            "commit": "f7b13f4d68a9c2b68e1e2b4425de692b1adcfa0d",
+            "at": "2026-11-11T18:04:18Z",
+            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
             "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmfi6oq"
+            "machine": "runnervmm7ud1"
           },
           "env": "windows",
           "id": "PROOF-82",
@@ -27,14 +27,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_audit.TestTheCall",
-                "duration": 1.278,
+                "duration": 1.287,
                 "name": "test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "bf73b3db9586f9e9a587e77f37ebc346115f16d5b7f6e41cf02617b9c19745e9"
+              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
             }
           },
           "result": "pass",

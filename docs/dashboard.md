@@ -3,21 +3,28 @@
 The dashboard shows where every rule stands, so you do not have to read a spec file. It is one
 HTML file. It needs no server, no build step and no network.
 
-## Open `purlin-report.html` from disk
+## Open `purlin-report.html` anywhere
 
-It sits at the project root. Open it in any browser, beside your editor.
+It sits at the project root. `purlin:status --open` opens it in your default browser, or in the
+browser pane of the Claude Code desktop app; the status names it on its fourth line,
+`Dashboard: purlin-report.html (purlin:status --open opens it)`. The page holds its own
+data, so it needs no other file beside it: it opens the same from disk, in a browser pane that
+takes a snapshot of a local file, such as the one in the Claude Code desktop app, as an email
+attachment, or published as an artifact.
 
 ```mermaid
 flowchart LR
-    C["<b>A command</b><br>purlin:status, purlin:test,<br>purlin:audit or purlin:sign"] -->|each writes| D[".purlin/report-data.js"]
-    D -->|the page reads it| B["<b>The board</b><br>every spec"]
+    C["<b>A command</b><br>purlin:status, purlin:test,<br>purlin:audit or purlin:sign"] -->|each writes, data inside| B["<b>The board</b><br>purlin-report.html"]
     B -->|press a rule| R["<b>One rule</b><br>its proofs and tests"]
 ```
 
-- **The page shows the last command.** Nothing writes the data in the background. An edit you
-  make shows up after the next of those four commands.
-- **Each checkout has its own page.** Git ignores the page and its data.
+- **The page shows the last command.** Nothing writes the page in the background. An edit you
+  make shows up after the next of those four commands, once you reload the page.
+- **Each checkout has its own page.** Git ignores it.
 - **With no data, the page names the command that writes it.**
+- **A copy you send carries what the board shows.** That includes rule text, test names, the
+  audit's findings with the lines of code around each planted bug, and the email address of
+  each person who signed.
 
 ## The top bar states the two facts
 

@@ -201,3 +201,21 @@ def test_the_skill_shows_the_graded_summary_and_the_row_for_a_model():
     # The next step is that command whole, closed where it ends:
     # `purlin:test --all-models` is another command.
     assert '`→ Run: purlin:test --all`' in rows[0], rows[0]
+
+
+def _open_lines(text):
+    """The skill's lines naming both `--open` and the opener's path."""
+    return [line for line in text.splitlines()
+            if '--open' in line and 'scripts/report/open_page.py' in line]
+
+
+# purlin: skill_status PROOF-50
+def test_the_skill_gives_status_open_with_the_opener():
+    assert _open_lines(skill_checks.read(SKILL)) != []
+
+
+# purlin: skill_status PROOF-51
+def test_a_copy_without_the_opener_holds_no_such_line():
+    with copy_without(SKILL, 'open_page.py'):
+        text = skill_checks.read(SKILL)
+    assert _open_lines(text) == []

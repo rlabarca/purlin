@@ -65,7 +65,7 @@ COMMIT = 'Commit the files setup wrote? [y/N] '
 README = '.purlin/evidence/README.md'
 # The dashboard's data file, which the status the run ends on refreshes
 # wherever a spec exists.
-REPORT_DATA = '.purlin/report-data.js'
+DASHBOARD_PAGE = 'purlin-report.html'
 
 
 # ---------------------------------------------------------------------------
@@ -369,7 +369,7 @@ class TestTheIgnoreFile:
         first = tree(project.root)['.gitignore']
         project.run()
         assert tree(project.root)['.gitignore'] == first
-        assert first.decode('utf-8').count('.purlin/report-data.js') == 1
+        assert first.decode('utf-8').count('/purlin-report.html') == 1
 
 
 # ---------------------------------------------------------------------------
@@ -722,7 +722,7 @@ class TestTheMarketplacePath:
             assert code == 0, ours_out + err
             theirs, ours = tree(made.root), tree(here.root)
             for files in (theirs, ours):
-                files.pop(REPORT_DATA, None)
+                files.pop(DASHBOARD_PAGE, None)
             assert theirs == ours
             assert (masked(theirs_out, made.root)
                     == masked(ours_out, here.root))
@@ -970,9 +970,14 @@ def set_up(base, language, prepare=None):
     if language == 'csharp':
         # A solution at the root lets the suggested `dotnet test` reach the
         # test project.
+        # .NET 10 writes `App.slnx` where earlier SDKs wrote `App.sln`:
+        # add the project to whichever one the installed SDK made.
         walk.step('solution', ['dotnet', 'new', 'sln', '-n', 'App'])
-        walk.step('solution add', ['dotnet', 'sln', 'App.sln', 'add',
+        solution = next(name for name in ('App.slnx', 'App.sln')
+                        if os.path.isfile(walk.path(name)))
+        walk.step('solution add', ['dotnet', 'sln', solution, 'add',
                                    'App.Tests/App.Tests.csproj'])
+        assert walk.code['solution add'] == 0, walk.out['solution add']
     write(walk.path('specs/core/greeting.md'),
           GREETING_SPEC % (shape['scope'], HERE_OS))
     write(walk.path(shape['test'][0]), shape['test'][1])

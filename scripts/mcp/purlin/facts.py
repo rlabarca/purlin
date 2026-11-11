@@ -216,6 +216,7 @@ def version_order(name):
 def git_line(project_root, *args):
     try:
         result = subprocess.run(['git'] + list(args), capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return ''

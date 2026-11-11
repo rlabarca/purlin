@@ -1,11 +1,13 @@
 """The status report: the two facts, one row per spec, and what is left.
 
 The report opens on three lines, the project and the two facts, which
-`scripts/mcp/purlin/summary.py` writes for every surface:
+`scripts/mcp/purlin/summary.py` writes for every surface, then, where the
+status wrote the dashboard page, the line that names it:
 
     Purlin status: labconnect, plugin 0.10.0
     Tests: not met
     Sign-off: signed 0.1.0, 4 commits since
+    Dashboard: purlin-report.html (purlin:status --open opens it)
 
 The table is the dashboard's board, rendered as text. Its columns are the
 board's columns and its cells are the board's cells, character for character,
@@ -35,8 +37,8 @@ as they stand, the last line names the run to make first
 (`facts.results_to_retake`).
 
 The status of a project Purlin 0.9.5 set up, while its upgrade is pending, is
-three lines, and it writes no file: the dashboard page and its data file stay
-as they are until the project is brought to this version.
+three lines, and it writes no file: the dashboard page stays as it is until
+the project is brought to this version.
 
 Copy follows `references/writing_style.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -162,6 +164,11 @@ def columns_for(proofs=1, audited=False):
     return board_module.columns_for(proofs, audited)
 
 
+# The status's fourth line, where it wrote the dashboard page.
+DASHBOARD_LINE = ('Dashboard: purlin-report.html (purlin:status --open opens '
+                  'it)')
+
+
 def sync_status(project_root):
     """The whole status report for a project root, as text.
 
@@ -184,12 +191,16 @@ def sync_status(project_root):
         # dashboard shows it as a notice, one line, from the same list.
         data['warnings'].append(old_marker_line(old))
     # The dashboard reads what the table reads: every command that ends on
-    # this table refreshes the page's data file with the same payload.
-    report_data.refresh(project_root, data)
+    # this table writes the page with the same payload in it.
+    page = report_data.refresh(project_root, data)
     if not data['features']:
         return '\n'.join(no_spec_lines(project_root))
 
     lines = summary_module.opening(data)
+    if page:
+        # Straight after the two facts, so whoever reads the status learns
+        # the board is there and how to show it.
+        lines.append(DASHBOARD_LINE)
     lines.append('')
     lines.extend(_table(data))
     # Three or more lines of one kind fold into one, as on the dashboard
@@ -637,7 +648,8 @@ def _uncommitted_specs(project_root):
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain', '--', 'specs/'],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=15)
     except (FileNotFoundError, OSError, subprocess.SubprocessError):
         return []
     if result.returncode != 0:

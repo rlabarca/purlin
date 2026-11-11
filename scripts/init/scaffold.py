@@ -83,7 +83,8 @@ def _git(root, *args):
     """`(ok, stripped stdout)` for one git command run in `root`."""
     try:
         done = subprocess.run(['git'] + list(args), cwd=root,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True,
+                              encoding='utf-8', errors='replace')
     except (OSError, subprocess.SubprocessError):
         return False, ''
     return done.returncode == 0, done.stdout.strip()
@@ -251,7 +252,8 @@ def git_message(done):
 def _git_run(root, *args):
     try:
         return subprocess.run(['git'] + list(args), cwd=root,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True,
+                              encoding='utf-8', errors='replace')
     except (OSError, subprocess.SubprocessError) as error:
         return subprocess.CompletedProcess(args, 1, '', str(error))
 

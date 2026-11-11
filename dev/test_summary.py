@@ -802,11 +802,12 @@ class TestTheLastLineAgreesWithTheSignOff:
             _write(os.path.join(made.root, 'notes.txt'), 'a note\n')
             _commit_all(made, 'docs: a note')
             lines = _status(made)
-            with open(os.path.join(made.root, '.purlin', 'report-data.js'),
+            with open(os.path.join(made.root, 'purlin-report.html'),
                       encoding='utf-8') as handle:
                 written = handle.read()
         finally:
             made.close()
-        data = json.loads(written[written.index('{'):written.rindex('}') + 1])
+        from purlin import payload as payload_module
+        data = payload_module.page_data(written)
         assert data['last_line'] == lines[-1], data['last_line']
         assert data['last_line'] == RUN_FIRST % 'purlin:test --all --commit'

@@ -33,23 +33,23 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-10-08T03:24:44Z",
-      "commit": "91c7ece08756ae23cd9584040400b1e763959a78",
+      "at": "2026-11-11T17:24:53Z",
+      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
       "dirty": false,
-      "email": "rich.labarca@gmail.com",
+      "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "5a40fe14522bc7625254199846c50e0955c5c07ad438665ad87b1aa716466895",
+        "code": "fc56239d060e1ad330a0dfcc741ce215ede84b127348455516ed494ae22ea408",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
-        "tests": "25f13a8fcfe432460c17a0f4a5f5e39a4be4da6a142e57c7b5014bf4717e0066"
+        "tests": "ef641917c58218734c78ad91fd6261b3761d566d21011978cfb53ee654c5da32"
       },
-      "machine": "Richs-MacBook-Pro.local",
+      "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
           "carried": {
-            "at": "2026-10-08T03:24:44Z",
-            "commit": "29e1753616e5d71915c98dd4b329125a77a696ee",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T17:24:53Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-1",
@@ -58,14 +58,14 @@
             "cases": [
               {
                 "class": "dev.test_collaboration",
-                "duration": 20.211,
+                "duration": 22.643,
                 "name": "test_three_people_reach_a_signed_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "39b37b25d7153bd0f11374875059df236932cabfb637f1aab0995b0d5c36154a"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -76,7 +76,7 @@
       "rules": {
         "RULE-1": "passed"
       },
-      "runner": "rich-labarca"
+      "runner": "rich"
     }
   },
   "schema": "purlin-evidence/2",

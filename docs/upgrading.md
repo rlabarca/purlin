@@ -145,7 +145,7 @@ restores all of them with `--yes`, in one commit. It restores four:
 
 | File | What is restored |
 |------|------------------|
-| `.gitignore` | the lines for `.purlin/runtime/` and `.purlin/report-data.js` |
+| `.gitignore` | the lines for `.purlin/runtime/` and `/purlin-report.html` |
 | `.purlin/config.json` | `version`, where it is not this release; `tests` stays as it is |
 | `.purlin/evidence/README.md` | the README, where there is none |
 | `purlin-report.html` | the page the plugin ships, where the page at the project root is another |

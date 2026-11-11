@@ -32,6 +32,7 @@ SERVER = os.path.join(SCRIPTS, 'mcp', 'purlin', 'server.py')
 
 sys.path.insert(0, os.path.join(SCRIPTS, 'mcp'))
 from purlin import drift as drift_module  # noqa: E402
+from purlin.payload import page_data  # noqa: E402
 
 VERSION = '0.1.0'
 TAG = 'signed/' + VERSION
@@ -316,8 +317,7 @@ class Person(object):
         """`purlin:status`: the tool's text, its warnings kept for the end."""
         given(skill('status'), 'sync_status`')
         text = self.tool('sync_status')
-        data = read(self.path('.purlin/report-data.js'))
-        payload = json.loads(data[data.index('{'):].rstrip().rstrip(';'))
+        payload = page_data(read(self.path('purlin-report.html')))
         self.team.warned.extend(payload['warnings'])
         return text
 
@@ -678,8 +678,7 @@ def test_three_people_reach_a_signed_version(tmp_path):
     assert opening(status) == ('Tests: met',
                                'Sign-off: signed %s at %s' % (VERSION,
                                                              tagged[:7]))
-    data = read(check.path('.purlin/report-data.js'))
-    payload = json.loads(data[data.index('{'):].rstrip().rstrip(';'))
+    payload = page_data(read(check.path('purlin-report.html')))
     assert team.warned, 'the collisions raised no warning to resolve'
     assert payload['warnings'] == []
     assert [item['kind'] for item in payload['left']] == []

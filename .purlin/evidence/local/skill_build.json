@@ -183,23 +183,23 @@
   "feature": "skill_build",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T22:12:20Z",
-      "commit": "91c7ece08756ae23cd9584040400b1e763959a78",
+      "at": "2026-11-11T17:24:55Z",
+      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
       "dirty": false,
-      "email": "rich.labarca@gmail.com",
+      "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "82f4f5dab661b5484874d29503279bcae05fea067b9f629d579a5e176f7f98e7",
+        "code": "fb597ad4595a337dbf927cad4189efa7275ab23fa395a03eccde3656af4777cf",
         "spec": "1d60501dce399f710e925cf5b43dd6a4e719546e58fa62473569582a0098f7ce",
         "tests": "2109057e306058fa8a6a0aa490036207e6ad44d515c931574637b0b3d3c32b69"
       },
-      "machine": "Richs-MacBook-Pro.local",
+      "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
           "carried": {
-            "at": "2026-10-07T22:12:20Z",
-            "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-51",
@@ -208,14 +208,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_build",
-                "duration": 0.001,
+                "duration": 0.003,
                 "name": "test_the_build_skill_holds_each_command_and_file_the_settle_included",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -224,10 +224,10 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T22:12:20Z",
-            "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-52",
@@ -243,7 +243,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -252,10 +252,10 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T22:12:20Z",
-            "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-53",
@@ -271,7 +271,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -280,10 +280,10 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T22:12:20Z",
-            "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-54",
@@ -299,7 +299,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "e914ba41f4f6a99e80bf8646dcd5896e41b1fd83528be675eed0d9e61c839dbc"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -308,10 +308,10 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T22:12:20Z",
-            "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-55",
@@ -319,10 +319,10 @@
           "models": [
             {
               "carried": {
-                "at": "2026-10-07T22:12:20Z",
-                "commit": "99c40e9c11c4873255a925627d93fba7e8182d42",
-                "email": "rich.labarca@gmail.com",
-                "machine": "Richs-MacBook-Pro.local"
+                "at": "2026-11-11T14:53:06Z",
+                "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+                "email": "rich@labarca.org",
+                "machine": "LabConnect-M5-Max.local"
               },
               "graded": false,
               "model": "claude-opus-5-5",
@@ -331,57 +331,57 @@
               "runs": [
                 {
                   "made": "helper",
-                  "output": "22befb6d28e5e35fde2753fa69c8fa361233a012432e1b3781998cd61b096625",
+                  "output": "d4945b24e30dfb3f76c5fcffc7d438e8df7a202959f8910c8e04ea0178a56892",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 66.925,
+                        "duration": 58.584,
                         "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "808b62f5da31972d7aa9703a4e0acd0b5a41919881751dda65aaff2edd819892"
+                      "sha256": "0cbb947d5483165fdaf0a2998cbd4a3ea26846a9a6ff31b29051415794964f11"
                     }
                   },
                   "result": "pass"
                 },
                 {
                   "made": "helper",
-                  "output": "b156d3a01b2717f77d9cf649376d3e08d60c4848aa48334e2e14325d681664d8",
+                  "output": "5b81122fa70a773b7a09e4644df4c5e9dfaea47ead298df98ecd38aba14a6beb",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 49.748,
+                        "duration": 61.634,
                         "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "98889209531a2841be87abcbcab62a28310dad9d65dda267e3465402ab6e5678"
+                      "sha256": "574908a52bb3aa048fb1450772968472c54c0fd41848517c1c52d79f93a3b0e6"
                     }
                   },
                   "result": "pass"
                 },
                 {
                   "made": "helper",
-                  "output": "6fad0af0c31cb747d033a535f35cc37b78fdd266434eb79f119927b846f937e4",
+                  "output": "780bcdcdb2e17c9254fdd0aeba34a7fa584f3d707408eb91deb2cd7f0c4d0795",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 46.74,
+                        "duration": 55.356,
                         "name": "test_a_session_strengthens_the_test_of_a_weak_rule_and_settles_it",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "4e15e5c5fd994355593cfb746d86287b54a80c4f239da5fa976216d85476a80f"
+                      "sha256": "82e67ac9e5bc81e9eee7e242b1e7336d79dcc1dd08729159834a0688e42dacc3"
                     }
                   },
                   "result": "pass"
@@ -395,10 +395,10 @@
         },
         {
           "carried": {
-            "at": "2026-10-07T22:02:46Z",
-            "commit": "3dce8c224643d35aca70b661ac811f69d98a6e18",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
+            "at": "2026-11-11T14:53:06Z",
+            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
           },
           "env": null,
           "id": "PROOF-56",
@@ -406,10 +406,10 @@
           "models": [
             {
               "carried": {
-                "at": "2026-10-07T22:02:46Z",
-                "commit": "3dce8c224643d35aca70b661ac811f69d98a6e18",
-                "email": "rich.labarca@gmail.com",
-                "machine": "Richs-MacBook-Pro.local"
+                "at": "2026-11-11T14:53:06Z",
+                "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
+                "email": "rich@labarca.org",
+                "machine": "LabConnect-M5-Max.local"
               },
               "graded": true,
               "model": "claude-opus-5-5",
@@ -420,22 +420,22 @@
                   "grade": {
                     "accepted": true,
                     "model": "claude-haiku-4-5-20251001",
-                    "reason": "the reply correctly identifies that PROOF-5 lacks specificity, proposes a sharpened version naming collection time `2026-03-01T08:00`, receipt time `2026-03-02T09:30`, and age `25` hours, recommends `purlin:spec sample_intake` to update the proof, and modifies only report-data.js while leaving specs/, tests/, and src/ unchanged."
+                    "reason": "the output says PROOF-5 names too little to write from (stating it \"gives no exact age to assert\"), proposes a sharper PROOF-5 with collection time 2026-03-01T08:00, receipt time 2026-03-02T09:45, and age 25 hours, and names purlin:spec as the command to change it, while changing no files under specs/, tests/, or src/."
                   },
                   "made": "helper",
-                  "output": "933dbfd5cb2aee4e64772463766db1569fdb36ca9cad97c11f1801b8dd23511f",
+                  "output": "a19d1e15dd16af65776930aee09ea48e0bb6ab664bb763be9eb3c883e64899a3",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 47.38,
+                        "duration": 53.414,
                         "name": "test_a_session_stops_for_a_proof_that_names_too_little",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "bc1acc8a3ba9721d4593b7b2920fffd5619a2a1c509b00f360d19d6b87519d70"
+                      "sha256": "cda1bd1635fdf96f3a2e891898900d8da2c0e491b8135b40e709dee34ab4b31b"
                     }
                   },
                   "result": "pass"
@@ -444,22 +444,22 @@
                   "grade": {
                     "accepted": true,
                     "model": "claude-haiku-4-5-20251001",
-                    "reason": "the reply correctly stops without changing specs/, tests/, or src/, explains that PROOF-5 names too little (no times or age), proposes a sharper PROOF-5 with collection time `2026-03-01T08:00`, receipt time `2026-03-02T09:30`, and age `25` hours, and names `purlin:spec` as the command to change it"
+                    "reason": "the reply changes no files in specs/, tests/, or src/, states that PROOF-5 names too little to write the check from, proposes a sharper proof naming collection time 2026-03-01T08:00, receipt time 2026-03-02T09:30, and age 25 hours, and names purlin:spec as the command to change the proof with."
                   },
                   "made": "helper",
-                  "output": "a141291d54309bbe7a85f0b455e284316202eddc03ad3fe4d9dcdcad1b130444",
+                  "output": "da05c0f2b77078441c99eb86137cf61819ca56039c2cfee19706cc44176b11d3",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 36.474,
+                        "duration": 46.482,
                         "name": "test_a_session_stops_for_a_proof_that_names_too_little",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "09a7876bceeb34d956d8cd01aba4119b0672d01d0d83eb2d4ab92ea3911e2fad"
+                      "sha256": "60d61f66400b9961ba70dba0aee04f34b28b0193c37bc72f9b699eed3e4e26c5"
                     }
                   },
                   "result": "pass"
@@ -468,22 +468,22 @@
                   "grade": {
                     "accepted": true,
                     "model": "claude-haiku-4-5-20251001",
-                    "reason": "The reply correctly identifies that PROOF-5 lacks specific times and age values, proposes a sharper proof naming collection time (2026-03-01T08:00), receipt time (2026-03-02T09:30), and age (25 hours), names `purlin:spec` as the command to update it, changes no files in specs/, tests/, or src/, and is given the correct initial instruction on a weak RULE-3 audit"
+                    "reason": "The reply correctly states that PROOF-5 names too little (lacking collection time, receipt time, and expected age), proposes a sharpened version that explicitly includes a collection time (2026-03-01T08:00), a receipt time (2026-03-02T09:30), and the age in hours (25), names purlin:spec as the command to update the proof, and changes no files under specs/, tests/, or src/."
                   },
                   "made": "helper",
-                  "output": "b59328b754a44519df655cd65bb06ea97b24046cf0eec42d7d447f3162f52094",
+                  "output": "db30543f60f68127232fcec86efd065b36fdf03d7c84a51b7046e81a047d85e6",
                   "reported": {
                     "cases": [
                       {
                         "class": "dev.test_skill_build",
-                        "duration": 44.472,
+                        "duration": 42.396,
                         "name": "test_a_session_stops_for_a_proof_that_names_too_little",
                         "outcome": "pass"
                       }
                     ],
                     "report": {
                       "file": ".purlin/runtime/reports/pytest.xml",
-                      "sha256": "4de2d48409bfd4aae5ff5071159f49d8e7bc3efafaeff01eb9ffd614e91f1573"
+                      "sha256": "cc803dc1bb95925b5be80301a807c1472d6fbcd6e60ddcf980a7c97488d90add"
                     }
                   },
                   "result": "pass"
@@ -503,7 +503,7 @@
         "RULE-24": "passed",
         "RULE-25": "passed"
       },
-      "runner": "rich-labarca"
+      "runner": "rich"
     }
   },
   "schema": "purlin-evidence/2",

@@ -1024,7 +1024,7 @@ class TestARunCoversWhatTheChangeTouched:
             '    assert True\n', encoding='utf-8')
         # What a run writes and git does not track, as setup ignores it.
         (root / '.gitignore').write_text(
-            '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n',
+            '.purlin/runtime/\n/purlin-report.html\n__pycache__/\n',
             encoding='utf-8')
         _git(root, 'add', '-A')
         _git(root, 'commit', '-q', '-m', 'the anchor shared')
@@ -1316,7 +1316,7 @@ def _first_run_checkout(tmp_path):
     (root / 'src').mkdir()
     (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
     (root / '.gitignore').write_text(
-        '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n'
+        '.purlin/runtime/\n/purlin-report.html\n__pycache__/\n'
         '.pytest_cache/\n', encoding='utf-8')
     _git_repo(root)
     return root
@@ -2291,7 +2291,7 @@ def _anchor_project(tmp_path):
     (root / 'tests' / 'test_shared.py').write_text(ANCHOR_TESTS,
                                                    encoding='utf-8')
     (root / '.gitignore').write_text(
-        '.purlin/runtime/\n.purlin/report-data.js\n__pycache__/\n'
+        '.purlin/runtime/\n/purlin-report.html\n__pycache__/\n'
         '.pytest_cache/\n', encoding='utf-8')
     _git_repo(root)
     return root
@@ -3104,7 +3104,7 @@ def _signable_project(tmp_path):
     do, then `README.md` changed and committed. `(root, that commit)`."""
     root, _sha = _touched_project(tmp_path)
     with open(str(root / '.gitignore'), 'a', encoding='utf-8') as handle:
-        handle.write('.purlin/report-data.js\npurlin-report.html\n')
+        handle.write('/purlin-report.html\n')
     return root, _readme_commit(root)
 
 

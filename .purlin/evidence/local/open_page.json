@@ -1,0 +1,276 @@
+{
+  "audit": {
+    "rules": {
+      "RULE-1": {
+        "at": "2026-11-11T18:29:51Z",
+        "bugs": {
+          "PROOF-1": {
+            "after": "    out((OPENED if opened else NOT_OPENED) % path)\n    return 1",
+            "aim": "plain",
+            "before": "    out((OPENED if opened else NOT_OPENED) % path)\n    return 0",
+            "bug_key": "ed0c925a382c111737a050fa67f99b0d36fc14d8d3422f30921edcdc6e47d2d1",
+            "case": "a project holding its page, run with a browser that reports it opened the address; the proof says the opener exits 0; the changed code exits 1",
+            "file": "scripts/report/open_page.py",
+            "line": 57,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-1: the test compares the browser's list of addresses, the printed line and the exit code exactly, so every result the proof names is checked and the plainest change was planted.",
+          "PROOF-1: the test takes the expected address from open_page.address(), the code under test, so a wrong `file:` address would still pass, though the proof only says one address is given and names no expected address.",
+          "PROOF-1: the rule says the page's `purlin-report.html` is handed to the browser, but the proof never says which address the browser receives, so the proof would read the same if the wrong file were opened."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "5a512ae52e08993f1f9c2789bab8b1030eb68804504a1fbfdfa3ea003424e714",
+        "rule_hash": "a46c5598282c4a8decee210e7a7a9ca32a0ddedcc505abe245f82a5f12330e1b",
+        "test_hash": "d316fe08b110c9600f8b1585f0eef93865e70a03b5c2490f3ad55262cd92c43d",
+        "verdict": "strong"
+      },
+      "RULE-2": {
+        "at": "2026-11-11T18:29:51Z",
+        "bugs": {
+          "PROOF-2": {
+            "after": "    out((OPENED if opened else NOT_OPENED) % path)\n    return 0 if opened else 1",
+            "aim": "plain",
+            "before": "    out((OPENED if opened else NOT_OPENED) % path)\n    return 0",
+            "bug_key": "6c385f9b3ea9f087fa8a55e696f184612a6708ec05145f2962da9637ffe77a6c",
+            "case": "a project whose browser reports it opened nothing; the proof says it prints `Dashboard: <path>. Open it in a browser.` and exits 0; the changed code prints the same line and exits 1",
+            "file": "scripts/report/open_page.py",
+            "line": 57,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-3": {
+            "after": "    if os.environ.get('CI') == '1':",
+            "aim": "plain",
+            "before": "    if os.environ.get('CI'):",
+            "bug_key": "86e2feb13f6d0637a00e49afe3d07f736923ff8dc371dd92c82b6870d0901201",
+            "case": "a project run with `CI` set to `true`; the proof says no browser is given any address, it prints `Dashboard: <path>. Open it in a browser.` and exits 0; the changed code hands the page's address to the browser and prints `Opened <path> in the default browser.`",
+            "file": "scripts/report/open_page.py",
+            "line": 49,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-2: the test hands the opener a browser that reports it opened nothing. It checks that the browser was given one address, that the printed lines equal exactly the dashboard line with the page's absolute path, and that the exit code is 0, so it reads every result the proof names.",
+          "PROOF-3: the test sets `CI` to `true` with a browser that would open. It checks that the browser was given no address, that the printed lines equal exactly the dashboard line, and that the exit code is 0, so it reads every result the proof names.",
+          "Neither test builds its expected line from the opener's own constant. Each writes the message as a literal with `%s` for the path, so the expected text does not come from the code under test.",
+          "The spot tests found nothing, and that holds: each test asserts real, failable values and mocks only the browser, which is a dependency of the opener."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "bd2bd57f966a5debd65f10495bf0177933bad40ffbe2f20a88ac8af4ee874f39",
+        "rule_hash": "9d74712a6a8fb568806bed86de9b6d4a2e477a363bbd97d26c27b0e350f87695",
+        "test_hash": "8ed0d1f6c668906e9e4233f47d5732de8a50815dccda699b29354959717c5c8f",
+        "verdict": "strong"
+      },
+      "RULE-3": {
+        "at": "2026-11-11T18:30:44Z",
+        "bugs": {
+          "PROOF-4": {
+            "after": "    args = parser.parse_args(argv)\n    open_page(args.project_root)",
+            "aim": "past the test",
+            "before": "    args = parser.parse_args(argv)\n    return open_page(args.project_root)",
+            "bug_key": "846da58a41faf6aba332f7666630d1f309f13ab37ec413c372b3370d3f678599",
+            "case": "a project with no purlin-report.html runs the opener; the proof says it exits 1; the changed opener prints the line and exits 0",
+            "file": "scripts/report/open_page.py",
+            "line": 66,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "commit": "fd3dd257af3cfa1861912c70933a99b3c26ded31",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "fed7d9e54b8e3addab529ce1637678953e674204bb6df3c171637913989533f7",
+        "rule_hash": "121c01dd1d62540b896f183b9f29f3e2d32b47a8dbf8a99d57daa40e47926e7a",
+        "test_hash": "21f7067b8ac53b87c630e98bcbafe2de52f4682b5ad793b0a0df5b422111ef04",
+        "verdict": "strong"
+      },
+      "RULE-4": {
+        "at": "2026-11-11T18:29:51Z",
+        "bugs": {
+          "PROOF-5": {
+            "after": "    return 'file://' + pathlib.Path(os.path.abspath(path)).as_posix()",
+            "aim": "plain",
+            "before": "    return pathlib.Path(os.path.abspath(path)).as_uri()",
+            "bug_key": "94ebfe6427e8a6e27daa5c59cba6aa44b2c5d2ec27ff1c9391fbd2fc51d0660f",
+            "case": "a project in a folder named `my caf\u00e9` runs the opener; the proof says the address holds `my%20caf%C3%A9/purlin-report.html` and no space; the changed code gives an address holding `my caf\u00e9/purlin-report.html` with a space in it",
+            "file": "scripts/report/open_page.py",
+            "line": 40,
+            "result": "caught",
+            "why": ""
+          }
+        },
+        "code_hash": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-5: the test runs the opener on a project in a folder named `my caf\u00e9` and compares the one address the browser is given against all three things the proof names: it begins `file:`, it holds `my%20caf%C3%A9/purlin-report.html`, and it holds no space, so an address left unencoded fails it.",
+          "PROOF-5: the test does not check that the address carries the page's absolute path, which the rule asks for and the proof does not name, so a relative `file:` address with the same encoded ending would still pass.",
+          "PROOF-5: the test runs on one operating system per run, so the rule's claim that the page opens the same on every operating system is observed only on the machine the test runs on.",
+          "The spot tests found nothing, and each of the test's assertions can fail."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [],
+        "proof_hash": "737cc03ab30f296166dbf7bfec23fbca00a4b85e79b8da79e1e9c16f596e014a",
+        "rule_hash": "6f35d65f184645a2ca5466bb7c56fcfd6d013076ca160ffc335056812c581644",
+        "test_hash": "815cc01a92259adcdd5833d8318c969b63fd4c70ca594dcd4c8b09b27609d2ed",
+        "verdict": "strong"
+      }
+    }
+  },
+  "feature": "open_page",
+  "platforms": {
+    "macos": {
+      "at": "2026-11-11T18:30:26Z",
+      "commit": "fd3dd257af3cfa1861912c70933a99b3c26ded31",
+      "dirty": false,
+      "email": "rich@labarca.org",
+      "fingerprint": {
+        "code": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "spec": "98c3d92d088d8375f8405dc51b25f095b38239c2d783438a196d1cbd1b03aa73",
+        "tests": "f597697c6d50d07f2ac12647e410a470d2f99fac74f4ff0c8c14ece1d446c696"
+      },
+      "machine": "LabConnect-M5-Max.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.023,
+                "name": "test_a_browser_that_opens_the_page_is_named",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_open_page.py::test_a_browser_that_opens_the_page_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_a_browser_that_opens_nothing_leaves_the_path",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_open_page.py::test_a_browser_that_opens_nothing_leaves_the_path"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_on_ci_no_browser_is_started",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_open_page.py::test_on_ci_no_browser_is_started"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.053,
+                "name": "test_a_project_with_no_page_names_the_command",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_open_page.py::test_a_project_with_no_page_names_the_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_a_folder_with_a_space_and_an_accent_is_percent_encoded",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "d1c92a8f2fe2c6f8b239b5f3cb51f6dec591c6f54ea7c51ea008a718449e0877"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_open_page.py::test_a_folder_with_a_space_and_an_accent_is_percent_encoded"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed"
+      },
+      "runner": "rich"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/dashboard/open_page.md"
+}
