@@ -2,8 +2,8 @@
   "feature": "run_script",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T18:04:19Z",
-      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
+      "at": "2026-11-11T19:49:26Z",
+      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmm7ud1",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T18:04:19Z",
-            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-326",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestNoTestCommand",
-                "duration": 0.138,
+                "duration": 0.097,
                 "name": "test_a_windows_machine_is_suggested_the_launcher",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_run_script.py::TestNoTestCommand::test_a_windows_machine_is_suggested_the_launcher"
         },
         {
-          "carried": {
-            "at": "2026-11-11T18:04:19Z",
-            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-229",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_run_script.TestTheConsoleCodecNeverEndsTheRun",
-                "duration": 1.253,
+                "duration": 0.924,
                 "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",

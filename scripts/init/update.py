@@ -2503,16 +2503,57 @@ def _print_pending(items, root):
                 print('      ' + line)
 
 def _commit(root, subject, paths):
-    """One commit for the whole update, under `subject`."""
+    """One commit for the whole update, under `subject`, holding only `paths`.
+
+    Each path is staged as the update left it. The commit is then built in an
+    index of its own that starts from HEAD and takes only those paths, so a
+    change the person staged before the update ran is in no commit of it and
+    is still staged afterwards. Where none of the paths differs from HEAD
+    there is no commit.
+    """
     for rel in paths:  # one at a time: a path git now ignores must not stop it
         _git(root, 'add', '-A', '--', rel)
-    if _git(root, 'diff', '--cached', '--quiet')[0]:
+    if not paths:
         return None
-    ok, out = _git(root, 'commit', '-q', '-m', subject)
-    if ok:
-        return _git(root, 'rev-parse', '--short', 'HEAD')[1].strip()
-    print('The changes are staged and not committed: %s' % out)
-    return None
+    ok, out = _git(root, 'diff', '--cached', '--name-only', '-z', '--', *paths)
+    ours = [name for name in out.split('\0') if name] if ok else []
+    if not ours:
+        return None
+    ok, listed = _git(root, 'ls-files', '--stage', '-z', '--', *ours)
+    entries = [entry for entry in listed.split('\0') if entry] if ok else []
+    kept = {entry.split('\t', 1)[1] for entry in entries}
+    # Beside git's own index, wherever this checkout keeps it: a worktree's
+    # `.git` is a file, not a folder.
+    index = os.path.join(root, _git(root, 'rev-parse', '--git-path',
+                                    'purlin-update-index')[1].strip())
+    env = dict(os.environ, GIT_INDEX_FILE=index)
+    start = (['read-tree', 'HEAD']
+             if _git(root, 'rev-parse', '--verify', '-q', 'HEAD')[0]
+             else ['read-tree', '--empty'])
+    gone = [name for name in ours if name not in kept]
+    steps = [(start, None),
+             (['update-index', '-z', '--index-info'],
+              ''.join(entry + '\0' for entry in entries))]
+    if gone:
+        steps.append((['update-index', '--force-remove', '--'] + gone, None))
+    steps.append((['commit', '-q', '-m', subject], None))
+    try:
+        for argv, given in steps:
+            done = subprocess.run(['git'] + argv, cwd=root, env=env,
+                                  input=given, capture_output=True,
+                                  text=True, encoding='utf-8',
+                                  errors='replace')
+            if done.returncode != 0:
+                print('The changes are staged and not committed: %s'
+                      % (done.stdout + done.stderr).strip())
+                return None
+    except (OSError, ValueError) as exc:
+        print('The changes are staged and not committed: %s' % exc)
+        return None
+    finally:
+        if os.path.exists(index):
+            os.remove(index)
+    return _git(root, 'rev-parse', '--short', 'HEAD')[1].strip()
 
 def _agent_rank(rel):
     """Where a file that instructs an agent stands among what is left, or

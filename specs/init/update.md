@@ -11,8 +11,8 @@
 >   the same run restores each file, names it and ends as the status ends.
 > Scope: scripts/init/update.py
 > Stack: python3 (stdlib only, 3.9 floor)
-> Highest-Rule: 76
-> Highest-Proof: 229
+> Highest-Rule: 77
+> Highest-Proof: 232
 
 ## Rules
 
@@ -53,6 +53,7 @@
 - RULE-74: On a project 0.9.5 did not set up, the update restores each file setup writes that is pending and names it: it lists `<n> files to restore in <folder>:` with one line per file, `<file>: <what the file is for>`, asks `Restore <file>? [y/N]` for each, prints `restored <file>: <what the file is for>` for each one restored and `skipped <file>` for each declined, and commits the files restored as `chore(update): restore <files>`; a run told what to apply prints `Restoring <n> files: <files>.` as its first line in place of the list
 - RULE-75: A run that restored a file ends on the lines the status ends on for the project as it then is, with `→ Run: purlin:init --update` first among them while a file is still to restore; it prints no sentence about 0.9.5, about a migration, about the earlier record or about a backup, and keeps no copy under `.purlin/runtime/update-backup/`; a run that restored nothing ends on `→ Run: purlin:init --update` and `Nothing was restored. Add --yes to restore each file.`
 - RULE-76: A project is one 0.9.5 set up where its settings carry no `tests` setting or a pending migration finds something 0.9.5 wrote; a project where all that is pending is a `.gitignore` lacking a line of Purlin's, a missing `.purlin/evidence/README.md`, settings of `version` and `tests` alone whose `version` is not this release, or a `purlin-report.html` that is a file and not the page the plugin ships, is not one, and those four are the files it restores
+- RULE-77: The update commits only the files it changed: a change the person staged before it ran stays staged and is in no commit the update makes, and a run that changes no file makes no commit
 
 ## Proof
 
@@ -162,3 +163,6 @@
 - PROOF-227 (RULE-76): The same project, given settings holding `version` and `test_framework` and no `tests`, is updated with `--yes`; its first line reads `Applying 3 migrations: untracked-files, config, evidence.`, it holds the two sentences about the earlier record and the sentence about the backups, its last three lines are those starting `→ Run: purlin:test --all --commit`, and its commit reads `chore(update): migrate to <VERSION> (untracked-files, config, evidence)`
 - PROOF-228 (RULE-76): The same project, given the line `.purlin/cache/` in its `.gitignore`, is updated with `--yes`; its first line reads `Applying 2 migrations: untracked-files, evidence.`, it holds ``Every rule reads `not run` until the tests run again.``, and its last three lines are those starting `→ Run: purlin:test --all --commit`
 - PROOF-229 (RULE-65): A spec `tabs` whose two proofs each run over two lines and end `opened @ai` and `closed @ai(claude-opus-5-5) @graded`, in a project whose TypeScript test titles end `[proof:tabs:PROOF-1:RULE-1:ai]` and `[proof:tabs:PROOF-2:RULE-2:graded]`, is byte for byte as it was after the update with `--yes`
+- PROOF-230 (RULE-77): A project this release set up lacks `.purlin/evidence/README.md` and has the removal of its tracked `launch.json` staged; the update runs answering no to every question; `HEAD` is the commit it was, and the removal of `launch.json` is still staged
+- PROOF-231 (RULE-77): The same project is updated with `--yes`; its one new commit, `chore(update): restore .gitignore, .purlin/evidence/README.md`, holds exactly those two files, `launch.json` is still in that commit's tree, and its removal is still staged
+- PROOF-232 (RULE-77): A project Purlin 0.9.5 set up has a change to its tracked `notes.txt` staged and is updated with `--yes`; no commit the update makes holds `notes.txt`, and its change is still staged

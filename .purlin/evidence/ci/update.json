@@ -2,24 +2,18 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T18:04:19Z",
-      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
+      "at": "2026-11-11T19:49:26Z",
+      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "1047c1ea446eda3d43732b57d95c77d52a23f84e48bca91768a4aae78ebf25f2",
-        "spec": "759f6a6e671588964d0b97087e0d911c84c7da5c03d613582bb93ebda13996de",
-        "tests": "d1f736928669bb51e48b331d4f72b16d638a6e3427bd2f27dcd6b1fbb0a6d307"
+        "code": "6994d409f4b9d8eaa4df69a7549efdd955ba672e44b1ad557f1562ff4f12b47f",
+        "spec": "35d8bcef7d425fafa37cc9fcd3f5438b86b761ec9c9cd4c42dd17a62860d1655",
+        "tests": "dd4b32a896aff870b8321c5dadd6f5c21f08d627ec4eba29220003ad1649b17c"
       },
       "machine": "runnervmm7ud1",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T18:04:19Z",
-            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-117",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 4.325,
+                "duration": 3.538,
                 "name": "test_on_windows_a_second_run_finds_nothing_and_changes_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-11-11T18:04:19Z",
-            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 3.503,
+                "duration": 2.888,
                 "name": "test_on_windows_every_backup_keeps_the_bytes_from_before",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
-          "carried": {
-            "at": "2026-11-11T18:04:19Z",
-            "commit": "74aa76efe8cf8dd41656e7d1d37386b89781aafd",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 3.737,
+                "duration": 3.096,
                 "name": "test_on_windows_the_conftest_keeps_its_own_line_and_its_ending",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "6625a6d80e18dbbbad7f7441c3996cae30a1b1d6c477067a82e8950b33114759"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
