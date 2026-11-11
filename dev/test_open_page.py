@@ -8,6 +8,7 @@ it is given and says whether it opened it, so no real browser starts.
 """
 
 import os
+import subprocess
 import sys
 
 DEV = os.path.dirname(os.path.abspath(__file__))
@@ -87,10 +88,20 @@ def test_a_project_with_no_page_names_the_command(tmp_path, monkeypatch):
     os.makedirs(folder)
     browser = Browser(opens=True)
     code, printed = _run(folder, browser)
-    assert printed == ['purlin-report.html: no page yet. Run purlin:status, '
-                       'then purlin:status --open.']
+    said = ('purlin-report.html: no page yet. Run purlin:status, then '
+            'purlin:status --open.')
+    assert printed == [said]
     assert browser.given == []
     assert code == 1
+    # The script as `purlin:status --open` starts it: the same line, and
+    # the exit code 1 reaches the shell.
+    done = subprocess.run(
+        [sys.executable, os.path.join(ROOT, 'scripts', 'report',
+                                      'open_page.py'),
+         '--project-root', folder],
+        capture_output=True, text=True, encoding='utf-8', timeout=60)
+    assert done.stdout.splitlines() == [said], done.stdout + done.stderr
+    assert done.returncode == 1, done.returncode
 
 
 # purlin: open_page PROOF-5
