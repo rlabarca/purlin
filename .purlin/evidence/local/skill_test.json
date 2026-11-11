@@ -171,24 +171,18 @@
   "feature": "skill_test",
   "platforms": {
     "macos": {
-      "at": "2026-10-07T19:50:41Z",
-      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
+      "at": "2026-11-11T17:24:55Z",
+      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
       "dirty": false,
-      "email": "rich.labarca@gmail.com",
+      "email": "rich@labarca.org",
       "fingerprint": {
         "code": "b543a0e8ea6b1729bac9463fb08b99e51d417ffc66758078463a210d1a667956",
         "spec": "38bcb8aaac77fb192b45245d88c98ec8d9a345d1cae32821b4af43a754c57179",
         "tests": "3a9842442bc7f5aa8100800d50b0d7a5e12becd93a828e7fedddb86ff1e8260b"
       },
-      "machine": "Richs-MacBook-Pro.local",
+      "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -196,14 +190,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.001,
+                "duration": 0.005,
                 "name": "test_the_shipped_skill_file_names_its_command_and_four_paths",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -211,12 +205,6 @@
           "test": "dev/test_skill_test.py::test_the_shipped_skill_file_names_its_command_and_four_paths"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -224,14 +212,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_a_copy_without_the_evidence_and_signoff_reference_is_reported",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -239,12 +227,6 @@
           "test": "dev/test_skill_test.py::test_a_copy_without_the_evidence_and_signoff_reference_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -259,7 +241,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -267,12 +249,6 @@
           "test": "dev/test_skill_test.py::test_one_line_passes_commit_to_the_run_script"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -287,7 +263,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -295,12 +271,6 @@
           "test": "dev/test_skill_test.py::test_a_copy_that_passes_no_commit_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -308,14 +278,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_the_skill_shows_the_three_lines_a_run_prints_about_an_ai_proof",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -323,12 +293,6 @@
           "test": "dev/test_skill_test.py::test_the_skill_shows_the_three_lines_a_run_prints_about_an_ai_proof"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -336,14 +300,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_the_skill_says_what_to_do_about_a_model_not_reached",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -351,12 +315,6 @@
           "test": "dev/test_skill_test.py::test_the_skill_says_what_to_do_about_a_model_not_reached"
         },
         {
-          "carried": {
-            "at": "2026-10-07T19:50:41Z",
-            "commit": "bbf8999e66d084ea0f3388fae4b0320d3d999ecd",
-            "email": "rich.labarca@gmail.com",
-            "machine": "Richs-MacBook-Pro.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -364,14 +322,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_test",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_the_skill_waits_for_a_full_run_to_end",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "7e3cee41145efe71bfbef65ef0c53e908fb8f0c87d3048f07f9da2afd101edf6"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -385,7 +343,7 @@
         "RULE-25": "passed",
         "RULE-26": "passed"
       },
-      "runner": "rich-labarca"
+      "runner": "rich"
     }
   },
   "schema": "purlin-evidence/2",

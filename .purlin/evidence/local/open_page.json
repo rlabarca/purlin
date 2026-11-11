@@ -1,0 +1,139 @@
+{
+  "feature": "open_page",
+  "platforms": {
+    "macos": {
+      "at": "2026-11-11T17:24:54Z",
+      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "dirty": false,
+      "email": "rich@labarca.org",
+      "fingerprint": {
+        "code": "da4adbb26c00e38b86bf2848ac6fbb58c43907a4bb9393892eeb081ccb979c72",
+        "spec": "98c3d92d088d8375f8405dc51b25f095b38239c2d783438a196d1cbd1b03aa73",
+        "tests": "f4d1d75410071082b0ec07a4a87c4ed7540cd302c1ed381929365136977a71f8"
+      },
+      "machine": "LabConnect-M5-Max.local",
+      "proofs": [
+        {
+          "env": null,
+          "id": "PROOF-1",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.022,
+                "name": "test_a_browser_that_opens_the_page_is_named",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-1",
+          "test": "dev/test_open_page.py::test_a_browser_that_opens_the_page_is_named"
+        },
+        {
+          "env": null,
+          "id": "PROOF-2",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_a_browser_that_opens_nothing_leaves_the_path",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_open_page.py::test_a_browser_that_opens_nothing_leaves_the_path"
+        },
+        {
+          "env": null,
+          "id": "PROOF-3",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_on_ci_no_browser_is_started",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-2",
+          "test": "dev/test_open_page.py::test_on_ci_no_browser_is_started"
+        },
+        {
+          "env": null,
+          "id": "PROOF-4",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_a_project_with_no_page_names_the_command",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-3",
+          "test": "dev/test_open_page.py::test_a_project_with_no_page_names_the_command"
+        },
+        {
+          "env": null,
+          "id": "PROOF-5",
+          "manual": false,
+          "reported": {
+            "cases": [
+              {
+                "class": "dev.test_open_page",
+                "duration": 0.001,
+                "name": "test_a_folder_with_a_space_and_an_accent_is_percent_encoded",
+                "outcome": "pass"
+              }
+            ],
+            "report": {
+              "file": ".purlin/runtime/reports/pytest.xml",
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+            }
+          },
+          "result": "pass",
+          "rule": "RULE-4",
+          "test": "dev/test_open_page.py::test_a_folder_with_a_space_and_an_accent_is_percent_encoded"
+        }
+      ],
+      "rules": {
+        "RULE-1": "passed",
+        "RULE-2": "passed",
+        "RULE-3": "passed",
+        "RULE-4": "passed"
+      },
+      "runner": "rich"
+    }
+  },
+  "schema": "purlin-evidence/2",
+  "source": "local",
+  "spec": "specs/dashboard/open_page.md"
+}

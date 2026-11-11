@@ -367,24 +367,18 @@
   "feature": "purlin_agent",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T14:53:06Z",
-      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
+      "at": "2026-11-11T17:24:54Z",
+      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "865bf9e38542e451200771ed198079acc8a2b2534cb67c84c6eb25624baf4ca8",
+        "code": "dec4e10162781fe06d46d132b7e2189029587557bd48c0e0f554bef4d5f4d793",
         "spec": "20cfe81762cb527900aab3a36974ac298c8fa27595cf215d30994af193967e29",
         "tests": "d3b3ff3e3f99b1d258c60ae5def34b8b629a6ee46cf03e08d650d0ad72329115"
       },
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -392,14 +386,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.002,
+                "duration": 0.001,
                 "name": "test_the_agent_definition_holds_each_command_and_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -407,12 +401,6 @@
           "test": "dev/test_purlin_agent.py::test_the_agent_definition_holds_each_command_and_file"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-60",
           "manual": false,
@@ -420,14 +408,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.001,
+                "duration": 0.0,
                 "name": "test_a_name_is_held_whole_with_each_space_as_written",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -435,12 +423,6 @@
           "test": "dev/test_purlin_agent.py::test_a_name_is_held_whole_with_each_space_as_written"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -455,7 +437,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -463,12 +445,6 @@
           "test": "dev/test_purlin_agent.py::test_one_sentence_names_a_worktree_merging_the_status_and_the_main_checkout"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -476,14 +452,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.02,
+                "duration": 0.023,
                 "name": "test_every_path_a_skill_or_the_agent_definition_names_exists",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -491,12 +467,6 @@
           "test": "dev/test_purlin_agent.py::test_every_path_a_skill_or_the_agent_definition_names_exists"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -511,7 +481,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -519,12 +489,6 @@
           "test": "dev/test_purlin_agent.py::test_a_path_is_looked_for_letter_for_letter"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -532,14 +496,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.512,
+                "duration": 0.533,
                 "name": "test_every_flag_a_skill_passes_is_one_its_script_takes",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -547,12 +511,6 @@
           "test": "dev/test_purlin_agent.py::test_every_flag_a_skill_passes_is_one_its_script_takes"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -560,14 +518,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 2.408,
+                "duration": 2.53,
                 "name": "test_the_answers_file_the_sign_skill_shows_is_walked",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -575,12 +533,6 @@
           "test": "dev/test_purlin_agent.py::test_the_answers_file_the_sign_skill_shows_is_walked"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,
@@ -588,14 +540,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.006,
+                "duration": 0.008,
                 "name": "test_no_skill_agent_definition_or_reference_names_a_path_under_dev",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -603,12 +555,6 @@
           "test": "dev/test_purlin_agent.py::test_no_skill_agent_definition_or_reference_names_a_path_under_dev"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-55",
           "manual": false,
@@ -616,14 +562,14 @@
             "cases": [
               {
                 "class": "dev.test_purlin_agent",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_every_skill_naming_the_status_names_the_tool_and_the_script",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -631,12 +577,6 @@
           "test": "dev/test_purlin_agent.py::test_every_skill_naming_the_status_names_the_tool_and_the_script"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -651,7 +591,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -659,12 +599,6 @@
           "test": "dev/test_purlin_agent.py::test_the_command_reference_and_the_glossary_name_the_settle_command"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-57",
           "manual": false,
@@ -679,7 +613,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -687,12 +621,6 @@
           "test": "dev/test_purlin_agent.py::test_one_sentence_says_what_an_ai_proof_is_and_where_to_read"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -707,7 +635,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -715,12 +643,6 @@
           "test": "dev/test_purlin_agent.py::test_the_command_reference_gives_the_helpers_three_lines"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-59",
           "manual": false,
@@ -735,7 +657,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",

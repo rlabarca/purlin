@@ -172,8 +172,8 @@
   "feature": "skill_init",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T14:53:06Z",
-      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
+      "at": "2026-11-11T17:24:55Z",
+      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -184,12 +184,6 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -197,14 +191,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.001,
+                "duration": 0.002,
                 "name": "test_one_line_runs_the_script_through_the_lookup_with_the_root",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -212,12 +206,6 @@
           "test": "dev/test_skill_init.py::test_one_line_runs_the_script_through_the_lookup_with_the_root"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-24",
           "manual": false,
@@ -225,14 +213,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.082,
+                "duration": 0.093,
                 "name": "test_every_flag_handed_is_one_the_usage_lists",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -240,12 +228,6 @@
           "test": "dev/test_skill_init.py::test_every_flag_handed_is_one_the_usage_lists"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -260,7 +242,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -268,12 +250,6 @@
           "test": "dev/test_skill_init.py::test_a_reader_finds_the_files_setup_writes_and_the_two_references"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-99",
           "manual": false,
@@ -288,7 +264,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -296,12 +272,6 @@
           "test": "dev/test_skill_init.py::test_the_upgrade_part_lists_then_asks_then_passes_each_answer"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-100",
           "manual": false,
@@ -309,14 +279,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 0.498,
+                "duration": 0.453,
                 "name": "test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -324,12 +294,6 @@
           "test": "dev/test_skill_init.py::test_the_flags_the_upgrade_part_hands_apply_one_migration_unasked"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-101",
           "manual": false,
@@ -344,7 +308,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -352,12 +316,6 @@
           "test": "dev/test_skill_init.py::test_the_restoring_part_names_the_files_then_lists_asks_and_restores"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-102",
           "manual": false,
@@ -365,27 +323,22 @@
             "cases": [
               {
                 "class": "dev.test_skill_init",
-                "duration": 1.319,
+                "duration": 0.983,
                 "name": "test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints",
-                "outcome": "pass"
+                "outcome": "fail",
+                "text": "AssertionError: assert '3 files to r...g_p0/project:' == '2 files to r...g_p0/project:'\n  \n  Skipping 139 identical trailing characters in diff, use -v to show\n  - 2 files to\n  ? ^\n  + 3 files to\n  ? ^\n\ntmp_path = PosixPath('/private/var/folders/cw/fpvv_31d0vvfsvfsdl_glpv80000gp/T/pytest-of-rlabarca/pytest-348/test_the_lines_the_restoring_p0')\n\n    def test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints(\n            tmp_path):\n        sys.path.insert(0, str(ROOT / 'dev'))\n        import sample_lab\n        text = flat('\\n'.join(part(RESTORE_HEADING)))\n        quoted = ['`<n> files to restore in <folder>:`', '`' + NOTHING_RESTORED\n                  + '`', '`Restoring <n> files: <files>.`',\n                  '`restored <file>: <what the file is for>`',\n                  '`chore(update): restore <files>`']\n        assert [line for line in quoted if line not in text] == []\n        root = sample_lab.build(tmp_path)\n        for args in (['config', 'user.name', 'Test Person'],\n                     ['config', 'user.email', 'test@example.com'],\n                     ['config', 'commit.gpgsign', 'false']):\n            subprocess.run(['git'] + args, cwd=root, check=True,\n                           capture_output=True)\n        env = dict(os.environ)\n        env.pop('CLAUDE_PLUGIN_ROOT', None)\n    \n        def run(*flags):\n            done = subprocess.run(\n                [sys.executable, str(SCAFFOLD), '--update', '--project-root',\n                 root] + list(flags), capture_output=True, encoding='utf-8',\n                timeout=300, env=env, stdin=subprocess.DEVNULL)\n            assert done.returncode == 0, done.stdout + done.stderr\n            return done.stdout.splitlines()\n    \n        listing = run()\n>       assert listing[0] == '2 files to restore in %s:' % os.path.abspath(root)\nE       AssertionError: assert '3 files to r...g_p0/project:' == '2 files to r...g_p0/project:'\nE         \nE         Skipping 139 identical trailing characters in diff, use -v to show\nE         - 2 files to\nE         ? ^\nE         + 3 files to\nE         ? ^\n\ndev/test_skill_init.py:283: AssertionError"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
-          "result": "pass",
+          "result": "fail",
           "rule": "RULE-89",
           "test": "dev/test_skill_init.py::test_the_lines_the_restoring_part_quotes_are_the_ones_the_script_prints"
         },
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-103",
           "manual": false,
@@ -400,7 +353,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
@@ -411,7 +364,7 @@
       "rules": {
         "RULE-87": "passed",
         "RULE-88": "passed",
-        "RULE-89": "passed",
+        "RULE-89": "failed",
         "RULE-90": "passed"
       },
       "runner": "rich"

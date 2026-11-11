@@ -33,24 +33,18 @@
   "feature": "collaboration",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T14:53:06Z",
-      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
+      "at": "2026-11-11T17:24:53Z",
+      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
-        "code": "ca3f92c040e52757e41b69143517a741926cdedbdb576ffff52f7383fa60df7f",
+        "code": "fc56239d060e1ad330a0dfcc741ce215ede84b127348455516ed494ae22ea408",
         "spec": "288338e527e74393978cafd86960a75157c22cc5cf5d84eb92b504f76083ce74",
         "tests": "ef641917c58218734c78ad91fd6261b3761d566d21011978cfb53ee654c5da32"
       },
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T14:53:06Z",
-            "commit": "d7bde94371c4897b961d80caf6704f717ee0fd4b",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -58,14 +52,14 @@
             "cases": [
               {
                 "class": "dev.test_collaboration",
-                "duration": 22.064,
+                "duration": 22.643,
                 "name": "test_three_people_reach_a_signed_version",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "1a4c725adddbd804b1f5e2b872c62ececcd7f73382f35c9c2238443d78f68593"
+              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
             }
           },
           "result": "pass",
