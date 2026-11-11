@@ -99,7 +99,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T17:24:55Z",
-      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -110,6 +110,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -132,6 +138,12 @@
           "test": "dev/test_windows_run.py::test_a_green_run_pushes_watches_pulls_and_deletes"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -154,6 +166,12 @@
           "test": "dev/test_windows_run.py::test_a_red_run_says_so_still_pulls_and_deletes_and_exits_1"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -176,6 +194,12 @@
           "test": "dev/test_windows_run.py::test_one_uncommitted_file_exits_1_with_the_one_line_and_no_push"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,

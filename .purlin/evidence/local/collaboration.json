@@ -34,7 +34,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T17:24:53Z",
-      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -45,6 +45,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T17:24:53Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,

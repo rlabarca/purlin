@@ -184,7 +184,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T17:24:55Z",
-      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -195,6 +195,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -217,6 +223,12 @@
           "test": "dev/test_skill_build.py::test_the_build_skill_holds_each_command_and_file_the_settle_included"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-52",
           "manual": false,
@@ -239,6 +251,12 @@
           "test": "dev/test_skill_build.py::test_the_build_skill_says_how_a_test_left_alone_is_settled"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-53",
           "manual": false,
@@ -261,6 +279,12 @@
           "test": "dev/test_skill_build.py::test_the_build_skill_says_how_the_test_of_an_ai_proof_is_written"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-54",
           "manual": false,

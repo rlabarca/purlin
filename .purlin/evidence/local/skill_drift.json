@@ -50,7 +50,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T17:24:55Z",
-      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -61,6 +61,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-46",
           "manual": false,
@@ -83,6 +89,12 @@
           "test": "dev/test_skill_drift.py::test_the_drift_skill_names_its_commands_its_criteria_and_its_script"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:55Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,

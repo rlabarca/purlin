@@ -3,7 +3,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T17:24:54Z",
-      "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T17:24:54Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -36,6 +42,12 @@
           "test": "dev/test_open_page.py::test_a_browser_that_opens_the_page_is_named"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:54Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -58,6 +70,12 @@
           "test": "dev/test_open_page.py::test_a_browser_that_opens_nothing_leaves_the_path"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:54Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -80,6 +98,12 @@
           "test": "dev/test_open_page.py::test_on_ci_no_browser_is_started"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:54Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -102,6 +126,12 @@
           "test": "dev/test_open_page.py::test_a_project_with_no_page_names_the_command"
         },
         {
+          "carried": {
+            "at": "2026-11-11T17:24:54Z",
+            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
