@@ -2,8 +2,8 @@
   "feature": "update",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T19:21:24Z",
-      "commit": "0686f9cbaedc56f537d2355dc531d8929a9349f9",
+      "at": "2026-11-11T19:49:26Z",
+      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,12 +14,6 @@
       "machine": "runnervmm7ud1",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T19:21:24Z",
-            "commit": "a16007411d6398516a5ccd7defc39b1e528ee3e3",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-117",
           "manual": false,
@@ -27,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 3.177,
+                "duration": 3.538,
                 "name": "test_on_windows_a_second_run_finds_nothing_and_changes_nothing",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8a5182309b5c0340163eb064179549b80de86a556776ef208d74eb3cebed93a5"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
@@ -42,12 +36,6 @@
           "test": "dev/test_init_update.py::test_on_windows_a_second_run_finds_nothing_and_changes_nothing"
         },
         {
-          "carried": {
-            "at": "2026-11-11T19:21:24Z",
-            "commit": "a16007411d6398516a5ccd7defc39b1e528ee3e3",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-118",
           "manual": false,
@@ -55,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 2.754,
+                "duration": 2.888,
                 "name": "test_on_windows_every_backup_keeps_the_bytes_from_before",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8a5182309b5c0340163eb064179549b80de86a556776ef208d74eb3cebed93a5"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
@@ -70,12 +58,6 @@
           "test": "dev/test_init_update.py::test_on_windows_every_backup_keeps_the_bytes_from_before"
         },
         {
-          "carried": {
-            "at": "2026-11-11T19:21:24Z",
-            "commit": "a16007411d6398516a5ccd7defc39b1e528ee3e3",
-            "email": "41898282+github-actions[bot]@users.noreply.github.com",
-            "machine": "runnervmm7ud1"
-          },
           "env": "windows",
           "id": "PROOF-120",
           "manual": false,
@@ -83,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_init_update",
-                "duration": 2.576,
+                "duration": 3.096,
                 "name": "test_on_windows_the_conftest_keeps_its_own_line_and_its_ending",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "8a5182309b5c0340163eb064179549b80de86a556776ef208d74eb3cebed93a5"
+              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
             }
           },
           "result": "pass",
