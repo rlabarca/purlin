@@ -1,0 +1,1 @@
+{"version": "0.10.0", "tests": [{"name": "pytest", "run": "/private/tmp/claude-502/-Users-rlabarca-LocalCode-Purlin/acb88dd4-6f90-413a-b329-0b2c00c37e49/scratchpad/venv/bin/python3 -m pytest -q -p no:cacheprovider {files} --junitxml={report}", "report": ".purlin/runtime/reports/pytest.xml", "format": "junit", "files": ["tests/test_*.py"]}]}
