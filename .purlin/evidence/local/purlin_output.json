@@ -128,7 +128,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T18:58:07Z",
-      "commit": "897897387efcc4b40d49fad89586175634d0a877",
+      "commit": "0686f9cbaedc56f537d2355dc531d8929a9349f9",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -139,6 +139,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T18:58:07Z",
+            "commit": "897897387efcc4b40d49fad89586175634d0a877",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -161,6 +167,12 @@
           "test": "dev/test_purlin_output.py::TestNoPictograph::test_no_tracked_file_under_scripts_or_templates_holds_a_pictograph"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:58:07Z",
+            "commit": "897897387efcc4b40d49fad89586175634d0a877",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-2",
           "manual": false,
@@ -183,6 +195,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_every_python_file_under_scripts_parses_as_39"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:58:07Z",
+            "commit": "897897387efcc4b40d49fad89586175634d0a877",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-4",
           "manual": false,
@@ -205,6 +223,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_a_test_run_runs_on_39"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:58:07Z",
+            "commit": "897897387efcc4b40d49fad89586175634d0a877",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-5",
           "manual": false,
@@ -227,6 +251,12 @@
           "test": "dev/test_purlin_output.py::TestPython39::test_the_status_runs_on_39"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:58:07Z",
+            "commit": "897897387efcc4b40d49fad89586175634d0a877",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-7",
           "manual": false,
