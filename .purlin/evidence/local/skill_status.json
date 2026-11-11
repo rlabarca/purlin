@@ -2,46 +2,52 @@
   "audit": {
     "rules": {
       "RULE-16": {
-        "at": "2026-10-07T18:48:00Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-37": {
             "after": "9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:specs, put the comment above the test, and take the old tag out.\n  packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4\n  ...\n```\n\nThe line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are\nlisted and the rest counted. `purlin:sign` refuses while one remains.\n\n## With a name\n\nNaming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name\nas part of a spec file name; when several match, list them and ask which one, and when none\ndoes, print the whole table. The tool shows every spec at once, so for one spec run the script\nwith the spec's name, the file name without `.md`:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>\n```\n\nPrint what it prints. It opens on the spec's path and how many rules it has, then gives one line\nper rule with its two cells. Under a cell that names work to do come its reasons, each after\nthe cell's word (`passed`, `strong`, `not audited` and `waiting` name none, so they give none);\nthen one line per proof with its result and its tests:\n\n```\nspecs/auth/login.md: 3 rules\n  RULE-1  passed  strong\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  no test  waiting\n    no test: no test for PROOF-2\n    PROOF-2  no test\n  RULE-3  checked at sign-off  checked at sign-off\n    checked at sign-off: no sign-off has checked it yet\n    PROOF-3  hand check\n```\n\nAn AI proof, one tagged `@ai(...)`, has one line per model its tag names, each with the word\nit reads on that model and how many of its model runs passed there; a proof an AI graded reads\n`graded` where it passes:\n\n```\nspecs/auth/login.md: 2 rules\n  RULE-1  passed  not audited\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  not run  waiting\n    not run: slow: runs with purlin:test --all\n    not run: claude-sonnet-5-5: no run yet\n    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2\n    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  tests/test_login.py::test_proof_2\n```\n\nA rule passes only where its AI proof passed on every model it names.\n`references/spec_quality_guide.md`, \"When a rule is stuck\", has each reason.\n\nThe script prints first every line the status has about the spec, its warnings and then its\nlines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work\nthis spec's rules wait for.\n\n## Step 4: name the next step\n\nThe next step is the first line of `Left to do`. Add no line of your own; a\n`\u2192 Run: purlin:init --update` the tool printed comes first.\n\n| The first line after the sentence | Next step |\n|-----------------------------------|-----------|\n| `<n> specs to repair` or `<n> rules to write a proof for` | `\u2192 Run: purlin:specs` |",
-            "aim": "past the test",
+            "aim": "plain",
             "before": "9 tests: marker from Purlin 0.9.5. It is not read. For each, write the proof with purlin:spec, put the comment above the test, and take the old tag out.\n  packages/web/test/parameter_lfo.test.ts:154  parameter_lfo RULE-4\n  ...\n```\n\nThe line number is the old tag's own, in the file as it stands. Over 20 tests, the first 20 are\nlisted and the rest counted. `purlin:sign` refuses while one remains.\n\n## With a name\n\nNaming a spec shows its rules and their standing. Match `specs/**/<name>.md`, then the name\nas part of a spec file name; when several match, list them and ask which one, and when none\ndoes, print the whole table. The tool shows every spec at once, so for one spec run the script\nwith the spec's name, the file name without `.md`:\n\n```bash\nsh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>\n```\n\nPrint what it prints. It opens on the spec's path and how many rules it has, then gives one line\nper rule with its two cells. Under a cell that names work to do come its reasons, each after\nthe cell's word (`passed`, `strong`, `not audited` and `waiting` name none, so they give none);\nthen one line per proof with its result and its tests:\n\n```\nspecs/auth/login.md: 3 rules\n  RULE-1  passed  strong\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  no test  waiting\n    no test: no test for PROOF-2\n    PROOF-2  no test\n  RULE-3  checked at sign-off  checked at sign-off\n    checked at sign-off: no sign-off has checked it yet\n    PROOF-3  hand check\n```\n\nAn AI proof, one tagged `@ai(...)`, has one line per model its tag names, each with the word\nit reads on that model and how many of its model runs passed there; a proof an AI graded reads\n`graded` where it passes:\n\n```\nspecs/auth/login.md: 2 rules\n  RULE-1  passed  not audited\n    PROOF-1  passed  tests/test_login.py::test_proof_1\n  RULE-2  not run  waiting\n    not run: slow: runs with purlin:test --all\n    not run: claude-sonnet-5-5: no run yet\n    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2\n    PROOF-2  not run  0 of 3 on claude-sonnet-5-5  tests/test_login.py::test_proof_2\n```\n\nA rule passes only where its AI proof passed on every model it names.\n`references/spec_quality_guide.md`, \"When a rule is stuck\", has each reason.\n\nThe script prints first every line the status has about the spec, its warnings and then its\nlines of information, each whole and none folded. The view writes nothing. The next step is the Step 4 row for the first kind of work\nthis spec's rules wait for.\n\n## Step 4: name the next step\n\nThe next step is the first line of `Left to do`. Add no line of your own; a\n`\u2192 Run: purlin:init --update` the tool printed comes first.\n\n| The first line after the sentence | Next step |\n|-----------------------------------|-----------|\n| `<n> specs to repair` or `<n> rules to write a proof for` | `\u2192 Run: purlin:spec` |",
-            "bug_key": "bba87e5c3016b5513d76077f4b2a7d539c968f5623b0f45a8f9f9deac1f50e99",
-            "case": "the status skill as shipped; the proof says it names `purlin:spec`; the changed skill names `purlin:specs` in both places and `purlin:spec` nowhere as a command",
+            "bug_key": "e3220d67d86e87185b681322c78a0afca2422fa5c5c309704b4c96aab01e7c12",
+            "case": "the status skill as shipped; the proof says it names purlin:spec and the check reports no problem; the changed skill names only purlin:specs, so purlin:spec is not named and the check reports status does not name purlin:spec",
             "file": "skills/status/SKILL.md",
-            "line": 129,
+            "line": 130,
             "result": "caught",
             "why": ""
           },
           "PROOF-38": {
-            "after": "is relative to the plugin root; see `references/commands.md#path-resolution`.",
+            "after": "twice, follow `Renumbering` in the spec skill.",
             "aim": "plain",
-            "before": "is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.",
-            "bug_key": "1fa306b68c465af45a9a3d26127003d3d03e4b33d99bbac008ad2c1500ea9755",
-            "case": "a copy of the status skill with every `purlin:sign` taken out; the proof says it is reported with `status does not name purlin:sign`; the changed skill's copy is reported with that and with a second problem for `references/purlin_commands.md`",
+            "before": "twice, follow `Renumbering` in `skills/spec/SKILL.md`.",
+            "bug_key": "22c79a18a638f99f1a699a7fc5450aeb8d1bcf735bdc32e7c2f34ff508147100",
+            "case": "a copy of the status skill with every purlin:sign taken out; the proof says it is reported with status does not name purlin:sign alone; the changed skill's copy is also reported with status does not name skills/spec/SKILL.md",
             "file": "skills/status/SKILL.md",
-            "line": 12,
+            "line": 119,
             "result": "caught",
             "why": ""
           },
           "PROOF-39": {
-            "after": "twice, follow `Renumbering` in `.claude/skills/spec/SKILL.md`.",
-            "aim": "past the test",
-            "before": "twice, follow `Renumbering` in `skills/spec/SKILL.md`.",
-            "bug_key": "c22f18435869cefbfdbbed58379cbc616113aeb1ad2024f75d7174fc29030539",
-            "case": "the status skill as shipped; the proof says it names `skills/spec/SKILL.md`; the changed skill names `.claude/skills/spec/SKILL.md`, a different path",
+            "after": "is relative to the plugin root; see `references/commands.md#path-resolution`.",
+            "aim": "plain",
+            "before": "is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.",
+            "bug_key": "d70d917efe614fdc03cc7fb5d7fd20a5dceb6c8a9feeb023af0fda746b7c3000",
+            "case": "the status skill as shipped; the proof says it names references/purlin_commands.md and the check reports no problem; the changed skill names references/commands.md instead, so the check reports status does not name references/purlin_commands.md",
             "file": "skills/status/SKILL.md",
-            "line": 118,
+            "line": 12,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "e6c8e027edf391d124da3f6373ecbd61a321d931",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [],
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-37: the test reads the shipped skill and checks that each of the six commands appears as a whole name, and that the check reports no problem, so a command that is dropped or misspelled at every place it is named fails the test.",
+          "PROOF-37: purlin:spec and purlin:test --commit are each named in only two places far apart, so the only change that breaks the proof spans much of the file.",
+          "PROOF-38: the test compares the full list of problems with the one sentence the proof names, so any added or missing report fails it.",
+          "PROOF-39: the test checks that each path appears whole and from the plugin root, and that the check reports no problem, so renaming or dropping either path fails it.",
+          "No spot-test finding was raised, and each test compares the literal values its proof names."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
@@ -51,41 +57,39 @@
         "verdict": "strong"
       },
       "RULE-17": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-41": {
             "after": "The line `<n> features whose results are not committed: purlin:test --commit` shows once",
             "aim": "plain",
             "before": "The line `<n> features whose results are not committed: purlin:test --commit` shows only once",
-            "bug_key": "70d52cea226e492283df4d54bd892e0a29c578b25248854889dbc2c6df9494de",
-            "case": "the status skill as shipped; the proof says exactly one sentence holds both phrases; the changed skill holds none, since the sentence now reads `shows once nothing else stops the tests being met`",
+            "bug_key": "65b10d38f275a8707f99d3e89da39b3ba79e432c363747a2c1e2e2a1c46befb2",
+            "case": "the status skill as shipped; the proof says exactly one sentence holds both phrases; the changed skill has no sentence that holds both",
             "file": "skills/status/SKILL.md",
-            "line": 108,
+            "line": 109,
             "result": "caught",
             "why": ""
           },
           "PROOF-42": {
-            "after": "The line `<n> features whose results are not committed: purlin:test --commit` shows only once nothing else stops the shows only once nothing else stops the tests being mettests being met. While a rule is still to fix, to test or to write a test",
+            "after": "The line `<n> features whose results are not committed: purlin:test --commit` shows only once shows only once\nnothing else stops the tests being met nothing else stops the tests being met. While a rule is still to fix, to test or to write a test",
             "aim": "plain",
             "before": "The line `<n> features whose results are not committed: purlin:test --commit` shows only once\nnothing else stops the tests being met. While a rule is still to fix, to test or to write a test",
-            "bug_key": "7a4551a11d777bbbc38b763272999d68fe6b5419fd5b404cbc5c5e23368c1f9f",
-            "case": "a copy of the skill with every `shows only once nothing else stops the tests being met` taken out; the proof says no sentence holds both phrases; in the changed skill, taking the phrase out joins the words around it into the phrase again, so one sentence still holds both",
+            "bug_key": "3dd6928df4591097809b5e64dc87a0643b57255f413412128b9c26e3bf53944e",
+            "case": "a copy of the skill with every `shows only once nothing else stops the tests being met` taken out; the proof says no sentence holds both; in the changed copy, removing the phrase joins the leftover words into the phrase again, so one sentence holds both",
             "file": "skills/status/SKILL.md",
-            "line": 108,
+            "line": 109,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-41: the test counts the sentences of the shipped skill that hold both phrases and compares the count with the literal 1, which is the case and the result the proof names.",
-          "PROOF-41: the two phrases come from the constant NOT_COMMITTED, defined outside the test's own lines, so whether they are the words the proof quotes cannot be read from the source shown.",
-          "PROOF-42: the test takes the second phrase out through copy_without and compares the matching sentences with an empty list, which is the result the proof names.",
-          "PROOF-42: the test passes SKILL to sentences_with inside the copy, so whether the copy is read in place of the shipped file rests on copy_without, which is not shown.",
-          "PROOF-42: with the phrase taken out, no text can hold it unless the removal itself joins the words around it, so the test fails only on that case or on a helper that removes nothing.",
-          "No spot test fired, and both tests compare a result of the skill's text with a literal."
+          "PROOF-41: the test counts the sentences of the shipped skill that hold both phrases and compares the count with 1, which is the proof's case and its expected value.",
+          "PROOF-42: the test removes the second phrase from a copy and asserts that no sentence holds both, which is the proof's case and its expected empty result.",
+          "PROOF-42: whether the test catches a removal that leaves the phrase formed again depends on how `copy_without` and `sentences_with` handle the line break and the spaces inside the phrase, and neither helper is shown.",
+          "The spot tests found nothing, and both tests assert on values that the proofs name."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
@@ -96,60 +100,62 @@
         "verdict": "strong"
       },
       "RULE-18": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-43": {
-            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root .",
+            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <spec>",
             "aim": "plain",
             "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>",
-            "bug_key": "35718193fa31e344dfe8e472198590352cb63475e51543039ae897b04214e40c",
-            "case": "the status skill as shipped, part `With a name`; the proof says a line names both `scripts/run/purlin_status.py` and `--spec <name>`; the changed skill's command line names the script and no `--spec <name>`, so the part holds no such line",
+            "bug_key": "c643db94ae84b12853dfbb87dc10c80aedb2e0712773673354d7e25e5d9e23e8",
+            "case": "the status skill as shipped, part `With a name`; the proof says a line there names both `scripts/run/purlin_status.py` and `--spec <name>`; the changed skill's line names `scripts/run/purlin_status.py` and `--spec <spec>`, so no line names both",
             "file": "skills/status/SKILL.md",
-            "line": 145,
+            "line": 146,
             "result": "caught",
             "why": ""
           },
           "PROOF-44": {
-            "after": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --sp--spec <name>ec <name>",
+            "after": null,
             "aim": "plain",
-            "before": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_status.py\" --project-root . --spec <name>",
-            "bug_key": "56628dd81584355dcc09c427084fc55fed102cd7b7fe6a2da3cd50d154d0aa8f",
-            "case": "a copy of the skill with every `--spec <name>` taken out; the proof says the part holds no line naming both; in the changed skill, taking each one out once joins the text around it into a new `--spec <name>` on the script's line, so the part still holds such a line",
-            "file": "skills/status/SKILL.md",
-            "line": 145,
-            "result": "caught",
-            "why": ""
+            "before": null,
+            "bug_key": "1f5ff0a9a1f7d0d0ad4e2cc593dfad30412cb6493c775f8c47851ec4b3ffce1e",
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "why": "once every `--spec <name>` is taken out of the copy, no line can still hold `--spec <name>`, so the result is fixed by how the copy is made and no change to the skill file can alter it."
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-43: the test reads the shipped skill, takes the part `With a name` through a helper not shown, and asserts that at least one line there holds both `scripts/run/purlin_status.py` and `--spec <name>`, which is what the proof names.",
-          "PROOF-43: the test does not check that the line is the command in the code block, so a prose line holding both strings would pass as well.",
-          "PROOF-44: the test takes `--spec <name>` out of a copy through a helper not shown, reads the part, and asserts that the list of lines holding both strings is empty, which is what the proof names.",
-          "PROOF-44: the test's result rests on the part still being found in the copy; a helper that returned an empty part for any reason would also give an empty list.",
-          "No spot test fired, and nothing in either test's own lines gives one a reason to."
+          "PROOF-43: the test reads the `With a name` part of the shipped skill and asserts that at least one line holds both `scripts/run/purlin_status.py` and `--spec <name>`, which is exactly what the proof names, so dropping or changing either string on that line fails it.",
+          "PROOF-44: the test removes every `--spec <name>` from a copy and asserts that no line in the part holds both strings, which is true by construction whatever the skill says, so it only shows that PROOF-43's check can fail and not that the skill is right."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
-        "no_bug": [],
+        "no_bug": [
+          "No bug was planted: the model found no change that would break PROOF-44: once every `--spec <name>` is taken out of the copy, no line can still hold `--spec <name>`, so the result is fixed by how the copy is made and no change to the skill file can alter it."
+        ],
+        "notes": [
+          "PROOF-44 would read the same if the rule were broken: a skill with no such line in `With a name` still yields a copy with no such line, so the proof adds no case about the skill itself."
+        ],
         "proof_hash": "bba9b35850eb4d4e82816401b2b98058c8fde58608e96121b36d966e417bfca7",
         "rule_hash": "d3f4f9359384c31ae4ebb432da70399505b388d324fadb4efecea0294de88301",
         "test_hash": "88735e75d3d478d68fdd3e841caea88c4a9651d2b6e6bf11f3a8db9b39790163",
         "verdict": "strong"
       },
       "RULE-19": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-45": {
-            "after": "    PROOF-3  hand checked",
+            "after": "    PROOF-3  manual",
             "aim": "plain",
             "before": "    PROOF-3  hand check",
-            "bug_key": "76f353de34dd657e2936eae723f645bcb3b1c08176efe9de67749dd03167597e",
-            "case": "the `login` of 3 rules whose RULE-3 has one `@manual` proof; the proof says the example equals, line for line, what the script prints; the changed example's last line reads `PROOF-3  hand checked`, so it no longer equals it",
+            "bug_key": "3aa95da57e779d4c6dc045c5dae66e1b183cfcb732acb8dee9b248df161c2bba",
+            "case": "the `With a name` example for `login` of 3 rules; the proof says it equals what `purlin_status.py --spec login` prints line for line; the changed example reads `PROOF-3  manual` where the script prints `PROOF-3  hand check`",
             "file": "skills/status/SKILL.md",
-            "line": 162,
+            "line": 163,
             "result": "caught",
             "why": ""
           },
@@ -157,28 +163,28 @@
             "after": null,
             "aim": "plain",
             "before": null,
-            "bug_key": "64405baf94948902889f6bcb87988ef252bae5eaf52be97baf450aac4321c86b",
+            "bug_key": "a87e9450ff421a3d1296d3392bc3837a1185c75c5ae125a240eccb903ebec8bc",
             "case": "",
             "file": null,
             "line": null,
             "result": "not made",
-            "why": "the copy's example holds `PROOF-1  passing`, a line only the copy has, and what the script prints comes from code outside this file, so no change to the skill can make the two equal."
+            "why": "Only the script's output could make a copy reading `PROOF-1  passing` equal it, and no file shown here holds that output, so no change to the skill can make the changed copy match."
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-45: the test takes the first block of the part `With a name` from the shipped skill and compares it whole with what the script prints for the example's `login`, so any changed line in that block fails it.",
-          "PROOF-45: the expected side is assumed to come from running the script through a helper not shown here; the test's own lines hold no literal line of the example.",
-          "PROOF-46: the test checks that `PROOF-1  passed` stands somewhere in the part `With a name`, replaces it throughout the skill and asserts the example of the copy differs from what the script prints.",
-          "PROOF-46: the part holds that phrase in two blocks, so the first assertion would still pass on the second block if the first block lacked the phrase, and the inequality would then rest on some other difference.",
-          "PROOF-46: the test asserts only that the two differ, so it passes whenever the example is already unequal to what is printed, for any reason; PROOF-45's test is what holds them equal before the word is changed."
+          "PROOF-45: the test compares the whole first unlabelled block of `With a name` with what the script prints for the example `login`, so any change to a line of that example fails it.",
+          "PROOF-46: the test checks that the part holds `PROOF-1  passed`, replaces it with `PROOF-1  passing` and checks that the changed example differs from the printed output, which is what the proof names.",
+          "PROOF-46: the test does not itself check that the unchanged example equals the printed output, so it shows only that the comparison can fail when PROOF-45's test passes beside it.",
+          "The findings read none, and no spot test applies: each test asserts, compares against the script's output and not against the skill text, and mocks nothing.",
+          "PROOF-45 and PROOF-46 name the script `purlin_status.py` and how the code block is found, where a person who cannot read code would look for the command a caller runs and what it prints."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
-          "No bug was planted: the model found no change that would break PROOF-46: the copy's example holds `PROOF-1  passing`, a line only the copy has, and what the script prints comes from code outside this file, so no change to the skill can make the two equal."
+          "No bug was planted: the model found no change that would break PROOF-46: Only the script's output could make a copy reading `PROOF-1  passing` equal it, and no file shown here holds that output, so no change to the skill can make the changed copy match."
         ],
         "proof_hash": "fd9b773ea455fb71d084ef8588622d64807fe50d8f7bd257f95efc82d94816ab",
         "rule_hash": "3178965527b628fe50a4deea0e068e3c163b756e5cb673e358d82657852c9d7e",
@@ -186,16 +192,16 @@
         "verdict": "strong"
       },
       "RULE-20": {
-        "at": "2026-10-07T18:46:10Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-47": {
             "after": "    PROOF-2  passed  2 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2",
             "aim": "plain",
             "before": "    PROOF-2  passed  3 of 3 on claude-opus-5-5  tests/test_login.py::test_proof_2",
-            "bug_key": "893667c88a7c64f656aba3731788fe6b53d0c9793f782ffdd85a6cdcc465c32c",
-            "case": "`login` of 2 rules whose PROOF-2 passed 3 of 3 on claude-opus-5-5; the proof says the second example equals the script's print line for line; the changed example reads `2 of 3 on claude-opus-5-5` where the script prints `3 of 3 on claude-opus-5-5`",
+            "bug_key": "37aab8dd78498850ce0883711519ba8d81a03c4e35a1b88031c31d8390dab792",
+            "case": "the second example under `With a name` for `login` with PROOF-2 on claude-opus-5-5 and claude-sonnet-5-5; the proof says it equals line for line what `purlin_status.py --spec login` prints, which reads `3 of 3 on claude-opus-5-5`; the changed skill's example reads `2 of 3 on claude-opus-5-5` and no ",
             "file": "skills/status/SKILL.md",
-            "line": 176,
+            "line": 177,
             "result": "caught",
             "why": ""
           },
@@ -203,27 +209,30 @@
             "after": null,
             "aim": "plain",
             "before": null,
-            "bug_key": "4805b0364d2137a7f4a0340ce813285ffd4004ec04d8d215496e10fdfd5d9dae",
+            "bug_key": "b974f56cc95398ae4d8c421bd94293879562863524def6d66fbc78c7f4ce22dd",
             "case": "",
             "file": null,
             "line": null,
             "result": "not made",
-            "why": "the script's print comes from none of the files shown, so no change to the skill can make a copy reading `1 of 3 on claude-sonnet-5-5` equal a print that reads `0 of 3 on claude-sonnet-5-5`."
+            "why": "the printed output holds `0 of 3 on claude-sonnet-5-5` and the copy replaces every such string with `1 of 3 on claude-sonnet-5-5`, so no edit to the skill alone can make the changed copy's second example equal the printed output."
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "7d74fdf77e81db5a118ba85f08d21c9ea382a9d9",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
         "explanation": [
-          "PROOF-47: the test compares the whole second example of the shipped skill with what a helper returns as the script's print, so any changed line in the example fails it, provided that helper runs the script and holds no copy of the expected lines; its source is not shown.",
-          "PROOF-48: the test first checks that `0 of 3 on claude-sonnet-5-5` stands somewhere in the part `With a name`, replaces it throughout the skill's text, and checks that the second example then differs from the print.",
-          "PROOF-48: the first check reads the whole part and not the second example, so if the count stood only in the prose, the copy's example would still differ from the print for another reason and the test would pass without making the proof's case.",
-          "PROOF-48: the test never checks that the unchanged example equals the print, so alone it shows a difference and not that the one count causes it; PROOF-47's test supplies that."
+          "PROOF-47: the test takes the second unnamed code block of `With a name` and compares it whole with what the script prints, so any change to a line of that example fails it.",
+          "PROOF-48: the test first checks that `0 of 3 on claude-sonnet-5-5` is in the part, then replaces that count in a copy and checks that the copy's second example differs from the printed output, which is what the proof names.",
+          "PROOF-48 depends on the printed output, which the skill file cannot change, so only a change to the script or to the test's helpers could break it.",
+          "There are no spot test findings, and neither test compares the code against itself or mocks what it checks."
         ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [
-          "No bug was planted: the model found no change that would break PROOF-48: the script's print comes from none of the files shown, so no change to the skill can make a copy reading `1 of 3 on claude-sonnet-5-5` equal a print that reads `0 of 3 on claude-sonnet-5-5`."
+          "No bug was planted: the model found no change that would break PROOF-48: the printed output holds `0 of 3 on claude-sonnet-5-5` and the copy replaces every such string with `1 of 3 on claude-sonnet-5-5`, so no edit to the skill alone can make the changed copy's second example equal the printed output."
+        ],
+        "notes": [
+          "PROOF-48 describes a test's mechanics, a copy of the skill with one string replaced, rather than something a reader of the status sees, and it adds little beyond PROOF-47."
         ],
         "proof_hash": "734fac32427f34284d82bcc91c59671ebf7552bfa31baf817fb3a373996ca79b",
         "rule_hash": "937ef9d4533f3a5f160f42f893c1e33ae0105dff426c91db83cdb452b6685be6",
@@ -231,30 +240,88 @@
         "verdict": "strong"
       },
       "RULE-21": {
-        "at": "2026-10-07T18:48:00Z",
+        "at": "2026-11-11T18:29:51Z",
         "bugs": {
           "PROOF-49": {
-            "after": "| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all-models`. It reaches a real model and takes minutes: say so first |",
+            "after": "| `<k> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all`. It reaches a real model and takes minutes: say so first |",
             "aim": "past the test",
             "before": "| `<n> rules to test on <model>`, a model's name such as `claude-opus-5-5` | `\u2192 Run: purlin:test --all`. It reaches a real model and takes minutes: say so first |",
-            "bug_key": "923605c95c93f561c66a9a532059de78733e98d7b95425086f85490a620b85b9",
-            "case": "the table row for `<n> rules to test on <model>` in the shipped status skill; the proof says its next step is `\u2192 Run: purlin:test --all`; the changed skill gives `\u2192 Run: purlin:test --all-models`",
+            "bug_key": "03c27d26402b4cb6362ffdb435ae4ed505c6e40e16e404c15e8444d16daa7550",
+            "case": "the status skill as shipped; the proof says one table row holds `<n> rules to test on <model>` and `\u2192 Run: purlin:test --all`; the changed skill's row holds `<k> rules to test on <model>` instead",
             "file": "skills/status/SKILL.md",
-            "line": 199,
+            "line": 200,
             "result": "caught",
             "why": ""
           }
         },
-        "code_hash": "c494a700355855e8e0e282cdc055ad31afadc32856fb75428886f0483f38de49",
-        "commit": "e6c8e027edf391d124da3f6373ecbd61a321d931",
-        "criteria": "95ac099121a3076cfeb37fbfe4b072e7d3ea90c0c563727211121bf4c14fb1bf",
-        "explanation": [],
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-49: the test checks three things: that the skill holds a line equal to GRADED_SUMMARY, that exactly one table row holds every name in ON_A_MODEL, and that this row holds the command with its closing backtick.",
+          "PROOF-49: neither GRADED_SUMMARY nor ON_A_MODEL is shown, so whether the test compares the whole `40 rules. 40 pass their tests, 6 of them graded by an AI.` line and the whole `<n> rules to test on <model>` text depends on constants this reading cannot see.",
+          "PROOF-49: if ON_A_MODEL holds only parts of the row's text, a row that changes `<n>` or other words still passes the test.",
+          "PROOF-49: the check of the command is exact and closed by a backtick, so a row that names `purlin:test --all-models` instead fails the test as intended.",
+          "The spot tests found nothing, and that holds: the test asserts real values, takes no expected value from the code under test and mocks nothing."
+        ],
         "findings": [],
         "model": "claude-opus-5-5",
         "no_bug": [],
+        "notes": [
+          "PROOF-49 holds two cases: the graded summary line and the table row for a model are separate observations of different parts of the skill."
+        ],
         "proof_hash": "4436e38ba54eb3d219e2462c6dce21e9eb7cde0d32b77999971cdf4c66425f84",
         "rule_hash": "91a19f65d0e8f4d3acaa48282308cdd67da1e0ec210cfb881112e1d6f74b0572",
         "test_hash": "538e3ef370f1548a83653312d78bd4dc463c8dd6eb6997e98ce5f3d7f05ac12e",
+        "verdict": "strong"
+      },
+      "RULE-22": {
+        "at": "2026-11-11T18:29:51Z",
+        "bugs": {
+          "PROOF-50": {
+            "after": "`purlin:status --open` opens it in a browser pane or with `scripts/open_page.py`. Where your session can show a local file in a browser pane, as the Claude Code desktop",
+            "aim": "past the test",
+            "before": "`purlin:status --open` opens it in a browser pane or with `scripts/report/open_page.py`. Where your session can show a local file in a browser pane, as the Claude Code desktop",
+            "bug_key": "cac3c43459c038fb1d5538b68185bf2819f479f15759221aae9c4fe488c000e3",
+            "case": "the status skill as shipped; the proof says a line names both `--open` and `scripts/report/open_page.py`; the changed skill's only line naming `--open` beside the opener names `scripts/open_page.py`, so no line names `scripts/report/open_page.py` with `--open`",
+            "file": "skills/status/SKILL.md",
+            "line": 210,
+            "result": "caught",
+            "why": ""
+          },
+          "PROOF-51": {
+            "after": null,
+            "aim": "plain",
+            "before": null,
+            "bug_key": "8f96b6b01be80c9a8fa65f26d037e71ac9f0eca885fc6ceb8848033ab6d15070",
+            "case": "",
+            "file": null,
+            "line": null,
+            "result": "not made",
+            "why": "Taking every `open_page.py` out of the skill also takes out every `scripts/report/open_page.py`, so no change to the skill can leave a line naming that path in the copy."
+          }
+        },
+        "code_hash": "a7a2f8b901d88e66c991854d8bfc0d39a6835501441adea610a9064bd5d68c39",
+        "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+        "criteria": "4e2f411f38f00928b8f3d0676c36bf00e5129d781c2808af0b18142d42c21958",
+        "explanation": [
+          "PROOF-50: the test only asserts that `_open_lines` returns something, so whether it checks the full path `scripts/report/open_page.py` or just `open_page.py` depends on a helper not shown here.",
+          "PROOF-50: if that helper matches only `open_page.py`, a line naming the wrong path passes the test.",
+          "PROOF-51: the test checks the helper `_open_lines` against a copy with the opener's name removed, so it observes the helper's behaviour rather than anything the shipped skill says.",
+          "PROOF-51: it would pass whatever the skill holds, so it adds no check of the rule against the skill.",
+          "The rule says the page opens in a browser pane where the session shows one, and otherwise with the opener, but no proof observes either branch or the order of getting the status before opening."
+        ],
+        "findings": [],
+        "model": "claude-opus-5-5",
+        "no_bug": [
+          "No bug was planted: the model found no change that would break PROOF-51: Taking every `open_page.py` out of the skill also takes out every `scripts/report/open_page.py`, so no change to the skill can leave a line naming that path in the copy."
+        ],
+        "notes": [
+          "PROOF-51 would read the same if the rule were broken, since removing the opener's name from any skill leaves no line naming it."
+        ],
+        "proof_hash": "d012231618d836ba3f2a70025b8708207c7417d0eca684b89e3d6e2971da9e02",
+        "rule_hash": "0a54c8ce5c9012704072484d96654747e7cfa36f7d20b222d86abff4d25a7a91",
+        "test_hash": "195d75c3e7130677f2a1ee8629c4b541292c3432824521a8e8874a0318e93093",
         "verdict": "strong"
       }
     }
@@ -262,8 +329,8 @@
   "feature": "skill_status",
   "platforms": {
     "macos": {
-      "at": "2026-11-11T17:24:55Z",
-      "commit": "402b77a0cd97e4fce3fd08ee5d1255b34cb8d852",
+      "at": "2026-11-11T18:10:48Z",
+      "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -274,12 +341,6 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-37",
           "manual": false,
@@ -287,14 +348,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.007,
+                "duration": 0.004,
                 "name": "test_the_status_skill_names_each_of_its_six_commands",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -302,12 +363,6 @@
           "test": "dev/test_skill_status.py::test_the_status_skill_names_each_of_its_six_commands"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
@@ -322,7 +377,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -330,12 +385,6 @@
           "test": "dev/test_skill_status.py::test_a_copy_without_the_sign_command_is_reported"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-39",
           "manual": false,
@@ -350,7 +399,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -358,12 +407,6 @@
           "test": "dev/test_skill_status.py::test_the_status_skill_names_its_two_paths"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-41",
           "manual": false,
@@ -378,7 +421,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -386,12 +429,6 @@
           "test": "dev/test_skill_status.py::test_one_sentence_says_when_the_uncommitted_results_line_shows"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -406,7 +443,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -414,12 +451,6 @@
           "test": "dev/test_skill_status.py::test_a_copy_without_those_words_holds_no_such_sentence"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-43",
           "manual": false,
@@ -434,7 +465,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -442,12 +473,6 @@
           "test": "dev/test_skill_status.py::test_the_part_with_a_name_gives_the_command_with_spec"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -462,7 +487,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -470,12 +495,6 @@
           "test": "dev/test_skill_status.py::test_a_copy_without_spec_name_holds_no_such_line"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-45",
           "manual": false,
@@ -483,14 +502,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.8,
+                "duration": 0.706,
                 "name": "test_the_example_is_what_the_script_prints",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -498,12 +517,6 @@
           "test": "dev/test_skill_status.py::test_the_example_is_what_the_script_prints"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-46",
           "manual": false,
@@ -511,14 +524,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.713,
+                "duration": 0.633,
                 "name": "test_a_copy_with_one_word_changed_differs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -526,12 +539,6 @@
           "test": "dev/test_skill_status.py::test_a_copy_with_one_word_changed_differs"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-47",
           "manual": false,
@@ -539,14 +546,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.529,
+                "duration": 0.459,
                 "name": "test_the_second_example_is_what_the_script_prints_for_an_ai_proof",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -554,12 +561,6 @@
           "test": "dev/test_skill_status.py::test_the_second_example_is_what_the_script_prints_for_an_ai_proof"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-48",
           "manual": false,
@@ -567,14 +568,14 @@
             "cases": [
               {
                 "class": "dev.test_skill_status",
-                "duration": 0.508,
+                "duration": 0.45,
                 "name": "test_a_copy_with_one_count_changed_differs",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -582,12 +583,6 @@
           "test": "dev/test_skill_status.py::test_a_copy_with_one_count_changed_differs"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -602,7 +597,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -610,12 +605,6 @@
           "test": "dev/test_skill_status.py::test_the_skill_shows_the_graded_summary_and_the_row_for_a_model"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-50",
           "manual": false,
@@ -630,7 +619,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
@@ -638,12 +627,6 @@
           "test": "dev/test_skill_status.py::test_the_skill_gives_status_open_with_the_opener"
         },
         {
-          "carried": {
-            "at": "2026-11-11T17:24:55Z",
-            "commit": "edf448a7e5bdbe08395193e9102c1854b4bc35d5",
-            "email": "rich@labarca.org",
-            "machine": "LabConnect-M5-Max.local"
-          },
           "env": null,
           "id": "PROOF-51",
           "manual": false,
@@ -658,7 +641,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "4278a5e8ef66f5723e0f1a00830b9a463db792d0723b05bd977ed8f3d4b6ebd2"
+              "sha256": "1762305903fdad189e96159852286f6c418f1eb239b36d1edf67b5991429f3f7"
             }
           },
           "result": "pass",
