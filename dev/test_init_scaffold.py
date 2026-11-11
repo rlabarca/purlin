@@ -970,9 +970,14 @@ def set_up(base, language, prepare=None):
     if language == 'csharp':
         # A solution at the root lets the suggested `dotnet test` reach the
         # test project.
+        # .NET 10 writes `App.slnx` where earlier SDKs wrote `App.sln`:
+        # add the project to whichever one the installed SDK made.
         walk.step('solution', ['dotnet', 'new', 'sln', '-n', 'App'])
-        walk.step('solution add', ['dotnet', 'sln', 'App.sln', 'add',
+        solution = next(name for name in ('App.slnx', 'App.sln')
+                        if os.path.isfile(walk.path(name)))
+        walk.step('solution add', ['dotnet', 'sln', solution, 'add',
                                    'App.Tests/App.Tests.csproj'])
+        assert walk.code['solution add'] == 0, walk.out['solution add']
     write(walk.path('specs/core/greeting.md'),
           GREETING_SPEC % (shape['scope'], HERE_OS))
     write(walk.path(shape['test'][0]), shape['test'][1])
