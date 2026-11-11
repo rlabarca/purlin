@@ -852,7 +852,7 @@
   "platforms": {
     "macos": {
       "at": "2026-11-11T18:10:48Z",
-      "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+      "commit": "10c17d2a2ebd53f6e1c40ec24674f23f1ccebb04",
       "dirty": false,
       "email": "rich@labarca.org",
       "fingerprint": {
@@ -863,6 +863,12 @@
       "machine": "LabConnect-M5-Max.local",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-1",
           "manual": false,
@@ -885,6 +891,12 @@
           "test": "dev/test_drift.py::TestSinceValidation::test_a_since_that_is_no_count_or_date_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-3",
           "manual": false,
@@ -907,6 +919,12 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_pull_is_measured_from_where_head_stood_before_it"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-29",
           "manual": false,
@@ -929,6 +947,12 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_of_a_two_commit_branch_resolved_by_hand_runs_3_commits_from_main"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-86",
           "manual": false,
@@ -951,6 +975,12 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_branch_made_at_head_after_a_pull_leaves_the_range_at_the_pull"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-8",
           "manual": false,
@@ -973,6 +1003,12 @@
           "test": "dev/test_drift.py::TestTheLastTwentyCommits::test_a_clone_measures_its_last_twenty_commits"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-9",
           "manual": false,
@@ -995,6 +1031,12 @@
           "test": "dev/test_drift.py::TestSinceOverrides::test_since_3_after_a_pull_of_1_runs_the_last_3_commits"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-10",
           "manual": false,
@@ -1017,6 +1059,12 @@
           "test": "dev/test_drift.py::TestSinceOverrides::test_since_a_date_runs_the_last_2_of_3_dated_commits"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-12",
           "manual": false,
@@ -1039,6 +1087,12 @@
           "test": "dev/test_drift.py::TestRules::test_rules_added_changed_and_removed"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-38",
           "manual": false,
@@ -1061,6 +1115,12 @@
           "test": "dev/test_drift.py::TestRules::test_a_spec_moved_with_its_rules_unchanged_is_named_nowhere"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-17",
           "manual": false,
@@ -1083,6 +1143,12 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_behind_its_source_reads_behind_with_the_new_sha7"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-19",
           "manual": false,
@@ -1105,6 +1171,12 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_with_no_pin_reads_unpinned"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-40",
           "manual": false,
@@ -1127,6 +1199,12 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_source_path_with_no_repository_reads_error_naming_it"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-20",
           "manual": false,
@@ -1149,6 +1227,12 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_that_begins_with_a_dash_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-42",
           "manual": false,
@@ -1171,6 +1255,12 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_naming_the_ext_transport_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-44",
           "manual": false,
@@ -1193,6 +1283,12 @@
           "test": "dev/test_drift.py::TestUnsafeSources::test_a_source_carrying_a_nul_byte_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-56",
           "manual": false,
@@ -1215,6 +1311,12 @@
           "test": "dev/test_drift.py::TestSourceNamesNoRepository::test_a_text_file_in_the_project_reads_error"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-70",
           "manual": false,
@@ -1237,6 +1339,12 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_the_line_on_the_default_branch_keeps_the_number"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-71",
           "manual": false,
@@ -1259,6 +1367,12 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_proof_7_twice_with_neither_line_on_origin_main_renumbers_to_8"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-85",
           "manual": false,
@@ -1281,6 +1395,12 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_a_number_written_twice_by_a_merge_is_never_a_proof_changed"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-73",
           "manual": false,
@@ -1303,6 +1423,12 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_origin_main_fetched_three_days_ago_says_so"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-75",
           "manual": false,
@@ -1325,6 +1451,12 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_marked_while_proof_4_read_a_is_named_after_a_pull_rewords_it"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-76",
           "manual": false,
@@ -1347,6 +1479,12 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_pull_that_puts_a_under_proof_6_says_move_the_comment_there"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-82",
           "manual": false,
@@ -1369,6 +1507,12 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_in_a_commit_after_the_pull_is_not_named"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-83",
           "manual": false,
@@ -1391,6 +1535,12 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_test_changed_and_not_committed_is_not_named"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-84",
           "manual": false,
@@ -1413,6 +1563,12 @@
           "test": "dev/test_drift.py::TestCommentsChanged::test_a_commit_that_rewrites_only_the_comment_line_leaves_it_named"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-58",
           "manual": false,
@@ -1435,6 +1591,12 @@
           "test": "dev/test_drift.py::TestCannotRead::test_a_trailing_comma_answers_the_sentence_alone"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-61",
           "manual": false,
@@ -1457,6 +1619,12 @@
           "test": "dev/test_drift.py::TestCannotRead::test_a_repository_with_no_commit_is_refused"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-66",
           "manual": false,
@@ -1479,6 +1647,12 @@
           "test": "dev/test_drift.py::TestChangesNothing::test_two_reports_after_a_pull_of_a_spec_and_a_source_file_change_nothing"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-74",
           "manual": false,
@@ -1501,6 +1675,12 @@
           "test": "dev/test_drift.py::TestChangesNothing::test_drift_does_not_fetch"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-88",
           "manual": false,
@@ -1523,6 +1703,12 @@
           "test": "dev/test_drift.py::TestAnchorsBehind::test_a_pin_named_behind_leaves_the_anchor_file_and_this_checkouts_objects"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-27",
           "manual": false,
@@ -1545,6 +1731,12 @@
           "test": "dev/test_drift.py::TestReportShape::test_the_report_carries_since_and_view_and_since_its_six_keys"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-49",
           "manual": false,
@@ -1567,6 +1759,12 @@
           "test": "dev/test_drift.py::TestReportShape::test_the_view_carries_its_twelve_keys"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-67",
           "manual": false,
@@ -1589,6 +1787,12 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_adding_proof_5_and_6_names_both_in_one_line"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-68",
           "manual": false,
@@ -1611,6 +1815,12 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_rewording_proof_1_shows_the_words_that_changed"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-91",
           "manual": false,
@@ -1633,6 +1843,12 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_rewording_proof_2_whole_says_it_was_reworded"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-69",
           "manual": false,
@@ -1655,6 +1871,12 @@
           "test": "dev/test_drift.py::TestProofsChanged::test_a_pull_moving_proof_4s_text_to_proof_6_names_the_move"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-89",
           "manual": false,
@@ -1677,6 +1899,12 @@
           "test": "dev/test_drift.py::TestWhereDriftStarts::test_a_merge_stopped_on_a_conflict_is_named_on_the_second_line"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-90",
           "manual": false,
@@ -1699,6 +1927,12 @@
           "test": "dev/test_drift.py::TestNumbersWrittenTwice::test_a_proof_that_follows_a_moved_rule_is_named_after_it"
         },
         {
+          "carried": {
+            "at": "2026-11-11T18:10:48Z",
+            "commit": "4444569e1debc07d259a12bda9ed4d763279fc10",
+            "email": "rich@labarca.org",
+            "machine": "LabConnect-M5-Max.local"
+          },
           "env": null,
           "id": "PROOF-92",
           "manual": false,
