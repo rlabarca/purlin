@@ -1,0 +1,116 @@
+[
+  {
+    "cost_by_step": {
+      "spec": 1.3592,
+      "build": 1.4636,
+      "test": 0.4397,
+      "audit": 0.4319,
+      "planted bugs": 4.1283
+    },
+    "cost_total": 7.8228,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 42,
+    "rules_passing": 42,
+    "audit_strong": 40,
+    "audit_of": 42,
+    "arm": "A",
+    "run": 1,
+    "minutes": 12.2
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.7199,
+      "build": 0.6986,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 4.3004
+    },
+    "cost_total": 6.7189,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 48,
+    "rules_passing": 48,
+    "audit_strong": 42,
+    "audit_of": 48,
+    "arm": "O",
+    "run": 1,
+    "minutes": 10.3
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.8062,
+      "build": 1.2488,
+      "test": 0.4566,
+      "audit": 0.2903,
+      "planted bugs": 3.8996
+    },
+    "cost_total": 7.7015,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 43,
+    "rules_passing": 43,
+    "audit_strong": 39,
+    "audit_of": 43,
+    "arm": "A",
+    "run": 2,
+    "minutes": 12.4
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.7521,
+      "build": 0.7051,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 4.0531
+    },
+    "cost_total": 6.5103,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 44,
+    "rules_passing": 44,
+    "audit_strong": 40,
+    "audit_of": 44,
+    "arm": "O",
+    "run": 2,
+    "minutes": 10.2
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.635,
+      "build": 1.4013,
+      "test": 0.4525,
+      "audit": 0.3385,
+      "planted bugs": 4.3631
+    },
+    "cost_total": 8.1904,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 48,
+    "rules_passing": 48,
+    "audit_strong": 45,
+    "audit_of": 48,
+    "arm": "A",
+    "run": 3,
+    "minutes": 11.9
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.6697,
+      "build": 0.7048,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 3.5106
+    },
+    "cost_total": 5.8851,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 37,
+    "rules_passing": 37,
+    "audit_strong": 31,
+    "audit_of": 37,
+    "arm": "O",
+    "run": 3,
+    "minutes": 9.5
+  }
+]
