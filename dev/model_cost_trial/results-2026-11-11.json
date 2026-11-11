@@ -1,0 +1,125 @@
+[
+  {
+    "cost_by_step": {
+      "spec": 1.6033,
+      "build": 1.3099,
+      "test": 0.4357,
+      "audit": 0.2673,
+      "planted bugs": 4.2063
+    },
+    "cost_total": 7.8226,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 44,
+    "rules_passing": 44,
+    "audit_strong": 42,
+    "audit_of": 44,
+    "arm": "A",
+    "run": 1,
+    "minutes": 12.5
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.5864,
+      "build": 0.7175,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 3.5492
+    },
+    "cost_total": 5.8532,
+    "acceptance_passed": 22,
+    "acceptance_failed": [
+      "test_bill_uk_tax_is_20_percent",
+      "test_bill_de_tax_is_19_percent",
+      "test_bill_export_has_no_tax",
+      "test_bill_tax_is_rounded_half_up_to_the_cent",
+      "test_bill_a_percent_code_comes_off_before_tax",
+      "test_bill_a_fixed_code_never_takes_more_than_the_subtotal",
+      "test_bill_an_order_is_invoiced_once",
+      "test_bill_the_csv_export_holds_the_days_invoices_in_order"
+    ],
+    "rules": 38,
+    "rules_passing": 38,
+    "audit_strong": 33,
+    "audit_of": 38,
+    "arm": "O",
+    "run": 1,
+    "minutes": 9.8
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.5456,
+      "build": 1.3889,
+      "test": 0.4294,
+      "audit": 0.4389,
+      "planted bugs": 4.3943
+    },
+    "cost_total": 8.1971,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 47,
+    "rules_passing": 47,
+    "audit_strong": 43,
+    "audit_of": 47,
+    "arm": "A",
+    "run": 2,
+    "minutes": 12.2
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.5962,
+      "build": 0.6643,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 4.3052
+    },
+    "cost_total": 6.5656,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 44,
+    "rules_passing": 44,
+    "audit_strong": 21,
+    "audit_of": 44,
+    "arm": "O",
+    "run": 2,
+    "minutes": 10.3
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.355,
+      "build": 1.32,
+      "test": 0.4118,
+      "audit": 0.2533,
+      "planted bugs": 4.2428
+    },
+    "cost_total": 7.5829,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 47,
+    "rules_passing": 47,
+    "audit_strong": 45,
+    "audit_of": 47,
+    "arm": "A",
+    "run": 3,
+    "minutes": 11.4
+  },
+  {
+    "cost_by_step": {
+      "spec": 1.7224,
+      "build": 0.6884,
+      "test": 0.0,
+      "audit": 0.0,
+      "planted bugs": 3.5342
+    },
+    "cost_total": 5.9449,
+    "acceptance_passed": 30,
+    "acceptance_failed": [],
+    "rules": 39,
+    "rules_passing": 39,
+    "audit_strong": 36,
+    "audit_of": 39,
+    "arm": "O",
+    "run": 3,
+    "minutes": 9.2
+  }
+]

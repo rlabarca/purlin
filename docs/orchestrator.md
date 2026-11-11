@@ -143,7 +143,7 @@ Without an orchestrator, the same pattern is two habits:
 - Spec and sign need a person, so an orchestrator runs them in a session someone answers.
 - The planted bugs ran on Opus in both arms. On a cheaper model they cost less, and the trial did
   not measure what that does to the audit.
-- The harness, the requirement and the acceptance checks are in
+- The harness, the requirement, the acceptance checks and each run's results are in
   [`dev/model_cost_trial/`](../dev/model_cost_trial/requirement.md).
 
 The idea and the first trial came from [PR #10](https://github.com/rlabarca/purlin/pull/10).
