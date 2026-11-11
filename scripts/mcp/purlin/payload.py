@@ -528,7 +528,8 @@ def _uncommitted_evidence(project_root):
         result = subprocess.run(
             ['git', 'status', '--porcelain', '--untracked-files=all', '--',
              evidence_module.EVIDENCE_DIR],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return _AllPaths()
     if result.returncode != 0:
@@ -966,7 +967,8 @@ def branch_name(project_root):
     try:
         result = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None
     name = result.stdout.strip() if result.returncode == 0 else ''
@@ -978,7 +980,8 @@ def head_sha(project_root):
     try:
         result = subprocess.run(
             ['git', 'rev-parse', 'HEAD'],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None
     if result.returncode != 0:
@@ -997,7 +1000,8 @@ def _is_dirty(project_root):
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain'],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return False
     if result.returncode != 0:

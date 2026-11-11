@@ -914,7 +914,8 @@ def _git(project_root, args):
     """One git command's stdout, or None when git could not do it."""
     try:
         result = subprocess.run(['git'] + list(args), capture_output=True,
-                                text=True, cwd=project_root, timeout=60)
+                                text=True,
+                                encoding='utf-8', errors='replace', cwd=project_root, timeout=60)
     except (OSError, subprocess.SubprocessError):
         return None
     return result.stdout if result.returncode == 0 else None

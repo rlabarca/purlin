@@ -46,7 +46,8 @@ def _git_common_dir(folder):
     """The real path of the git folder `folder`'s checkout shares, or None."""
     try:
         result = subprocess.run(['git', 'rev-parse', '--git-common-dir'],
-                                capture_output=True, text=True, cwd=folder,
+                                capture_output=True, text=True,
+                                encoding='utf-8', errors='replace', cwd=folder,
                                 timeout=15)
     except (subprocess.SubprocessError, OSError):
         return None
@@ -145,7 +146,8 @@ def _csproj_name(project_root):
 def _origin_name(project_root):
     try:
         result = subprocess.run(['git', 'remote', 'get-url', 'origin'],
-                                capture_output=True, text=True, cwd=project_root,
+                                capture_output=True, text=True,
+                                encoding='utf-8', errors='replace', cwd=project_root,
                                 timeout=15)
     except (subprocess.SubprocessError, OSError):
         return None

@@ -1080,3 +1080,40 @@ class TestProofsChanged:
         report = _pulled_proofs(tmp_path, dict(FOUR, **{'PROOF-2': 'Deux'}))
         assert ('login PROOF-2 (RULE-1): changed. It was reworded.'
                 in _lines(report)), _lines(report)
+
+
+# --- RULE-46: git's output read as UTF-8 -------------------------------------
+
+def _as_on_windows(monkeypatch):
+    """Take the system's own encoding as Windows' `cp1252`, as Python does
+    there, for every program's output read with no encoding of its own."""
+    import _locale
+    import locale
+    monkeypatch.setattr(locale, 'getpreferredencoding',
+                        lambda do_setlocale=True: 'cp1252')
+    monkeypatch.setattr(locale, 'getencoding', lambda: 'cp1252')
+    monkeypatch.setattr(_locale, 'getencoding', lambda: 'cp1252')
+
+
+# purlin: drift PROOF-92
+def test_a_commit_message_outside_cp1252_never_stops_drift(tmp_path,
+                                                           monkeypatch):
+    subject = u'Fix “quotes” ← arrows'
+    # The closing quote and the arrow each carry a byte cp1252 cannot read:
+    # read in the system's encoding they stop the read, as on Windows.
+    assert any(b in subject.encode('utf-8') for b in (b'\x9d', b'\x90'))
+    _upstream, checkout, _before = _pulled(tmp_path, {
+        '.purlin/config.json': _config(),
+        'specs/auth/login.md': LOGIN}, [{'notes.txt': 'one\n'}])
+    _change(checkout, {'notes.txt': 'two\n'}, subject)
+    _as_on_windows(monkeypatch)
+    import subprocess as subprocess_module
+    try:
+        subprocess_module.run(['git', 'log', '-1', '--format=%s'],
+                              cwd=checkout, capture_output=True, text=True)
+        stops = False
+    except UnicodeDecodeError:
+        stops = True
+    assert stops, 'reading git with no encoding no longer stops here'
+    report = _report(checkout)
+    assert report['view']['lines'], report

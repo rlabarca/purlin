@@ -1,4 +1,4 @@
-"""Tests for security_no_dangerous_patterns: 8 rules.
+"""Tests for security_no_dangerous_patterns: 9 rules.
 
 The dangerous patterns no file under `scripts/` may carry, in the form each
 language `scripts/` holds, Python, shell and JavaScript, spells them, plus the
@@ -372,6 +372,64 @@ class TestRule5LaunchesWithAnArgumentVector:
 EVIL_SOURCE = '--upload-pack=/bin/echo /tmp/policy.git'
 EXT_SOURCE = 'ext::sh -c "touch /tmp/purlin-pwned" /tmp/policy.git'
 FD_SOURCE = 'fd::7/policy.git'
+
+
+_TEXT_LAUNCHERS = ('run', 'Popen', 'check_output', 'call')
+
+
+def _text_without_encoding(paths):
+    """`(path, line)` of each Python launch that reads its output as text,
+    `text=True` or `universal_newlines=True`, with no `encoding='utf-8'`."""
+    import ast
+    found = []
+    for path in paths:
+        tree = ast.parse(_read(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not (isinstance(func, ast.Attribute)
+                    and func.attr in _TEXT_LAUNCHERS
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == 'subprocess'):
+                continue
+            words = {k.arg: k.value for k in node.keywords}
+            as_text = any(isinstance(words.get(name), ast.Constant)
+                          and words[name].value is True
+                          for name in ('text', 'universal_newlines'))
+            encoding = words.get('encoding')
+            if as_text and not (isinstance(encoding, ast.Constant)
+                                and str(encoding.value).lower().replace(
+                                    '-', '') == 'utf8'):
+                found.append((path, node.lineno))
+    return found
+
+
+class TestRule9ReadsEveryProgramAsUtf8:
+
+    # purlin: security_no_dangerous_patterns PROOF-92
+    def test_every_text_launch_under_scripts_names_utf_8(self):
+        files = _all_script_files(extensions=('.py',))
+        assert files, "no .py file found under scripts/"
+        found = _text_without_encoding(files)
+        assert found == [], "\n".join(
+            f"{path}:{line}: reads a program's output as text with no "
+            f"encoding='utf-8'" for path, line in found)
+
+    # purlin: security_no_dangerous_patterns PROOF-93
+    def test_a_text_launch_with_no_encoding_is_found(self, tmp_path):
+        path = _plant_each(tmp_path, [(
+            'a.py', 'import subprocess\n\n'
+            'subprocess.run(argv, capture_output=True, text=True)\n')])[0]
+        assert _text_without_encoding([path]) == [(path, 3)]
+
+    # purlin: security_no_dangerous_patterns PROOF-94
+    def test_a_text_launch_naming_utf_8_is_not_counted(self, tmp_path):
+        path = _plant_each(tmp_path, [(
+            'a.py', 'import subprocess\n\n'
+            "subprocess.run(argv, capture_output=True, text=True, "
+            "encoding='utf-8')\n")])[0]
+        assert _text_without_encoding([path]) == []
 
 
 def _git(args, cwd=None, check=True):

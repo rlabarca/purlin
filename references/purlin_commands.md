@@ -182,7 +182,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
 |---------|---------|------------------------|
 | `purlin:init` | Set a project up for Purlin, bring a project Purlin 0.9.5 set up to this version, or restore a file setup writes | A developer, once. One question: whether to commit what it wrote |
 | `purlin:anchor <cmd>` | Write rules that hold across the whole project as an anchor, pull an anchor from another repository, and keep its pin current | A developer, or product in Claude Code |
-| `purlin:status [name]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules. After merging work from a worktree, in the main checkout |
+| `purlin:status [name] [--open]` | Show where the project stands: whether the tests are met, whether it is signed, each rule's two cells, and what is left to do | Anyone with a checkout, any time; with a name, to see one spec's rules; with `--open`, to see the dashboard. After merging work from a worktree, in the main checkout |
 | `purlin:spec-from-code [dir]` | Write the specs for a codebase that has none, from the code and the tests it already has | A developer, once, on a codebase that has no specs. Optional |
 
 ## Syntax
@@ -220,6 +220,7 @@ input, takes the end of input as no, and goes on only with a typed answer or the
   Reporting
   purlin:status                   The two facts, every rule's cells, the summary and Left to do
   purlin:status <name>            One spec: its rules and their cells
+  purlin:status --open            The status, then the dashboard opened in a browser
   purlin:drift                    What changed since your last pull
   purlin:drift --since <N|date>   A window other than since your last pull
 

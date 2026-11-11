@@ -200,7 +200,8 @@ def _ignored(project_root):
     try:
         result = subprocess.run(
             ['git', 'check-ignore', '-q', PAGE_NAME],
-            capture_output=True, text=True, cwd=project_root, timeout=15)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return True
     # 0: ignored. 1: not ignored. 128: not a git checkout.

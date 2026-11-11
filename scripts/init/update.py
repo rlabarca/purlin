@@ -302,7 +302,8 @@ def _write(path, text):
 def _git(root, *args):
     try:
         done = subprocess.run(['git'] + list(args), cwd=root,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True,
+                              encoding='utf-8', errors='replace')
     except (OSError, ValueError) as exc:
         return False, str(exc)
     return done.returncode == 0, (done.stdout + done.stderr).strip()

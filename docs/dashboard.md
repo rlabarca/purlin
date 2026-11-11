@@ -5,7 +5,9 @@ HTML file. It needs no server, no build step and no network.
 
 ## Open `purlin-report.html` anywhere
 
-It sits at the project root. Open it in any browser, beside your editor. The page holds its own
+It sits at the project root. `purlin:status --open` opens it in your default browser, or in the
+browser pane of the Claude Code desktop app; the status names it on its fourth line,
+`Dashboard: purlin-report.html (purlin:status --open opens it)`. The page holds its own
 data, so it needs no other file beside it: it opens the same from disk, in a browser pane that
 takes a snapshot of a local file, such as the one in the Claude Code desktop app, as an email
 attachment, or published as an artifact.

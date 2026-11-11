@@ -286,7 +286,8 @@ def _tracked(project_root, rel_path):
     try:
         result = subprocess.run(
             ['git', 'ls-files', '--error-unmatch', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return False
     return result.returncode == 0
@@ -297,7 +298,8 @@ def _last_commit(project_root, rel_path):
     try:
         result = subprocess.run(
             ['git', 'log', '-1', '--format=%H', '--', rel_path],
-            capture_output=True, text=True, cwd=project_root, timeout=10)
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace', cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None
     if result.returncode != 0:
@@ -425,6 +427,7 @@ def key_fingerprint(project_root):
     try:
         result = subprocess.run(['git', 'config', '--get', 'user.signingkey'],
                                 capture_output=True, text=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return None

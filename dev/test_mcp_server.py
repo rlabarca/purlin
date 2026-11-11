@@ -798,14 +798,16 @@ class TestAToolThatFails:
         assert texts[0] == 'Error running sync_status: boom', texts
         assert texts[1].startswith('Purlin status: '), texts
         assert 'login' in texts[1], texts
-        # The status table once over: its opening lines, its one row naming
-        # `login`, and the one line it ends on.
+        # The status table once over: its opening lines, the line naming the
+        # page it wrote, its one row naming `login`, and the one line it
+        # ends on.
         table = texts[1].splitlines()
-        assert table[:8] == [
+        assert table[:9] == [
             'Purlin status: %s, plugin %s' % (
                 os.path.basename(project.root), _version()),
             'Tests: not met',
             'Sign-off: not signed',
+            'Dashboard: purlin-report.html (purlin:status --open opens it)',
             '',
             'Spec   Rules  Proofs         Tests',
             '\u2500' * 35,

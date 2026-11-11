@@ -2431,3 +2431,42 @@ class TestAModelNotReached:
         line = ('claude-haiku-4-5-20251001: model not reached. The grader '
                 'was overloaded. Run purlin:test --all.')
         assert found == ([line], [line]), found
+
+
+# ---------------------------------------------------------------------------
+# The line that names the dashboard
+# ---------------------------------------------------------------------------
+
+DASHBOARD = 'Dashboard: purlin-report.html (purlin:status --open opens it)'
+
+
+# purlin: states PROOF-353
+def test_the_fourth_line_names_the_page_the_status_wrote():
+    made = Project()
+    try:
+        with open(os.path.join(made.root, '.gitignore'),
+                  encoding='utf-8') as handle:
+            assert '/purlin-report.html' in handle.read().splitlines()
+        lines = purlin_status.sync_status(made.root).splitlines()
+        assert lines[1].startswith('Tests: ')
+        assert lines[2].startswith('Sign-off: ')
+        assert lines[3] == DASHBOARD, lines[:5]
+        assert os.path.isfile(os.path.join(made.root, 'purlin-report.html'))
+    finally:
+        made.close()
+
+
+# purlin: states PROOF-354
+def test_no_page_written_means_no_dashboard_line():
+    made = Project()
+    try:
+        _write(os.path.join(made.root, '.gitignore'), '.purlin/runtime/\n')
+        subprocess.run(['git', 'commit', '-q', '-am', 'the page is not ignored'],
+                       cwd=made.root, check=True, capture_output=True)
+        text = purlin_status.sync_status(made.root)
+        assert not os.path.exists(os.path.join(made.root,
+                                               'purlin-report.html'))
+        assert [line for line in text.splitlines()
+                if line.startswith('Dashboard:')] == [], text
+    finally:
+        made.close()
