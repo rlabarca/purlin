@@ -159,8 +159,8 @@ class Project(object):
         os_name = os_name or purlin_evidence.host_os()
         proofs = []
         for proof_id, status in sorted(statuses.items()):
-            for test_name in (tests or {}).get(proof_id,
-                                               [TEST_NAMES[proof_id]]):
+            for test_name in ((tests or {}).get(proof_id)
+                              or [TEST_NAMES[proof_id]]):
                 proofs.append({
                     'id': proof_id,
                     'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',

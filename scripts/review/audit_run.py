@@ -127,6 +127,8 @@ NO_OUTPUT = 'this machine keeps no passing output of %s'
 # passed and keeps nothing for it.
 TAKE_OUTPUT = ' Run purlin:test --clean to take one here.'
 NO_PART = planted_bug.NO_PART
+# The model a planted bug or an entry names where none is known.
+UNKNOWN_MODEL = 'unknown'
 
 # Settling a rule. The first three are printed under the rule and not stored:
 # PROOF-N, the kept bug's file and line. The reason and its sentence are what a
@@ -652,6 +654,10 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
     new bug reads `survived`, which is a finding of its own, and `no_bug`
     gains `UNCHANGED`. A kept entry that holds the field gives the sentence
     again. A bug that survives holds the `test_key` of the tests it got past.
+
+    Each entry holds `model`: a new one the model `answer` names, and a kept
+    or held one the model its entry holds, `UNKNOWN_MODEL` where it holds
+    none (ai_audit RULE-92, RULE-93).
     """
     here = here or evidence_reader.host_os()
     bugs, findings, no_bug = {}, [], []
@@ -662,6 +668,7 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             no_bug.append(sentence)
 
     parts = answer.get('parts') or {}
+    model = answer.get('model') or UNKNOWN_MODEL
     for proof_id, what, value in plan:
         if what == 'anchor':
             note(NO_BUG % ANCHOR)
@@ -704,7 +711,8 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                      'before': result.get('before'),
                      'after': result.get('after'),
                      'result': result.get('result') or 'not made',
-                     'why': result.get('why') or '', 'bug_key': key}
+                     'why': result.get('why') or '', 'bug_key': key,
+                     'model': model}
             if output:
                 entry['output'] = output['sha256']
             if dropped:
@@ -717,7 +725,8 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
                         'aim': planted_bug.PLAIN, 'case': '', 'file': None,
                         'line': None, 'before': None, 'after': None,
                         'result': 'not made',
-                        'why': _words(TWO_SURVIVED, output), 'bug_key': key},
+                        'why': _words(TWO_SURVIVED, output), 'bug_key': key,
+                        'model': model},
                         **({'output': output['sha256']} if output else {}))
                     bugs[proof_id] = _settled_entry(two, same)
                     note(_words(NO_BUG_CAUGHT, output) % (proof_id,
@@ -735,7 +744,9 @@ def planted_bugs(project_root, reading, plan, scope_files, last, answer,
             note(no_bug_sentence(proof_id, entry, result.get('cause')))
             if entry.get('test_unchanged'):
                 note(UNCHANGED % proof_id)
-    return bugs, findings, no_bug
+    return ({proof_id: entry if entry.get('model') else
+             dict(entry, model=UNKNOWN_MODEL)
+             for proof_id, entry in bugs.items()}, findings, no_bug)
 
 
 def verdict_of(spot, survived, bugs):
@@ -917,7 +928,7 @@ def run(project_root, features, selected, again=False, out=None, settle=None,
                  'bugs': item['bugs'],
                  'explanation': answer.get('explanation') or [],
                  'notes': answer.get('notes') or [],
-                 'model': answer.get('model') if reached else 'unknown',
+                 'model': answer.get('model') if reached else UNKNOWN_MODEL,
                  'criteria': answer.get('criteria') or criteria}
         by_feature.setdefault(item['feature'], {})[item['rule']['id']] = \
             evidence_writer.audit_entry(item['rule'], found, commit)

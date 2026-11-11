@@ -1,4 +1,4 @@
-> Format-Version: 18
+> Format-Version: 19
 
 # Evidence format
 
@@ -88,7 +88,8 @@ operating system that ran the feature, one section each.
                                         "before": "return check(password)",
                                         "after": "return True",
                                         "result": "caught", "why": "",
-                                        "bug_key": "<sha256>"}},
+                                        "bug_key": "<sha256>",
+                                        "model": "example-model-1"}},
                  "explanation": ["The test types a wrong password and reads the refusal."],
                  "model": "example-model-1",
                  "criteria": "<sha256>",
@@ -374,9 +375,9 @@ Each `audit.rules` entry:
 | `verdict` | string | `strong`, `weak` or `spot-checked` |
 | `findings` | array of strings | one sentence per finding; empty when the audit found nothing |
 | `no_bug` | array of strings | one sentence for each proof no bug was caught for, saying why, and one for each proof settled with its test unchanged; empty where a bug was caught for every proof and none was settled so |
-| `bugs` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason) and `bug_key`, the sha256 that says whether the proof needs a new bug. Three fields are optional: `test_key`, on a `survived` bug alone, the sha256 of the proof's own tests when the bug got past them; `test_unchanged`, present and `true` only where a settle went on with the proof's test as it was; and `output`, on the bug of an AI proof alone, the sha256 of the kept output folder the wrong output was planted in, `file` then being a path inside that folder. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
+| `bugs` | object | `PROOF-N` to the bug the audit planted for that proof: `aim` (`past the test` or `plain`), `case` (the model's one line saying which case of the proof the bug breaks, at most 300 characters, empty where it gave none), `file`, `line`, `before`, `after`, `result` (`caught`, `survived`, `not made` or `not run`), `why` (empty where there is no reason), `bug_key`, the sha256 that says whether the proof needs a new bug, and `model`, the model whose answer wrote the bug, as the entry's own `model` names one; a bug kept from an earlier audit keeps its own, and one written before this field existed reads `unknown`. Three fields are optional: `test_key`, on a `survived` bug alone, the sha256 of the proof's own tests when the bug got past them; `test_unchanged`, present and `true` only where a settle went on with the proof's test as it was; and `output`, on the bug of an AI proof alone, the sha256 of the kept output folder the wrong output was planted in, `file` then being a path inside that folder. A proof the model could not be reached for, or one tagged for another system, has no entry. `{}` for an anchor's rule |
 | `explanation` | array of strings | the model's reading of the rule's tests, one sentence per line. It sets no verdict |
-| `model` | string | the model that answered, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none |
+| `model` | string | the model that answered for the reading, its name and version as the `claude` command's JSON reports them, or `unknown` where it reports none or the model could not be reached. Each planted bug names its own under `bugs` |
 | `criteria` | string | sha256 of `references/review_criteria.md` as it was sent to the model |
 | `at` | string | ISO 8601 UTC with `Z` |
 | `commit` | string | the full sha of `HEAD` when the audit ran |
