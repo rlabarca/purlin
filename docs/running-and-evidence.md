@@ -313,4 +313,5 @@ host. The five things every such file does are in
 - [dashboard.md](dashboard.md): the same data as a page that opens from disk.
 - [audit.md](audit.md): what the audit checks.
 - [testing-ai.md](testing-ai.md): testing a prompt or a skill.
+- [orchestrator.md](orchestrator.md): each step on the model it needs, from a script.
 - [sign-off.md](sign-off.md): the evidence package, the sign-offs and the tag.
