@@ -2631,3 +2631,73 @@ def test_a_line_0_9_5_wrote_in_gitignore_makes_it_a_project_0_9_5_set_up(
     assert printed[0] == 'Applying 2 migrations: untracked-files, evidence.'
     assert NOT_RUN in printed
     assert printed[-3:] == RUN_TESTS, printed
+
+
+# ---------------------------------------------------------------------------
+# The update commits only the files it changed
+# ---------------------------------------------------------------------------
+
+def _staged(root):
+    """`git status --porcelain` lines of what is staged, as the person left it."""
+    return [line for line in _git(root, 'status', '--porcelain').stdout
+            .splitlines() if line[:1] not in (' ', '?')]
+
+
+def _launch_removal_staged(root):
+    """A tracked `launch.json`, then its removal staged and not committed."""
+    _write(root, 'launch.json', '{"configurations": []}\n')
+    _git(root, 'add', '--', 'launch.json')
+    _git(root, 'commit', '-q', '-m', 'chore: a launch file')
+    _git(root, 'rm', '-q', '--', 'launch.json')
+    assert _staged(root) == ['D  launch.json']
+
+
+# purlin: update PROOF-230
+def test_answering_no_to_every_question_makes_no_commit(tmp_path):
+    root = _fresh(tmp_path)
+    _launch_removal_staged(root)
+    head = _head(root)
+    done = subprocess.run(
+        [sys.executable, UPDATE, '--project-root', root],
+        capture_output=True, encoding='utf-8', stdin=subprocess.DEVNULL)
+    assert done.returncode == 0, done.stderr
+    assert 'Nothing was restored.' in done.stdout, done.stdout
+    assert 'committed' not in done.stdout, done.stdout
+    assert _head(root) == head
+    assert _staged(root) == ['D  launch.json']
+
+
+# purlin: update PROOF-231
+def test_a_restoring_commit_holds_only_the_restored_files(tmp_path, capsys):
+    root = _fresh(tmp_path)
+    _launch_removal_staged(root)
+    head = _head(root)
+    _apply(root)
+    subject = 'chore(update): restore %s, %s' % (IGNORE, EVIDENCE_README)
+    assert _git(root, 'log', '-1', '--format=%s').stdout.strip() == subject
+    assert _git(root, 'rev-list', '--count', '%s..HEAD' % head
+                ).stdout.strip() == '1'
+    assert _git(root, 'show', '--name-only', '--format=',
+                'HEAD').stdout.split() == [IGNORE, EVIDENCE_README]
+    assert 'launch.json' in _git(root, 'ls-tree', '--name-only',
+                                 'HEAD').stdout.split()
+    assert _staged(root) == ['D  launch.json']
+
+
+# purlin: update PROOF-232
+def test_a_migration_leaves_a_staged_change_out_of_its_commits(tmp_path,
+                                                               capsys):
+    root = _project(tmp_path, V095)
+    _write(root, 'notes.txt', 'one\n')
+    _git(root, 'add', '--', 'notes.txt')
+    _git(root, 'commit', '-q', '-m', 'docs: notes')
+    _write(root, 'notes.txt', 'two\n')
+    _git(root, 'add', '--', 'notes.txt')
+    head = _head(root)
+    _apply(root)
+    made = _git(root, 'rev-list', '%s..HEAD' % head).stdout.split()
+    assert made, 'the update made no commit'
+    for sha in made:
+        assert 'notes.txt' not in _git(root, 'show', '--name-only',
+                                       '--format=', sha).stdout.split()
+    assert 'M  notes.txt' in _staged(root)
