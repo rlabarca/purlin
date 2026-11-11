@@ -3,7 +3,7 @@
   "platforms": {
     "windows": {
       "at": "2026-11-11T16:09:18Z",
-      "commit": "b34fd0d3701e4c0368de98e739f648f67cd09d67",
+      "commit": "3bf0559cf81ed3ced854fae7f8608371329ad6c2",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -14,6 +14,12 @@
       "machine": "runnervmm7ud1",
       "proofs": [
         {
+          "carried": {
+            "at": "2026-11-11T16:09:18Z",
+            "commit": "b34fd0d3701e4c0368de98e739f648f67cd09d67",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmm7ud1"
+          },
           "env": "windows",
           "id": "PROOF-159",
           "manual": false,
@@ -36,6 +42,12 @@
           "test": "dev/test_mcp_server.py::TestTransport::test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr"
         },
         {
+          "carried": {
+            "at": "2026-11-11T16:09:18Z",
+            "commit": "b34fd0d3701e4c0368de98e739f648f67cd09d67",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "machine": "runnervmm7ud1"
+          },
           "env": "windows",
           "id": "PROOF-160",
           "manual": false,
