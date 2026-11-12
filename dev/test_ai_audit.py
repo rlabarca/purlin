@@ -1080,10 +1080,7 @@ class TestTheVerdict:
         # The rule's line and nothing under it: no line of a bug planted
         # again.
         lines = printed.splitlines()
-        assert lines[:-1] == [
-            'login RULE-2   strong',
-            'The audit asked claude-fake-1 about 1 rule: no cost reported.'
-        ], printed
+        assert lines[:-1] == ['login RULE-2   strong'], printed
 
     # purlin: ai_audit PROOF-115
     def test_a_changed_test_has_its_bug_asked_for_again(self, claude):
@@ -3246,43 +3243,3 @@ class TestTheModelOfABug:
         made = strengthened.entries['RULE-3']['bugs']['PROOF-5']
         assert (made['result'], made['model']) == (
             'caught', 'claude-fake-1'), made
-
-
-# ---------------------------------------------------------------------------
-# What the audit asked, and what it cost
-# ---------------------------------------------------------------------------
-
-class TestWhatTheAuditAsked:
-
-    # purlin: ai_audit PROOF-223
-    def test_the_line_before_the_last_names_the_model_rules_and_cost(
-            self, claude):
-        install, _directory = claude
-        install(cost=0.25)
-        with passing_project(source=LOGIN_SOURCE) as made:
-            assert to_read(made) == [('login', 'RULE-1'), ('login', 'RULE-2')]
-            code, printed = audit(made)
-        assert code == 0, printed
-        assert printed.splitlines()[-2] == (
-            'The audit asked claude-fake-1 about 2 rules: $0.50.'), printed
-
-    # purlin: ai_audit PROOF-224
-    def test_no_cost_reported_is_said(self, claude):
-        install, _directory = claude
-        install()
-        with passing_project(source=LOGIN_SOURCE) as made:
-            settle(made, 'RULE-1')
-            code, printed = audit(made)
-        assert code == 0, printed
-        assert ('The audit asked claude-fake-1 about 1 rule: no cost '
-                'reported.') in printed.splitlines(), printed
-
-    # purlin: ai_audit PROOF-225
-    def test_no_line_where_no_call_was_answered(self, claude):
-        install, _directory = claude
-        install(exit_code=1, cost=0.25)
-        with passing_project(source=LOGIN_SOURCE) as made:
-            code, printed = audit(made)
-        assert code == 0, printed
-        assert not [line for line in printed.splitlines()
-                    if line.startswith('The audit asked')], printed

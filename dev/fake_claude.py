@@ -112,8 +112,6 @@ else:
             'result': answer, 'duration_ms': 5}
     if setup.get('model'):
         body['modelUsage'] = {setup['model']: {'outputTokens': 10}}
-    if setup.get('cost') is not None:
-        body['total_cost_usd'] = setup['cost']
     sys.stdout.write(json.dumps(body))
 sys.exit(int(setup.get('exit') or 0))
 '''
@@ -142,7 +140,7 @@ def change(path, before, after, case=None, aim=None):
 
 
 def install(directory, answers=(None,), exit_code=0, sleep=0,
-            model=DEFAULT_MODEL, raw=None, writes=None, cost=None):
+            model=DEFAULT_MODEL, raw=None, writes=None):
     """Write the fake into `directory`. The directory, to put first on PATH."""
     directory = str(directory)
     os.makedirs(directory, exist_ok=True)
@@ -150,7 +148,6 @@ def install(directory, answers=(None,), exit_code=0, sleep=0,
               encoding='utf-8') as handle:
         json.dump({'answers': list(answers), 'exit': exit_code,
                    'sleep': sleep, 'model': model, 'raw': raw,
-                   'cost': cost,
                    'writes': list(writes) if writes else None,
                    'default': DEFAULT_ANSWER}, handle)
     script = os.path.join(directory, 'claude')

@@ -92,7 +92,6 @@
 - RULE-91: Where the kept output holds files under `input/`, what the AI was given, the request shows them under `Input of <PROOF-N>:`, before `Output of <PROOF-N>:`, and says no wrong output changes a path under `input/`
 - RULE-92: A planted bug's entry under `bugs` carries `model`, the model the answer that named the bug names, as RULE-6 reads it; a wrong output's entry carries it the same way
 - RULE-93: A bug kept from an earlier audit keeps the `model` its entry holds, whatever model this audit's answer names or whether the model was reached, and one whose entry holds no `model` is written with `model` `unknown`
-- RULE-94: Where any call to the model was answered, the audit prints, before its `The model could not be reached` line or, without one, before its last line, `The audit asked <models> about <n> rules: <cost>.`: each model that answered, joined by `and`; the number of calls answered, `1 rule` for one; and the sum of the `total_cost_usd` every call reported, as `$1.35`, or `no cost reported` where no call reported one; where no call was answered it prints no such line
 
 ## Proof
 
@@ -244,6 +243,3 @@
 - PROOF-220 (RULE-93): `RULE-2` keeps a caught bug for `PROOF-2` whose entry holds no `model`; the rule is read again with `claude` answering as `claude-fake-2` and no new bug asked for `PROOF-2`; the entry of `PROOF-2` reads `model` `unknown`
 - PROOF-221 (RULE-93): A bug kept for `PROOF-2` was written by `claude-fake-1`, and `claude` exits `1` at every call; the rule's `model` reads `unknown` and the bug of `PROOF-2` still reads `claude-fake-1`
 - PROOF-222 (RULE-93): The bug of `PROOF-5` reads `survived`, written by `claude-fake-1`; its test is changed to catch it and `RULE-3` is settled, with `claude` started `0` times; the entry of `PROOF-5` reads `caught` with `model` `claude-fake-1`
-- PROOF-223 (RULE-94): `claude` answers the questions about `RULE-1` and `RULE-2` as `claude-fake-1`, each reporting a cost of `0.25`; the line before the audit's last line reads `The audit asked claude-fake-1 about 2 rules: $0.50.`
-- PROOF-224 (RULE-94): `claude` answers the question about `RULE-2` as `claude-fake-1` and reports no cost; the audit prints `The audit asked claude-fake-1 about 1 rule: no cost reported.`
-- PROOF-225 (RULE-94): `claude` exits `1` at every call; no line the audit prints starts with `The audit asked`
