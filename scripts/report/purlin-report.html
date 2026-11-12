@@ -927,8 +927,10 @@ function factBoxes() {
 }
 function topBar(readable) {
   var stamp = readable ? stampLine() : null;
+  var name = (readable && DATA.project) || 'purlin';
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
-    + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
+    + logoSrc() + '" alt="Purlin"><span id="project-name">' + esc(name)
+    + '</span></span>'
     + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '><span>'
       + esc(stamp.where) + '</span> <span>' + esc(stamp.written)
       + '</span></span>' : '')

@@ -3749,3 +3749,23 @@ def test_the_data_is_ascii_and_reads_back_as_written(browser, tmp_path):
         "el => el.nextElementSibling.textContent.trim()")
     assert beneath == description
     page.close()
+
+
+# purlin: purlin_report PROOF-313
+def test_the_top_bar_names_the_project_beside_the_mark(browser, tmp_path):
+    payload = payload_named('regulated')
+    assert payload['project'] == 'ledger'
+    page = open_board(browser, tmp_path, payload)
+    assert page.inner_text('header.topbar .brand') == 'ledger'
+    page.close()
+
+
+# purlin: purlin_report PROOF-314
+def test_the_top_bar_names_another_project_and_the_mark_stays_purlin(
+        browser, tmp_path):
+    payload = payload_named('prompts')
+    assert payload['project'] == 'helpdesk'
+    page = open_board(browser, tmp_path, payload)
+    assert page.inner_text('header.topbar .brand') == 'helpdesk'
+    assert page.get_attribute('#brand-mark', 'alt') == 'Purlin'
+    page.close()
