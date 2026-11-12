@@ -48,10 +48,9 @@ target:
 
 > Build and audit until 80% of rules are strong.
 
-The line before it names the model the audit asked and what its calls cost, such as
-`The audit asked claude-opus-5-5 about 15 rules: $1.35.` Those calls are one per rule read, and
-they are often the largest cost of a run. They go to the model `ANTHROPIC_MODEL` names, else to
-Claude Code's default; [Spending less on models](spending-less.md) says more.
+The audit asks the model once per rule it reads, and those calls are often the largest cost of
+a run. They go to the model `ANTHROPIC_MODEL` names, else to Claude Code's default;
+[Spending less on models](spending-less.md) says more.
 
 ## What to do with a finding
 

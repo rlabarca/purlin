@@ -28,8 +28,6 @@ trial.
   through all of them, so one weak test does not make several rules weak.
 - **Results carry forward.** `purlin:test` runs the features whose spec, code or tests changed,
   and the audit asks the model again only about the rules whose test or code changed.
-- **The audit says what it asked and what that cost**, on the line before its last:
-  `The audit asked claude-opus-5-5 about 15 rules: $1.35.`
 - **The evidence records each model that answered:** each model an AI proof ran on, each grader,
   and, for each planted bug, the model that wrote it.
 
