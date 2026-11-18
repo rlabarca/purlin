@@ -1,0 +1,1 @@
+Strengthen RULE-3 of sample_intake with purlin:build. Work only in this folder.

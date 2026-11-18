@@ -11,8 +11,8 @@
 >   the page resolves to one block and both themes ship in the same file.
 > Scope: scripts/report/src/page.html, scripts/report/src/styles.css, scripts/report/src/theme.js, scripts/report/src/board.js, scripts/report/src/rule.js, scripts/report/src/app.js, scripts/report/purlin-report.html, scripts/mcp/purlin/report_data.py, dev/build_report.py
 > Stack: html/css/javascript, no framework and no build-time dependency, design tokens inlined by a python assembler
-> Highest-Rule: 96
-> Highest-Proof: 312
+> Highest-Rule: 97
+> Highest-Proof: 314
 
 ## Rules
 
@@ -63,6 +63,7 @@
 - RULE-94: The page carries its data inside itself and asks for no other file: a page a command wrote draws the same board opened from disk with no other file beside it, and opened from a `data:` address, as a browser pane that takes a snapshot of a local file does
 - RULE-95: The data reads back exactly as written whatever its text holds: text that would end a script or open a comment, such as `</script>` or `<!--`, shows as written, and the data is written in ASCII alone, so a program that reads the file in another encoding reads the same data
 - RULE-96: A command that writes the page removes the `.purlin/report-data.js` an earlier version of Purlin wrote
+- RULE-97: The top bar names the project beside the mark, as the data's `project` gives it
 ## Proof
 
 - PROOF-122 (RULE-2): After a build, the page at the project root reads the same text, character for character, as the page written under `scripts/report/`
@@ -207,3 +208,5 @@
 - PROOF-310 (RULE-95): Write the regulated sample with login `RULE-1`'s text set to `Reject </script><b>bold</b> <!-- input`; the board draws 5 spec rows, and the rule's screen shows that text character for character, with nothing in bold
 - PROOF-311 (RULE-95): Write the regulated sample with login's description set to `Café sign-in ← “quoted”`; every byte of the page's data is below 128, and the opened spec reads `Café sign-in ← “quoted”`
 - PROOF-312 (RULE-96): A project holding the `.purlin/report-data.js` Purlin 0.10.0 wrote runs `purlin:status`; the file is gone and the page draws the board
+- PROOF-313 (RULE-97): Open the board with the regulated sample, whose data names the project `ledger`; the words beside the mark in the top bar read `ledger`
+- PROOF-314 (RULE-97): Open the board with the prompts sample, whose data names the project `helpdesk`; the words beside the mark read `helpdesk`, and the mark's text alternative still reads `Purlin`

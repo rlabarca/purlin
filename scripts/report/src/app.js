@@ -501,12 +501,15 @@ function factBoxes() {
     + factBox(SIGNOFF, word, hue) + '</span>';
 }
 
-/* The top bar. Over data the page cannot read it draws the mark and the
-   theme button alone, rather than fields it cannot read. */
+/* The top bar: the mark and the project's name beside it. Over data the
+   page cannot read it draws the mark, `purlin` and the theme button alone,
+   rather than fields it cannot read. */
 function topBar(readable) {
   var stamp = readable ? stampLine() : null;
+  var name = (readable && DATA.project) || 'purlin';
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
-    + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
+    + logoSrc() + '" alt="Purlin"><span id="project-name">' + esc(name)
+    + '</span></span>'
     + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '><span>'
       + esc(stamp.where) + '</span> <span>' + esc(stamp.written)
       + '</span></span>' : '')

@@ -2,8 +2,8 @@
   "feature": "config_engine",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T19:49:25Z",
-      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
+      "at": "2026-11-18T14:06:12Z",
+      "commit": "16927de4d4a56bc2f6dc940c355a84796eadd773",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -28,7 +28,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",
@@ -50,7 +50,7 @@
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",

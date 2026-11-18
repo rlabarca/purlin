@@ -437,9 +437,9 @@ def test_the_index_lists_every_page_once_and_says_how_many():
               if page != 'docs/index.md']
     listed = guides_listed(text)
     assert sorted(listed) == others, (listed, others)
-    assert len(listed) == 13, listed
+    assert len(listed) == 14, listed
     assert line_under_title(text) == (
-        'Thirteen guides, and the references behind them.')
+        'Fourteen guides, and the references behind them.')
     assert line_under_title(text) == GUIDES_LINE % COUNT_WORDS[len(others)]
     # A page listed twice, a page left out and a row that links nothing are
     # each seen: the list is the rows as they stand.

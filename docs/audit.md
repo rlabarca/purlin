@@ -48,6 +48,10 @@ target:
 
 > Build and audit until 80% of rules are strong.
 
+The audit asks the model once per rule it reads, and those calls are often the largest cost of
+a run. They go to the model `ANTHROPIC_MODEL` names, else to Claude Code's default;
+[Spending less on models](spending-less.md) says more.
+
 ## What to do with a finding
 
 - Read each `weak` finding. It names the missed bug and the case the AI says it breaks.

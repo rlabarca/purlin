@@ -1,6 +1,6 @@
 # Purlin documentation
 
-Thirteen guides, and the references behind them.
+Fourteen guides, and the references behind them.
 
 Purlin shows, rule by rule, that your software does what you said it must. It keeps two
 things: the evidence of what your tests saw, and a person's sign-off over it. It shows them as
@@ -20,6 +20,7 @@ two facts:
 | [Testing a prompt or a skill](testing-ai.md) | a team whose product is a prompt or a skill | An AI proof from rule to evidence: the models, the model runs and what is kept |
 | [Graded by an AI](graded-by-ai.md) | anyone who writes or reads a graded proof | A second model grades an output against one sentence |
 | [Working together](working-together.md) | a team | What product, QA and developers each do |
+| [Spending less on models](spending-less.md) | anyone who pays for the models a run uses | Where Purlin uses a model, what it does by default, and what you can do, measured in a trial |
 | [The sign-off](sign-off.md) | whoever signs | A person signs the evidence once, with `purlin:sign` |
 | [Regulated work](regulated.md) | QA and anyone who must show evidence | What the evidence holds, and where Purlin stops |
 | [The audit](audit.md) | anyone who asks whether the tests are sound | Whether your tests would catch a bug |

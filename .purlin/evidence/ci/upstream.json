@@ -2,8 +2,8 @@
   "feature": "upstream",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T19:49:26Z",
-      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
+      "at": "2026-11-18T14:06:13Z",
+      "commit": "16927de4d4a56bc2f6dc940c355a84796eadd773",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 0.979,
+                "duration": 1.074,
                 "name": "test_an_added_anchor_keeps_the_author_text_under_source_and_pin",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.289,
+                "duration": 1.482,
                 "name": "test_check_when_behind_reports_and_changes_no_file",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",
@@ -65,14 +65,14 @@
             "cases": [
               {
                 "class": "dev.test_upstream",
-                "duration": 1.409,
+                "duration": 1.549,
                 "name": "test_sync_advances_the_pin_and_names_the_rule_delta",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",

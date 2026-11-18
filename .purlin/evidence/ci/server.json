@@ -2,12 +2,12 @@
   "feature": "server",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T19:49:26Z",
-      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
+      "at": "2026-11-18T14:06:13Z",
+      "commit": "16927de4d4a56bc2f6dc940c355a84796eadd773",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "34ae08aadacd12bfd8a19b461093b12b541eba1108a6d17e6e736ddfeb474121",
+        "code": "5b3ef1b2c479e27443d193652c98084d75c18e833c7a9a16d27b93258dab28a6",
         "spec": "431a23f2a56d56d24f93e8d25e3b987ec82b7d1b3bfe98e1cfcfa5256da38054",
         "tests": "6d014de45301285a2b1e6a98b5f8a65e81c3280905f5277545a94f173c15c7f4"
       },
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestTransport",
-                "duration": 0.268,
+                "duration": 0.277,
                 "name": "test_on_windows_the_answer_is_one_line_and_the_startup_line_is_on_stderr",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",
@@ -43,14 +43,14 @@
             "cases": [
               {
                 "class": "dev.test_mcp_server.TestWhichProjectRoot",
-                "duration": 0.566,
+                "duration": 0.574,
                 "name": "test_on_windows_a_workspace_named_from_the_home_folder_is_found",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",

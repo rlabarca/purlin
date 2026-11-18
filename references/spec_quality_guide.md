@@ -78,6 +78,21 @@ Then the supporting dimensions: each distinct error response, boundary condition
 as maximum lengths and retry limits, performance constraints, and what happens when a
 dependency fails.
 
+### The names the input gives
+
+Where the input names part of an interface, each name it gives goes into the spec word for
+word: a function and its arguments in their order, a field, a key, a file, a command, a format,
+a status or a message. A build that starts in a new session reads the spec and the code alone,
+so a name only the conversation held is a name the build guesses.
+
+Before you show the rules, list every such name the input gives, and check that a rule or a
+proof holds each one. Write a rule for each that none does.
+
+- Poor: the input says `invoice(order_id, region, today, code=None)`, and the spec says
+  "Invoicing a paid order returns its totals."
+- Good: "`invoice(order_id, region, today, code=None)` invoices a paid order and returns
+  `order`, `subtotal`, `discount`, `tax` and `total`."
+
 ### A rule for the whole project
 
 A rule that must hold across the whole project, such as no secret in the code, is written
@@ -259,6 +274,11 @@ case, and does not find the rule weak for it.
 One proof may name a list of like inputs that share one action and one kind of result: "Each of
 `0`, `-1` and `-0.5` is refused with `Amount must be positive`." Inputs that differ in what is
 done, or in the kind of result seen, are cases of their own.
+
+A proof names one rule, or several only where it drives one flow through all of them. A proof
+that names several rules to cover what they share, such as "every refusal above raises
+`OrderError`", leaves one test standing for each of them: a bug that test misses makes every
+one of those rules weak. Give each rule a proof of its own case.
 
 ### Written by AI, read by a person
 

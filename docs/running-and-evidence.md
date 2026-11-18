@@ -267,7 +267,7 @@ jobs:
           python-version: '3.11'
       - name: Get Purlin
         shell: bash
-        run: git clone --depth 1 --branch signed/0.10.2 https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
+        run: git clone --depth 1 --branch signed/0.10.3 https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
       - name: Install what the tests need
         shell: bash
         run: python3 -m pip install pytest
@@ -313,4 +313,5 @@ host. The five things every such file does are in
 - [dashboard.md](dashboard.md): the same data as a page that opens from disk.
 - [audit.md](audit.md): what the audit checks.
 - [testing-ai.md](testing-ai.md): testing a prompt or a skill.
+- [spending-less.md](spending-less.md): where a run spends on models, and how to spend less.
 - [sign-off.md](sign-off.md): the evidence package, the sign-offs and the tag.

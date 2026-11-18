@@ -2850,6 +2850,7 @@ class TestAWrongOutput:
         entry = dict(note['entries']['RULE-1']['bugs']['PROOF-1'])
         keys = [entry.pop('bug_key'), entry.pop('test_key')]
         assert all(re.fullmatch('[0-9a-f]{64}', key) for key in keys), keys
+        assert entry.pop('model'), entry
         assert entry == {
             'aim': 'past the test', 'case': sample_lab.CASE_BARCODE,
             'file': 'reply.md', 'line': 1,
@@ -3104,3 +3105,141 @@ class TestAWrongOutput:
                 'below, never one under input/, and case:\n') in asked
         assert audit_module.output_files(root, kept) == [
             {'path': 'reply.md', 'text': 'Sample LC-1234567 was refused.\n'}]
+
+
+# ---------------------------------------------------------------------------
+# The model of a planted bug: each bug names the model whose answer wrote
+# it, and a kept bug keeps its own
+# ---------------------------------------------------------------------------
+
+# The login spec with a second proof of `RULE-2`, and its test.
+TWO_PROOF_SPEC = SPEC + (
+    '- PROOF-3 (RULE-2): POST /login as a user who does not exist; verify '
+    '401\n')
+TWO_PROOF_TEST = TEST_FILE + (
+    '\n'
+    '\n'
+    '# purlin: login PROOF-3\n'
+    'def test_no_such_user_is_denied():\n'
+    '    assert login("bob", "secret") == 401\n')
+# The same test of `PROOF-3`, changed, so its planted bug is asked for anew.
+TWO_PROOF_TEST_CHANGED = TWO_PROOF_TEST.replace(
+    '    assert login("bob", "secret") == 401\n',
+    '    assert login("bob", "anything") == 401\n')
+# Each proof's test passes, `PROOF-3`'s as its own test.
+THREE_PASS = {'PROOF-1': 'pass', 'PROOF-2': 'pass', 'PROOF-3': 'pass'}
+THREE_TESTS = {'PROOF-1': ['test_valid_credentials_return_200'],
+               'PROOF-2': ['test_a_bad_password_is_denied'],
+               'PROOF-3': ['test_no_such_user_is_denied']}
+
+
+def set_bug_model(project, rule, proof, model):
+    """Write `model` into the kept bug of `proof`, or take it out for None."""
+    path = os.path.join(project.root, '.purlin', 'evidence', 'local',
+                        'login.json')
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    made = data['audit']['rules'][rule]['bugs'][proof]
+    made.pop('model', None)
+    if model is not None:
+        made['model'] = model
+    write(path, json.dumps(data, indent=2, sort_keys=True))
+
+
+@contextlib.contextmanager
+def proof_3_changed(claude, kept_model):
+    """`RULE-2` with a caught bug kept for each proof, `PROOF-2`'s written by
+    `kept_model`, then the test of `PROOF-3` changed and the audit run with
+    `claude` answering as `claude-fake-2` with a bug for `PROOF-3`."""
+    install, directory = claude
+    install(model='claude-fake-2', answers=[fake_claude.reply({
+        'PROOF-3': bug('    return 401', '    return 200')})])
+    with passing_project(spec=TWO_PROOF_SPEC, source=LOGIN_SOURCE,
+                         test_file=TWO_PROOF_TEST) as made:
+        made.evidence(THREE_PASS, tests=THREE_TESTS)
+        settle(made, 'RULE-1')
+        settle(made, 'RULE-2')
+        set_bug_model(made, 'RULE-2', 'PROOF-2', kept_model)
+        made.edit_test(TWO_PROOF_TEST_CHANGED)
+        made.evidence(THREE_PASS, tests=THREE_TESTS)
+        code, printed = audit(made)
+        yield code, printed, entry_of(made), fake_claude.calls(directory)
+
+
+@pytest.fixture(scope='module')
+def note_fake_2(tmp_path_factory):
+    """The refusal note audited once, `claude` answering as
+    `claude-fake-2`."""
+    root = sample_lab.build_note(tmp_path_factory.mktemp('note-fake-2'))
+    as_2 = fake_claude_session.answer(sample_lab.wrong_outputs(),
+                                      model='claude-fake-2')
+    run = sample_lab.note_audit(root, [as_2, as_2, sample_lab.ACCEPT])
+    return dict(run, root=root)
+
+
+class TestTheModelOfABug:
+
+    # purlin: ai_audit PROOF-217
+    def test_a_new_bug_names_the_model_whose_answer_wrote_it(self, claude):
+        install, _directory = claude
+        install(model='claude-opus-4-1', answers=[fake_claude.reply({
+            'PROOF-2': bug('    return 401', '    return 200')})])
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            code, printed = audit(made)
+            entry = entry_of(made)
+        assert code == 0, printed
+        made_now = entry['bugs']['PROOF-2']
+        assert made_now['result'] == 'caught', made_now
+        assert made_now['model'] == 'claude-opus-4-1', made_now
+
+    # purlin: ai_audit PROOF-218
+    def test_a_wrong_output_names_the_model_whose_answer_wrote_it(
+            self, note_fake_2):
+        made = note_fake_2['entries']['RULE-1']['bugs']['PROOF-1']
+        assert re.fullmatch('[0-9a-f]{64}', made['output']), made
+        assert made['model'] == 'claude-fake-2', made
+
+    # purlin: ai_audit PROOF-219
+    def test_a_kept_bug_keeps_its_model_beside_a_new_one(self, claude):
+        with proof_3_changed(claude, 'claude-fake-1') as (
+                code, printed, entry, calls):
+            assert code == 0, printed
+            assert [asked_for(call) for call in calls] == [['PROOF-3']], printed
+            assert entry['bugs']['PROOF-2']['model'] == 'claude-fake-1', entry
+            assert entry['bugs']['PROOF-3']['model'] == 'claude-fake-2', entry
+            assert entry['bugs']['PROOF-3']['result'] == 'caught', entry
+            assert entry['model'] == 'claude-fake-2', entry
+
+    # purlin: ai_audit PROOF-220
+    def test_a_kept_bug_with_no_model_is_written_unknown(self, claude):
+        with proof_3_changed(claude, None) as (code, printed, entry, calls):
+            assert code == 0, printed
+            assert [asked_for(call) for call in calls] == [['PROOF-3']], printed
+            assert entry['bugs']['PROOF-2']['model'] == 'unknown', entry
+            assert entry['model'] == 'claude-fake-2', entry
+
+    # purlin: ai_audit PROOF-221
+    def test_a_kept_bug_keeps_its_model_when_the_model_is_not_reached(
+            self, claude):
+        install, _directory = claude
+        install(exit_code=1)
+        with passing_project(source=LOGIN_SOURCE) as made:
+            settle(made, 'RULE-1')
+            settle(made, 'RULE-2')
+            set_bug_model(made, 'RULE-2', 'PROOF-2', 'claude-fake-1')
+            code, printed = audit(made, again=True)
+            entry = entry_of(made)
+        assert code == 0, printed
+        assert entry['model'] == 'unknown', entry
+        assert entry['bugs']['PROOF-2']['model'] == 'claude-fake-1', entry
+
+    # purlin: ai_audit PROOF-222
+    def test_a_settled_bug_keeps_the_model_that_wrote_it(self, strengthened):
+        before = strengthened.before['RULE-3']['bugs']['PROOF-5']
+        assert (before['result'], before['model']) == (
+            'survived', 'claude-fake-1'), before
+        assert strengthened.calls == []
+        made = strengthened.entries['RULE-3']['bugs']['PROOF-5']
+        assert (made['result'], made['model']) == (
+            'caught', 'claude-fake-1'), made

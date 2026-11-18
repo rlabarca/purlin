@@ -8,7 +8,7 @@
 >   `spot-checked` when none does and no bug was planted and caught. A bug that survived is shown
 >   with the case the model says it breaks. The model's reading becomes the explanation; it
 >   decides nothing. Each answer names the model that gave it and a fingerprint of the criteria
->   it was sent. The audit's last line is the share of rules it found strong. Run with
+>   it was sent, and each planted bug the model whose answer wrote it. The audit's last line is the share of rules it found strong. Run with
 >   `--settle` for a rule, the audit plants again each bug that rule keeps as `survived` and
 >   runs the proof's test as it stands: a test that now fails makes the bug `caught`, and one
 >   that still passes drops the bug and has one new bug planted in its place. A settle is
@@ -22,8 +22,8 @@
 >   proof that asks its grader. Every line about it says `wrong output`.
 > Scope: scripts/review/audit_run.py, scripts/review/ai_audit.py, scripts/review/marked_tests.py
 > Stack: python/stdlib (json, hashlib, subprocess, shutil, concurrent.futures)
-> Highest-Rule: 91
-> Highest-Proof: 216
+> Highest-Rule: 94
+> Highest-Proof: 225
 
 ## Rules
 
@@ -90,6 +90,8 @@
 - RULE-89: `ai_audit.py --feature <f> --rule RULE-N` names, for a rule with an `@ai` proof, under a line `Output` after the tests, each such proof and the folder of the kept output a wrong one is planted in, or `no passing output kept on this machine`
 - RULE-90: No test of the audit of an `@ai` proof reaches a real model: the output is handed over by the helper's `record`, and the audit's model and the grader are a fake `claude` under the test's own temporary folder
 - RULE-91: Where the kept output holds files under `input/`, what the AI was given, the request shows them under `Input of <PROOF-N>:`, before `Output of <PROOF-N>:`, and says no wrong output changes a path under `input/`
+- RULE-92: A planted bug's entry under `bugs` carries `model`, the model the answer that named the bug names, as RULE-6 reads it; a wrong output's entry carries it the same way
+- RULE-93: A bug kept from an earlier audit keeps the `model` its entry holds, whatever model this audit's answer names or whether the model was reached, and one whose entry holds no `model` is written with `model` `unknown`
 
 ## Proof
 
@@ -235,3 +237,9 @@
 - PROOF-214 (RULE-89): `ai_audit.py --feature refusal_note --rule RULE-1` is run on the refusal note; it prints, after the test's source, the line `Output` and under it `  PROOF-1  .purlin/runtime/ai/refusal_note/PROOF-1/claude-opus-5-5/1`; with the folder `.purlin/runtime/ai` removed that line reads `  PROOF-1  no passing output kept on this machine`
 - PROOF-215 (RULE-90): The refusal note is built and audited; every start of `claude` is logged by a fake under the test's own temporary folder, and the helper's record of each kept output reads `made` `project`
 - PROOF-216 (RULE-91): The kept output of `PROOF-1` holds `input/message.md` reading `The bench refused LC-1234567.` and `reply.md`; the request holds, in this order, `Input of PROOF-1:`, `File: input/message.md`, `The bench refused LC-1234567.`, `Output of PROOF-1:` and `File: reply.md`, and the line `In the part, file: is a path of that output as given below, never one under input/, and case:`
+- PROOF-217 (RULE-92): `claude` answers the question about `RULE-2` with JSON naming `claude-opus-4-1` and a bug for `PROOF-2`; after the audit, the entry of `PROOF-2` under `bugs` holds `model` `claude-opus-4-1`
+- PROOF-218 (RULE-92): For an `@ai` proof, `claude` answers as `claude-fake-2` with a wrong output; the proof's entry under `bugs` holds `output` and `model` `claude-fake-2`
+- PROOF-219 (RULE-93): `RULE-2` keeps a caught bug for `PROOF-2` written by `claude-fake-1`; the test of `PROOF-3` changes and the audit runs with `claude` answering as `claude-fake-2`; the bug of `PROOF-2` still reads `claude-fake-1`, the new bug of `PROOF-3` reads `claude-fake-2`, and the rule's `model` reads `claude-fake-2`
+- PROOF-220 (RULE-93): `RULE-2` keeps a caught bug for `PROOF-2` whose entry holds no `model`; the rule is read again with `claude` answering as `claude-fake-2` and no new bug asked for `PROOF-2`; the entry of `PROOF-2` reads `model` `unknown`
+- PROOF-221 (RULE-93): A bug kept for `PROOF-2` was written by `claude-fake-1`, and `claude` exits `1` at every call; the rule's `model` reads `unknown` and the bug of `PROOF-2` still reads `claude-fake-1`
+- PROOF-222 (RULE-93): The bug of `PROOF-5` reads `survived`, written by `claude-fake-1`; its test is changed to catch it and `RULE-3` is settled, with `claude` started `0` times; the entry of `PROOF-5` reads `caught` with `model` `claude-fake-1`
