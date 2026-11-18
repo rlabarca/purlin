@@ -2,14 +2,14 @@
   "feature": "ai_audit",
   "platforms": {
     "windows": {
-      "at": "2026-11-11T19:49:25Z",
-      "commit": "cc5ab283d5671601657c6f4f1a39a9b8d7fd770d",
+      "at": "2026-11-18T14:06:12Z",
+      "commit": "16927de4d4a56bc2f6dc940c355a84796eadd773",
       "dirty": false,
       "email": "41898282+github-actions[bot]@users.noreply.github.com",
       "fingerprint": {
-        "code": "e4e377906280dd1805686b818c54c49106110c9fc4b40659881f9eed5197ddec",
-        "spec": "3fbef037992a995d77b2a52edc60c10dba07ec0c8096aa54871aed0454373bb2",
-        "tests": "a30dfe7d0a651196e92ca1267c680b370d0cf5917b7116b34474dc8696720c97"
+        "code": "808a338065b4a9f127557221838f1ec2b9b78c1dddf837d128807e55c40f3ac7",
+        "spec": "cc5c72e881dfca83bffaf04a21c7b064ec88dfa9da3ab5cb883f3036a3e58b4e",
+        "tests": "762740e46f6566e8fb2216ba0b7af947c59a5707a19256123db2da40e97f010b"
       },
       "machine": "runnervmm7ud1",
       "proofs": [
@@ -21,14 +21,14 @@
             "cases": [
               {
                 "class": "dev.test_ai_audit.TestTheCall",
-                "duration": 1.23,
+                "duration": 1.056,
                 "name": "test_the_prompt_goes_on_stdin_and_the_answer_is_read_to_the_end",
                 "outcome": "pass"
               }
             ],
             "report": {
               "file": ".purlin/runtime/reports/pytest.xml",
-              "sha256": "539a4e4801f689b5b28a87f9406b16cb178ad0258a6dde6fc5abbfad0e3ce25b"
+              "sha256": "d75e87c8d86015578aaede76e055580a78d1069720b17df9ff1c9f92fa3ef573"
             }
           },
           "result": "pass",
