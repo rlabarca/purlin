@@ -1,0 +1,110 @@
+{
+  "schema": "purlin-signoff/1",
+  "version": "0.10.3",
+  "package": ".purlin/evidence/package/0.10.3.json",
+  "package_hash": "64f609d21c6737abe9f6e47169d98ed6f38789652fe8796590b665a267398252",
+  "commit": "1c986de5aa0b34d4e59eef989f603d1d0fdbcc98",
+  "signer": "rich@labarca.org",
+  "signer_name": "rlabarca",
+  "key_fingerprint": "SHA256:PoQgqWIjfYBXOQ/2DSAP17z73sQ0JW22O0MFY+9Q23w",
+  "timestamp": "2026-11-18T14:09:38Z",
+  "shown": {
+    "overview": {
+      "systems": [
+        {
+          "rules": 757,
+          "passing": 736,
+          "hand_checks": 0,
+          "os": "macos"
+        },
+        {
+          "rules": 21,
+          "passing": 21,
+          "hand_checks": 0,
+          "os": "windows"
+        }
+      ],
+      "audit": {
+        "strong": 304,
+        "weak": 6,
+        "spot_checked": 10,
+        "out_of_date": 432,
+        "not_audited": 5
+      },
+      "graded": [
+        {
+          "grader": "claude-haiku-4-5-20251001",
+          "proofs": 1
+        }
+      ],
+      "co_authors": {
+        "rules": 757,
+        "proofs": 1713,
+        "tests": 1606
+      },
+      "reports": {
+        "named": 17,
+        "kept": 13
+      },
+      "ai_outputs": {
+        "named": 9,
+        "kept": 6
+      }
+    },
+    "runs": [
+      {
+        "by": "rich@labarca.org",
+        "machine": "LabConnect-M5-Max.local",
+        "os": "macos",
+        "source": "local",
+        "at": "2026-11-18T13:39:47Z",
+        "commit": "9dd45d03eb838fc4e9923b1eb4dbf2d45aa1ed4e",
+        "rules": 206,
+        "carried": false
+      },
+      {
+        "by": "rich.labarca@gmail.com",
+        "machine": "Richs-MacBook-Pro.local",
+        "os": "macos",
+        "source": "local",
+        "at": "2026-10-07T22:08:28Z",
+        "commit": "defce018bd86a9bae4b7557686517211f851e334",
+        "rules": 1,
+        "carried": true
+      },
+      {
+        "by": "rich@labarca.org",
+        "machine": "LabConnect-M5-Max.local",
+        "os": "macos",
+        "source": "local",
+        "at": "2026-11-11T18:58:07Z",
+        "commit": "897897387efcc4b40d49fad89586175634d0a877",
+        "rules": 550,
+        "carried": true
+      },
+      {
+        "by": "41898282+github-actions[bot]@users.noreply.github.com",
+        "machine": "runnervmm7ud1",
+        "os": "windows",
+        "source": "ci",
+        "at": "2026-11-18T14:06:13Z",
+        "commit": "16927de4d4a56bc2f6dc940c355a84796eadd773",
+        "rules": 21,
+        "carried": false
+      }
+    ],
+    "models": [
+      {
+        "model": "claude-opus-5-5",
+        "proofs": 3,
+        "runs": [
+          3,
+          3
+        ]
+      }
+    ],
+    "hand_checks": [],
+    "audit_list_opened": false
+  },
+  "notes": []
+}

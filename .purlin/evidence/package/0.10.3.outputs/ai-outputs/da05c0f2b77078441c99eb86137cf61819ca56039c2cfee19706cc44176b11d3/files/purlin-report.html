@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purlin board</title>
+<style id="purlin-tokens">
+:root{--purlin-navy-900:#092936;--purlin-navy-800:#0C3444;--purlin-cream-100:#E4DDD4;--purlin-blush-200:#E6BEB0;--purlin-copper-500:#C0793F;--purlin-slate-300:#93AEB8;--purlin-slate-200:#BFCED5;--purlin-cream-050:#F1ECE5;--purlin-blush-100:#F6E8E2;--purlin-slate-100:#E2E9EC;--slate-950:#0F172A;--slate-900:#172034;--slate-800:#1E293C;--slate-750:#263350;--slate-700:#334155;--slate-500:#64738B;--slate-400:#94A2B8;--slate-350:#BBC4D2;--slate-300:#CBD5E1;--slate-200:#E2E8F0;--slate-100:#E1E5EB;--white:#FFFFFF;--green-500:#22C55D;--green-600:#269655;--green-300:#3AC968;--green-100:#C6EDCF;--amber-500:#F59E0C;--red-500:#EF4444;--teal-400:#2DD4BF;--green-200:#6EF5A0;--amber-200:#FFD861;--red-300:#FF9F9F;--teal-200:#62F5E0;--purlin-copper-300:#FFA459;--green-900:#0A4A20;--amber-900:#653200;--red-900:#7C1313;--teal-900:#00464B;--copper-900:#5E3513;--purlin-ink-800:#163F4E;--purlin-ink-750:#2F4047;--purlin-tan-050:#F5EFE1;--purlin-tan-100:#EDE4D1;--purlin-tan-200:#E8DDC6;--purlin-tan-250:#E6DBC4;--purlin-tan-300:#E3D7BE;--purlin-paper-050:#FBF8EC;--purlin-paper-100:#E8E3D4;--purlin-paper-200:#D9D2C9;--purlin-paper-300:#C8BFB3;--purlin-ink-700:#1B4A5C;--purlin-ink-600:#345865;--purlin-ink-500:#4D676F;--purlin-ink-650:#384B52;}
+:root{--color-scheme:dark;--canvas:var(--purlin-navy-800);--canvas-deep:var(--purlin-navy-900);--surface-1:rgba(228,221,212,.06);--surface-2:rgba(228,221,212,.10);--surface-sunken:var(--purlin-navy-900);--surface-veil:rgba(228,221,212,.30);--text-primary:var(--purlin-cream-050);--text-secondary:var(--purlin-blush-100);--text-muted:var(--purlin-slate-100);--text-accent:var(--purlin-copper-300);--text-inverse:var(--purlin-navy-900);--border-hairline:rgba(228,221,212,.18);--border-default:rgba(228,221,212,.30);--border-strong:rgba(228,221,212,.45);--border-accent:var(--purlin-copper-500);--accent:var(--purlin-copper-500);--accent-contrast:var(--purlin-navy-900);--state-pass:var(--green-200);--state-pass-soft:rgba(34,197,93,.14);--state-warn:var(--amber-200);--state-warn-soft:rgba(245,158,12,.14);--state-fail:var(--red-300);--state-fail-soft:rgba(239,68,68,.14);--state-neutral:var(--teal-200);--state-neutral-soft:rgba(45,212,191,.14);--state-idle:var(--slate-100);--focus-ring:var(--purlin-blush-200);--link:var(--purlin-blush-100);--link-hover:var(--purlin-copper-300);}
+[data-theme="light"]{--color-scheme:light;--canvas:var(--purlin-tan-200);--canvas-deep:var(--purlin-tan-300);--surface-1:var(--purlin-tan-050);--surface-2:var(--purlin-tan-100);--surface-sunken:var(--purlin-tan-250);--surface-veil:rgba(12,52,68,.05);--text-primary:var(--purlin-navy-800);--text-secondary:var(--purlin-ink-800);--text-muted:var(--purlin-ink-750);--text-accent:var(--copper-900);--text-inverse:var(--purlin-tan-050);--border-hairline:rgba(12,52,68,.16);--border-default:rgba(12,52,68,.26);--border-strong:rgba(12,52,68,.44);--border-accent:var(--copper-900);--accent:var(--copper-900);--accent-contrast:var(--purlin-tan-050);--state-pass:var(--green-900);--state-pass-soft:rgba(10,74,32,.12);--state-warn:var(--amber-900);--state-warn-soft:rgba(101,50,0,.12);--state-fail:var(--red-900);--state-fail-soft:rgba(124,19,19,.12);--state-neutral:var(--teal-900);--state-neutral-soft:rgba(0,70,75,.12);--state-idle:var(--purlin-ink-750);--focus-ring:var(--copper-900);--link:var(--copper-900);--link-hover:var(--purlin-navy-800);}
+:root{--font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;--font-mono:"Courier New",Courier,monospace;--type-hero:180px;--type-display:98px;--type-title:48px;--type-subtitle:33px;--type-lead:30px;--type-body-lg:22.5px;--type-body:20.25px;--type-body-sm:18px;--type-caption:15.75px;--type-micro:15px;--ui-metric-xl:44px;--ui-metric:32px;--ui-lg:18px;--ui-base:15px;--ui-sm:13px;--ui-xs:11px;--leading-tight:.8;--leading-snug:1.12;--leading-normal:1.35;--leading-relaxed:1.5;--tracking-hero:-.006em;--tracking-normal:0;--tracking-wide:.055em;--tracking-label:.12em;--weight-regular:400;--weight-bold:700;}
+:root{--space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--space-20:80px;--space-24:96px;--slide-w:1920px;--slide-h:1080px;--slide-margin-x:200px;--slide-title-y:230px;--slide-content-w:1672px;--slide-rule-w:1520px;--slide-row-h:105px;--app-bar-h:92px;--app-gutter:12px;--row-h:76px;}
+:root{--radius-none:0;--radius-sm:4px;--radius-md:6px;--radius-pill:999px;--border-width-hairline:1px;--border-width-default:1.5px;--border-width-strong:2px;}
+:root{--shadow-none:none;--elev-flat:0 0 0 0 transparent;--elev-raised:inset 0 0 0 1px var(--border-hairline);--elev-focus:0 0 0 2px var(--canvas),0 0 0 4px var(--focus-ring);--overlay-scrim:rgba(9,41,54,.72);--backdrop-blur:8px;}
+:root{--duration-instant:80ms;--duration-fast:140ms;--duration-base:220ms;--duration-slow:420ms;--ease-standard:cubic-bezier(.2,0,0,1);--ease-out:cubic-bezier(0,0,0,1);--ease-in:cubic-bezier(.4,0,1,1);--hover-tint:rgba(228,221,212,.06);--press-tint:rgba(9,41,54,.25);--press-scale:.985;}
+@media (prefers-reduced-motion:reduce){:root{--duration-instant:0ms;--duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms}}
+html{color-scheme:var(--color-scheme,dark)}
+body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font-sans);font-size:var(--ui-base);line-height:var(--leading-normal);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+a{color:var(--link);text-decoration:none;border-bottom:1px solid var(--border-default);transition:color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard)}
+a:hover{color:var(--link-hover);border-bottom-color:currentColor}
+:focus-visible{outline:none;box-shadow:var(--elev-focus)}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+::selection{background:var(--accent);color:var(--accent-contrast)}
+</style>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+button{font-family:inherit}
+.topbar{--bar-pad:var(--space-2);--bar-side:var(--space-8);position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3) var(--space-6);min-height:56px;padding:var(--bar-pad) calc(var(--bar-side) + var(--space-12) + var(--space-4)) var(--bar-pad) var(--bar-side);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.brand{display:inline-flex;align-items:center;gap:var(--space-3);min-height:var(--space-10)}
+.topbar>.btn{position:absolute;top:calc(var(--bar-pad) + var(--space-5));right:var(--bar-side);transform:translateY(-50%);width:var(--space-12);justify-content:center;padding:6px 0}
+.brand img{display:block;height:24px;width:auto}
+.brand span{font-size:18px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
+.stamp{min-width:0;font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.facts{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);min-width:0;max-width:100%}
+.fact{display:inline-flex;align-items:baseline;gap:var(--space-3);min-width:0;max-width:100%;padding:5px 12px;border:1.5px solid currentColor;border-radius:var(--radius-sm);white-space:nowrap}
+.fact-l{flex:none;font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.fact b{min-width:0;font-family:var(--font-mono);font-size:var(--ui-base);font-weight:var(--weight-regular);overflow:hidden;text-overflow:ellipsis}
+.dot{width:9px;height:9px;border-radius:var(--radius-pill);background:currentColor;flex:none}
+.spacer{flex:1}
+.wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
+section{margin-bottom:var(--space-10)}
+.eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
+h1{font-size:var(--ui-metric);font-weight:var(--weight-bold);margin:0 0 var(--space-3);line-height:1.1}
+h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-4)}
+.mono{font-family:var(--font-mono)}
+.muted{color:var(--text-muted)}
+.sec{color:var(--text-secondary)}
+.tag{display:inline-flex;flex:none;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
+.tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
+.kv .tag.plain{color:var(--text-secondary)}
+.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;white-space:nowrap;line-height:1.5}
+.os.pass{border-color:var(--state-pass);color:var(--state-pass)}
+.os.fail{border-color:var(--state-fail);color:var(--state-fail)}
+.os.none{border-color:var(--border-hairline);color:var(--text-muted)}
+.btn{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--ui-sm);letter-spacing:.01em;padding:6px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--accent);background:transparent;color:var(--text-accent);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
+.btn:hover{background:var(--hover-tint)}
+.panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
+.notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
+.notice-text{min-width:0;position:relative}
+.unseen{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:pre}
+.notice-name{font-family:var(--font-mono);font-weight:var(--weight-bold);margin-right:var(--space-2)}
+.notice-name.link{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.notice-name.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.notice-kind{display:inline-block;font-size:var(--ui-sm);line-height:1.2;padding:1px 8px;border:1px solid;border-radius:var(--radius-sm);color:var(--text-primary);white-space:nowrap;margin-right:var(--space-2)}
+.notices .notice:last-child{margin-bottom:0}
+.nowrap{white-space:nowrap}
+.pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-sm);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
+.pill b{font-weight:var(--weight-bold)}
+pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
+.strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
+.tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-2)}
+.tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
+.tile-l{margin-top:var(--space-3);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.tile-l.tile-t{margin:var(--space-1) calc(-1 * var(--space-2)) 0;white-space:nowrap}
+.tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow-x:auto;overflow-y:hidden}
+.tbl.specs{display:grid;grid-template-columns:calc(var(--space-6) - var(--space-3)) var(--cols) calc(var(--space-6) - var(--space-3));column-gap:var(--space-3)}
+.specs>*{grid-column:1/-1}
+.specs>.group,.specs>.rule{contain:inline-size}
+.th,.tr{display:grid;grid-template-columns:subgrid;align-items:center;padding:var(--space-4) 0;border-bottom:1px solid var(--border-hairline)}
+.th>div:first-child,.tr>div:first-child{grid-column-start:2}
+.th>div,.tr>div{min-width:0;white-space:nowrap}
+.trio{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-base);white-space:nowrap}
+.trio b{font-weight:var(--weight-regular);white-space:nowrap}
+.trio i{color:var(--text-muted);font-style:normal}
+.th{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
+.tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
+.tr:hover{background:var(--hover-tint)}
+.tbl>:last-child{border-bottom:0}
+.group{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3) var(--space-8);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.group:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.group .gl,.group .gr{display:inline-flex;align-items:center;gap:var(--space-4);white-space:nowrap}
+.group .gr{margin-left:auto}
+.group .gt{font-weight:var(--weight-bold);font-size:var(--ui-base);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-primary)}
+.group .gs{font-size:var(--ui-base);color:var(--text-muted)}
+.group .gc{font-size:var(--ui-base);color:var(--text-secondary)}
+.group .gc b{font-family:var(--font-mono);font-weight:var(--weight-regular)}
+.caret{color:var(--text-muted);font-size:var(--ui-sm);flex:none}
+.name{display:flex;align-items:center;gap:var(--space-4);min-width:0}
+.name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
+.rule:hover{background:var(--hover-tint)}
+.rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
+.rule .rt{color:var(--text-secondary)}
+.rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
+.specs>.desc{margin:0;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);font-size:var(--ui-base);color:var(--text-secondary);contain:inline-size}
+.ptests p{margin:0 0 var(--space-2)}
+.ptests p:last-child{margin-bottom:0}
+.ptests p,.tests p{display:flex;align-items:flex-start;gap:var(--space-3)}
+.models p{margin:0 0 var(--space-2)}
+.models p:last-child{margin-bottom:0}
+.models .run{padding-left:var(--space-6)}
+.ptests .dot,.tests .dot{margin-top:.45em}
+pre.failure{margin:0 0 var(--space-3);max-height:24em;overflow:auto;overflow-wrap:anywhere}
+pre.failure:last-child{margin-bottom:0}
+[data-theme="light"] .specs>.rule,[data-theme="light"] .specs>.desc,[data-theme="light"] pre.code{--text-secondary:var(--text-primary);--text-muted:var(--text-primary)}
+.empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
+.kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
+.kv dt{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary);padding-top:2px}
+.kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
+.stack>*+*{margin-top:var(--space-5)}
+.cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
+.panel p{margin:0 0 var(--space-3);overflow-wrap:anywhere}
+.panel p:last-child{margin-bottom:0}
+.rule-head{margin-top:var(--space-6)}
+.rule-head hgroup{margin:0}
+.rule-head h1{white-space:nowrap}
+.bug{margin:var(--space-4) 0;padding-top:var(--space-4);border-top:1px solid var(--border-hairline)}
+.bug .kv{grid-template-columns:auto 1fr;align-items:start;margin-top:var(--space-3)}
+.bug pre.code{padding:var(--space-2) var(--space-4);white-space:pre}
+@media (max-width:1023px){.topbar{--bar-pad:var(--space-3);--bar-side:var(--space-5);column-gap:var(--space-4)}.topbar .spacer{flex-basis:100%;height:0}.wrap{padding:var(--space-6) var(--space-5)}.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip.four{grid-template-columns:repeat(4,minmax(0,1fr))}.tiles{display:contents}.tbl.specs{display:block}.specs .th{display:none}.specs .tr{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:var(--space-6);row-gap:var(--space-2);padding:var(--space-4) var(--space-5)}.specs .tr>div{flex:none}.specs .tr>div:first-child{flex-basis:100%}.specs .tr>div:empty{display:none}.tr>div[data-label]{display:inline-flex;align-items:baseline;gap:var(--space-2);white-space:nowrap}.tr>div[data-label]::before{content:attr(data-label);font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}.rule{grid-template-columns:auto 1fr;gap:var(--space-2) var(--space-4);padding:var(--space-3) var(--space-5)}.rule .rt{grid-row:2;grid-column:1/-1}.rule .rp{justify-content:flex-start}.specs>.desc{padding:var(--space-4) var(--space-5)}.group{padding:var(--space-4) var(--space-5)}.group .gr{margin-left:0;flex-basis:100%}.kv{grid-template-columns:1fr;gap:var(--space-1) 0}.kv dd{margin-bottom:var(--space-3)}.bug .kv{grid-template-columns:1fr}}
+@media (max-width:767px){.strip.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:599px){.stamp{flex:none;width:calc(100% + var(--space-12) + var(--space-4));margin-right:calc(-1 * (var(--space-12) + var(--space-4)));white-space:normal;overflow:visible}.stamp>span{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}.bug .nowrap{white-space:normal}.facts{display:flex;flex:none;width:calc(100% + var(--space-12) + var(--space-4));max-width:none;margin-right:calc(-1 * (var(--space-12) + var(--space-4)))}.fact{flex-direction:column;align-items:flex-start;gap:var(--space-1)}.fact b{max-width:100%}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:var(--space-5) var(--space-4)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="purlin-data">const PURLIN_DATA = {"branch":"main","commit":"1f9289f164b50eada67a6d0938ae37ca55b3af3a","dirty":false,"evidence":{"sample_intake":{"local":{"macos":{"at":"2026-11-11T14:51:37Z","commit":"b311a057c1a5584dca1dace53277af599b8e3740","current":true,"path":".purlin/evidence/local/sample_intake.json","result":"pass"}}}},"features":[{"broken":[],"category":"intake","current":true,"description":"What the receiving bench does with one sample: it refuses a sample it cannot identify, works out the sample's age, flags one that is too old or too warm, and gives each accepted sample an accession number.","evidence":{"ci":null,"local":{"committed":true,"path":".purlin/evidence/local/sample_intake.json","platforms":{"macos":{"at":"2026-11-11T14:51:37Z","commit":"b311a057c1a5584dca1dace53277af599b8e3740","current":true}}}},"incomplete":false,"incomplete_reason":null,"is_anchor":false,"name":"sample_intake","pinned":null,"rollup":{"audit_out_of_date":0,"by_hand":0,"failing":0,"incomplete":false,"manual":0,"not_audited":0,"partial":0,"passed":8,"proofs":12,"proofs_without_test":0,"proofs_without_test_ids":[],"rules":8,"spot_checked":4,"strong":1,"untested":0,"weak":3},"rules":[{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-1":{"after":null,"aim":"plain","before":null,"bug_key":"2b2ae76e97c37b9c0634cb0dc7deaa35ea78831d5db8ef32ed66e940e2c32dbd","case":"","file":null,"line":null,"result":"not made","why":"it holds none"},"PROOF-2":{"after":null,"aim":"plain","before":null,"bug_key":"82a466ea8a73d753c94b4c51ea95c85ef5ee7e3fb74ffac8e5cb1aef5b739633","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":[],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-1 could not be used: it holds none.","No bug was planted: the model's answer for PROOF-2 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"spot-checked"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":[],"reasons":["The spot tests found nothing. No bug was planted: the model's answer for PROOF-1 could not be used: it holds none. No bug was planted: the model's answer for PROOF-2 could not be used: it holds none."],"word":"spot-checked"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":true,"strong":false,"weak":false},"id":"RULE-1","left":null,"machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"cfa328471c72bcdf104dce36452f50d73764f5b910336e46b6c297d025d00242","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-1","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_an_empty_barcode_is_refused","result":"pass"}],"text":"A sample with the barcode `` (empty) is handed in; it is refused with `barcode is required`"},{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-2","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_a_barcode_of_spaces_is_refused","result":"pass"}],"text":"A sample with the barcode of three spaces is handed in; it is refused with `barcode is required`"}],"rule_hash":"717e2209592ab202cf255da93eead3115b5a0e47818f2ae74c73a6a9387cd800","test_hash":"d76ef5900a0ffc1f94847092db89a0dd98941dea8e500cd0e9b19d57de0af0c7","test_hash_kind":"test","tests":[],"text":"A sample with no barcode, or a barcode of spaces only, is refused with `barcode is required`"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-3":{"after":"        return record","aim":"past the test","before":"        self.received[barcode] = record\n        return record","bug_key":"52b4f3abef5ca195b65c9921c08b70c130961db6cd3c4a2c9c302752a86a85e8","case":"a sample with the barcode `LC-12345678` is handed in; the proof names it stored with the status `accepted`; the changed code returns a record with status `accepted` but never stores it, so the bench's `received` stays empty","file":"src/intake.py","line":52,"result":"survived","test_key":"5e02b4541f7a210ccd5d6a945686a03eeefad30668d5be574e907645730fd944","why":""},"PROOF-4":{"after":null,"aim":"plain","before":null,"bug_key":"5bf11b150c2a3db38633c3e2514979a6d267ea149d4960aa604c7fa3f0bd0dc9","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":["PROOF-3: the test still passes when src/intake.py:52 reads \"return record\"","PROOF-3: the AI says this breaks: a sample with the barcode `LC-12345678` is handed in; the proof names it stored with the status `accepted`; the changed code returns a record with status `accepted` but never stores it, so the bench's `received` stays empty"],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-4 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"weak"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":["PROOF-3: the test still passes when src/intake.py:52 reads \"return record\"","PROOF-3: the AI says this breaks: a sample with the barcode `LC-12345678` is handed in; the proof names it stored with the status `accepted`; the changed code returns a record with status `accepted` but never stores it, so the bench's `received` stays empty"],"reasons":["PROOF-3: the test still passes when src/intake.py:52 reads \"return record\"","PROOF-3: the AI says this breaks: a sample with the barcode `LC-12345678` is handed in; the proof names it stored with the status `accepted`; the changed code returns a record with status `accepted` but never stores it, so the bench's `received` stays empty"],"word":"weak"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":false,"strong":false,"weak":true},"id":"RULE-2","left":"to_strengthen","machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"87ec580d6901a3f23e21e028a2065397e29a3bd9a543537f706ce1d86d1d11a3","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-3","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_eight_digits_are_accepted","result":"pass"}],"text":"A sample with the barcode `LC-12345678` is handed in; it is stored with the status `accepted`"},{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-4","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_seven_digits_are_refused","result":"pass"}],"text":"A sample with the barcode `LC-1234567`, seven digits, is handed in; it is refused with `barcode LC-1234567 is not LC- and 8 digits`"}],"rule_hash":"533a032619c3daf45c3ef5b9e79b55a4d7c0ed839d7330b9a2c107bec09f2de1","test_hash":"e911a7cd4450ec194831493379c67d32db0cd0dcb734a6b93c532210939a73b4","test_hash_kind":"test","tests":[],"text":"A barcode is `LC-` followed by exactly 8 digits; any other is refused with `barcode \u003cbarcode> is not LC- and 8 digits`"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-5":{"after":"    return int(round(seconds / 3600))","aim":"past the test","before":"    return int(seconds // 3600)","bug_key":"1dc970279f6b61523c8ff4e416d1b2c80c8923c55706949f184aacf8aafac544","case":"a sample received 25 and a half hours after it was collected; the proof names no age; the changed code gives 26 hours where the code gave 25","file":"src/intake.py","line":17,"result":"survived","test_key":"fd5623f6a7e09317a54476ccb09b284a6623b4bed03c85c055ffe6a54925240d","why":""}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":["PROOF-5: the test still passes when src/intake.py:17 reads \"return int(round(seconds / 3600))\"","PROOF-5: the AI says this breaks: a sample received 25 and a half hours after it was collected; the proof names no age; the changed code gives 26 hours where the code gave 25"],"model":"claude-fake-1","no_bug":[],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"weak"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":["PROOF-5: the test still passes when src/intake.py:17 reads \"return int(round(seconds / 3600))\"","PROOF-5: the AI says this breaks: a sample received 25 and a half hours after it was collected; the proof names no age; the changed code gives 26 hours where the code gave 25"],"reasons":["PROOF-5: the test still passes when src/intake.py:17 reads \"return int(round(seconds / 3600))\"","PROOF-5: the AI says this breaks: a sample received 25 and a half hours after it was collected; the proof names no age; the changed code gives 26 hours where the code gave 25"],"word":"weak"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":false,"strong":false,"weak":true},"id":"RULE-3","left":"to_strengthen","machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"82bb269a77511b7203f966545b396be30152f744b26caf0dd6e8ff63ae9c07d5","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-5","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_age_is_whole_hours","result":"pass"}],"text":"A sample received the day after it was collected has its age in whole hours"}],"rule_hash":"327f24dc4a33ea49e3a44f28174158f467f3f421121cc8e88fb85db8772688c8","test_hash":"b592b4f2ae81f99d818fbb9f1fd9931d3d7577e830bf5ade51c004f87781c8ae","test_hash_kind":"test","tests":[],"text":"A sample's age is the whole hours between collection and receipt, rounded down"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-6":{"after":"MAX_AGE_HOURS = 73","aim":"plain","before":"MAX_AGE_HOURS = 72","bug_key":"37989b10ab8f0f969ad5855469553a1f2d466b593d9a9fbb39ec1ae50b088080","case":"a sample collected at 2026-03-01T08:00 and received at 2026-03-04T09:00, 73 hours later; the proof names it stored as `expired`; the changed code stores it as `accepted`","file":"src/intake.py","line":6,"result":"caught","why":""},"PROOF-7":{"after":null,"aim":"plain","before":null,"bug_key":"38e32c5d42187b0575d793209c19731319f4b025053c28ffe4ec1d7f689b9b53","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":[],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-7 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"strong"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":[],"reasons":[],"word":"strong"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":false,"strong":true,"weak":false},"id":"RULE-4","left":null,"machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"39145f8b511425424f9585f309d17e7bfd0e3186a30442e970b031ab6b749ddc","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-6","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_73_hours_is_expired","result":"pass"}],"text":"A sample collected at `2026-03-01T08:00` is received at `2026-03-04T09:00`, 73 hours later; it is stored as `expired`"},{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-7","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_72_hours_is_accepted","result":"pass"}],"text":"A sample collected at `2026-03-01T08:00` is received at `2026-03-04T08:00`, exactly 72 hours later; it is stored as `accepted`"}],"rule_hash":"dfc3398f228e3423e0e90ec7b5abbea807818a8f4573f5e8434f1a46b2a4e019","test_hash":"5818142b3155b47851e9ecad8057f75b9ae8bd3fec55b290f0f315b5af737aa1","test_hash_kind":"test","tests":[],"text":"A sample more than 72 hours old at receipt is stored as `expired`; one exactly 72 hours old is not"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-8":{"after":null,"aim":"plain","before":null,"bug_key":"169273e3468407bb8144f335701dbbc46a76d2c270f9d3fecb09d9507160bbf5","case":"","file":null,"line":null,"result":"not made","why":"it holds none"},"PROOF-9":{"after":null,"aim":"plain","before":null,"bug_key":"4504af421d948eb22a09e8e089808cf2b498b4eeb492c9866dbdb51cd5cac768","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":[],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-8 could not be used: it holds none.","No bug was planted: the model's answer for PROOF-9 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"spot-checked"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":[],"reasons":["The spot tests found nothing. No bug was planted: the model's answer for PROOF-8 could not be used: it holds none. No bug was planted: the model's answer for PROOF-9 could not be used: it holds none."],"word":"spot-checked"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":true,"strong":false,"weak":false},"id":"RULE-5","left":null,"machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"1e7f78654553b9ae9de8921fdf56ee9bb14a7b24eb746ea3bc66e2f46d761b1f","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-8","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_a_warm_frozen_sample_is_an_excursion","result":"pass"}],"text":"A `frozen` sample is received at `-19.9` C; it is stored as `temperature excursion`"},{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-9","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_a_frozen_sample_at_minus_20_is_accepted","result":"pass"}],"text":"A `frozen` sample is received at `-20.0` C; it is stored as `accepted`"}],"rule_hash":"9ab3acd59d1d3bac1b240ac0a133a451bfe7adeae5362df0d5eeca5147060822","test_hash":"923f14c6f1082e59768aa7c85d3389128e7aae8209e81a94d219028c0353ab3c","test_hash_kind":"test","tests":[],"text":"A `frozen` sample received warmer than -20.0 C is stored as `temperature excursion`; one at -20.0 C or colder is not"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-10":{"after":null,"aim":"plain","before":null,"bug_key":"51a6e4ea92b5d7e04e9612b25c1b6b6ad7f0bbb3120ece831162af3af3a2dd5c","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":[],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-10 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"spot-checked"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":[],"reasons":["The spot tests found nothing. No bug was planted: the model's answer for PROOF-10 could not be used: it holds none."],"word":"spot-checked"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":true,"strong":false,"weak":false},"id":"RULE-6","left":null,"machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"e33464d4f4c1c4f10d1164ad40da6febcc2f8acabc8cad822ad398e06cc411fe","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-10","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_received_before_collected_is_refused","result":"pass"}],"text":"A sample collected at `2026-03-02T08:00` is received at `2026-03-01T08:00`; it is refused with `received before collected`"}],"rule_hash":"7727dc52ba9e80d4f21903a3bd9a3882fcd3adeb2e880b65ccbcb275e50524b3","test_hash":"1f357c8b93a6d1b2a7a3a68078e03f17ddc4a6cb02ded0379bbc6f6c5db64f16","test_hash_kind":"test","tests":[],"text":"A sample received before it was collected is refused with `received before collected`"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-11":{"after":null,"aim":"plain","before":null,"bug_key":"c4988b10c2f1092d14880c9f5dc19b9db8e332a6ef0634a9885ee0c4fa2a61b2","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":["tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing."],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-11 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"weak"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":["tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing."],"reasons":["tests/test_intake.py::test_accession_numbers_count_up: the test checks nothing."],"word":"weak"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":false,"strong":false,"weak":true},"id":"RULE-7","left":"to_strengthen","machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"90327c47cbcee495ff380c7e7962cf47b944f168a179ecba560d3fce6ea09e69","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-11","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_accession_numbers_count_up","result":"pass"}],"text":"Two samples from the site `BOS` are received in 2026; the first gets `BOS-2026-00001` and the second `BOS-2026-00002`"}],"rule_hash":"2b0158213571b9cdbaac666e3436f794ee3898e68db6f02f9ef791985ce36cf4","test_hash":"784ac4e6c68e504baccfa3e667ea7c077ad77487dd0cd5f603eba417946833b5","test_hash_kind":"test","tests":[],"text":"Each accepted sample gets the accession number `\u003csite>-\u003cyear of receipt>-\u003csequence>`, the sequence five digits wide and counted from 1 for each site"},{"audit":{"at":"2026-11-11T14:51:39Z","bugs":{"PROOF-12":{"after":null,"aim":"plain","before":null,"bug_key":"0540a1e79104dc57d965cdbdc7fc3724ab39f9796fb27087c41c668797d87acb","case":"","file":null,"line":null,"result":"not made","why":"it holds none"}},"commit":"b311a057c1a5584dca1dace53277af599b8e3740","explanation":["PROOF-5: the test takes its expected age from the code."],"findings":[],"model":"claude-fake-1","no_bug":["No bug was planted: the model's answer for PROOF-12 could not be used: it holds none."],"notes":[],"out_of_date":[],"path":".purlin/evidence/local/sample_intake.json","verdict":"spot-checked"},"bucket":"passed","carried":{},"cells":{"passed":{"counts":true,"current":true,"missing_env":[],"missing_models":[],"nothing_to_check":[],"platforms":{"macos":{"at":"2026-11-11T14:51:37Z","source":"local","word":"passed"}},"reasons":[],"source":"local","word":"passed"},"strong":{"evidence":".purlin/evidence/local/sample_intake.json","findings":[],"reasons":["The spot tests found nothing. No bug was planted: the model's answer for PROOF-12 could not be used: it holds none."],"word":"spot-checked"}},"feature":"sample_intake","flags":{"audit_out_of_date":false,"by_hand":false,"failing":false,"manual":false,"no_proof":false,"not_audited":false,"out_of_date":false,"partial":false,"spot_checked":true,"strong":false,"weak":false},"id":"RULE-8","left":null,"machines":{"macos":"LabConnect-M5-Max.local"},"proof_hash":"65a7b0038c96b7ed55049db07b1433044718ae9a3400e669a8fbf29fb3bada3f","proofs":[{"ai":[],"carried":{},"env":null,"graded":null,"id":"PROOF-12","manual":false,"models":[],"result":"passed","runs":null,"slow":false,"tests":[{"file":"tests/test_intake.py","name":"test_a_barcode_received_twice_is_refused","result":"pass"}],"text":"The barcode `LC-12345678` is handed in twice; the second is refused with `barcode LC-12345678 was already received`"}],"rule_hash":"2968ad68626b3c79681bde638d5fd7280d376e7ae2d03e7975fcf79dc6713d54","test_hash":"15e19cfd8423f2f4ef074bf3625829b8f7f357649b4b252e83da52356cdf9702","test_hash_kind":"test","tests":[],"text":"A barcode already received is refused with `barcode \u003cbarcode> was already received`"}],"scope":["src/intake.py"],"source":null,"source_path":null,"spec_path":"specs/intake/sample_intake.md"}],"generated_at":"2026-11-11T14:51:46Z","generated_by":"sync_status","information":[],"last_line":"Every rule passes its tests on the committed evidence. Optional: sign this version with purlin:sign","left":[{"command":"purlin:build","count":3,"kind":"to_strengthen","text":"3 rules to strengthen"}],"met":true,"notices":[],"os_words":{"linux":{"short":"Lin","word":"Linux/Unix"},"macos":{"short":"Mac","word":"macOS"},"windows":{"short":"Win","word":"Windows"}},"project":"project","schema_version":20,"signoff":{"commit":null,"since":null,"version":null,"word":"not signed"},"summary":{"audit":{"not_audited":0,"out_of_date":0,"spot_checked":4,"strong":1,"weak":3},"audit_out_of_date":0,"by_hand":0,"failing":0,"features":1,"incomplete":0,"manual":0,"not_audited":0,"partial":0,"passed":8,"proofs":12,"proofs_without_test":0,"proofs_without_test_ids":[],"rules":8,"sentence":"8 rules. 8 pass their tests. The audit found 1 of 8 rules strong (12%): 1 strong, 3 weak, 4 spot-checked.","spot_checked":4,"steps":{"by_hand":0,"graded":0,"passed":8},"strong":1,"untested":0,"weak":3},"version":"0.10.0","warnings":[]};</script>
+<script>
+var PURLIN_LOGO = {dark: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='165 130 670 330' width='670' height='330'%3E%3Cg stroke='%23C0793F' stroke-width='2' fill='none'%3E%3Cline x1='500' y1='130' x2='500' y2='460' stroke-dasharray='8,8'/%3E%3Cline x1='500' y1='145' x2='170' y2='409'/%3E%3Cline x1='500' y1='145' x2='830' y2='409'/%3E%3Cline x1='400' y1='210' x2='400' y2='255'/%3E%3Cline x1='600' y1='210' x2='600' y2='255'/%3E%3C/g%3E%3Cpolyline points='400,280 500,390 600,280' fill='none' stroke='%23E4DDD4' stroke-width='14'/%3E%3Cpath d='M 500 160 L 190 408 L 190 440 L 810 440 L 810 408 Z M 500 200 L 262.5 390 L 737.5 390 Z' fill-rule='evenodd' fill='%23E4DDD4'/%3E%3C/svg%3E",
+  light: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='165 130 670 330' width='670' height='330'%3E%3Cg stroke='%238F5626' stroke-width='2' fill='none'%3E%3Cline x1='500' y1='130' x2='500' y2='460' stroke-dasharray='8,8'/%3E%3Cline x1='500' y1='145' x2='170' y2='409'/%3E%3Cline x1='500' y1='145' x2='830' y2='409'/%3E%3Cline x1='400' y1='210' x2='400' y2='255'/%3E%3Cline x1='600' y1='210' x2='600' y2='255'/%3E%3C/g%3E%3Cpolyline points='400,280 500,390 600,280' fill='none' stroke='%230C3444' stroke-width='14'/%3E%3Cpath d='M 500 160 L 190 408 L 190 440 L 810 440 L 810 408 Z M 500 200 L 262.5 390 L 737.5 390 Z' fill-rule='evenodd' fill='%230C3444'/%3E%3C/svg%3E"};
+</script>
+<script>
+'use strict';
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light'
+    ? 'light' : 'dark';
+}
+function restoreTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('purlin-theme'); } catch (e) {}
+  document.documentElement.setAttribute(
+    'data-theme', saved === 'light' ? 'light' : 'dark');
+}
+function toggleTheme() {
+  var next = currentTheme() === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('purlin-theme', next); } catch (e) {}
+}
+function logoSrc() {
+  return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
+}
+function themeButton() {
+  var light = currentTheme() === 'light';
+  var next = light ? 'Dark theme' : 'Light theme';
+  return '<button class="btn" data-act="theme" title="' + next
+    + '" aria-label="' + next + '">' + (light ? '◑' : '◐')
+    + '</button>';
+}
+function statStrip() {
+  var summary = DATA.summary || {};
+  var total = summary.rules || 0;
+  var project = wholeProject();
+  var boxes = [];
+  if (showsProofs()) {
+    var missing = ruleCounts(function (rule) {
+      return rule.left === 'no_proof';
+    });
+    var count = missing.reduce(function (sum, pair) { return sum + pair[1]; },
+                               0);
+    boxes.push(box(NO_PROOF, count, count ? 'warn' : 'pass',
+      missing.map(function (pair) { return pair[0] + DOT + pair[1]; })));
+  }
+  var passing = (summary.steps || {}).passed || 0;
+  var byHand = (summary.steps || {}).by_hand || 0;
+  var graded = (summary.steps || {}).graded || 0;
+  boxes.push(box(PASSING, passing, passing + byHand === total ? 'pass' : 'warn',
+                 platformLines(project),
+                 [total + (total === 1 ? ' rule total' : ' rules total')]
+                   .concat(graded ? [graded + GRADED_BY_AI] : [])));
+  var failing = ruleCounts(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+  if (failing.length) {
+    boxes.push(box(FAILING, failing.reduce(function (sum, pair) {
+      return sum + pair[1];
+    }, 0), 'fail', failing.map(function (pair) {
+      return pair[0] + DOT + pair[1];
+    })));
+  }
+  var found = auditShare();
+  if (audited() && found.over) {
+    var strong = (summary.audit || {}).strong || 0;
+    boxes.push(box(STRONG, strong,
+                   found.strong === found.over ? 'pass' : 'warn',
+                   auditCountLines(), null));
+  }
+  return '<div class="strip' + (boxes.length > 3 ? ' four' : '')
+    + '"><div class="tiles">' + boxes.join('') + '</div></div>';
+}
+function box(label, count, hue, lines, under) {
+  return '<div class="tile"' + (lines.length ? hover(lines) : '')
+    + '><div class="tile-v" style="color:var(--state-' + hue + ')">' + count
+    + '</div><div class="tile-l">' + esc(label) + '</div>'
+    + (under || []).map(function (text) {
+      return '<div class="tile-l tile-t">' + esc(text) + '</div>';
+    }).join('')
+    + '</div>';
+}
+function ruleCounts(counted) {
+  var byFeature = {};
+  var names = [];
+  everyRule().forEach(function (pair) {
+    if (!counted(pair.rule)) { return; }
+    var name = pair.feature.name;
+    if (!(name in byFeature)) { byFeature[name] = 0; names.push(name); }
+    byFeature[name] += 1;
+  });
+  return names.sort().map(function (name) { return [name, byFeature[name]]; });
+}
+function boardColumns() {
+  var columns = [{label: COLUMNS[0], width: '1.7fr', floor: 200},
+                 {label: COLUMNS[1], width: '1.6fr'}];
+  if (showsProofs()) {
+    columns.push({label: COLUMNS[2], width: '2fr'});
+  }
+  columns.push({label: COLUMNS[3], width: '2fr'});
+  if (audited()) {
+    columns.push({label: COLUMNS[4], width: '1.5fr'});
+  }
+  return columns;
+}
+function proofsCell(feature) {
+  var rollup = feature.rollup || {};
+  var ids = rollup.proofs_without_test_ids || [];
+  return '<span' + hover([ids.length ? 'no test' + DOT + ids.join(', ')
+      : 'every proof has a test']) + '>'
+    + counts([[rollup.proofs || 0, '', ''],
+      [rollup.proofs_without_test || 0, WORDS.no_test, 'warn']]) + '</span>';
+}
+function rulesCell(feature) {
+  return '<span class="mono">' + (feature.rules || []).length + '</span>';
+}
+function testsCell(feature) {
+  var found = {};
+  var rules = feature.rules || [];
+  rules.forEach(function (rule) {
+    var word = cellWord(rule, 'passed');
+    found[word] = (found[word] || 0) + 1;
+  });
+  var byHand = found['checked at sign-off'] || 0;
+  return '<span' + hover(platformLines(feature)) + '>'
+    + counts([share((found.passed || 0) + (found.graded || 0), rules.length,
+                    byHand),
+      [byHand, WORDS.by_hand, 'neutral'],
+      [found.partial || 0, WORDS.partial, 'warn'],
+      [found.failed || 0, WORDS.failing, 'fail'],
+      [feature.is_anchor ? found['out of date'] || 0 : 0, WORDS.out_of_date,
+       'warn']]) + '</span>';
+}
+function share(count, total, aside) {
+  return [count + ' ' + WORDS.of + ' ' + total, '',
+          total && count + (aside || 0) === total ? 'pass'
+            : count ? 'warn' : 'idle'];
+}
+function strongCell(feature) {
+  var read = auditRead(feature);
+  if (feature.is_anchor) {
+    var word = anchorWord(read);
+    return word ? '<span' + hover([NO_ANCHOR_BUG].concat(auditLines(feature)))
+      + '>' + counts([[word, '', word === 'weak' ? 'warn' : '']]) + '</span>'
+      : '';
+  }
+  if (!read.length) { return ''; }
+  var strong = read.filter(function (rule) {
+    return cellWord(rule, 'strong') === 'strong';
+  }).length;
+  return '<span' + hover(auditLines(feature)) + '>'
+    + counts([share(strong, read.length)]) + '</span>';
+}
+function anchorWord(read) {
+  var words = read.map(function (rule) { return cellWord(rule, 'strong'); });
+  if (words.indexOf('weak') !== -1) { return 'weak'; }
+  if (words.indexOf('out of date') !== -1) { return 'out of date'; }
+  return words.length && words.every(function (word) {
+    return word === 'spot-checked';
+  }) ? 'spot-checked' : '';
+}
+function featureRow(feature, columns) {
+  var rollup = feature.rollup || {};
+  var open = !!VIEW.features[feature.name];
+  var cells = ['<span class="name"><span class="caret">'
+    + (open ? '▼' : '▶') + '</span>'
+    + '<span class="n"' + hover([feature.spec_path || feature.name]) + '>'
+    + esc(feature.name) + '</span></span>'];
+  cells.push(rulesCell(feature));
+  if (showsProofs()) { cells.push(proofsCell(feature)); }
+  cells.push(testsCell(feature));
+  if (audited()) { cells.push(strongCell(feature)); }
+  var row = '<div class="tr" data-act="feature" data-feature="'
+    + esc(feature.name) + '">' + cells.map(function (cell, index) {
+      return '<div' + (index ? ' data-label="' + esc(columns[index].label)
+        + '"' : '') + '>' + cell + '</div>';
+    }).join('') + '</div>';
+  if (!open) { return row; }
+  return row + description(feature) + (feature.rules || []).map(function (rule) {
+    return '<div class="rule" data-act="rule" data-feature="'
+      + esc(rule.feature) + '" data-rule="' + esc(rule.id) + '">'
+      + '<span class="rid">' + esc(rule.id) + '</span>'
+      + '<span class="rt">' + esc(rule.text) + '</span>'
+      + '<span class="rp">' + badges(rule) + '</span></div>';
+  }).join('');
+}
+function description(feature) {
+  return feature.description ? '<p class="desc">' + esc(feature.description)
+    + '</p>' : '';
+}
+function groupBand(name, features, columns) {
+  var open = VIEW.groups[name] !== false;
+  var rules = [].concat.apply([], features.map(function (feature) {
+    return feature.rules || [];
+  }));
+  var total = rules.length;
+  var passing = rules.filter(function (rule) {
+    return passes(cellWord(rule, 'passed')); }).length;
+  return '<div class="group" role="button" tabindex="0" aria-expanded="'
+    + (open ? 'true' : 'false') + '" data-act="group" data-group="'
+    + esc(name) + '"><span class="gl"><span class="caret" aria-hidden="true">'
+    + (open ? '▼' : '▶') + '</span><span class="gt">' + esc(name)
+    + '</span><span class="gs">' + features.length
+    + (features.length === 1 ? ' spec' : ' specs') + '</span></span>'
+    + '<span class="gr"><span class="gc"><b>' + passing + ' ' + WORDS.of + ' '
+    + total + '</b> ' + (total === 1 ? 'rule passes' : 'rules pass')
+    + '</span></span></div>'
+    + (open ? features.map(function (feature) {
+      return featureRow(feature, columns);
+    }).join('') : '');
+}
+function specTable(label, columns, body) {
+  return '<section data-table="' + label.toLowerCase() + '"><p class="eyebrow">'
+    + label + '</p><div class="tbl specs" style="--cols:'
+    + columns.map(function (c) {
+      return 'minmax(' + (c.floor ? c.floor + 'px' : 'max-content') + ','
+        + c.width + ')';
+    }).join(' ') + '"><div class="th">' + columns.map(function (c) {
+      return '<div>' + esc(c.label) + '</div>';
+    }).join('') + '</div>' + body + '</div></section>';
+}
+function firstThose(list, first) {
+  return list.filter(first).concat(list.filter(function (item) {
+    return !first(item);
+  }));
+}
+function renderBoard() {
+  var columns = boardColumns();
+  var shown = DATA.features || [];
+  var anchors = firstThose(shown.filter(function (f) { return f.is_anchor; }),
+                           hasFailing);
+  var order = [];
+  var groups = {};
+  shown.forEach(function (feature) {
+    if (feature.is_anchor) { return; }
+    var name = feature.category || 'specs';
+    if (!groups[name]) { groups[name] = []; order.push(name); }
+    groups[name].push(feature);
+  });
+  order.forEach(function (name) {
+    groups[name] = firstThose(groups[name], hasFailing);
+  });
+  order = firstThose(order, function (name) {
+    return groups[name].some(hasFailing);
+  });
+  var anchorTable = anchors.length ? specTable('Anchors', columns, anchors.map(
+    function (feature) { return featureRow(feature, columns); }).join('')) : '';
+  var specsTable = order.length ? specTable('Specs', columns, order.map(
+    function (name) { return groupBand(name, groups[name], columns); }
+  ).join('')) : '';
+  var specsFirst = !anchors.some(hasFailing) && order.some(function (name) {
+    return groups[name].some(hasFailing);
+  });
+  return '<section>' + statStrip() + '</section>' + notices()
+    + (specsFirst ? specsTable + anchorTable : anchorTable + specsTable);
+}
+function ruleInView() {
+  var feature = featureNamed(VIEW.feature);
+  var found = ruleNamed(VIEW.feature, VIEW.rule);
+  return feature && found ? {feature: feature, rule: found} : null;
+}
+function platformBoxes(cell) {
+  var platforms = (cell && cell.platforms) || {};
+  return Object.keys(platforms).sort().map(function (os) {
+    var entry = platforms[os];
+    return '<span class="os ' + (entry.word === 'passed' ? 'pass'
+        : entry.word === 'failed' ? 'fail' : 'none') + '"'
+      + hover([[systemWords(os).word, platformWord(cell, entry),
+        entry.source || 'local',
+        ageText(entry.at).text].join(DOT)])
+      + '>' + esc(systemWords(os).short) + '</span>';
+  }).join(' ');
+}
+function cellRow(rule, name) {
+  var cell = cellOf(rule, name);
+  if (!cell || (name === 'strong' && !audited())) { return ''; }
+  var reasons = (cell.reasons || []).filter(function (text) {
+    return showsProofs() || text !== 'no proof written';
+  }).join('; ');
+  var beside = name === 'passed' ? platformBoxes(cell) : '';
+  return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+    + (beside ? ' ' + beside : '')
+    + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
+    + '</dd>';
+}
+var VERDICT_LINES = {'strong': 'Strong.', 'weak': 'Weak.',
+  'spot-checked': 'Spot-checked.'};
+var STRONG_NOTHING = 'Strong. It found nothing.';
+var NO_AUDIT = 'No audit has read this rule yet.';
+var OUT_OF_DATE = 'Out of date: ';
+var SPOT_TESTS_NOTHING = 'The spot tests found nothing.';
+function auditPanel(rule) {
+  var cell = cellOf(rule, 'strong');
+  if (!cell || !audited()) { return ''; }
+  var audit = rule.audit;
+  var lines = [];
+  var findings = (audit && audit.findings) || [];
+  var noBug = (audit && audit.no_bug) || [];
+  if (!audit) {
+    lines.push(line(NO_AUDIT));
+  } else {
+    if ((audit.out_of_date || []).length) {
+      lines.push(line(OUT_OF_DATE + (cell.reasons || []).join('; ')));
+    }
+    lines.push(line(audit.verdict === 'strong' && !findings.length
+      ? STRONG_NOTHING : VERDICT_LINES[audit.verdict] || ''));
+  }
+  findings.forEach(function (text) { lines.push(line(text)); });
+  if (audit && audit.verdict === 'spot-checked') {
+    lines.push(line([SPOT_TESTS_NOTHING].concat(noBug).join(' ')));
+  } else {
+    noBug.forEach(function (text) { lines.push(line(text)); });
+  }
+  ((audit && audit.explanation) || []).forEach(function (text) {
+    lines.push(line(text));
+  });
+  if (audit) {
+    lines.push(missedBugs(audit.bugs));
+    lines.push('<p class="sec">Read by <span class="mono">'
+      + esc(audit.model || 'unknown') + '</span> on '
+      + unbroken(moment(audit.at)) + '</p>');
+    if (audit.path) {
+      lines.push('<p class="sec mono">' + pathText(audit.path) + '</p>');
+    }
+  }
+  return '<div class="panel"><h2>Audit</h2>' + lines.join('') + '</div>';
+}
+function missedBugs(bugs) {
+  return Object.keys(bugs || {}).sort(function (one, two) {
+    return parseInt(one.split('-')[1], 10) - parseInt(two.split('-')[1], 10);
+  }).filter(function (proof) {
+    return bugs[proof] && bugs[proof].result === 'survived';
+  }).map(function (proof) {
+    var bug = bugs[proof];
+    return '<div class="bug"><p class="sec">' + esc(proof)
+      + ': its tests missed a bug planted at ' + unbroken(bug.file + ':'
+        + bug.line) + '.</p><dl class="kv"><dt>Before</dt><dd><pre class="code">'
+      + esc(codeLines(bug.before)) + '</pre></dd><dt>After</dt><dd>'
+      + '<pre class="code">' + esc(codeLines(bug.after))
+      + '</pre></dd></dl></div>';
+  }).join('');
+}
+function codeLines(text) {
+  var lines = String(text == null ? '' : text).replace(/[\r\n]+$/, '')
+    .split(/\r?\n/);
+  var indent = Math.min.apply(null, lines.filter(function (one) {
+    return one.trim();
+  }).map(function (one) { return one.length - one.replace(/^\s+/, '').length; })
+    .concat([Infinity]));
+  return lines.map(function (one) {
+    return isFinite(indent) ? one.slice(indent) : one;
+  }).join('\n');
+}
+function line(text) { return '<p class="sec">' + esc(text) + '</p>'; }
+function unbroken(text) {
+  return '<span class="nowrap">' + esc(text) + '</span>';
+}
+function typeLine(command, before) {
+  return '<p class="sec"><span>' + esc(before) + 'Type <span class="cmd">'
+    + esc(command) + '</span> in Claude Code.</span></p>';
+}
+function noTestLine(owner) {
+  return typeLine('purlin:build ' + owner, 'No test yet. ');
+}
+var TEST_WORDS = {pass: 'passed', fail: 'failed', missing: 'not run',
+  'not run': 'not run'};
+var HAND_CHECK = 'hand check';
+var CHECKED_AT_SIGNOFF = 'checked at sign-off';
+function proofWord(proof) {
+  var word = proof.result || 'not run';
+  return word === HAND_CHECK ? CHECKED_AT_SIGNOFF : word;
+}
+function handCheckLines(rule) {
+  var cell = cellOf(rule, 'strong') || {};
+  var notes = cell.word === CHECKED_AT_SIGNOFF ? cell.reasons || [] : [];
+  return [CHECKED_AT_SIGNOFF].concat(notes).map(function (text) {
+    return '<p class="sec"><span>' + esc(text) + '</span></p>';
+  }).join('');
+}
+function testLines(tests) {
+  return (tests || []).map(function (t) {
+    var word = TEST_WORDS[t.result] || 'not run';
+    return '<p><span class="dot" role="img" title="' + esc(word)
+      + '" aria-label="' + esc(word) + '" style="color:var(--state-'
+      + tone(word) + ')"></span><span class="mono">' + esc(t.file) + ' :: '
+      + esc(t.name).split('::').join('::<wbr>') + '</span></p>'
+      + (t.result === 'fail' && t.failure
+        ? '<pre class="code failure">' + esc(t.failure) + '</pre>' : '');
+  }).join('');
+}
+function carriedRow(carried) {
+  var systems = Object.keys(carried || {}).sort();
+  if (!systems.length) { return ''; }
+  return '<dt>Carried from</dt><dd>' + systems.map(function (os) {
+    return '<span class="carried nowrap"><span class="os none">'
+      + esc(systemWords(os).short) + '</span> <span class="mono">'
+      + esc(String(carried[os]).slice(0, 7)) + '</span></span>';
+  }).join(' ') + '</dd>';
+}
+function runLines(model, of, graded) {
+  return (model.runs || []).map(function (run, index) {
+    if (run.result === 'pass' && !run.grade) { return ''; }
+    var word = run.result === 'pass' && graded ? WORDS.graded
+      : TEST_WORDS[run.result] || WORDS.not_run;
+    var reason = (run.grade || {}).reason || run.why || '';
+    return '<p class="run"><span class="mono nowrap">' + (index + 1) + ' '
+      + WORDS.of + ' ' + of + '</span> <span class="mono nowrap" '
+      + 'style="color:var(--state-' + tone(word) + ')">' + esc(word)
+      + '</span>' + (reason ? ' <span class="sec">' + esc(reason) + '</span>'
+        : '') + '</p>';
+  }).join('');
+}
+function modelRows(proof) {
+  var models = proof.models || [];
+  if (!models.length) { return ''; }
+  return (proof.graded ? '<dt>Grader</dt><dd><span class="mono nowrap">'
+      + esc(proof.graded) + '</span></dd>' : '')
+    + '<dt>Models</dt><dd class="models">' + models.map(function (model) {
+      var of = Math.max(model.of || 0, proof.runs || 0);
+      return '<p class="mono"><span class="nowrap" style="color:var(--state-'
+        + tone(model.word) + ')">' + esc(model.word) + '</span> '
+        + '<span class="nowrap">' + (model.passed || 0) + ' ' + WORDS.of + ' '
+        + of + '</span> <span class="nowrap">on ' + esc(model.model)
+        + '</span></p>' + runLines(model, of, !!proof.graded);
+    }).join('') + '</dd>';
+}
+function proofDetail(proof, rule) {
+  var owner = rule.feature;
+  var tags = (proof.manual ? ['@manual'] : [])
+    .concat(proof.slow && !(proof.ai || []).length ? ['@slow'] : [])
+    .concat(proof.env ? ['@env(' + proof.env + ')'] : []);
+  var tests = testLines(proof.tests)
+    || (proof.manual ? handCheckLines(rule)
+    : proofWord(proof) === 'not run'
+      ? '<p class="sec">No run has listed its tests yet.</p>'
+      : noTestLine(owner));
+  return '<dl class="kv">'
+    + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
+    + '<dt>Result</dt><dd>' + pill(proofWord(proof)) + '</dd>'
+    + carriedRow(proof.carried)
+    + modelRows(proof)
+    + (tags.length ? '<dt>Tags</dt><dd>' + tag(tags.join(' '), true) + '</dd>'
+      : '')
+    + '<dt>Tests</dt><dd class="ptests">' + tests + '</dd></dl>';
+}
+function proofPanel(proof, rule) {
+  return '<div class="panel proof">' + proofDetail(proof, rule) + '</div>';
+}
+function testsSection(rule) {
+  var tests = rule.tests || [];
+  if (!tests.length && showsProofs()) { return ''; }
+  var lines = testLines(tests) || noTestLine(rule.feature);
+  return '<section><p class="eyebrow">Tests</p><div class="panel tests">'
+    + lines + '</div></section>';
+}
+function backLink() {
+  return '<button class="btn" data-act="close">Back to the board</button>';
+}
+function renderRule() {
+  var found = ruleInView();
+  if (!found) {
+    return '<div class="empty">That rule is not in this data. Go back to the '
+      + 'board and pick one.</div>';
+  }
+  var feature = found.feature;
+  var rule = found.rule;
+  var rows = [cellRow(rule, 'passed'), cellRow(rule, 'strong')];
+  rows.push('<dt>Spec</dt><dd><span class="mono">'
+    + pathText(feature.spec_path) + '</span></dd>');
+  rows.push('<dt>Last run</dt><dd>' + runLine(feature) + '</dd>');
+  rows.push(carriedRow(rule.carried));
+  return backLink()
+    + '<section class="rule-head"><hgroup><p class="eyebrow">'
+    + esc(feature.name) + '</p><h1>' + esc(rule.id) + '</h1></hgroup>'
+    + '<p class="sec">' + esc(rule.text) + '</p></section>'
+    + '<section class="stack"><div class="panel"><dl class="kv">'
+    + rows.join('') + '</dl></div>'
+    + auditPanel(rule) + '</section>'
+    + (showsProofs() ? '<section><p class="eyebrow">Proofs</p>'
+      + '<div class="stack">' + ((rule.proofs || []).length
+        ? rule.proofs.map(function (proof) {
+          return proofPanel(proof, rule);
+        }).join('')
+        : '<div class="panel sec">No proof written.</div>')
+      + '</div></section>' : '')
+    + testsSection(rule);
+}
+var DATA = null;
+var VIEW = {screen: 'board', feature: null, rule: null,
+            features: {}, groups: {}};
+var SCHEMA = 20;
+var TESTS = 'Tests';
+var SIGNOFF = 'Sign-off';
+var MET = 'met';
+var NOT_MET = 'not met';
+var NOT_SIGNED = 'not signed';
+var AUDIT_WORDS = [['strong', 'strong'], ['weak', 'weak'],
+  ['spot_checked', 'spot-checked'], ['out_of_date', 'out of date'],
+  ['not_audited', 'not audited']];
+var LAST_AUDIT = 'Last audit: ';
+var NO_ANCHOR_BUG = 'No bug is planted for an anchor\'s rule.';
+var PASSING = 'Passing';
+var FAILING = 'Failing';
+var STRONG = 'Strong';
+var NO_PROOF = 'No proof';
+var GRADED_BY_AI = ' graded by an AI';
+var COLUMNS = ['Spec', 'Rules', 'Proofs', 'Tests', 'Strong'];
+var DOT = ' \u00b7 ';
+var WORDS = {of: 'of', no_test: 'no test', by_hand: 'by hand',
+             partial: 'partial', failing: 'failing', passed: 'passed',
+             graded: 'graded', failed: 'failed', not_run: 'not run',
+             out_of_date: 'out of date'};
+var CELL_TONES = {'passed': 'pass', 'graded': 'pass',
+  'failed': 'fail', 'no test': 'warn', 'not run': 'warn', 'partial': 'warn',
+  'out of date': 'warn', 'strong': 'pass', 'weak': 'warn',
+  'spot-checked': 'neutral',
+  'waiting': 'neutral', 'checked at sign-off': 'neutral',
+  'not audited': 'idle', 'no proof': 'warn'};
+var CELL_LABELS = {passed: TESTS, strong: STRONG};
+function loadData(callback) {
+  callback(typeof PURLIN_DATA === 'undefined' ? null : PURLIN_DATA);
+}
+function showsProofs() {
+  return ((DATA && DATA.summary) || {}).proofs > 0;
+}
+function audited() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  if ((found.strong || 0) + (found.weak || 0) + (found.spot_checked || 0)
+      + (found.out_of_date || 0) > 0) { return true; }
+  return ((DATA && DATA.features) || []).some(function (feature) {
+    return (feature.rules || []).some(function (rule) { return !!rule.audit; });
+  });
+}
+function esc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+  });
+}
+function tone(word) { return CELL_TONES[word] || 'idle'; }
+function passes(word) { return word === WORDS.passed || word === WORDS.graded; }
+function platformWord(cell, entry) {
+  return entry.word === WORDS.passed && cell.word === WORDS.graded
+    ? WORDS.graded : entry.word;
+}
+function pill(word) {
+  return '<span class="pill" style="color:var(--state-' + tone(word) + ')"><b>'
+    + esc(String(word).toUpperCase()) + '</b></span>';
+}
+function systemWords(os) {
+  var words = (DATA && DATA.os_words) || {};
+  return words[os] || words.linux || {word: os, short: os};
+}
+function tag(text, plain) {
+  return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text) + '</span>';
+}
+function everyRule() {
+  var out = [];
+  (DATA.features || []).forEach(function (feature) {
+    (feature.rules || []).forEach(function (rule) {
+      out.push({feature: feature, rule: rule});
+    });
+  });
+  return out;
+}
+function ruleNamed(owner, id) {
+  var feature = featureNamed(owner);
+  var found = null;
+  (feature ? feature.rules || [] : []).forEach(function (r) {
+    if (r.id === id) { found = r; }
+  });
+  return found;
+}
+function counts(items) {
+  return '<span class="trio">' + items.filter(function (item, index) {
+    return index === 0 || item[0];
+  }).map(function (item, index) {
+    var hue = index === 0 && !item[0] ? 'idle' : item[2];
+    return '<b' + (item[3] ? hover(item[3]) : '')
+      + (hue ? ' style="color:var(--state-' + hue + ')"' : '') + '>'
+      + (index ? '<i class="sec">·</i> ' : '')
+      + esc(item[1] ? item[0] + ' ' + item[1] : item[0]) + '</b>';
+  }).join('') + '</span>';
+}
+function hover(lines) { return ' title="' + esc(lines.join('\n')) + '"'; }
+function wholeProject() {
+  var rules = [];
+  var rollup = {};
+  var latest = null;
+  Object.keys(DATA.summary || {}).forEach(function (key) {
+    rollup[key] = DATA.summary[key];
+  });
+  (DATA.features || []).forEach(function (feature) {
+    (feature.rules || []).forEach(function (rule) { rules.push(rule); });
+    var found = newestRun(feature);
+    if (found && (!latest || newer(found.at, latest.at))) { latest = found; }
+  });
+  return {rules: rules, rollup: rollup, newest: latest};
+}
+function newestRun(feature) {
+  if (feature.newest !== undefined) { return feature.newest; }
+  var best = null;
+  ['local', 'ci'].forEach(function (source) {
+    var file = (feature.evidence || {})[source];
+    if (!file) { return; }
+    Object.keys(file.platforms || {}).forEach(function (os) {
+      var section = file.platforms[os];
+      if (!best || newer(section.at, best.at)) {
+        best = {path: file.path, source: source, at: section.at};
+      }
+    });
+  });
+  return best;
+}
+function newer(one, two) { return (one || '') > (two || ''); }
+function platformLines(feature) {
+  var byOs = {};
+  var names = [];
+  (feature.rules || []).forEach(function (rule) {
+    var cell = (rule.cells || {}).passed || {};
+    var platforms = cell.platforms || {};
+    Object.keys(platforms).forEach(function (os) {
+      var entry = platforms[os];
+      var word = platformWord(cell, entry);
+      if (!byOs[os]) { byOs[os] = {at: '', words: {}}; names.push(os); }
+      var found = byOs[os];
+      found.words[word] = (found.words[word] || 0) + 1;
+      if (newer(entry.at, found.at)) { found.at = entry.at; found.source = entry.source; }
+    });
+  });
+  if (!names.length) { return ['No counting run has covered a platform yet.']; }
+  return names.sort(function (a, b) { return newer(byOs[a].at, byOs[b].at) ? -1 : 1; })
+    .map(function (os) {
+      var found = byOs[os];
+      return [systemWords(os).word, found.source || 'local',
+        ageText(found.at).text].concat(
+        [WORDS.passed, WORDS.graded, WORDS.failed,
+         WORDS.not_run].filter(function (word) {
+          return found.words[word];
+        }).map(function (word) { return found.words[word] + ' ' + word; }))
+        .join(DOT);
+    });
+}
+function auditLines(feature) {
+  var newest = null;
+  (feature.rules || []).forEach(function (rule) {
+    var audit = rule.audit;
+    if (audit && audit.at && (!newest || newer(audit.at, newest.at))) {
+      newest = audit;
+    }
+  });
+  return [newest ? 'audit' + DOT + sourceOf(newest.path) + DOT
+      + ageText(newest.at).text
+    : 'No audit has read a rule here.'];
+}
+function sourceOf(path) {
+  var parts = String(path || '').split('/');
+  return parts.length > 1 ? parts[parts.length - 2] : 'local';
+}
+function runLine(feature) {
+  var run = newestRun(feature);
+  if (!run) { return '<span class="mono muted">\u2014</span>'; }
+  return '<span class="mono">' + esc(run.source + DOT + ageText(run.at).text)
+    + '</span>';
+}
+function ageText(iso) {
+  var then = Date.parse(iso || '');
+  if (!then) { return {text: 'age unknown', old: true}; }
+  var seconds = Math.max(0, (Date.now() - then) / 1000);
+  if (seconds < 90) { return {text: 'less than a minute old', old: false}; }
+  if (seconds < 5400) {
+    return {text: Math.round(seconds / 60) + ' minutes old', old: false};
+  }
+  if (seconds < 172800) {
+    return {text: Math.round(seconds / 3600) + ' hours old', old: true};
+  }
+  return {text: Math.round(seconds / 86400) + ' days old', old: true};
+}
+function when(iso) { return String(iso || '').slice(0, 10) || 'date unknown'; }
+function localParts(iso) {
+  var date = new Date(String(iso || ''));
+  if (isNaN(date.getTime())) { return null; }
+  var parts = {};
+  new Intl.DateTimeFormat('en-US', {year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    timeZoneName: 'short'}).formatToParts(date).forEach(function (part) {
+    parts[part.type] = part.value;
+  });
+  return {day: parts.year + '-' + parts.month + '-' + parts.day,
+    time: parts.hour + ':' + parts.minute, zone: parts.timeZoneName};
+}
+function moment(iso) {
+  var local = localParts(iso);
+  return local ? local.day + ' ' + local.time + ' ' + local.zone : when(iso);
+}
+function cellOf(rule, name) {
+  return (rule.cells || {})[name] || null;
+}
+function cellWord(rule, name) {
+  return (cellOf(rule, name) || {}).word || null;
+}
+function reachedSteps(rule) {
+  var out = [];
+  var word = cellWord(rule, 'passed');
+  if (!passes(word)) { return out; }
+  out.push(word);
+  if (audited() && cellWord(rule, 'strong') === 'strong') {
+    out.push('strong');
+  }
+  return out;
+}
+function testFailed(rule) {
+  var cell = cellOf(rule, 'passed') || {};
+  if (cell.word === 'failed') { return true; }
+  var platforms = cell.platforms || {};
+  return Object.keys(platforms).some(function (os) {
+    return platforms[os].word === 'failed';
+  });
+}
+function hasFailing(feature) {
+  return (feature.rules || []).some(function (rule) {
+    return cellWord(rule, 'passed') === 'failed';
+  });
+}
+function badges(rule) {
+  return reachedSteps(rule).map(pill).join('')
+    + (testFailed(rule) ? pill('failed') : '');
+}
+function featureNamed(name) {
+  var found = null;
+  (DATA.features || []).forEach(function (f) {
+    if (f.name === name) { found = f; }
+  });
+  return found;
+}
+function stampLine() {
+  var at = String(DATA.generated_at || '');
+  var local = localParts(at);
+  return {where: (DATA.branch || 'detached') + ' at '
+      + String(DATA.commit || '').slice(0, 7) + ',',
+    written: 'written '
+      + (local ? local.time + ' ' + local.zone : at.slice(11, 16)),
+    full: local ? moment(at) + ' (' + at.slice(11, 16) + ' UTC)' : when(at)};
+}
+function factBox(label, word, hue, lines) {
+  return '<span class="fact"' + (lines && lines.length ? hover(lines) : '')
+    + ' style="color:var(--' + (hue ? 'state-' + hue : 'text-secondary')
+    + ')"><span class="fact-l">' + esc(label) + '</span><b>' + esc(word)
+    + '</b></span>';
+}
+function auditRead(feature) {
+  var words = AUDIT_WORDS.map(function (pair) { return pair[1]; });
+  return (feature.rules || []).filter(function (rule) {
+    return words.indexOf(cellWord(rule, 'strong')) !== -1;
+  });
+}
+function auditShare() {
+  var share = {strong: 0, over: 0};
+  ((DATA && DATA.features) || []).forEach(function (feature) {
+    if (feature.is_anchor) { return; }
+    auditRead(feature).forEach(function (rule) {
+      share.over += 1;
+      if (cellWord(rule, 'strong') === 'strong') { share.strong += 1; }
+    });
+  });
+  return share;
+}
+function auditCountLines() {
+  var found = ((DATA && DATA.summary) || {}).audit || {};
+  var lines = [];
+  AUDIT_WORDS.forEach(function (pair) {
+    var count = found[pair[0]] || 0;
+    if (pair[0] === 'strong' || count) { lines.push(count + ' ' + pair[1]); }
+  });
+  var newest = '';
+  everyRule().forEach(function (pair) {
+    var at = (pair.rule.audit || {}).at || '';
+    if (newer(at, newest)) { newest = at; }
+  });
+  if (newest) { lines.push(LAST_AUDIT + when(newest)); }
+  return lines;
+}
+function factBoxes() {
+  var signoff = DATA.signoff || {};
+  var word = signoff.word || NOT_SIGNED;
+  var hue = !signoff.version ? ''
+    : / at [0-9a-f]+$/.test(word) ? 'pass' : 'warn';
+  return '<span class="facts">'
+    + factBox(TESTS, DATA.met ? MET : NOT_MET, DATA.met ? 'pass' : 'warn')
+    + factBox(SIGNOFF, word, hue) + '</span>';
+}
+function topBar(readable) {
+  var stamp = readable ? stampLine() : null;
+  return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
+    + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
+    + (stamp ? '<span class="stamp"' + hover([stamp.full]) + '><span>'
+      + esc(stamp.where) + '</span> <span>' + esc(stamp.written)
+      + '</span></span>' : '')
+    + '<span class="spacer"></span>' + (readable ? factBoxes() : '')
+    + themeButton() + '</header>';
+}
+function notice(item) {
+  var hue = item.tone === 'neutral' ? 'neutral' : 'warn';
+  var label = item.kind ? '<span class="notice-kind" style="border-color:'
+    + 'var(--state-' + hue + ')">' + esc(item.label) + '</span>'
+    + unseen(item.about ? '. ' : ': ') + '<wbr>' : '';
+  var name = '';
+  if (item.kind && item.about) {
+    name = (hasRule(item.feature, item.rule)
+      ? '<span class="notice-name link" role="link" tabindex="0" '
+        + 'data-act="rule" data-feature="' + esc(item.feature)
+        + '" data-rule="' + esc(item.rule) + '">' + nameText(item.about)
+        + '</span>'
+      : '<span class="notice-name">' + nameText(item.about) + '</span>')
+      + unseen(': ') + '<wbr>';
+  }
+  var rest = item.kind ? item.rest : item.text;
+  return '<div class="notice"' + (item.names ? hover(item.names) : '')
+    + '><span class="dot" '
+    + 'style="color:var(--state-' + hue + ')"></span><span class="notice-text">'
+    + name + label + String(rest || '').split(' ').map(noticeWord).join(' ')
+    + '</span></div>';
+}
+function unseen(text) { return '<span class="unseen">' + esc(text) + '</span>'; }
+function nameText(about) {
+  return String(about).split(' ').map(function (word) {
+    return word.indexOf('/') < 0 ? noticeWord(word) : pathText(word);
+  }).join(' ');
+}
+function hasRule(feature, rule) {
+  if (!feature || !rule) { return false; }
+  return ((DATA && DATA.features) || []).some(function (entry) {
+    return entry.name === feature && (entry.rules || []).some(function (r) {
+      return r.id === rule;
+    });
+  });
+}
+function notices() {
+  var drawn = (DATA.notices || []).map(notice).join('');
+  return drawn ? '<section class="notices">' + drawn + '</section>' : '';
+}
+function pathText(path) {
+  return (String(path == null ? '' : path).match(/[^\/_]*[\/_]|[^\/_]+$/g)
+    || []).map(function (part) {
+      return part.length > 32 ? esc(part)
+        : '<span class="nowrap">' + esc(part) + '</span>';
+    }).join('<wbr>');
+}
+function noticeWord(word) {
+  if (!/[\/\-._]/.test(word)) { return esc(word); }
+  var text = word.length > 36 ? esc(word).replace(/\//g, '/<wbr>') : esc(word);
+  return '<span class="nowrap">' + text + '</span>';
+}
+function render() {
+  var app = document.getElementById('app');
+  if (!DATA) {
+    app.innerHTML = '<div class="wrap"><div class="empty">No board data yet. '
+      + 'Run purlin:status, then reload this page.</div></div>';
+    return;
+  }
+  if (DATA.schema_version !== SCHEMA) {
+    app.innerHTML = topBar(false) + '<div class="wrap"><div class="notice">'
+      + esc('This data was written for schema ' + DATA.schema_version
+        + ' and this page reads schema ' + SCHEMA + '. Run purlin:status to '
+        + 'write it again.') + '</div></div>';
+    return;
+  }
+  if (VIEW.screen !== 'rule') { VIEW.screen = 'board'; }
+  var body = VIEW.screen === 'rule' ? renderRule() : renderBoard();
+  app.innerHTML = topBar(true) + '<div class="wrap">' + body + '</div>';
+}
+function onClick(event) {
+  var node = event.target;
+  while (node && node !== document && !node.getAttribute('data-act')) {
+    node = node.parentNode;
+  }
+  if (!node || node === document) { return; }
+  var act = node.getAttribute('data-act');
+  if (act === 'theme') { toggleTheme(); }
+  else if (act === 'close') {
+    VIEW.screen = 'board';
+    VIEW.rule = VIEW.feature = null;
+  } else if (act === 'group') {
+    var group = node.getAttribute('data-group');
+    VIEW.groups[group] = VIEW.groups[group] === false;
+  } else if (act === 'feature') {
+    var name = node.getAttribute('data-feature');
+    VIEW.features[name] = !VIEW.features[name];
+  } else if (act === 'rule') {
+    VIEW.feature = node.getAttribute('data-feature');
+    VIEW.rule = node.getAttribute('data-rule');
+    VIEW.screen = 'rule';
+  }
+  render();
+}
+restoreTheme();
+document.getElementById('app').addEventListener('click', onClick);
+document.getElementById('app').addEventListener('keydown', function (event) {
+  if (event.key === 'Enter' && event.target.getAttribute('role') === 'link') {
+    event.preventDefault();
+    onClick(event);
+    return;
+  }
+  var group = event.target.getAttribute('data-group');
+  if (!group || (event.key !== 'Enter' && event.key !== ' ')) { return; }
+  event.preventDefault();
+  onClick(event);
+  document.querySelector('.group[data-group="' + CSS.escape(group) + '"]').focus();
+});
+loadData(function (payload) {
+  DATA = payload;
+  render();
+});
+</script>
+</body>
+</html>
