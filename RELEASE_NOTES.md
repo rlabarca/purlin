@@ -1,5 +1,53 @@
 # Release Notes
 
+## v0.10.3
+
+A guide to spending less on models, with two measured trials, and the evidence names the model
+behind each planted bug.
+
+### Spending less on models
+
+- **A new guide, [Spending less on models](docs/spending-less.md).** It says where Purlin uses a
+  model and who chooses it, what Purlin does by default, and what you can do: run Purlin from an
+  orchestrator, choose the planted bugs' model, or work by hand.
+- **The orchestrator pattern.** Spec and sign in a session on Opus; build with
+  `claude -p --model sonnet`; test, audit and status as scripts that start no session. In a
+  trial of 3 runs per arm it cost $6.37 a run against $7.90 for one Opus session, 19% less,
+  and passed all 90 acceptance checks.
+- **The planted bugs' model.** The audit's own calls go to the model `ANTHROPIC_MODEL` names,
+  else Claude Code's default. They are more than half the cost of a first audit, about $0.09 a
+  rule on Opus.
+- The idea and the first trial came from
+  [PR #10](https://github.com/rlabarca/purlin/pull/10).
+
+### Writing a spec
+
+- **Every name the input gives goes into a rule or a proof, word for word:** a function and its
+  arguments in their order, a field, a file, a format. `purlin:spec` lists each and checks a
+  rule or a proof holds it before it shows the rules, so a build started in a new session
+  guesses nothing the input settled.
+- **Each rule has a proof of its own.** A proof names several rules only where it drives one flow
+  through all of them, so one weak test does not make several rules weak.
+
+Neither lowers the cost of a run by itself. In the trial, without them, a build started in a
+new session failed 8 of 90 checks and its audit found 74% of rules strong; with them it
+passed all 90 and found 88% strong.
+
+### The audit
+
+- **Each planted bug records the model that wrote it**, under `model` in the evidence. A bug
+  kept from an earlier audit keeps its own model, and one written before 0.10.3 reads
+  `unknown`. `evidence_format.md` and `package_format.md` are at Format-Version 19.
+
+### The dashboard
+
+- **The top bar names the project** beside the mark, where 0.10.2 showed `purlin`.
+
+### Upgrading from 0.10.2
+
+Nothing to do. Evidence written by 0.10.2 reads as before; its planted bugs read `unknown` for
+their model until the audit plants them again.
+
 ## v0.10.2
 
 `purlin:init --update` commits only the files it changed.
